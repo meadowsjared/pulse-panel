@@ -54,6 +54,5 @@ interface Versions {
   pinia: string;
 }
 
-// const versions = process?.versions ?? {};
 const versions = ref((window as Window & { electron?: { versions: Versions } }).electron?.versions);
 </script>
