@@ -7,7 +7,7 @@
 ### 1. clone this repository
 
 ```bash
-git clone https://github.com/meadowsjared/geo-mud-report.git
+git clone https://github.com/meadowsjared/vite-vue3-electron-ts-template.git
 ```
 
 ### 2. install packages
