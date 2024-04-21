@@ -1,11 +1,11 @@
 {
-  "name": "vite-vue3-electron-ts-template",
+  "name": "pulse-panel",
   "private": true,
   "version": "0.0.0",
   "author": "Jared Meadows <meadowsjared@gmail.com>",
   "main": "src/electron/main/main.js",
-  "description": "A simple starter app built with just Electron, Vue3, Typescript, and Vite",
-  "homepage": "https://github.com/meadowsjared/vite-vue3-electron-ts-template/blob/main/README.md",
+  "description": "A soundboard app that looks nice too",
+  "homepage": "https://github.com/Counsel-of-Big-Brains/pulse-panel/blob/main/README.md",
   "scripts": {
     "dev": "pnpm app:dev",
     "build": "pnpm app:build",
