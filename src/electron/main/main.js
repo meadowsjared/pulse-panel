@@ -22,14 +22,6 @@ app.whenReady().then(() => {
         { type: 'separator' },
         { role: 'selectAll' },
         { type: 'separator' },
-        {
-          label: 'Settings',
-          click: () => {
-            console.log('Opening settings...')
-            // Here you can add code to open your settings window or panel
-            openSettingsWindow()
-          },
-        },
       ],
     },
     {
@@ -99,4 +91,3 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-
