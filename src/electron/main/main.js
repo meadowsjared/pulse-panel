@@ -3,6 +3,7 @@ const { app, BrowserWindow, Menu } = require('electron')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
+let settingsWindow = null
 
 app.whenReady().then(() => {
   const template = [
@@ -22,6 +23,14 @@ app.whenReady().then(() => {
         { type: 'separator' },
         { role: 'selectAll' },
         { type: 'separator' },
+        {
+          label: 'Settings',
+          click: () => {
+            console.log('Opening settings...')
+            // Here you can add code to open your settings window or panel
+            openSettingsWindow()
+          },
+        },
       ],
     },
     {
@@ -54,6 +63,8 @@ function createWindow() {
     webPreferences: {
       preload: join(__dirname, '../preload/preload.js'),
       nodeIntegration: true,
+      contextIsolation: true,
+      enableRemoteModule: true, // If you need remote module (consider security implications)
     },
   })
 
@@ -87,7 +98,34 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  if (settingsWindow) {
+    settingsWindow.close()
+  }
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
+
+function openSettingsWindow() {
+  if (settingsWindow) {
+    return
+  }
+
+  settingsWindow = new BrowserWindow({
+    frame: false,
+    height: 400,
+    resizable: false,
+    width: 600,
+    webPreferences: {
+      experimentalFeatures: true,
+    },
+  })
+
+  settingsWindow.loadURL('http://localhost:3000/settings')
+  settingsWindow.webContents.openDevTools()
+
+  settingsWindow.on('closed', function () {
+    console.log('Settings window closed')
+    settingsWindow = null
+  })
+}

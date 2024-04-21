@@ -19,3 +19,22 @@ function close() {
   window.close()
 }
 </script>
+
+<style scoped>
+.bar {
+  background: lightgreen;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  -webkit-app-region: drag;
+  position: sticky;
+  top: 0;
+}
+
+.close-button {
+  cursor: pointer;
+  position: absolute;
+  right: 0.5rem;
+  -webkit-app-region: no-drag;
+}
+</style>

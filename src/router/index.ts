@@ -3,6 +3,8 @@ import Home from '../components/Home.vue'
 import About from '../components/About.vue'
 import SystemInformation from '../components/SystemInformation.vue'
 import Main from '../components/Main.vue'
+import Settings from '../components/Settings.vue'
+import Counter from '../components/Counter.vue'
 
 const routes = [
   {
@@ -15,6 +17,12 @@ const routes = [
         path: '/home',
         name: 'Home',
         component: Home,
+        children: [
+          {
+            path: 'counter',
+            component: Counter,
+          },
+        ],
       },
       {
         path: '/system',
@@ -27,6 +35,11 @@ const routes = [
         component: About,
       },
     ],
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
   },
   {
     path: '/:pathMatch(.*)*',
