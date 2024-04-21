@@ -80,6 +80,13 @@ function createWindow() {
   //     'http://localhost:3000' :
   //     join(__dirname, '../../index.html')
   // );
+
+  // make it so if the main window closes, the settings window will close as well
+  mainWindow.on('closed', function () {
+    if (settingsWindow) {
+      settingsWindow.close()
+    }
+  })
 }
 
 // This method will be called when Electron has finished
