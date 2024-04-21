@@ -108,6 +108,7 @@ app.on('window-all-closed', () => {
 
 function openSettingsWindow() {
   if (settingsWindow) {
+    settingsWindow.focus()
     return
   }
 
