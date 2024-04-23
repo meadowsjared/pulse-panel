@@ -45,14 +45,5 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-interface Versions {
-  chrome: string;
-  electron: string;
-  node: string;
-  platform: string;
-  vue: string;
-  pinia: string;
-}
-
-const versions = ref((window as Window & { electron?: { versions: Versions } }).electron?.versions);
+const versions = ref(window.electron.versions);
 </script>
