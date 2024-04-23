@@ -58,7 +58,7 @@
   "dependencies": {
     "@tailwindcss/forms": "^0.5.7",
     "tailwindcss": "^3.4.3",
-    "vue": "^3.4.23",
+    "vue": "^3.4.24",
     "vue-inline-svg": "^3.1.2"
   },
   "devDependencies": {
@@ -77,6 +77,6 @@
     "unplugin-vue-components": "^0.26.0",
     "vite": "^4.5.3",
     "vue-router": "^4.3.2",
-    "vue-tsc": "^2.0.13"
+    "vue-tsc": "^2.0.14"
   }
 }
