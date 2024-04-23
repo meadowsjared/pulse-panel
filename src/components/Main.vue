@@ -1,9 +1,3 @@
-<script setup lang="ts">
-function openURL(url: string) {
-  window.open(url);
-}
-</script>
-
 <template>
   <div class="e-nuxt-container">
     <h1 class="title text-3xl font-semibold text-arubaGreen pt-5">Electron Test App</h1>
@@ -18,12 +12,37 @@ function openURL(url: string) {
       </div>
     </div>
     <div class="e-nuxt-links">
-      <div class="e-nuxt-button" @click="openURL('https://github.com/michalzaq12/electron-nuxt')">Github</div>
-      <div class="e-nuxt-button" @click="openURL('https://nuxtjs.org/guide')">Nuxt.js</div>
-      <div class="e-nuxt-button" @click="openURL('https://electronjs.org/docs')">Electron.js</div>
+      <div
+        class="e-nuxt-button"
+        @click="openURL('https://github.com/michalzaq12/electron-nuxt')"
+      >
+        Github
+      </div>
+      <div class="e-nuxt-button" @click="openURL('https://nuxtjs.org/guide')">
+        Nuxt.js
+      </div>
+      <div class="e-nuxt-button" @click="openURL('https://electronjs.org/docs')">
+        Electron.js
+      </div>
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { ref } from "vue"
+import { useSettingsStore } from "../store/settings"
+
+const outputDeviceId = ref<string | null>(null)
+
+const settingsStore = useSettingsStore()
+settingsStore.fetchOutputDeviceId().then((outputDevice) => {
+  outputDeviceId.value = outputDevice
+})
+
+function openURL(url: string) {
+  window.open(url)
+}
+</script>
 
 <style>
 .e-nuxt-container {
