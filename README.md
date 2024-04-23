@@ -35,3 +35,21 @@ pnpm preview
 ```bash
 pnpm build
 ```
+
+[**Angular convention**](https://github.com/conventional-changelog/commitlint/tree/master/@commitlint/config-conventional#type-enum)
+
+Commit messages should have types according to commitlint-config-conventional can be:
+
+* build
+* chore
+* ci
+* docs
+* feat
+* fix
+* perf
+* refactor
+* revert
+* style
+* test
+
+For more information, see the [commitlint documentation](https://commitlint.js.org/#/reference-rules?id=type-enum).
