@@ -11,10 +11,12 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 })
 
-const { contextBridge } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electron', {
   // note: these are defined in /@types/electron-window.d.ts
+  readSetting: key => ipcRenderer.invoke('read-setting', key),
+  saveSetting: (key, value) => ipcRenderer.invoke('save-setting', key, value),
   versions: {
     node: process.versions.node,
     chrome: process.versions.chrome,

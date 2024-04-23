@@ -1,5 +1,6 @@
 const { join } = require('path')
-const { app, BrowserWindow, Menu } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain } = require('electron')
+const settings = require('../settings')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
@@ -25,11 +26,7 @@ app.whenReady().then(() => {
         { type: 'separator' },
         {
           label: 'Settings',
-          click: () => {
-            console.log('Opening settings...')
-            // Here you can add code to open your settings window or panel
-            openSettingsWindow()
-          },
+          click: openSettingsWindow,
         },
       ],
     },
@@ -53,6 +50,9 @@ app.whenReady().then(() => {
 
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
+  // Expose a method to read and save settings
+  ipcMain.handle('read-setting', (_, settingKey) => settings.readSetting(settingKey))
+  ipcMain.handle('save-setting', (_, settingKey, settingValue) => settings.saveSetting(settingKey, settingValue))
 })
 
 function createWindow() {
@@ -121,11 +121,12 @@ function openSettingsWindow() {
 
   settingsWindow = new BrowserWindow({
     frame: false,
-    height: 400,
+    height: 120,
     resizable: false,
     width: 600,
     webPreferences: {
-      experimentalFeatures: true,
+      preload: join(__dirname, '../preload/preload.js'),
+      nodeIntegration: true,
     },
   })
 
