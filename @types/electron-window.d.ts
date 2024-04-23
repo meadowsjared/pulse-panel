@@ -14,5 +14,3 @@ declare global {
     };
   }
 }
-
-export {}; // This line makes sure the file is treated as a module.
