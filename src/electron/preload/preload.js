@@ -14,6 +14,7 @@ window.addEventListener('DOMContentLoaded', () => {
 const { contextBridge } = require('electron')
 
 contextBridge.exposeInMainWorld('electron', {
+  // note: these are defined in /@types/electron-window.d.ts
   versions: {
     node: process.versions.node,
     chrome: process.versions.chrome,
