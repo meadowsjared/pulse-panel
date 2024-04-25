@@ -1,17 +1,19 @@
 <template>
-  <div class="flex justify-center items-center">
+  <div class="text flex justify-center items-center">
     count is: {{ counterStore.count }}
     <div class="flex gap-2 ml-2">
       <button
         type="button"
         @click="counterStore.add()"
-        class="bg-arubaGreen rounded px-3 py-1 my-4 text-white active:bg-greenSeduction active:text-neutralLight-400">
+        class="bg-arubaGreen rounded px-3 py-1 my-4 text-white active:bg-greenSeduction active:text-neutralLight-400"
+      >
         <inline-svg :src="addIcon" class="w-6 h-6" />
       </button>
       <button
         type="button"
         @click="counterStore.subtract()"
-        class="bg-arubaGreen rounded px-3 py-1 my-4 text-white active:bg-greenSeduction active:text-neutralLight-400">
+        class="bg-arubaGreen rounded px-3 py-1 my-4 text-white active:bg-greenSeduction active:text-neutralLight-400"
+      >
         <inline-svg :src="subtractIcon" class="w-6 h-6" />
       </button>
     </div>
@@ -19,19 +21,19 @@
 </template>
 
 <script setup lang="ts">
-import InlineSvg from 'vue-inline-svg'
-import addIcon from '../assets/images/streamlinehq-add-thick-interface-essential-50.svg'
-import subtractIcon from '../assets/images/streamlinehq-subtract-thick-interface-essential-50.svg'
-import { useCounterStore } from '../store/counter'
+import InlineSvg from "vue-inline-svg"
+import addIcon from "../assets/images/streamlinehq-add-thick-interface-essential-50.svg"
+import subtractIcon from "../assets/images/streamlinehq-subtract-thick-interface-essential-50.svg"
+import { useCounterStore } from "../store/counter"
 
 /**
  * @see {@code browser[:version][:platform]}
  */
-const junk = 'things'
+const junk = "things"
 
-type Things = 'junk'
+type Things = "junk"
 
-const things = 'junk'
+const things = "junk"
 
 console.log(things, junk)
 
@@ -49,7 +51,7 @@ class Foo {
 }
 
 function foo(bar: Things): string {
-  return '2'
+  return "2"
 }
 
 /**
@@ -62,7 +64,7 @@ function foo(bar: Things): string {
  * ```
  */
 function doStuff(things: Things) {
-  console.log('stuff')
+  console.log("stuff")
 }
 
 function openURL(url: string) {
@@ -71,7 +73,3 @@ function openURL(url: string) {
 
 const counterStore = useCounterStore()
 </script>
-
-<style scoped>
-/* Add your component styles here */
-</style>
