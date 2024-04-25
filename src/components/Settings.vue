@@ -51,7 +51,6 @@ import CloseIcon from "../assets/images/close.svg"
 import { useSettingsStore } from "../store/settings"
 import { useSoundStore } from "../store/sound"
 import SpeakerIcon from "../assets/images/speaker.svg"
-import { ipcMain } from "electron"
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -235,10 +234,8 @@ input[type="checkbox"]:focus {
   color: var(--accent-text-color);
   display: flex;
   align-items: center;
-  justify-content: space-between;
   -webkit-app-region: drag;
-  position: sticky;
-  top: 0;
+  position: relative;
 }
 
 .close-button {
