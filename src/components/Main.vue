@@ -1,11 +1,11 @@
 <template>
-  <div class="e-nuxt-container">
-    <h1 class="title text-3xl font-semibold text-arubaGreen pt-5">Electron Test App</h1>
+  <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
+    <h1 class="title text-3xl font-semibold pt-5">Electron Test App</h1>
     <div class="e-nuxt-content">
       <div class="e-nuxt-logo">
         <img style="max-width: 100%" src="../assets/electron.png" alt="electron icon" />
       </div>
-      <div class="e-nuxt-system-info bg-gray-100">
+      <div class="e-nuxt-system-info">
         <Header msg="test" />
         <Counter />
         <router-view />
@@ -33,10 +33,20 @@ import { ref } from "vue"
 import { useSettingsStore } from "../store/settings"
 
 const outputDeviceId = ref<string | null>(null)
-
+const darkMode = ref(true)
 const settingsStore = useSettingsStore()
-settingsStore.fetchOutputDeviceId().then((outputDevice) => {
+
+window.electron?.onDarkModeToggle((value: boolean) => {
+  if (settingsStore.darkMode === value) return
+  darkMode.value = value
+  settingsStore.darkMode = value
+})
+
+settingsStore.fetchStringSetting("outputDeviceId").then((outputDevice) => {
   outputDeviceId.value = outputDevice
+})
+settingsStore.fetchBooleanSetting("darkMode", true).then((darkModeValue) => {
+  darkMode.value = darkModeValue
 })
 
 function openURL(url: string) {
@@ -44,10 +54,10 @@ function openURL(url: string) {
 }
 </script>
 
-<style>
+<style scoped>
 .e-nuxt-container {
   min-height: calc(100vh - 50px);
-  background: linear-gradient(to right, #ece9e6, #ffffff);
+  background: var(--background-color);
   font-family: Helvetica, sans-serif;
 }
 
@@ -64,6 +74,7 @@ function openURL(url: string) {
 }
 
 .e-nuxt-system-info {
+  background: var(--background-color);
   padding: 20px;
   border-top: 1px solid #397c6d;
   border-bottom: 1px solid #397c6d;
@@ -76,7 +87,7 @@ function openURL(url: string) {
 }
 
 .e-nuxt-button {
-  color: #364758;
+  color: var(--link-color);
   padding: 5px 20px;
   border: 1px solid #397c6d;
   margin: 0 20px;
