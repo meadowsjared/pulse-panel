@@ -23,10 +23,6 @@
   background-color: var(--alt-bg-color);
 }
 
-a {
-  color: var(--alt-text-color);
-}
-
 nav {
   width: 100%;
   display: flex;
@@ -41,6 +37,7 @@ nav div {
 }
 
 a {
+  color: var(--alt-text-color);
   font-family: Helvetica, sans-serif;
   font-size: 1rem;
   font-weight: 100;
