@@ -168,7 +168,6 @@ option {
   padding: 0.5rem;
   cursor: pointer;
   width: 3rem;
-  padding-left: 0rem;
   height: 2.625rem;
   border: 1px solid var(--text-color);
   display: flex;

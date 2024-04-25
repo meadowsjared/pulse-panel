@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg"
-     viewBox="0 0 18 41"
-     fill="none"
+     viewBox="8 0 28.758596 39.5966"
+     fill="currentColor"
      stroke="currentColor"
      stroke-width="1"
      stroke-linecap="round"
      stroke-linejoin="round">
-  <path d="m1 17h4l5-5v18l-5-5h-4zm12-8q7 12 0 24 7-12 0-24zm4-4q11 16 0 32 11-16 0-32zm4-4q15 20 1 39 14-19-1-39z" />
+  <path d="m 8.5,16.3 h 4 l 5,-5 v 18 l -5,-5 h -4 z m 12,-8 q 7,12 0,24 7,-12 0,-24 z m 4,-4 q 11,16 0,32 11,-16 0,-32 z m 4,-4 q 15,20 1,39 14,-19 -1,-39 z" />
 </svg>
