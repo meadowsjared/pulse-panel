@@ -7,6 +7,9 @@ interface State {
   allowOverlappingSound: boolean
 }
 
+type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
+type StringSettings = 'outputDeviceId'
+
 export const useSettingsStore = defineStore('settings', {
   state: (): State => ({
     outputDeviceId: null,
@@ -18,32 +21,85 @@ export const useSettingsStore = defineStore('settings', {
       const devices = await navigator.mediaDevices.enumerateDevices()
       return devices.filter(device => device.kind === 'audiooutput')
     },
-    async fetchOutputDeviceId(): Promise<string> {
-      const electron: Settings = window.electron
-      const outputDevice = await electron.readSetting('outputDeviceId')
-      if (!outputDevice) {
-        const devices = await navigator.mediaDevices.enumerateDevices()
-        const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')
-        const defaultDevice = audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default'
-        await electron.saveSetting('outputDeviceId', defaultDevice)
-        this.outputDeviceId = defaultDevice // default to the first device
+    /**
+     * Fetch a string setting from the store
+     * @param key the key it's saved under
+     * @param defaultValue the default value if it's not set, default to ''
+     * @returns the value of the setting
+     */
+    async fetchStringSetting(key: StringSettings, defaultValue: string = ''): Promise<string> {
+      const electron: Settings | undefined = window.electron
+      const returnedString = await electron?.readSetting?.(key)
+      if (returnedString === undefined || typeof returnedString !== 'string') {
+        // automagically set the defaultValue if key is 'outputDeviceId'
+        if (key === 'outputDeviceId') {
+          const devices = await navigator.mediaDevices.enumerateDevices()
+          const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')
+          defaultValue = audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default'
+        }
+        await electron?.saveSetting?.(key, defaultValue)
+        this[key] = defaultValue
       } else {
-        this.outputDeviceId = outputDevice // use the saved device
+        this[key] = returnedString
       }
-      return this.outputDeviceId || ''
+
+      return this[key] || ''
     },
-    async setOutputDeviceId(deviceId: string): Promise<boolean> {
-      const electron: Settings = window.electron
-      // Check if the device exists
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const device = devices.find(device => device.deviceId === deviceId)
-      if (!device) {
-        console.error('Device not found')
-        return false
+    /**
+     * Save a string setting to the store
+     * and validate the value if key is outputDeviceId
+     * @param key the key it's saved under
+     * @param value the value to save
+     * @returns true if saved successfully
+     */
+    async saveString(key: StringSettings, value: string): Promise<boolean> {
+      const electron: Settings | undefined = window.electron
+      if (key === 'outputDeviceId') {
+        // Check if the device exists
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const device = devices.find(device => device.deviceId === value)
+        if (!device) {
+          console.error('Device not found')
+          return false // failed to save
+        }
       }
-      await electron.saveSetting('outputDeviceId', deviceId)
-      this.outputDeviceId = deviceId
-      return true
+      await electron?.saveSetting?.(key, value)
+      this[key] = value
+      return true // saved successfully
+    },
+    /**
+     * Fetch a boolean setting from the store
+     * @param key the key it's saved under
+     * @param defaultValue the default value if it's not set, default to false
+     * @returns the value of the setting
+     */
+    async fetchBooleanSetting(key: BooleanSettings, defaultValue: boolean = false): Promise<boolean> {
+      const electron: Settings | undefined = window.electron
+      const returnedBoolean = await electron?.readSetting?.(key)
+      if (returnedBoolean === undefined) {
+        await electron?.saveSetting?.(key, defaultValue)
+        this[key] = defaultValue
+      } else {
+        this[key] = !!returnedBoolean // default to true
+      }
+
+      return this[key]
+    },
+    /**
+     * Save a boolean setting to the store
+     * @param key the key it's saved under
+     * @param value the value to save
+     * @returns true if saved successfully
+     */
+    async saveBoolean(key: BooleanSettings, value: boolean): Promise<boolean> {
+      const electron: Settings | undefined = window.electron
+      await electron?.saveSetting(key, value)
+      this[key] = value
+      if (key === 'darkMode') {
+        // notify the main process to toggle dark mode
+        window.electron?.toggleDarkMode(value)
+      }
+      return true // saved successfully
     },
   },
 })
