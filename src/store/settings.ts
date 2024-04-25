@@ -3,11 +3,15 @@ import { Settings } from '../../@types/electron-window'
 
 interface State {
   outputDeviceId: string | null
+  darkMode: boolean
+  allowOverlappingSound: boolean
 }
 
 export const useSettingsStore = defineStore('settings', {
   state: (): State => ({
     outputDeviceId: null,
+    darkMode: true,
+    allowOverlappingSound: false,
   }),
   actions: {
     async getOutputDevices(): Promise<MediaDeviceInfo[]> {
