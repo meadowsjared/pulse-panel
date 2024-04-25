@@ -53,6 +53,11 @@ app.whenReady().then(() => {
   // Expose a method to read and save settings
   ipcMain.handle('read-setting', (_, settingKey) => settings.readSetting(settingKey))
   ipcMain.handle('save-setting', (_, settingKey, settingValue) => settings.saveSetting(settingKey, settingValue))
+  ipcMain.on('toggle-dark-mode', (_, value) => {
+    BrowserWindow.getAllWindows().forEach(window => {
+      window.webContents.send('dark-mode-updated', value)
+    })
+  })
 })
 
 function createWindow() {

@@ -17,6 +17,12 @@ contextBridge.exposeInMainWorld('electron', {
   // note: these are defined in /@types/electron-window.d.ts
   readSetting: key => ipcRenderer.invoke('read-setting', key),
   saveSetting: (key, value) => ipcRenderer.invoke('save-setting', key, value),
+  toggleDarkMode: value => {
+    ipcRenderer.send('toggle-dark-mode', value)
+  },
+  onDarkModeToggle: callback => {
+    ipcRenderer.on('dark-mode-updated', (_, value) => callback(value))
+  },
   versions: {
     node: process.versions.node,
     chrome: process.versions.chrome,

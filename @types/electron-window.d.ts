@@ -10,12 +10,14 @@ export interface Versions {
 }
 
 export interface Settings {
-  readSetting: (key: string) => Promise<string>
-  saveSetting: (key: string, value: string) => Promise<void>
+  readSetting: (key: string) => Promise<string | boolean | number | undefined>
+  saveSetting: (key: string, value: string | boolean | number) => Promise<boolean>
+  toggleDarkMode: (value: boolean) => void
+  onDarkModeToggle: (callback: (value: boolean) => void) => void
 }
 
 declare global {
   interface Window {
-    electron: Settings & Versions
+    electron?: Settings & Versions
   }
 }
