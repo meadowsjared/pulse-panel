@@ -20,7 +20,11 @@
 .main-header {
   height: 50px;
   display: flex;
-  background-color: #364758;
+  background-color: var(--alt-bg-color);
+}
+
+a {
+  color: var(--alt-text-color);
 }
 
 nav {
@@ -38,7 +42,6 @@ nav div {
 
 a {
   font-family: Helvetica, sans-serif;
-  color: white;
   font-size: 1rem;
   font-weight: 100;
   text-decoration: underline;
