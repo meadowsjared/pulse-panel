@@ -1,41 +1,41 @@
 <template>
   <div>
-    <div class="text-flintPurple text-2xl">Information</div>
+    <h1 class="text-2xl">Information</h1>
     <div class="mt-2">
       <div class="flex mb-2">
-        <div class="text-neutralDark-400 mr-2">Pinia:</div>
-        <div class="font-bold text-neutralDark-500">
-          {{ versions?.pinia ?? 'N/A' }}
+        <div class="mr-2">Pinia:</div>
+        <div class="font-bold">
+          {{ versions?.pinia ?? "N/A" }}
         </div>
       </div>
       <div class="flex mb-2">
-        <div class="text-neutralDark-400 mr-2">Vue.js:</div>
-        <div class="font-bold text-neutralDark-500">
-          {{ versions?.vue ?? 'N/A' }}
+        <div class="mr-2">Vue.js:</div>
+        <div class="font-bold">
+          {{ versions?.vue ?? "N/A" }}
         </div>
       </div>
       <div class="flex mb-2">
-        <div class="text-neutralDark-400 mr-2">Electron:</div>
-        <div class="font-bold text-neutralDark-500">
-          {{ versions?.electron ?? 'N/A' }}
+        <div class="mr-2">Electron:</div>
+        <div class="font-bold">
+          {{ versions?.electron ?? "N/A" }}
         </div>
       </div>
       <div class="flex mb-2">
-        <div class="text-neutralDark-400 mr-2">Node:</div>
-        <div class="font-bold text-neutralDark-500">
-          {{ versions?.node ?? 'N/A' }}
+        <div class="mr-2">Node:</div>
+        <div class="font-bold">
+          {{ versions?.node ?? "N/A" }}
         </div>
       </div>
       <div class="flex mb-2">
-        <div class="text-neutralDark-400 mr-2">Chrome:</div>
-        <div class="font-bold text-neutralDark-500">
-          {{ versions?.chrome ?? 'N/A' }}
+        <div class="mr-2">Chrome:</div>
+        <div class="font-bold">
+          {{ versions?.chrome ?? "N/A" }}
         </div>
       </div>
       <div class="flex mb-2">
-        <div class="text-neutralDark-400 mr-2">Platform:</div>
-        <div class="font-bold text-neutralDark-500">
-          {{ versions?.platform ?? 'N/A' }}
+        <div class="mr-2">Platform:</div>
+        <div class="font-bold">
+          {{ versions?.platform ?? "N/A" }}
         </div>
       </div>
     </div>
@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue"
 
-const versions = ref(window.electron.versions);
+const versions = ref(window.electron?.versions)
 </script>
