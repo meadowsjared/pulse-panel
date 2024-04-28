@@ -24,7 +24,7 @@
           :class="{ playingAudio: soundStore.playingAudio }"
           class="play-sound-button"
           v-if="outputDeviceId"
-          @click="soundStore.playSound(outputDeviceId)"
+          @click="soundStore.playSound(null, outputDeviceId)"
         >
           <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
         </button>
@@ -86,7 +86,7 @@ async function optionSelected(payload: Event) {
   const deviceId = payload.target?.value
   if (await settingsStore.saveString("outputDeviceId", deviceId)) {
     outputDeviceId.value = deviceId
-    soundStore.playSound(deviceId)
+    soundStore.playSound(null, deviceId)
   }
 }
 
