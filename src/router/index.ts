@@ -1,33 +1,25 @@
 import { createWebHistory, createRouter } from 'vue-router'
-import Home from '../components/Home.vue'
 import About from '../components/About.vue'
-import SystemInformation from '../components/SystemInformation.vue'
 import Main from '../components/Main.vue'
 import Settings from '../components/Settings.vue'
-import Counter from '../components/Counter.vue'
+import Soundboard from '../components/Soundboard.vue'
 
 const routes = [
   {
     path: '/',
     name: 'index',
     component: Main,
-    redirect: '/home',
+    redirect: '/soundboard', // Set /soundboard as the default page
     children: [
       {
-        path: '/home',
-        name: 'Home',
-        component: Home,
-        children: [
-          {
-            path: 'counter',
-            component: Counter,
-          },
-        ],
+        path: '/soundboard',
+        name: 'Soundboard',
+        component: Soundboard,
       },
       {
-        path: '/system',
-        name: 'System',
-        component: SystemInformation,
+        path: '/settings',
+        name: 'Settings',
+        component: Settings,
       },
       {
         path: '/about',
@@ -37,13 +29,8 @@ const routes = [
     ],
   },
   {
-    path: '/settings',
-    name: 'Settings',
-    component: Settings,
-  },
-  {
     path: '/:pathMatch(.*)*',
-    redirect: '/system',
+    redirect: '/soundboard',
   },
 ]
 
