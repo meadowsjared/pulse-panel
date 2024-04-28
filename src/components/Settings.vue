@@ -2,21 +2,13 @@
   <div class="main" :class="{ darkMode: settingsStore.darkMode }">
     <div class="bar">
       <h1 class="mx-auto">Settings</h1>
-      <inline-svg
-        :src="CloseIcon"
-        class="w-6 h-6 cursor-pointer close-button"
-        @click="close"
-      />
+      <inline-svg :src="CloseIcon" class="w-6 h-6 cursor-pointer close-button" @click="close" />
     </div>
     <div class="audio-output-devices">
       <h2>Audio Output Devices:</h2>
       <div class="select-line">
         <select @change="optionSelected" v-model="outputDeviceId">
-          <option
-            v-for="device in audioOutputDevices"
-            :key="device.deviceId"
-            :value="device.deviceId"
-          >
+          <option v-for="device in audioOutputDevices" :key="device.deviceId" :value="device.deviceId">
             {{ device.label }}
           </option>
         </select>
@@ -24,8 +16,7 @@
           :class="{ playingAudio: soundStore.playingAudio }"
           class="play-sound-button"
           v-if="outputDeviceId"
-          @click="soundStore.playSound(null, outputDeviceId)"
-        >
+          @click="soundStore.playSound(null, outputDeviceId)">
           <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
         </button>
       </div>
@@ -37,20 +28,18 @@
           v-model="allowOverlappingSound"
           @input="updateAllowOverlappingSound"
       /></label>
-      <label
-        >Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode"
-      /></label>
+      <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
-import InlineSvg from "vue-inline-svg"
-import CloseIcon from "../assets/images/close.svg"
-import { useSettingsStore } from "../store/settings"
-import { useSoundStore } from "../store/sound"
-import SpeakerIcon from "../assets/images/speaker.svg"
+import { onMounted, ref } from 'vue'
+import InlineSvg from 'vue-inline-svg'
+import CloseIcon from '../assets/images/close.svg'
+import { useSettingsStore } from '../store/settings'
+import { useSoundStore } from '../store/sound'
+import SpeakerIcon from '../assets/images/speaker.svg'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -66,25 +55,23 @@ window.electron?.onDarkModeToggle((value: boolean) => {
 })
 
 onMounted(async () => {
-  settingsStore.fetchStringSetting("outputDeviceId").then((outputDevice) => {
+  settingsStore.fetchStringSetting('outputDeviceId').then(outputDevice => {
     outputDeviceId.value = outputDevice
   })
-  settingsStore.getOutputDevices().then((devices) => {
+  settingsStore.getOutputDevices().then(devices => {
     audioOutputDevices.value = devices
   })
-  allowOverlappingSound.value = await settingsStore.fetchBooleanSetting(
-    "allowOverlappingSound"
-  )
-  darkMode.value = await settingsStore.fetchBooleanSetting("darkMode", true) // initialize it to the saved value (default to true)
+  allowOverlappingSound.value = await settingsStore.fetchBooleanSetting('allowOverlappingSound')
+  darkMode.value = await settingsStore.fetchBooleanSetting('darkMode', true) // initialize it to the saved value (default to true)
 })
 
 async function optionSelected(payload: Event) {
   if (!(payload.target instanceof HTMLSelectElement)) {
-    console.debug("payload.target", payload.target)
-    throw new Error("Event target is not a select element.")
+    console.debug('payload.target', payload.target)
+    throw new Error('Event target is not a select element.')
   }
   const deviceId = payload.target?.value
-  if (await settingsStore.saveString("outputDeviceId", deviceId)) {
+  if (await settingsStore.saveString('outputDeviceId', deviceId)) {
     outputDeviceId.value = deviceId
     soundStore.playSound(null, deviceId)
   }
@@ -92,18 +79,18 @@ async function optionSelected(payload: Event) {
 
 function updateDarkMode(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) {
-    console.debug("payload.target", event.target)
-    throw new Error("Event target is not an input element.")
+    console.debug('payload.target', event.target)
+    throw new Error('Event target is not an input element.')
   }
-  settingsStore.saveBoolean("darkMode", !!event.target.checked)
+  settingsStore.saveBoolean('darkMode', !!event.target.checked)
 }
 
 function updateAllowOverlappingSound(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) {
-    console.debug("payload.target", event.target)
-    throw new Error("Event target is not an input element.")
+    console.debug('payload.target', event.target)
+    throw new Error('Event target is not an input element.')
   }
-  settingsStore.saveBoolean("allowOverlappingSound", !!event.target.checked)
+  settingsStore.saveBoolean('allowOverlappingSound', !!event.target.checked)
 }
 
 function close() {
@@ -193,7 +180,7 @@ option {
   color: var(--background-color);
 }
 
-label:has(input[type="checkbox"]) {
+label:has(input[type='checkbox']) {
   display: flex;
   width: max-content;
   margin: 0.25rem auto 0 auto;
@@ -215,22 +202,22 @@ label:focus-within {
   outline-offset: 2px;
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   border-radius: 0.4rem;
   padding: 0.75rem;
   cursor: pointer;
 }
-input[type="checkbox"]:checked {
+input[type='checkbox']:checked {
   background-color: var(--link-color);
 }
-input[type="checkbox"]:active,
-input[type="checkbox"]:focus {
+input[type='checkbox']:active,
+input[type='checkbox']:focus {
   --tw-ring-shadow: none;
 }
 
 .bar {
   background: var(--alt-bg-color);
-  color: var(--accent-text-color);
+  color: var(--alt-light-text-color);
   display: flex;
   align-items: center;
   -webkit-app-region: drag;
