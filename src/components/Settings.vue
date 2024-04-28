@@ -2,7 +2,6 @@
   <div class="main" :class="{ darkMode: settingsStore.darkMode }">
     <div class="bar">
       <h1 class="mx-auto">Settings</h1>
-      <inline-svg :src="CloseIcon" class="w-6 h-6 cursor-pointer close-button" @click="close" />
     </div>
     <div class="audio-output-devices">
       <h2>Audio Output Devices:</h2>
@@ -36,7 +35,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import InlineSvg from 'vue-inline-svg'
-import CloseIcon from '../assets/images/close.svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import SpeakerIcon from '../assets/images/speaker.svg'
@@ -91,10 +89,6 @@ function updateAllowOverlappingSound(event: Event) {
     throw new Error('Event target is not an input element.')
   }
   settingsStore.saveBoolean('allowOverlappingSound', !!event.target.checked)
-}
-
-function close() {
-  window.close()
 }
 </script>
 
@@ -224,13 +218,6 @@ input[type='checkbox']:focus {
   position: relative;
 }
 
-.close-button {
-  cursor: pointer;
-  position: absolute;
-  right: 0.5rem;
-  -webkit-app-region: no-drag;
-}
-
 .scroll-remaining {
   overflow-y: auto;
   margin-top: 0.5rem;
@@ -239,6 +226,7 @@ input[type='checkbox']:focus {
 
 .main {
   height: 100vh;
+  width: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
