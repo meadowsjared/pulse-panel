@@ -7,20 +7,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { useSettingsStore } from "../store/settings";
-import { Sound } from "../../@types/sound";
+import { ref } from 'vue'
+import { useSettingsStore } from '../store/settings'
+import { Sound } from '../../@types/sound'
 
-const sounds = ref<(Sound | null)[]>([null]);
+const sounds = ref<(Sound | null)[]>([null])
 
-const settingsStore = useSettingsStore();
-settingsStore.fetchStringSetting("outputDeviceId").then((outputDevice) => {
+const settingsStore = useSettingsStore()
+settingsStore.fetchStringSetting('outputDeviceId').then(outputDevice => {
   // outputDeviceId.value = outputDevice
-});
+})
 
 function addButtonIfNull() {
   if (sounds.value[sounds.value.length - 1] !== null) {
-    sounds.value.push(null);
+    sounds.value.push(null)
   }
 }
 </script>
