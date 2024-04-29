@@ -31,6 +31,7 @@ settingsStore.fetchStringSetting('outputDeviceId').then(outputDevice => {
 settingsStore.fetchBooleanSetting('darkMode', true).then(darkModeValue => {
   darkMode.value = darkModeValue
 })
+settingsStore.fetchBooleanSetting('allowOverlappingSound')
 
 function openURL(url: string) {
   window.open(url)
