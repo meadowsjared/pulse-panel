@@ -5,66 +5,59 @@
     v-on:drop="handleFileDrop"
     v-on:dragover.prevent
     :class="{ 'playing-sound': playingSound }"
-    class="sound-button"
-  >
+    class="sound-button">
     <span>{{ modelValue.name }}</span>
   </button>
-  <button
-    @click="addSound"
-    v-else
-    v-on:drop="handleFileDrop"
-    v-on:dragover.prevent
-    class="sound-button add-button"
-  >
+  <button @click="addSound" v-else v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
     <inline-svg :src="Plus" />
   </button>
 </template>
 
 <script setup lang="ts">
-import { useSoundStore } from "../store/sound";
-import { Sound } from "../../@types/sound";
-import { ref } from "vue";
-import Plus from "../assets/images/plus.svg";
-import InlineSvg from "vue-inline-svg";
+import { useSoundStore } from '../store/sound'
+import { Sound } from '../../@types/sound'
+import { ref } from 'vue'
+import Plus from '../assets/images/plus.svg'
+import InlineSvg from 'vue-inline-svg'
 
 // Define the props
 const props = withDefaults(
   defineProps<{
-    modelValue: Sound | null;
+    modelValue: Sound | null
   }>(),
   {
     modelValue: null,
   }
-);
+)
 
 // define the emits
 const emits = defineEmits<{
-  (event: "update:modelValue", value: Sound): void;
-}>();
+  (event: 'update:modelValue', value: Sound): void
+}>()
 
 // useModel(props, "modelValue");
-const playingSound = ref(false);
-const numSoundsPlaying = ref(0);
+const playingSound = ref(false)
+const numSoundsPlaying = ref(0)
 
-const soundStore = useSoundStore();
+const soundStore = useSoundStore()
 
 function playSound() {
-  playingSound.value = true;
-  numSoundsPlaying.value++;
+  playingSound.value = true
+  numSoundsPlaying.value++
   soundStore.playSound(props.modelValue?.audioUrl ?? null).then(() => {
-    numSoundsPlaying.value--;
+    numSoundsPlaying.value--
     if (numSoundsPlaying.value < 1) {
-      playingSound.value = false;
+      playingSound.value = false
     }
-  });
+  })
 }
 
 function addSound() {
   const newSound: Sound = {
-    name: "New Sound",
+    name: 'New Sound',
     audioUrl: null,
-  };
-  emits("update:modelValue", newSound);
+  }
+  emits('update:modelValue', newSound)
 }
 
 /**
@@ -72,21 +65,21 @@ function addSound() {
  * @param event The drag event
  */
 function handleFileDrop(event: DragEvent) {
-  event.preventDefault();
-  const file = event.dataTransfer?.files[0];
-  if (!file) return;
+  event.preventDefault()
+  const file = event.dataTransfer?.files[0]
+  if (!file) return
   if (props.modelValue === null) {
     if (file) {
       const newSound = {
         name: stripFileExtension(file.name),
         audioUrl: URL.createObjectURL(file),
-      };
-      emits("update:modelValue", newSound);
+      }
+      emits('update:modelValue', newSound)
     }
-    return;
+    return
   }
-  const newSound = { ...props.modelValue, audioUrl: URL.createObjectURL(file) };
-  emits("update:modelValue", newSound);
+  const newSound = { ...props.modelValue, audioUrl: URL.createObjectURL(file) }
+  emits('update:modelValue', newSound)
 }
 
 /**
@@ -94,7 +87,7 @@ function handleFileDrop(event: DragEvent) {
  * @param fileName The name of the file
  */
 function stripFileExtension(fileName: string) {
-  return fileName.replace(/\.[^/.]+$/, "");
+  return fileName.replace(/\.[^/.]+$/, '')
 }
 </script>
 
