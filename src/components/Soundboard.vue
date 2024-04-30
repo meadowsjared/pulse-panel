@@ -1,7 +1,7 @@
 <template>
   <div class="soundboard">
-    <div v-for="(sound, i) in sounds" :key="sound?.audioUrl ?? 'new'">
-      <sound-button v-model="sounds[i]" @update:modelValue="addButtonIfNull" />
+    <div v-for="(sound, i) in sounds" :key="sound?.id">
+      <sound-button v-model="sounds[i]" @update:modelValue="handleSoundsUpdate" />
     </div>
   </div>
 </template>
@@ -10,18 +10,36 @@
 import { ref } from 'vue'
 import { useSettingsStore } from '../store/settings'
 import { Sound } from '../../@types/sound'
+import { v4 } from 'uuid'
 
-const sounds = ref<(Sound | null)[]>([null])
+const sounds = ref<Sound[]>([])
 
 const settingsStore = useSettingsStore()
-settingsStore.fetchStringSetting('outputDeviceId').then(outputDevice => {
-  // outputDeviceId.value = outputDevice
+settingsStore.fetchStringSetting('outputDeviceId')
+settingsStore.fetchBooleanSetting('darkMode', true)
+settingsStore.fetchArraySetting('sounds').then(soundsArray => {
+  sounds.value = soundsArray
 })
 
-function addButtonIfNull() {
-  if (sounds.value[sounds.value.length - 1] !== null) {
-    sounds.value.push(null)
+function handleSoundsUpdate() {
+  // add a new sound if sound is null
+  if (sounds.value[sounds.value.length - 1].name !== undefined) {
+    sounds.value.push({
+      id: v4(),
+    })
   }
+  settingsStore.saveArray('sounds', stripAudioUrls(sounds.value))
+  // console.log('sounds', JSON.stringify(sounds.value, null, 2))
+}
+
+function stripAudioUrls(pSounds: Sound[]) {
+  return pSounds.map(sound => {
+    return {
+      name: sound.name,
+      path: sound.path,
+      id: sound.id,
+    }
+  })
 }
 </script>
 
