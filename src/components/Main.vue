@@ -2,11 +2,18 @@
   <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
     <side-bar>
       <div class="top-buttons">
-        <router-link to="/soundboard" class="menu"> <inline-svg :src="Speaker" /> Soundbar </router-link>
-        <router-link to="/settings" class="menu"> <inline-svg :src="SettingsGear" /> Settings</router-link>
+        <router-link to="/soundboard" title="Soundboard" class="menu">
+          <inline-svg :src="Speaker" /> Soundbar
+        </router-link>
+        <router-link to="/settings" title="Settings" class="menu">
+          <inline-svg :src="SettingsGear" /> Settings</router-link
+        >
       </div>
-      <button class="menu" @click="changeMode">
-        <inline-svg class="menu" :src="settingsStore.displayMode === 'edit' ? EditIcon : PlayIcon" />
+      <button
+        class="menu"
+        @click="changeMode"
+        :title="settingsStore.displayMode === 'edit' ? 'click to go back to playing' : 'click to start editing'">
+        <inline-svg :src="settingsStore.displayMode === 'edit' ? EditIcon : PlayIcon" />
       </button>
     </side-bar>
     <router-view />
@@ -55,7 +62,7 @@ function changeMode() {
 }
 .menu svg {
   width: 40px;
-  aspect-ratio: 1;
+  height: 40px;
 }
 
 .top-buttons {
