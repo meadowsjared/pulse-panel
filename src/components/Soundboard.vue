@@ -35,9 +35,10 @@ function handleSoundsUpdate() {
 function stripAudioUrls(pSounds: Sound[]) {
   return pSounds.map(sound => {
     return {
+      id: sound.id,
       name: sound.name,
       audioPath: sound.audioPath,
-      id: sound.id,
+      imagePath: sound.imagePath,
     }
   })
 }
