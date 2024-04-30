@@ -1,8 +1,13 @@
 <template>
   <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
     <side-bar>
-      <router-link to="/soundboard" class="menu"> <inline-svg :src="Speaker" /> Soundbar </router-link>
-      <router-link to="/settings" class="menu"> <inline-svg :src="SettingsGear" /> Settings</router-link>
+      <div class="top-buttons">
+        <router-link to="/soundboard" class="menu"> <inline-svg :src="Speaker" /> Soundbar </router-link>
+        <router-link to="/settings" class="menu"> <inline-svg :src="SettingsGear" /> Settings</router-link>
+      </div>
+      <button class="menu" @click="changeMode">
+        <inline-svg class="menu" :src="settingsStore.displayMode === 'edit' ? EditIcon : PlayIcon" />
+      </button>
     </side-bar>
     <router-view />
   </div>
@@ -14,6 +19,8 @@ import { useSettingsStore } from '../store/settings'
 import InlineSvg from 'vue-inline-svg'
 import SettingsGear from '../assets/images/settings-gear.svg'
 import Speaker from '../assets/images/speaker.svg'
+import EditIcon from '../assets/images/edit.svg'
+import PlayIcon from '../assets/images/play.svg'
 
 const outputDeviceId = ref<string | null>(null)
 const darkMode = ref(true)
@@ -33,8 +40,8 @@ settingsStore.fetchBooleanSetting('darkMode', true).then(darkModeValue => {
 })
 settingsStore.fetchBooleanSetting('allowOverlappingSound')
 
-function openURL(url: string) {
-  window.open(url)
+function changeMode() {
+  settingsStore.toggleDisplayMode()
 }
 </script>
 
@@ -46,9 +53,15 @@ function openURL(url: string) {
   gap: 1rem;
   color: var(--alt-bg-color);
 }
-.menu > svg {
+.menu svg {
   width: 40px;
   aspect-ratio: 1;
+}
+
+.top-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .e-nuxt-container {
