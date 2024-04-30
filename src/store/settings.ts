@@ -99,10 +99,27 @@ export const useSettingsStore = defineStore('settings', {
         await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
         this[key] = defaultValue
       } else {
-        this[key] = JSON.parse(returnedArray)
+        return this._getImageUrls(key, JSON.parse(returnedArray))
       }
 
       return this[key]
+    },
+    /**
+     * Get the image URLs for the sounds.
+     * @param sounds the array of sounds
+     * @returns the array of sounds with image URLs
+     */
+    async _getImageUrls(key: ArraySettings, sounds: Sound[]): Promise<Sound[]> {
+      for (const sound of sounds) {
+        if (sound.imageUrl === undefined && sound.imagePath !== undefined) {
+          const imageUrl = await this.getFile(sound.imagePath)
+          if (imageUrl) {
+            sound.imageUrl = imageUrl
+          }
+        }
+      }
+      this[key] = sounds
+      return sounds
     },
     /**
      * Save a sound to the store
@@ -151,11 +168,11 @@ export const useSettingsStore = defineStore('settings', {
       // delete the file from the database
       await db.delete('sounds', path)
     },
-    async replaceFile(oldPath: string | undefined, newFile: File): Promise<void> {
+    async replaceFile(oldPath: string | undefined, newFile: File): Promise<string> {
       if (oldPath) {
         await this.deleteFile(oldPath)
       }
-      await this.saveFile(newFile)
+      return await this.saveFile(newFile)
     },
     /**
      * Fetch a boolean setting from the store
