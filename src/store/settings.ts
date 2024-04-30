@@ -10,11 +10,14 @@ interface State {
   darkMode: boolean
   allowOverlappingSound: boolean
   sounds: Sound[]
+  displayMode: DisplayMode
+  currentEditingSound: Sound | null
 }
 
 type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
 type StringSettings = 'outputDeviceId'
 type ArraySettings = 'sounds'
+export type DisplayMode = 'edit' | 'play'
 
 export const useSettingsStore = defineStore('settings', {
   state: (): State => ({
@@ -22,11 +25,16 @@ export const useSettingsStore = defineStore('settings', {
     darkMode: true,
     allowOverlappingSound: false,
     sounds: [],
+    displayMode: 'play',
+    currentEditingSound: null,
   }),
   actions: {
     async getOutputDevices(): Promise<MediaDeviceInfo[]> {
       const devices = await navigator.mediaDevices.enumerateDevices()
       return devices.filter(device => device.kind === 'audiooutput')
+    },
+    async toggleDisplayMode(): Promise<void> {
+      this.displayMode = this.displayMode === 'play' ? 'edit' : 'play'
     },
     /**
      * Fetch a string setting from the store
@@ -161,7 +169,8 @@ export const useSettingsStore = defineStore('settings', {
      * Delete a sound from the store
      * @param path the key it's saved under
      */
-    async deleteFile(path: string): Promise<void> {
+    async deleteFile(path: string | undefined): Promise<void> {
+      if (path === undefined) return
       // open the database
       const db = await openDB('pulse-panel', 1)
 
