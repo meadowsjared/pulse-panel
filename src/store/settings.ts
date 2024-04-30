@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { Settings } from '../../@types/electron-window'
+import { Sound } from '@/@types/sound'
+import { v4 } from 'uuid'
 
 interface State {
   outputDeviceId: string | null
@@ -9,6 +11,7 @@ interface State {
 
 type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
 type StringSettings = 'outputDeviceId'
+type ArraySettings = 'sounds'
 
 export const useSettingsStore = defineStore('settings', {
   state: (): State => ({
@@ -66,6 +69,36 @@ export const useSettingsStore = defineStore('settings', {
       await electron?.saveSetting?.(key, value)
       this[key] = value
       return true // saved successfully
+    },
+    /**
+     * Save an array setting to the store
+     * @param key the key it's saved under
+     * @param value the value to save
+     * @returns true if saved successfully
+     */
+    async saveArray(key: ArraySettings, value: (Object | null)[]): Promise<boolean> {
+      const electron: Settings | undefined = window.electron
+      await electron?.saveSetting?.(key, JSON.stringify(value))
+      this[key] = value as Sound[]
+      return true
+    },
+    /**
+     * Fetch an array setting from the store
+     * @param key the key it's saved under
+     * @param defaultValue the default value if it's not set, default to [{ id: v4() }]
+     * @returns the value of the setting
+     */
+    async fetchArraySetting(key: ArraySettings, defaultValue: Sound[] = [{ id: v4() }]): Promise<Sound[]> {
+      const electron: Settings | undefined = window.electron
+      const returnedArray = await electron?.readSetting?.(key)
+      if (returnedArray === undefined || typeof returnedArray !== 'string') {
+        await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
+        this[key] = defaultValue
+      } else {
+        this[key] = JSON.parse(returnedArray)
+      }
+
+      return this[key]
     },
     /**
      * Fetch a boolean setting from the store
