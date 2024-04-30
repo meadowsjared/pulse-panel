@@ -59,6 +59,7 @@
     "@tailwindcss/forms": "^0.5.7",
     "nconf": "^0.12.1",
     "tailwindcss": "^3.4.3",
+    "uuid": "^9.0.1",
     "vue": "^3.4.24",
     "vue-inline-svg": "^3.1.2"
   },
@@ -66,6 +67,7 @@
     "@evg3/vite-plugin-rewrite-all": "^1.0.3",
     "@types/nconf": "^0.10.6",
     "@types/node": "^20.12.7",
+    "@types/uuid": "^9.0.8",
     "@typescript-eslint/parser": "^6.21.0",
     "@vitejs/plugin-vue": "^4.6.2",
     "autoprefixer": "^10.4.19",
