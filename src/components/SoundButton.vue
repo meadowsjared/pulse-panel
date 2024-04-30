@@ -64,26 +64,28 @@ async function handleFileDrop(event: DragEvent) {
   if (!file) return
   const settingsStore = useSettingsStore()
   const audioUrl = await settingsStore.saveFile(file)
+  // if the sound is new
   if (props.modelValue.name === undefined) {
     // if the sound is new
     if (file && file.path) {
       const newSound: Sound = {
         name: stripFileExtension(file.name),
         audioUrl: audioUrl,
-        path: file.path,
+        audioPath: file.path,
         id: v4(),
       }
       emits('update:modelValue', newSound)
     }
     return
   }
+
   // if the sound is not new, then they are updating an existing sound
-  await settingsStore.replaceFile(props.modelValue.path, file)
+  await settingsStore.replaceFile(props.modelValue.audioPath, file)
   // update the audioUrl and path
-  const newSound = {
+  const newSound: Sound = {
     ...props.modelValue,
     audioUrl: URL.createObjectURL(file),
-    path: file.path,
+    audioPath: file.path,
     name: stripFileExtension(file.name),
   }
   emits('update:modelValue', newSound)
