@@ -1,8 +1,16 @@
 <template>
   <div class="soundboard">
     <div v-for="(sound, i) in sounds" :key="sound?.id">
-      <sound-button v-model="sounds[i]" @update:modelValue="handleSoundsUpdate" />
+      <sound-button
+        v-model="sounds[i]"
+        :displayMode="settingsStore.displayMode"
+        @update:modelValue="handleSoundsUpdate"
+        @deleteSound="deleteSound(sounds[i])"
+        @editSound="editSound(sounds[i])" />
     </div>
+  </div>
+  <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
+    <SoundEditor v-model="settingsStore.currentEditingSound" @update:modelValue="updateSound" />
   </div>
 </template>
 
@@ -21,7 +29,30 @@ settingsStore.fetchArraySetting('sounds').then(soundsArray => {
   sounds.value = soundsArray
 })
 
-function handleSoundsUpdate() {
+function updateSound() {
+  console.log('updateSound')
+  settingsStore.saveArray('sounds', stripAudioUrls(sounds.value))
+}
+
+function deleteSound(pSound: Sound) {
+  sounds.value = sounds.value.filter(sound => sound.id !== pSound.id)
+  settingsStore.deleteFile(pSound.audioPath)
+  settingsStore.deleteFile(pSound.imagePath)
+  settingsStore.saveArray('sounds', stripAudioUrls(sounds.value))
+}
+
+function editSound(pSound: Sound) {
+  if (settingsStore.currentEditingSound === null || settingsStore.currentEditingSound.id !== pSound.id) {
+    settingsStore.currentEditingSound = pSound
+  } else {
+    settingsStore.currentEditingSound = null
+  }
+}
+
+function handleSoundsUpdate(event: Sound) {
+  if (event.id === settingsStore.currentEditingSound?.id) {
+    settingsStore.currentEditingSound = event
+  }
   // add a new sound if sound is null
   if (sounds.value[sounds.value.length - 1].name !== undefined) {
     sounds.value.push({
@@ -52,5 +83,12 @@ function stripAudioUrls(pSounds: Sound[]) {
   width: 100%;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   grid-template-rows: repeat(auto-fill, 80px);
+}
+
+.rightSideBar {
+  width: 300px;
+  height: 100%;
+  background: var(--alt-light-text-color);
+  padding: 1rem;
 }
 </style>
