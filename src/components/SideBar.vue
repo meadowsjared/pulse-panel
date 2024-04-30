@@ -51,6 +51,8 @@ const sideBarOpen = ref(false)
   flex-direction: column;
   padding: 0.25rem;
   gap: 1rem;
+  height: 100%;
+  justify-content: space-between;
 }
 
 .hamburger {
