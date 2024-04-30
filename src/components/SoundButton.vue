@@ -150,6 +150,7 @@ async function handleImageFileDrop(file: File) {
   const imageUrl = await settingsStore.replaceFile(props.modelValue.imagePath, file)
   const newSound: Sound = {
     ...props.modelValue,
+    name: props.modelValue.name || '',
     imageUrl: imageUrl,
     imagePath: file.path,
   }
