@@ -1,14 +1,14 @@
 <template>
   <button
+    v-if="modelValue?.name !== undefined"
     @click="playSound"
-    v-if="modelValue"
     v-on:drop="handleFileDrop"
     v-on:dragover.prevent
     :class="{ 'playing-sound': playingSound }"
     class="sound-button">
-    <span>{{ modelValue.name }}</span>
+    <span>{{ modelValue.name || 'New Sound' }}</span>
   </button>
-  <button @click="addSound" v-else v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
+  <button v-else @click="addSound" v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
     <inline-svg :src="Plus" />
   </button>
 </template>
@@ -19,23 +19,17 @@ import { Sound } from '../../@types/sound'
 import { ref } from 'vue'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
+import { File } from '../../@types/file'
+import { useSettingsStore } from '../store/settings'
+import { v4 } from 'uuid'
 
 // Define the props
-const props = withDefaults(
-  defineProps<{
-    modelValue: Sound | null
-  }>(),
-  {
-    modelValue: null,
-  }
-)
-
-// define the emits
-const emits = defineEmits<{
-  (event: 'update:modelValue', value: Sound): void
+const props = defineProps<{
+  modelValue: Sound
 }>()
 
-// useModel(props, "modelValue");
+// define the emits
+const emits = defineEmits<(event: 'update:modelValue', value: Sound) => void>()
 const playingSound = ref(false)
 const numSoundsPlaying = ref(0)
 
@@ -44,7 +38,7 @@ const soundStore = useSoundStore()
 function playSound() {
   playingSound.value = true
   numSoundsPlaying.value++
-  soundStore.playSound(props.modelValue?.audioUrl ?? null).then(() => {
+  soundStore.playSound(props.modelValue).then(() => {
     numSoundsPlaying.value--
     if (numSoundsPlaying.value < 1) {
       playingSound.value = false
@@ -54,8 +48,8 @@ function playSound() {
 
 function addSound() {
   const newSound: Sound = {
-    name: 'New Sound',
-    audioUrl: null,
+    name: '',
+    id: props.modelValue?.id,
   }
   emits('update:modelValue', newSound)
 }
@@ -64,21 +58,34 @@ function addSound() {
  * Handles the file drop event
  * @param event The drag event
  */
-function handleFileDrop(event: DragEvent) {
+async function handleFileDrop(event: DragEvent) {
   event.preventDefault()
-  const file = event.dataTransfer?.files[0]
+  const file: File | null = event.dataTransfer?.files[0] ?? null
   if (!file) return
-  if (props.modelValue === null) {
-    if (file) {
-      const newSound = {
+  const settingsStore = useSettingsStore()
+  const audioUrl = await settingsStore.saveFile(file)
+  if (props.modelValue.name === undefined) {
+    // if the sound is new
+    if (file && file.path) {
+      const newSound: Sound = {
         name: stripFileExtension(file.name),
-        audioUrl: URL.createObjectURL(file),
+        audioUrl: audioUrl,
+        path: file.path,
+        id: v4(),
       }
       emits('update:modelValue', newSound)
     }
     return
   }
-  const newSound = { ...props.modelValue, audioUrl: URL.createObjectURL(file) }
+  // if the sound is not new, then they are updating an existing sound
+  await settingsStore.replaceFile(props.modelValue.path, file)
+  // update the audioUrl and path
+  const newSound = {
+    ...props.modelValue,
+    audioUrl: URL.createObjectURL(file),
+    path: file.path,
+    name: stripFileExtension(file.name),
+  }
   emits('update:modelValue', newSound)
 }
 
