@@ -1,12 +1,15 @@
 import { defineStore } from 'pinia'
 import { Settings } from '../../@types/electron-window'
 import { Sound } from '@/@types/sound'
+import { openDB } from 'idb'
+import { File } from '@/@types/file'
 import { v4 } from 'uuid'
 
 interface State {
   outputDeviceId: string | null
   darkMode: boolean
   allowOverlappingSound: boolean
+  sounds: Sound[]
 }
 
 type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
@@ -18,6 +21,7 @@ export const useSettingsStore = defineStore('settings', {
     outputDeviceId: null,
     darkMode: true,
     allowOverlappingSound: false,
+    sounds: [],
   }),
   actions: {
     async getOutputDevices(): Promise<MediaDeviceInfo[]> {
@@ -99,6 +103,59 @@ export const useSettingsStore = defineStore('settings', {
       }
 
       return this[key]
+    },
+    /**
+     * Save a sound to the store
+     * @param file the sound to save
+     */
+    async saveFile(file: File) {
+      // Open (or create) the database
+      const db = await openDB('pulse-panel', 1, {
+        upgrade(db) {
+          db.createObjectStore('sounds')
+        },
+      })
+
+      // Store the file in the database so it can be accessed later
+      await db.put('sounds', file, file.path)
+
+      // Create a blob URL that points to the file data
+      return URL.createObjectURL(file)
+    },
+    /**
+     * Fetch a sound from the store
+     * @param path the key it's saved under
+     * @returns the value of the URL to the file
+     */
+    async getFile(path: string): Promise<string | null> {
+      // open the database
+      const db = await openDB('pulse-panel', 1)
+
+      // get the file from the database
+      const file = await db.get('sounds', path)
+
+      if (file) {
+        // Create a blob URL that points to the file data
+        return URL.createObjectURL(file)
+      }
+      return null
+    },
+    /**
+     * Delete a sound from the store
+     * @param path the key it's saved under
+     */
+    async deleteFile(path: string): Promise<void> {
+      // open the database
+      const db = await openDB('pulse-panel', 1)
+
+      // delete the file from the database
+      await db.delete('sounds', path)
+    },
+    async replaceFile(oldPath: string | undefined, newFile: File): Promise<void> {
+      if (oldPath) {
+        await this.deleteFile(oldPath)
+      }
+      await this.saveFile(newFile)
     },
     /**
      * Fetch a boolean setting from the store
