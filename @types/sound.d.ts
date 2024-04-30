@@ -3,4 +3,6 @@ export interface Sound {
   name?: string
   audioUrl?: string
   audioPath?: string
+  imageUrl?: string
+  imagePath?: string
 }

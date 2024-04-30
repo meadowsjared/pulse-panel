@@ -62,11 +62,24 @@ async function handleFileDrop(event: DragEvent) {
   event.preventDefault()
   const file: File | null = event.dataTransfer?.files[0] ?? null
   if (!file) return
+  if (file.type.includes('audio')) {
+    handleSoundFileDrop(file)
+    return
+  }
+  if (file.type.includes('image')) {
+    handleImageFileDrop(file)
+  }
+}
+
+/**
+ * Handles the sound file drop event
+ * @param file The file that was dropped
+ */
+async function handleSoundFileDrop(file: File) {
   const settingsStore = useSettingsStore()
   const audioUrl = await settingsStore.saveFile(file)
   // if the sound is new
   if (props.modelValue.name === undefined) {
-    // if the sound is new
     if (file && file.path) {
       const newSound: Sound = {
         name: stripFileExtension(file.name),
@@ -87,6 +100,20 @@ async function handleFileDrop(event: DragEvent) {
     audioUrl: URL.createObjectURL(file),
     audioPath: file.path,
     name: stripFileExtension(file.name),
+  }
+  emits('update:modelValue', newSound)
+}
+
+/**
+ * Handles the image file drop event
+ * @param file The file that was dropped
+ */
+async function handleImageFileDrop(file: File) {
+  const settingsStore = useSettingsStore()
+  const imageUrl = await settingsStore.saveFile(file)
+  const newSound: Sound = {
+    ...props.modelValue,
+    imageUrl: imageUrl,
   }
   emits('update:modelValue', newSound)
 }
