@@ -2,12 +2,29 @@
   <button
     v-if="modelValue?.name !== undefined"
     @click="playSound"
+    @auxclick="emit('editSound')"
     v-on:drop="handleFileDrop"
     v-on:dragover.prevent
-    :class="{ 'playing-sound': playingSound, 'has-image': modelValue.imagePath }"
-    class="sound-button"
+    :class="{
+      'playing-sound': playingSound,
+      'has-image': modelValue.imagePath,
+      'edit-mode': props.displayMode === 'edit',
+    }"
+    class="sound-button relative"
     :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
     <span>{{ modelValue.name || 'New Sound' }}</span>
+    <button
+      @click.capture="deleteSound"
+      v-if="props.displayMode === 'edit'"
+      class="edit-buttons absolute top-0 right-0 w-8 h-8 rotate-45">
+      <inline-svg :src="Plus" />
+    </button>
+    <button
+      @click.capture="editSound"
+      v-if="props.displayMode === 'edit'"
+      class="edit-buttons absolute left-0 bottom-0 w-8 h-8">
+      <inline-svg :src="EditIcon" />
+    </button>
   </button>
   <button v-else @click="addSound" v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
     <inline-svg :src="Plus" />
@@ -21,22 +38,42 @@ import { ref } from 'vue'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { File } from '../../@types/file'
-import { useSettingsStore } from '../store/settings'
+import { DisplayMode, useSettingsStore } from '../store/settings'
 import { v4 } from 'uuid'
+import EditIcon from '../assets/images/edit.svg'
 
 // Define the props
 const props = defineProps<{
   modelValue: Sound
+  displayMode: DisplayMode
 }>()
 
 // define the emits
-const emits = defineEmits<(event: 'update:modelValue', value: Sound) => void>()
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: Sound): void
+  (event: 'deleteSound'): void
+  (event: 'editSound'): void
+}>()
 const playingSound = ref(false)
 const numSoundsPlaying = ref(0)
 
 const soundStore = useSoundStore()
+const settingsStore = useSettingsStore()
+
+function deleteSound() {
+  if (props.displayMode === 'edit') {
+    emit('deleteSound')
+  }
+}
+
+function editSound() {
+  if (props.displayMode === 'edit') {
+    emit('editSound')
+  }
+}
 
 function playSound() {
+  if (props.displayMode === 'edit') return
   playingSound.value = true
   numSoundsPlaying.value++
   soundStore.playSound(props.modelValue).then(() => {
@@ -52,7 +89,7 @@ function addSound() {
     name: '',
     id: props.modelValue?.id,
   }
-  emits('update:modelValue', newSound)
+  emit('update:modelValue', newSound)
 }
 
 /**
@@ -77,7 +114,6 @@ async function handleFileDrop(event: DragEvent) {
  * @param file The file that was dropped
  */
 async function handleSoundFileDrop(file: File) {
-  const settingsStore = useSettingsStore()
   const audioUrl = await settingsStore.saveFile(file)
   // if the sound is new
   if (props.modelValue.name === undefined) {
@@ -88,7 +124,7 @@ async function handleSoundFileDrop(file: File) {
         audioPath: file.path,
         id: v4(),
       }
-      emits('update:modelValue', newSound)
+      emit('update:modelValue', newSound)
     }
     return
   }
@@ -102,7 +138,7 @@ async function handleSoundFileDrop(file: File) {
     audioPath: file.path,
     name: stripFileExtension(file.name),
   }
-  emits('update:modelValue', newSound)
+  emit('update:modelValue', newSound)
 }
 
 /**
@@ -117,7 +153,7 @@ async function handleImageFileDrop(file: File) {
     imageUrl: imageUrl,
     imagePath: file.path,
   }
-  emits('update:modelValue', newSound)
+  emit('update:modelValue', newSound)
 }
 
 /**
@@ -130,6 +166,12 @@ function stripFileExtension(fileName: string) {
 </script>
 
 <style scoped>
+.edit-buttons > svg {
+  width: 100%;
+  height: 100%;
+  fill: white;
+}
+
 .add-button > svg {
   width: 50%;
   height: 50%;
