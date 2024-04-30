@@ -4,8 +4,9 @@
     @click="playSound"
     v-on:drop="handleFileDrop"
     v-on:dragover.prevent
-    :class="{ 'playing-sound': playingSound }"
-    class="sound-button">
+    :class="{ 'playing-sound': playingSound, 'has-image': modelValue.imagePath }"
+    class="sound-button"
+    :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
     <span>{{ modelValue.name || 'New Sound' }}</span>
   </button>
   <button v-else @click="addSound" v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
@@ -110,10 +111,11 @@ async function handleSoundFileDrop(file: File) {
  */
 async function handleImageFileDrop(file: File) {
   const settingsStore = useSettingsStore()
-  const imageUrl = await settingsStore.saveFile(file)
+  const imageUrl = await settingsStore.replaceFile(props.modelValue.imagePath, file)
   const newSound: Sound = {
     ...props.modelValue,
     imageUrl: imageUrl,
+    imagePath: file.path,
   }
   emits('update:modelValue', newSound)
 }
@@ -142,9 +144,15 @@ function stripFileExtension(fileName: string) {
   background: var(--alt-light-text-color);
   color: var(--alt-bg-color);
   border-radius: 0.313rem;
+  background-size: cover;
+  background-position: center;
+}
+
+.sound-button.has-image {
+  color: white;
 }
 
 .sound-button.playing-sound {
-  background: var(--alt-text-color);
+  filter: brightness(50%);
 }
 </style>
