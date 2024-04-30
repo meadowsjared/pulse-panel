@@ -1,8 +1,8 @@
 <template>
   <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
     <side-bar>
-      <router-link to="/settings" class="menu"> <inline-svg :src="SettingsGear" /> Settings</router-link>
       <router-link to="/soundboard" class="menu"> <inline-svg :src="Speaker" /> Soundbar </router-link>
+      <router-link to="/settings" class="menu"> <inline-svg :src="SettingsGear" /> Settings</router-link>
     </side-bar>
     <router-view />
   </div>
