@@ -34,7 +34,6 @@ const sideBarOpen = ref(false)
   flex-direction: column;
   background: var(--alt-light-text-color);
   transition: width 0.5s;
-  /* animation: enter 500ms forwards; */
 }
 .sideBar.opened {
   width: var(--menu-width);
