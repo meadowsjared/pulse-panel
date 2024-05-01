@@ -20,15 +20,13 @@
         </button>
       </div>
     </div>
-    <div class="scroll-remaining">
-      <label
-        >Allow overlapping sounds<input
-          type="checkbox"
-          v-model="allowOverlappingSound"
-          @input="updateAllowOverlappingSound"
-      /></label>
-      <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
-    </div>
+    <label
+      >Allow overlapping sounds<input
+        type="checkbox"
+        v-model="allowOverlappingSound"
+        @input="updateAllowOverlappingSound"
+    /></label>
+    <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
   </div>
 </template>
 
@@ -106,10 +104,8 @@ h2 {
 .audio-output-devices {
   display: inline-block;
   width: max-content;
-  margin: 0.5rem auto;
+  margin: 0.5rem auto 1rem;
   flex-direction: column;
-  overflow: hidden;
-  max-height: 100%;
   align-items: start;
 }
 
@@ -218,16 +214,10 @@ input[type='checkbox']:focus {
   position: relative;
 }
 
-.scroll-remaining {
-  overflow-y: auto;
-  margin-top: 0.5rem;
-  flex: 1;
-}
-
 .main {
   height: 100vh;
   width: 100%;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   background: var(--background-color);
