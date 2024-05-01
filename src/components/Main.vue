@@ -29,7 +29,7 @@ import Speaker from '../assets/images/speaker.svg'
 import EditIcon from '../assets/images/edit.svg'
 import PlayIcon from '../assets/images/play.svg'
 
-const outputDeviceId = ref<string | null>(null)
+const outputDeviceId = ref<string[]>([])
 const darkMode = ref(true)
 const settingsStore = useSettingsStore()
 
@@ -39,7 +39,7 @@ window.electron?.onDarkModeToggle((value: boolean) => {
   settingsStore.darkMode = value
 })
 
-settingsStore.fetchStringSetting('outputDeviceId').then(outputDevice => {
+settingsStore.fetchStringArray('outputDevices').then(outputDevice => {
   outputDeviceId.value = outputDevice
 })
 settingsStore.fetchBooleanSetting('darkMode', true).then(darkModeValue => {
