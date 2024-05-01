@@ -3,19 +3,33 @@
     <div class="bar">
       <h1 class="mx-auto">Settings</h1>
     </div>
+    <h2>Audio Output Devices:</h2>
     <div class="audio-output-devices">
-      <h2>Audio Output Devices:</h2>
-      <div class="select-line">
-        <select @change="optionSelected" v-model="outputDeviceId">
+      <div
+        v-for="(outputDeviceId, i) in outputDevices"
+        :key="(outputDeviceId ?? 'null') + i"
+        :jared="(outputDeviceId ?? 'null') + i"
+        class="select-line">
+        <button
+          class="delete-button"
+          :class="{
+            'opacity-0 cursor-default': i === outputDevices.length - 1 || i === 0,
+            'cursor-pointer': i !== outputDevices.length - 1,
+          }"
+          @click="deleteOutputDevice(i)"
+          title="Remove Output Device">
+          <inline-svg class="w-full h-full rotate-45" :src="Plus" />
+        </button>
+        <select @change="optionSelected($event, i)" v-model="outputDevices[i]">
           <option v-for="device in audioOutputDevices" :key="device.deviceId" :value="device.deviceId">
             {{ device.label }}
           </option>
         </select>
         <button
-          :class="{ playingAudio: soundStore.playingAudio }"
+          :class="{ playingAudio: soundStore.outputDeviceData[i]?.playingAudio }"
           class="play-sound-button"
           v-if="outputDeviceId"
-          @click="soundStore.playSound(null, outputDeviceId)">
+          @click="soundStore.playSound(null, [outputDeviceId], outputDevices)">
           <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
         </button>
       </div>
@@ -31,15 +45,16 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import SpeakerIcon from '../assets/images/speaker.svg'
+import Plus from '../assets/images/plus.svg'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
-const outputDeviceId = ref<string | null>(null)
+const outputDevices = ref<(string | null)[]>([])
 const audioOutputDevices = ref<MediaDeviceInfo[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
@@ -50,9 +65,19 @@ window.electron?.onDarkModeToggle((value: boolean) => {
   settingsStore.darkMode = value
 })
 
+watch(
+  () => outputDevices.value,
+  () => {
+    if (outputDevices.value[outputDevices.value.length - 1] !== null) {
+      outputDevices.value.push(null)
+    }
+  },
+  { immediate: true }
+)
+
 onMounted(async () => {
-  settingsStore.fetchStringSetting('outputDeviceId').then(outputDevice => {
-    outputDeviceId.value = outputDevice
+  settingsStore.fetchStringArray('outputDevices').then(outputDevice => {
+    outputDevices.value = outputDevice
   })
   settingsStore.getOutputDevices().then(devices => {
     audioOutputDevices.value = devices
@@ -61,15 +86,43 @@ onMounted(async () => {
   darkMode.value = await settingsStore.fetchBooleanSetting('darkMode', true) // initialize it to the saved value (default to true)
 })
 
-async function optionSelected(payload: Event) {
+async function deleteOutputDevice(index: number) {
+  if (index === 0) return
+  if (index < outputDevices.value.length - 1) {
+    outputDevices.value.splice(index, 1) // remove the device from the array
+  } else {
+    outputDevices.value[index] = null // set the device to null
+  }
+  saveOutputDevices(null)
+}
+
+async function optionSelected(payload: Event, outputIndex: number) {
   if (!(payload.target instanceof HTMLSelectElement)) {
     console.debug('payload.target', payload.target)
     throw new Error('Event target is not a select element.')
   }
-  const deviceId = payload.target?.value
-  if (await settingsStore.saveString('outputDeviceId', deviceId)) {
-    outputDeviceId.value = deviceId
-    soundStore.playSound(null, deviceId)
+  const device = payload.target?.value
+  // ensure there is a blank option at the end of the array
+  // note: we re-assign the array to trigger the watcher
+  outputDevices.value = [
+    ...outputDevices.value.slice(0, outputIndex),
+    device,
+    ...outputDevices.value.slice(outputIndex + 1),
+  ]
+
+  saveOutputDevices(device)
+}
+
+/**
+ * Save the output devices to the settings store
+ * @param device - the device to play the sound to
+ */
+async function saveOutputDevices(device: string | null = null) {
+  // remove the null values from the array
+  const filteredOutputDevices: string[] = outputDevices.value.filter((device): device is string => device !== null)
+  if ((await settingsStore.saveStringArray('outputDevices', filteredOutputDevices)) && device) {
+    soundStore.populatePlayingAudio(outputDevices.value.filter((device): device is string => device !== null).length)
+    soundStore.playSound(null, [device], outputDevices.value) // play only to the selected device
   }
 }
 
@@ -102,15 +155,17 @@ h2 {
 }
 
 .audio-output-devices {
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
   width: max-content;
   margin: 0.5rem auto 1rem;
-  flex-direction: column;
   align-items: start;
+  gap: 1rem;
 }
 
 select {
   border-radius: 0.5rem;
+  border-color: var(--text-color);
 }
 select:focus {
   --tw-border-opacity: 1;
@@ -140,10 +195,11 @@ option {
   width: min-content;
 }
 
-.play-sound-button {
+.play-sound-button,
+.delete-button {
+  fill: var(--text-color);
   border-radius: 0.5rem;
   padding: 0.5rem;
-  cursor: pointer;
   width: 3rem;
   height: 2.625rem;
   border: 1px solid var(--text-color);
