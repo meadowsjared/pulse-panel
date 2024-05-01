@@ -12,7 +12,7 @@
     }"
     class="sound-button relative"
     :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
-    <span>{{ modelValue.name || 'New Sound' }}</span>
+    <span class="button-name">{{ modelValue.name || 'New Sound' }}</span>
     <button
       @click.capture="deleteSound"
       v-if="props.displayMode === 'edit'"
@@ -174,6 +174,14 @@ function stripFileExtension(fileName: string) {
 </script>
 
 <style scoped>
+.button-name {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  /* color: var(--alt-light-text-color); */
+  font-weight: bold;
+}
+
 .edit-buttons > svg {
   width: 100%;
   height: 100%;
@@ -200,6 +208,10 @@ function stripFileExtension(fileName: string) {
 
 .sound-button.has-image {
   color: white;
+  --opacity: 0.3;
+  text-shadow: 0px 0px 8px rgba(0, 0, 0, var(--opacity)), 4px 4px 8px rgba(0, 0, 0, var(--opacity)),
+    4px -4px 8px rgba(0, 0, 0, var(--opacity)), -4px 4px 8px rgba(0, 0, 0, var(--opacity)),
+    -4px -4px 8px rgba(0, 0, 0, var(--opacity));
 }
 
 .sound-button.playing-sound {
