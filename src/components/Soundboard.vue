@@ -23,21 +23,21 @@ import { v4 } from 'uuid'
 const sounds = ref<Sound[]>([])
 
 const settingsStore = useSettingsStore()
-settingsStore.fetchStringSetting('outputDeviceId')
+settingsStore.fetchStringArray('outputDevices')
 settingsStore.fetchBooleanSetting('darkMode', true)
-settingsStore.fetchArraySetting('sounds').then(soundsArray => {
+settingsStore.fetchSoundSetting('sounds').then(soundsArray => {
   sounds.value = soundsArray
 })
 
 function updateSound() {
-  settingsStore.saveArray('sounds', stripAudioUrls(sounds.value))
+  settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
 }
 
 function deleteSound(pSound: Sound) {
   sounds.value = sounds.value.filter(sound => sound.id !== pSound.id)
   settingsStore.deleteFile(pSound.audioPath)
   settingsStore.deleteFile(pSound.imagePath)
-  settingsStore.saveArray('sounds', stripAudioUrls(sounds.value))
+  settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
 }
 
 function editSound(pSound: Sound) {
@@ -58,7 +58,7 @@ function handleSoundsUpdate(event: Sound) {
       id: v4(),
     })
   }
-  settingsStore.saveArray('sounds', stripAudioUrls(sounds.value))
+  settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
   // console.log('sounds', JSON.stringify(sounds.value, null, 2))
 }
 
