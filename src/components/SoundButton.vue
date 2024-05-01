@@ -76,7 +76,7 @@ function playSound() {
   if (props.displayMode === 'edit') return
   playingSound.value = true
   numSoundsPlaying.value++
-  soundStore.playSound(props.modelValue).then(() => {
+  soundStore.playSound(props.modelValue, null, props.modelValue.volume ?? null).then(() => {
     numSoundsPlaying.value--
     if (numSoundsPlaying.value < 1) {
       playingSound.value = false
