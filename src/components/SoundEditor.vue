@@ -9,16 +9,21 @@
       <input type="text" v-model="props.modelValue.name" id="name" />
     </div>
     <div class="input-group">
-      <label for="volume">Volume:</label>
-      <input
-        class="volume-slider"
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        @update:modelValue="props.modelValue.volume = $event"
-        v-model.number="volumeValue"
-        id="volume" />
+      <div class="volume-control-container">
+        <label class="volume-label" for="volume">Volume:</label>
+        <button @click="soundStore.playSound(modelValue)" class="play-sound-button">
+          <inline-svg :src="PlayIcon" class="w-6 h-6" />
+        </button>
+        <input
+          class="volume-slider"
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          @update:modelValue="props.modelValue.volume = $event"
+          v-model.number="volumeValue"
+          id="volume" />
+      </div>
     </div>
     <div
       :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}"
@@ -36,6 +41,8 @@ import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { computed, watch } from 'vue'
+import PlayIcon from '../assets/images/play.svg'
+import { useSoundStore } from '../store/sound'
 
 const props = defineProps<{
   modelValue: Sound
@@ -44,6 +51,7 @@ const props = defineProps<{
 const emit = defineEmits<(event: 'update:modelValue', value: Sound) => void>()
 
 const settingsStore = useSettingsStore()
+const soundStore = useSoundStore()
 
 // Watch for changes to the name and update the modelValue
 watch(
@@ -74,7 +82,30 @@ function close() {
 </script>
 
 <style scoped>
+.volume-control-container {
+  display: grid;
+  align-items: center;
+  grid-template-rows: auto auto;
+  grid-template-columns: min-content auto;
+  width: 100%;
+}
+
+.play-sound-button {
+  grid-area: 2 / 1;
+}
+
+.play-sound-button > svg {
+  fill: var(--alt-bg-color);
+  stroke: var(--alt-bg-color);
+}
+
+.volume-label {
+  text-align: left;
+  grid-area: 1 / 2;
+}
+
 .volume-slider {
+  grid-area: 2 / 2;
   width: 100%;
   cursor: pointer;
 }
