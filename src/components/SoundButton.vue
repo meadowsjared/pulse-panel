@@ -1,7 +1,7 @@
 <template>
   <button
     v-if="modelValue?.name !== undefined"
-    @click="playSound"
+    @click="playSound(false)"
     @auxclick="emit('editSound')"
     v-on:drop="handleFileDrop"
     v-on:dragover.prevent
@@ -25,6 +25,12 @@
       class="edit-buttons absolute left-0 bottom-0 w-8 h-8">
       <inline-svg :src="EditIcon" />
     </button>
+    <button
+      @click.capture="playSound(true)"
+      v-if="props.displayMode === 'edit'"
+      class="edit-buttons absolute right-0 bottom-0 w-8 h-8">
+      <inline-svg :src="PlayIcon" />
+    </button>
   </button>
   <button v-else @click="addSound" v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
     <inline-svg :src="Plus" />
@@ -41,6 +47,7 @@ import { File } from '../../@types/file'
 import { DisplayMode, useSettingsStore } from '../store/settings'
 import { v4 } from 'uuid'
 import EditIcon from '../assets/images/edit.svg'
+import PlayIcon from '../assets/images/play.svg'
 
 // Define the props
 const props = defineProps<{
@@ -72,11 +79,11 @@ function editSound() {
   }
 }
 
-function playSound() {
-  if (props.displayMode === 'edit') return
+function playSound(forcePlay: boolean) {
+  if (!forcePlay && props.displayMode === 'edit') return
   playingSound.value = true
   numSoundsPlaying.value++
-  soundStore.playSound(props.modelValue, null, props.modelValue.volume ?? null).then(() => {
+  soundStore.playSound(props.modelValue).then(() => {
     numSoundsPlaying.value--
     if (numSoundsPlaying.value < 1) {
       playingSound.value = false
