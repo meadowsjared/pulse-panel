@@ -30,7 +30,6 @@ settingsStore.fetchArraySetting('sounds').then(soundsArray => {
 })
 
 function updateSound() {
-  console.log('updateSound')
   settingsStore.saveArray('sounds', stripAudioUrls(sounds.value))
 }
 
@@ -70,6 +69,7 @@ function stripAudioUrls(pSounds: Sound[]) {
       name: sound.name,
       audioPath: sound.audioPath,
       imagePath: sound.imagePath,
+      volume: sound.volume,
     }
   })
 }
