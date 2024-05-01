@@ -5,4 +5,5 @@ export interface Sound {
   audioPath?: string
   imageUrl?: string
   imagePath?: string
+  volume?: number
 }
