@@ -6,7 +6,19 @@
     <h1>Edit Sound</h1>
     <div class="input-group">
       <label for="name">Name:</label>
-      <input type="text" v-model="props.modelValue.name" />
+      <input type="text" v-model="props.modelValue.name" id="name" />
+    </div>
+    <div class="input-group">
+      <label for="volume">Volume:</label>
+      <input
+        class="volume-slider"
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        @update:modelValue="props.modelValue.volume = $event"
+        v-model.number="volumeValue"
+        id="volume" />
     </div>
     <div
       :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}"
@@ -23,7 +35,7 @@ import { Sound } from '@/@types/sound'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
-import { watch } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = defineProps<{
   modelValue: Sound
@@ -35,11 +47,17 @@ const settingsStore = useSettingsStore()
 
 // Watch for changes to the name and update the modelValue
 watch(
-  () => props.modelValue.name,
+  () => [props.modelValue.name, props.modelValue.volume],
   () => {
     emit('update:modelValue', props.modelValue)
   }
 )
+
+// replace volume of undefined with 1
+const volumeValue = computed({
+  get: () => props.modelValue.volume ?? 1,
+  set: (value: number) => (props.modelValue.volume = value),
+})
 
 function removeImage() {
   // Remove the image from the modelValue
@@ -56,6 +74,17 @@ function close() {
 </script>
 
 <style scoped>
+.volume-slider {
+  width: 100%;
+  cursor: pointer;
+}
+
+.edit-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .image {
   background-position: center;
   background-size: cover;
