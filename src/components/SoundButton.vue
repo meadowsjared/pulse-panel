@@ -178,7 +178,6 @@ function stripFileExtension(fileName: string) {
   bottom: 0;
   left: 0;
   right: 0;
-  /* color: var(--alt-light-text-color); */
   font-weight: bold;
 }
 
@@ -186,6 +185,7 @@ function stripFileExtension(fileName: string) {
   width: 100%;
   height: 100%;
   fill: white;
+  stroke: var(--alt-bg-color);
 }
 
 .add-button > svg {
