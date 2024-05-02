@@ -46,6 +46,6 @@ select {
   font-family: 'Roboto', sans-serif;
 }
 
-html, body, div.e-nuxt-container, div#app {
+html, body, div#app, div.e-nuxt-container {
   height: 100%
 }
