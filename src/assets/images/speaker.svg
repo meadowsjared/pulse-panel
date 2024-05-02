@@ -4,8 +4,8 @@
      stroke-linejoin="round"
      viewBox="0 0 69.991846 69.999193"
      xmlns="http://www.w3.org/2000/svg">
-  <path d="M 36.2259,2.4995966 18.8988,22.139297 H 2.5 v 25.2735 h 16.1503 l 18.2494,20.0868 z"
+  <path d="m36.2259 2.4996-17.3271 19.6397h-16.3988v25.2735h16.1503l18.2494 20.0868z"
         style="stroke:currentColor;stroke-width:5;stroke-linecap:round" />
-  <path d="M 47.4997,23.499597 a 19.5,20.4435 0 0 1 0,23 m 5.5,-30 a 30,31.4516 0 0 1 0,37 m 5.5,-44.0000004 a 40.8335,40.6774 0 0 1 0,50.9516004"
+  <path d="M 47.4997,23.499597 a19.5 20.4435 0 010 23m5.5-30a30 31.4516 0 010 37m5.5-44a40.8335 40.6774 0 010 50.9516"
         style="fill:none;stroke:currentColor;stroke-width:5;stroke-linecap:round" />
 </svg>
