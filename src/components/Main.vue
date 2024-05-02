@@ -68,6 +68,7 @@ function changeMode() {
   fill: transparent;
 }
 .menu svg {
+  flex-shrink: 0;
   width: 40px;
   height: 40px;
 }
