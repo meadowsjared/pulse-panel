@@ -15,6 +15,7 @@
         @click="changeMode"
         :title="settingsStore.displayMode === 'edit' ? 'click to go back to playing' : 'click to start editing'">
         <inline-svg :src="settingsStore.displayMode === 'edit' ? EditIcon : PlayIcon" />
+        {{ settingsStore.displayMode === 'edit' ? 'Editing' : 'Playing' }}
       </button>
     </side-bar>
     <router-view />
