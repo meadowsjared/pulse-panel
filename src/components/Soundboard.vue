@@ -82,7 +82,8 @@ function stripAudioUrls(pSounds: Sound[]) {
   padding: 1rem;
   width: 100%;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  grid-template-rows: repeat(auto-fill, 80px);
+  grid-auto-rows: 80px;
+  overflow: auto;
 }
 
 .rightSideBar {
