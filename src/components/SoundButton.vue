@@ -9,24 +9,28 @@
       'playing-sound': playingSound,
       'has-image': modelValue.imagePath,
       'edit-mode': props.displayMode === 'edit',
+      'cursor-default': props.displayMode === 'edit',
     }"
     class="sound-button relative"
     :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
     <span class="button-name">{{ modelValue.name || 'New Sound' }}</span>
     <button
       @click.capture="deleteSound"
+      title="Delete"
       v-if="props.displayMode === 'edit'"
       class="edit-buttons absolute top-0 right-0 w-8 h-8 rotate-45">
       <inline-svg :src="Plus" />
     </button>
     <button
       @click.capture="editSound"
+      title="Edit"
       v-if="props.displayMode === 'edit'"
       class="edit-buttons absolute left-0 bottom-0 w-8 h-8">
       <inline-svg :src="EditIcon" />
     </button>
     <button
       @click.capture="playSound(true)"
+      title="Play"
       v-if="props.displayMode === 'edit'"
       class="edit-buttons absolute right-0 bottom-0 w-8 h-8">
       <inline-svg :src="PlayIcon" />
