@@ -35,6 +35,7 @@ const sideBarOpen = ref(false)
   background: var(--alt-light-text-color);
   transition: width 0.5s;
 }
+
 .sideBar.opened {
   width: var(--menu-width);
 }
