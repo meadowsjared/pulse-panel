@@ -3,10 +3,10 @@
     <side-bar>
       <div class="top-buttons">
         <router-link to="/soundboard" title="Soundboard" class="menu">
-          <inline-svg :src="Speaker" /> Soundbar
+          <inline-svg :src="Speaker" />Soundbar
         </router-link>
         <router-link to="/settings" title="Settings" class="menu">
-          <inline-svg :src="SettingsGear" /> Settings</router-link
+          <inline-svg :src="SettingsGear" />Settings</router-link
         >
       </div>
       <button
