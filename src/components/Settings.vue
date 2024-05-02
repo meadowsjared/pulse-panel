@@ -217,6 +217,8 @@ option {
 .play-sound-button:hover {
   background-color: var(--link-color);
   color: var(--background-color);
+  fill: var(--background-color);
+  fill: var(--background-color);
 }
 .play-sound-button:active:hover {
   background-color: green;
@@ -224,6 +226,7 @@ option {
 .playingAudio {
   background-color: lightgreen;
   color: var(--background-color);
+  fill: var(--background-color);
 }
 
 label:has(input[type='checkbox']) {
