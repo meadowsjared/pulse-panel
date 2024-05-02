@@ -1,9 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg"
-     viewBox="0 0 24 24"
+<svg viewBox="0 0 21.999876 21.999876"
      fill="none"
      stroke="currentColor"
      stroke-width="2"
      stroke-linecap="round"
-     stroke-linejoin="round">
-  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+     stroke-linejoin="round"
+     width="21.999876"
+     height="21.999876"
+     xmlns="http://www.w3.org/2000/svg">
+  <path d="M 1,0.99993822 V 20.999938 l 20,-10 z" />
 </svg>

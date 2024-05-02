@@ -1,9 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg"
-     viewBox="8 0 28.758596 39.5966"
-     fill="currentColor"
-     stroke="currentColor"
-     stroke-width="1"
+<svg width="466.6123"
+     height="466.66129"
      stroke-linecap="round"
-     stroke-linejoin="round">
-  <path d="m 8.5,16.3 h 4 l 5,-5 v 18 l -5,-5 h -4 z m 12,-8 q 7,12 0,24 7,-12 0,-24 z m 4,-4 q 11,16 0,32 11,-16 0,-32 z m 4,-4 q 15,20 1,39 14,-19 -1,-39 z" />
+     stroke-linejoin="round"
+     viewBox="0 0 69.991846 69.999193"
+     xmlns="http://www.w3.org/2000/svg">
+  <path d="M 36.2259,2.4995966 18.8988,22.139297 H 2.5 v 25.2735 h 16.1503 l 18.2494,20.0868 z"
+        style="stroke:currentColor;stroke-width:5;stroke-linecap:round" />
+  <path d="M 47.4997,23.499597 a 19.5,20.4435 0 0 1 0,23 m 5.5,-30 a 30,31.4516 0 0 1 0,37 m 5.5,-44.0000004 a 40.8335,40.6774 0 0 1 0,50.9516004"
+        style="fill:none;stroke:currentColor;stroke-width:5;stroke-linecap:round" />
 </svg>
