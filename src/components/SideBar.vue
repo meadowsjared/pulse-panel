@@ -1,18 +1,20 @@
 <template>
   <div class="sideBar" :class="{ opened: sideBarOpen }">
-    <button
-      class="button-four"
-      aria-controls="primary-navigation"
-      title="Show main menu"
-      :aria-expanded="sideBarOpen"
-      :data-state="sideBarOpen ? 'open' : 'closed'"
-      @click="sideBarOpen = !sideBarOpen">
-      <svg fill="var(--button-color)" class="hamburger" viewBox="0 0 100 100">
-        <rect class="line middle" width="80" height="10" x="10" y="45" rx="5"></rect>
-        <rect class="line top" width="80" height="10" x="10" y="25" rx="5"></rect>
-        <rect class="line bottom" width="80" height="10" x="10" y="65" rx="5"></rect>
-      </svg>
-    </button>
+    <div class="menu">
+      <button
+        class="button-four"
+        aria-controls="primary-navigation"
+        title="Show main menu"
+        :aria-expanded="sideBarOpen"
+        :data-state="sideBarOpen ? 'open' : 'closed'"
+        @click="sideBarOpen = !sideBarOpen">
+        <svg fill="var(--button-color)" class="hamburger" viewBox="10 10 80 80">
+          <rect class="line middle" width="80" height="10" x="10" y="45" rx="5"></rect>
+          <rect class="line top" width="80" height="10" x="10" y="25" rx="5"></rect>
+          <rect class="line bottom" width="80" height="10" x="10" y="65" rx="5"></rect></svg
+        >Menu
+      </button>
+    </div>
     <div class="sideBarContent">
       <slot />
     </div>
@@ -27,7 +29,7 @@ const sideBarOpen = ref(false)
 
 <style scoped>
 .sideBar {
-  --menu-width: 200px;
+  --menu-width: 9rem;
   --menu-closed-width: 50px;
   width: var(--menu-closed-width);
   display: flex;
@@ -40,6 +42,12 @@ const sideBarOpen = ref(false)
   width: var(--menu-width);
 }
 
+.menu {
+  display: flex;
+  padding: 0.5rem;
+  font-weight: bold;
+}
+
 .main {
   width: 100%;
   margin: 0 auto;
@@ -49,17 +57,24 @@ const sideBarOpen = ref(false)
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 0.25rem;
+  padding: 0.5rem;
   gap: 1rem;
   height: 100%;
   justify-content: space-between;
 }
 
 .hamburger {
-  width: 50px;
+  width: 34px;
   aspect-ratio: 1;
   fill: var(--alt-bg-color);
   --animation-time: 400ms;
+}
+
+.button-four {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--alt-bg-color);
 }
 
 .button-four > svg {

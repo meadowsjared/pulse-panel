@@ -61,6 +61,7 @@ function changeMode() {
   align-items: center;
   gap: 1rem;
   color: var(--alt-bg-color);
+  font-weight: bold;
 }
 .menu > svg {
   fill: var(--alt-bg-color);
@@ -70,8 +71,8 @@ function changeMode() {
 }
 .menu svg {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
 }
 
 .top-buttons {
