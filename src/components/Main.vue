@@ -11,6 +11,7 @@
       </div>
       <button
         class="menu"
+        :class="{ edit: settingsStore.displayMode === 'edit' }"
         @click="changeMode"
         :title="settingsStore.displayMode === 'edit' ? 'click to go back to playing' : 'click to start editing'">
         <inline-svg :src="settingsStore.displayMode === 'edit' ? EditIcon : PlayIcon" />
@@ -59,6 +60,12 @@ function changeMode() {
   align-items: center;
   gap: 1rem;
   color: var(--alt-bg-color);
+}
+.menu > svg {
+  fill: var(--alt-bg-color);
+}
+.menu.edit > svg {
+  fill: transparent;
 }
 .menu svg {
   width: 40px;
