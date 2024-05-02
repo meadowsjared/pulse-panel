@@ -79,7 +79,7 @@ function stripAudioUrls(pSounds: Sound[]) {
 .soundboard {
   grid-gap: 1rem;
   display: grid;
-  margin: 1rem 1.5rem;
+  padding: 1rem;
   width: 100%;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   grid-template-rows: repeat(auto-fill, 80px);
