@@ -46,6 +46,7 @@ const sideBarOpen = ref(false)
   display: flex;
   padding: 0.5rem;
   font-weight: bold;
+  overflow: hidden;
 }
 
 .main {
