@@ -2,8 +2,8 @@ export interface Sound {
   id: string
   name?: string
   audioUrl?: string
-  audioPath?: string
+  audioKey?: string
   imageUrl?: string
-  imagePath?: string
+  imageKey?: string
   volume?: number
 }

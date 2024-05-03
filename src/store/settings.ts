@@ -110,8 +110,8 @@ export const useSettingsStore = defineStore('settings', {
     async _getImageUrls(key: ArraySoundSettings, sounds: Sound[]) {
       if (key === 'sounds') {
         for (const sound of sounds) {
-          if (sound.imageUrl === undefined && sound.imagePath !== undefined) {
-            const imageUrl = await this.getFile(sound.imagePath)
+          if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
+            const imageUrl = await this.getFile(sound.imageKey)
             if (imageUrl) {
               sound.imageUrl = imageUrl
             }
@@ -133,22 +133,23 @@ export const useSettingsStore = defineStore('settings', {
       })
 
       // Store the file in the database so it can be accessed later
-      await db.put('sounds', file, file.path)
+      const key = v4()
+      await db.put('sounds', file, key)
 
       // Create a blob URL that points to the file data
-      return URL.createObjectURL(file)
+      return { fileUrl: URL.createObjectURL(file), fileKey: key }
     },
     /**
      * Fetch a sound from the store
      * @param path the key it's saved under
      * @returns the value of the URL to the file
      */
-    async getFile(path: string): Promise<string | null> {
+    async getFile(key: string): Promise<string | null> {
       // open the database
       const db = await openDB('pulse-panel', 1)
 
       // get the file from the database
-      const file = await db.get('sounds', path)
+      const file = await db.get('sounds', key)
 
       if (file) {
         // Create a blob URL that points to the file data
@@ -168,11 +169,11 @@ export const useSettingsStore = defineStore('settings', {
       // delete the file from the database
       await db.delete('sounds', path)
     },
-    async replaceFile(oldPath: string | undefined, newFile: File): Promise<string> {
+    async replaceFile(oldPath: string | undefined, newFile: File): Promise<{ fileUrl: string; fileKey: string }> {
       if (oldPath) {
         await this.deleteFile(oldPath)
       }
-      return await this.saveFile(newFile)
+      return this.saveFile(newFile)
     },
     /**
      * Fetch a boolean setting from the store

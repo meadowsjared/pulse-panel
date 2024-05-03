@@ -157,8 +157,8 @@ export const useSoundStore = defineStore('sound', {
         this.currentSound = null
       }
 
-      if (audioFile?.audioUrl === undefined && audioFile?.audioPath !== undefined) {
-        const audioUrl = await settingsStore.getFile(audioFile.audioPath)
+      if (audioFile?.audioUrl === undefined && audioFile?.audioKey !== undefined) {
+        const audioUrl = await settingsStore.getFile(audioFile.audioKey)
         if (audioUrl) {
           audioFile.audioUrl = audioUrl
         }

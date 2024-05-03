@@ -35,8 +35,8 @@ function updateSound() {
 
 function deleteSound(pSound: Sound) {
   sounds.value = sounds.value.filter(sound => sound.id !== pSound.id)
-  settingsStore.deleteFile(pSound.audioPath)
-  settingsStore.deleteFile(pSound.imagePath)
+  settingsStore.deleteFile(pSound.audioKey)
+  settingsStore.deleteFile(pSound.imageKey)
   settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
 }
 
@@ -67,8 +67,8 @@ function stripAudioUrls(pSounds: Sound[]) {
     return {
       id: sound.id,
       name: sound.name,
-      audioPath: sound.audioPath,
-      imagePath: sound.imagePath,
+      audioKey: sound.audioKey,
+      imageKey: sound.imageKey,
       volume: sound.volume,
     }
   })

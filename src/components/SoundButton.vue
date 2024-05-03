@@ -7,7 +7,7 @@
     v-on:dragover.prevent
     :class="{
       'playing-sound': playingThisSound,
-      'has-image': modelValue.imagePath,
+      'has-image': modelValue.imageKey,
       'edit-mode': props.displayMode === 'edit',
       'cursor-default': props.displayMode === 'edit',
     }"
@@ -123,14 +123,14 @@ async function handleFileDrop(event: DragEvent) {
  * @param file The file that was dropped
  */
 async function handleSoundFileDrop(file: File) {
-  const audioUrl = await settingsStore.saveFile(file)
+  const { fileUrl, fileKey } = await settingsStore.saveFile(file)
   // if the sound is new
   if (props.modelValue.name === undefined) {
     if (file && file.path) {
       const newSound: Sound = {
         name: stripFileExtension(file.name),
-        audioUrl: audioUrl,
-        audioPath: file.path,
+        audioUrl: fileUrl,
+        audioKey: fileKey,
         id: v4(),
       }
       emit('update:modelValue', newSound)
@@ -139,12 +139,12 @@ async function handleSoundFileDrop(file: File) {
   }
 
   // if the sound is not new, then they are updating an existing sound
-  await settingsStore.replaceFile(props.modelValue.audioPath, file)
+  await settingsStore.replaceFile(props.modelValue.audioKey, file)
   // update the audioUrl and path
   const newSound: Sound = {
     ...props.modelValue,
     audioUrl: URL.createObjectURL(file),
-    audioPath: file.path,
+    audioKey: file.path,
     name: stripFileExtension(file.name),
   }
   emit('update:modelValue', newSound)
@@ -156,12 +156,12 @@ async function handleSoundFileDrop(file: File) {
  */
 async function handleImageFileDrop(file: File) {
   const settingsStore = useSettingsStore()
-  const imageUrl = await settingsStore.replaceFile(props.modelValue.imagePath, file)
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.imageKey, file)
   const newSound: Sound = {
     ...props.modelValue,
     name: props.modelValue.name || '',
-    imageUrl: imageUrl,
-    imagePath: file.path,
+    imageUrl: fileUrl,
+    imageKey: fileKey,
   }
   emit('update:modelValue', newSound)
 }

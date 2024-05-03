@@ -94,8 +94,8 @@ watch(
 
 function removeImage() {
   // Remove the image from the modelValue
-  settingsStore.deleteFile(props.modelValue.imagePath)
-  delete props.modelValue.imagePath
+  settingsStore.deleteFile(props.modelValue.imageKey)
+  delete props.modelValue.imageKey
   delete props.modelValue.imageUrl
   emit('update:modelValue', props.modelValue)
 }
