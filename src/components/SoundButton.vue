@@ -6,7 +6,7 @@
     v-on:drop="handleFileDrop"
     v-on:dragover.prevent
     :class="{
-      'playing-sound': playingSound,
+      'playing-sound': playingThisSound,
       'has-image': modelValue.imagePath,
       'edit-mode': props.displayMode === 'edit',
       'cursor-default': props.displayMode === 'edit',
@@ -44,7 +44,7 @@
 <script setup lang="ts">
 import { useSoundStore } from '../store/sound'
 import { Sound } from '../../@types/sound'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { File } from '../../@types/file'
@@ -65,11 +65,13 @@ const emit = defineEmits<{
   (event: 'deleteSound'): void
   (event: 'editSound'): void
 }>()
-const playingSound = ref(false)
+
 const numSoundsPlaying = ref(0)
 
 const soundStore = useSoundStore()
 const settingsStore = useSettingsStore()
+
+const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
 
 function deleteSound() {
   if (props.displayMode === 'edit') {
@@ -85,13 +87,9 @@ function editSound() {
 
 function playSound(forcePlay: boolean) {
   if (!forcePlay && props.displayMode === 'edit') return
-  playingSound.value = true
   numSoundsPlaying.value++
   soundStore.playSound(props.modelValue).then(() => {
     numSoundsPlaying.value--
-    if (numSoundsPlaying.value < 1) {
-      playingSound.value = false
-    }
   })
 }
 
