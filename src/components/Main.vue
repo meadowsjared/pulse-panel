@@ -9,14 +9,24 @@
           <inline-svg :src="SettingsGear" />Settings</router-link
         >
       </div>
-      <button
-        class="menu"
-        :class="{ edit: settingsStore.displayMode === 'edit' }"
-        @click="changeMode"
-        :title="settingsStore.displayMode === 'edit' ? 'click to go back to playing' : 'click to start editing'">
-        <inline-svg :src="settingsStore.displayMode === 'edit' ? EditIcon : PlayIcon" />
-        {{ settingsStore.displayMode === 'edit' ? 'Editing' : 'Playing' }}
-      </button>
+      <div class="bottom-buttons">
+        <button
+          class="menu mute-button"
+          :class="{ muted: settingsStore.muted }"
+          @click="settingsStore.toggleMute"
+          :title="settingsStore.muted ? 'Click to unmute soundboard' : 'Click to mute soundboard'">
+          <inline-svg :src="Headphones" />
+          {{ settingsStore.muted ? 'Muted' : 'Unmuted' }}
+        </button>
+        <button
+          class="menu"
+          :class="{ edit: settingsStore.displayMode === 'edit' }"
+          @click="changeMode"
+          :title="settingsStore.displayMode === 'edit' ? 'click to go back to playing' : 'click to start editing'">
+          <inline-svg :src="settingsStore.displayMode === 'edit' ? EditIcon : PlayIcon" />
+          {{ settingsStore.displayMode === 'edit' ? 'Editing' : 'Playing' }}
+        </button>
+      </div>
     </side-bar>
     <router-view />
   </div>
@@ -30,6 +40,7 @@ import SettingsGear from '../assets/images/settings-gear.svg'
 import Speaker from '../assets/images/speaker.svg'
 import EditIcon from '../assets/images/edit.svg'
 import PlayIcon from '../assets/images/play.svg'
+import Headphones from '../assets/images/headphones.svg'
 
 const outputDeviceId = ref<string[]>([])
 const darkMode = ref(true)
@@ -41,6 +52,7 @@ window.electron?.onDarkModeToggle((value: boolean) => {
   settingsStore.darkMode = value
 })
 
+settingsStore.fetchMute()
 settingsStore.fetchStringArray('outputDevices').then(outputDevice => {
   outputDeviceId.value = outputDevice
 })
@@ -75,10 +87,41 @@ function changeMode() {
   height: 34px;
 }
 
-.top-buttons {
+.top-buttons,
+.bottom-buttons {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  overflow: hidden; /* used to hide line as it goes away */
+}
+
+.mute-button {
+  position: relative;
+}
+
+.mute-button > svg {
+  fill: var(--alt-bg-color);
+  transition: fill 300ms ease-in-out;
+}
+
+.mute-button.muted > svg {
+  fill: red; /* sets the color of the headphones */
+}
+
+.mute-button::after {
+  content: '';
+  position: absolute;
+  left: -0.4rem;
+  width: 2.8rem;
+  height: 0.25rem;
+  transform: translate(2.2rem, -2.2rem) rotate(135deg);
+  background: var(--alt-bg-color);
+  transition: transform 300ms ease-in-out, background 300ms ease-in-out 300ms;
+}
+
+.mute-button.muted::after {
+  background: red; /* sets the color of the slash */
+  transform: translate(0, 0) rotate(135deg);
 }
 
 .e-nuxt-container {

@@ -97,6 +97,7 @@ export const useSoundStore = defineStore('sound', {
       return new Promise(resolve => {
         ;(async () => {
           const settingsStore = useSettingsStore()
+          if (settingsStore.muted) return // if muted, don't play the sound
           if (!activeOutputDevices) {
             activeOutputDevices = settingsStore.outputDevices
           }

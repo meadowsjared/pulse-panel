@@ -13,6 +13,7 @@ interface State {
   sounds: Sound[]
   displayMode: DisplayMode
   currentEditingSound: Sound | null
+  muted: boolean
 }
 
 type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
@@ -30,8 +31,26 @@ export const useSettingsStore = defineStore('settings', {
     sounds: [],
     displayMode: 'play',
     currentEditingSound: null,
+    muted: false,
   }),
   actions: {
+    async toggleMute(): Promise<void> {
+      this.muted = !this.muted
+      // save the mute setting to the idb store
+      const electron = window.electron
+      await electron?.saveSetting?.('muted', this.muted)
+    },
+    async fetchMute(): Promise<boolean> {
+      const electron = window.electron
+      const mute = await electron?.readSetting?.('muted')
+      if (mute === undefined) {
+        await electron?.saveSetting?.('muted', false)
+        this.muted = false
+      } else {
+        this.muted = !!mute
+      }
+      return this.muted
+    },
     async getOutputDevices(): Promise<MediaDeviceInfo[]> {
       const devices = await navigator.mediaDevices.enumerateDevices()
       return devices.filter(device => device.kind === 'audiooutput')
