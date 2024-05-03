@@ -40,8 +40,30 @@ export const useSoundStore = defineStore('sound', {
      * Set the volume for the soundboard
      * @param volume the volume to set it to
      */
-    async setVolume(volume: number): Promise<void> {
-      this.volume = volume
+    async setVolume(
+      volume: number,
+      activeOutputDevices: string[] | null = null,
+      selectedOutputDevices: (string | null)[] | null = null
+    ): Promise<void> {
+      const settingsStore = useSettingsStore()
+      if (!activeOutputDevices) {
+        activeOutputDevices = settingsStore.outputDevices
+      }
+      // filter out null values
+      activeOutputDevices = activeOutputDevices.filter((deviceId): deviceId is string => deviceId !== null)
+      if (!activeOutputDevices) return
+      if (!selectedOutputDevices) {
+        selectedOutputDevices = activeOutputDevices
+      }
+      const filteredSelectedOutputDevices = selectedOutputDevices.filter(
+        (deviceId): deviceId is string => deviceId !== null
+      )
+      activeOutputDevices.forEach(async (outputDeviceId: string) => {
+        const index = filteredSelectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
+        if (this.outputDeviceData[index].currentAudio) {
+          this.outputDeviceData[index].currentAudio.volume = volume
+        }
+      })
     },
     /** Populate the playing audio array
      * @param length the length to populate it to

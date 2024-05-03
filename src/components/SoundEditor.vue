@@ -20,7 +20,6 @@
           min="0"
           max="1"
           step="0.01"
-          @update:modelValue="props.modelValue.volume = $event"
           v-model.number="volumeValue"
           id="volume" />
       </div>
@@ -66,6 +65,15 @@ const volumeValue = computed({
   get: () => props.modelValue.volume ?? 1,
   set: (value: number) => (props.modelValue.volume = value),
 })
+
+// Watch for changes to the volume and update the soundStore in case something is playing
+watch(
+  () => volumeValue.value,
+  () => {
+    const volume = volumeValue.value
+    soundStore.setVolume(volume)
+  }
+)
 
 function removeImage() {
   // Remove the image from the modelValue
