@@ -15,6 +15,8 @@ interface OutputDeviceProperties {
 interface State {
   volume: number
   outputDeviceData: OutputDeviceProperties[]
+  playingSoundIds: string[]
+  currentSound: Sound | null
 }
 
 export const useSoundStore = defineStore('sound', {
@@ -28,6 +30,8 @@ export const useSoundStore = defineStore('sound', {
         currentSoundResolve: null,
       },
     ],
+    playingSoundIds: [],
+    currentSound: null,
   }),
   getters: {
     // if any sound is playing, this will be true
@@ -141,11 +145,16 @@ export const useSoundStore = defineStore('sound', {
       ) {
         this.outputDeviceData[index].currentAudio.pause()
         this.outputDeviceData[index].currentAudio.currentTime = 0
+        this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
+        this.currentSound = null
         this.outputDeviceData[index].numSoundsPlaying--
         if (this.outputDeviceData[index].currentSoundResolve) {
           this.outputDeviceData[index].currentSoundResolve()
           this.outputDeviceData[index].currentSoundResolve = null
         }
+      } else {
+        this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
+        this.currentSound = null
       }
 
       if (audioFile?.audioUrl === undefined && audioFile?.audioPath !== undefined) {
@@ -169,9 +178,13 @@ export const useSoundStore = defineStore('sound', {
         this.outputDeviceData[index].playingAudio = true
       }
       this.outputDeviceData[index].numSoundsPlaying++
+      if (audioFile?.id) this.playingSoundIds.push(audioFile.id)
+      this.currentSound = audioFile
       this.outputDeviceData[index].currentAudio.play()
       this.outputDeviceData[index].currentSoundResolve = resolve // store this so we can end it early if we want to
       this.outputDeviceData[index].currentAudio.onended = () => {
+        this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
+        this.currentSound = null
         this.outputDeviceData[index].currentAudio?.remove()
         this.outputDeviceData[index].currentAudio = null
         this.outputDeviceData[index].numSoundsPlaying--
