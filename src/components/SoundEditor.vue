@@ -64,7 +64,7 @@ watch(
 
 // replace volume of undefined with 1
 const volumeValue = computed({
-  get: () => props.modelValue.volume ?? 0,
+  get: () => props.modelValue.volume ?? 1, // default volume to max if not set
   set: (value: number) => {
     props.modelValue.volume = value
     volumeDisplay.value = Math.round(value * 100)
