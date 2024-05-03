@@ -92,6 +92,7 @@ function close() {
 
 .play-sound-button {
   grid-area: 2 / 1;
+  padding-right: 0.5rem;
 }
 
 .play-sound-button > svg {
