@@ -107,14 +107,27 @@ function addSound() {
  */
 async function handleFileDrop(event: DragEvent) {
   event.preventDefault()
-  const file: File | null = event.dataTransfer?.files[0] ?? null
-  if (!file) return
-  if (file.type.includes('audio')) {
-    handleSoundFileDrop(file)
-    return
+  const files: FileList | null = event.dataTransfer?.files ?? null
+  if (!files) return
+  // iterate the FileList and handle the files
+  const newSound: Sound = {
+    ...props.modelValue,
   }
-  if (file.type.includes('image')) {
-    handleImageFileDrop(file)
+  // only allow a single file to be dropped for the audio and image at a time
+  // (prevents orphaned files from being uploaded)
+  let audioModified = false
+  let imageModified = false
+  for (const file of Array.from(files)) {
+    if (!audioModified && file.type.includes('audio')) {
+      await handleSoundFileDrop(file, newSound)
+      audioModified = true
+    } else if (!imageModified && file.type.includes('image')) {
+      await handleImageFileDrop(file, newSound)
+      imageModified = true
+    }
+  }
+  if (audioModified || imageModified) {
+    emit('update:modelValue', newSound)
   }
 }
 
@@ -122,48 +135,24 @@ async function handleFileDrop(event: DragEvent) {
  * Handles the sound file drop event
  * @param file The file that was dropped
  */
-async function handleSoundFileDrop(file: File) {
-  const { fileUrl, fileKey } = await settingsStore.saveFile(file)
-  // if the sound is new
-  if (props.modelValue.name === undefined) {
-    if (file && file.path) {
-      const newSound: Sound = {
-        name: stripFileExtension(file.name),
-        audioUrl: fileUrl,
-        audioKey: fileKey,
-        id: v4(),
-      }
-      emit('update:modelValue', newSound)
-    }
-    return
-  }
-
+async function handleSoundFileDrop(file: File, newSound: Sound) {
   // if the sound is not new, then they are updating an existing sound
-  await settingsStore.replaceFile(props.modelValue.audioKey, file)
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file)
   // update the audioUrl and path
-  const newSound: Sound = {
-    ...props.modelValue,
-    audioUrl: URL.createObjectURL(file),
-    audioKey: file.path,
-    name: stripFileExtension(file.name),
-  }
-  emit('update:modelValue', newSound)
+  newSound.audioUrl = fileUrl
+  newSound.audioKey = fileKey
+  newSound.name = stripFileExtension(file.name)
 }
 
 /**
  * Handles the image file drop event
  * @param file The file that was dropped
  */
-async function handleImageFileDrop(file: File) {
+async function handleImageFileDrop(file: File, newSound: Sound) {
   const settingsStore = useSettingsStore()
   const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.imageKey, file)
-  const newSound: Sound = {
-    ...props.modelValue,
-    name: props.modelValue.name || '',
-    imageUrl: fileUrl,
-    imageKey: fileKey,
-  }
-  emit('update:modelValue', newSound)
+  newSound.imageUrl = fileUrl
+  newSound.imageKey = fileKey
 }
 
 /**
