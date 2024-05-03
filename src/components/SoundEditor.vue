@@ -8,6 +8,13 @@
       <label for="name">Name:</label>
       <input type="text" v-model="props.modelValue.name" id="name" />
     </div>
+    <input
+      type="file"
+      ref="audioFileInput"
+      @change="handleAudioFileUpload"
+      class="file-input hidden"
+      accept="audio/*" />
+    <button @click="audioFileInput?.click()" class="browse-button">Browse Audio...</button>
     <div class="input-group">
       <div class="volume-control-container">
         <input type="text" class="volume-display" v-model.number="volumeDisplay" />
@@ -32,6 +39,13 @@
         <inline-svg :src="Plus" class="w-full h-full rotate-45" />
       </button>
     </div>
+    <input
+      type="file"
+      ref="imageFileInput"
+      @change="handleImageFileUpload"
+      class="file-input hidden"
+      accept="image/*" />
+    <button @click="imageFileInput?.click()" class="browse-button">Browse Image...</button>
   </div>
 </template>
 
@@ -40,9 +54,10 @@ import { Sound } from '@/@types/sound'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, VNodeRef, watch } from 'vue'
 import PlayIcon from '../assets/images/play.svg'
 import { useSoundStore } from '../store/sound'
+import { stripFileExtension } from '../utils/utils'
 
 const props = defineProps<{
   modelValue: Sound
@@ -52,6 +67,8 @@ const emit = defineEmits<(event: 'update:modelValue', value: Sound) => void>()
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
+const imageFileInput = ref<VNodeRef | null>(null)
+const audioFileInput = ref<VNodeRef | null>(null)
 
 // Watch for changes to the name and update the modelValue
 watch(
@@ -92,6 +109,31 @@ watch(
   { immediate: true }
 )
 
+async function handleAudioFileUpload(event: Event) {
+  // Handle the file upload event
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  if (!target.files || !target.files[0]) return
+  const file = target.files[0]
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file)
+  props.modelValue.name = stripFileExtension(file.name)
+  props.modelValue.audioKey = fileKey
+  props.modelValue.audioUrl = fileUrl
+  emit('update:modelValue', props.modelValue)
+}
+
+async function handleImageFileUpload(event: Event) {
+  // Handle the file upload event
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  if (!target.files || !target.files[0]) return
+  const file = target.files[0]
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.imageKey, file)
+  props.modelValue.imageKey = fileKey
+  props.modelValue.imageUrl = fileUrl
+  emit('update:modelValue', props.modelValue)
+}
+
 function removeImage() {
   // Remove the image from the modelValue
   settingsStore.deleteFile(props.modelValue.imageKey)
@@ -107,6 +149,27 @@ function close() {
 </script>
 
 <style scoped>
+.browse-button {
+  color: var(--alt-bright-text-color);
+  background-color: var(--alt-bg-color);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.browse-button:hover {
+  background-color: var(--alt-link-color);
+  outline: 1px solid var(--alt-bg-color);
+  color: var(--alt-bright-text-color);
+}
+
+.browse-button:active {
+  background-color: var(--alt-text-color);
+  color: var(--alt-bright-text-color);
+  outline: 1px solid var(--alt-bg-color);
+  cursor: pointer;
+}
+
 .volume-control-container {
   display: grid;
   align-items: center;

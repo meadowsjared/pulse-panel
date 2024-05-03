@@ -49,9 +49,9 @@ import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { File } from '../../@types/file'
 import { DisplayMode, useSettingsStore } from '../store/settings'
-import { v4 } from 'uuid'
 import EditIcon from '../assets/images/edit.svg'
 import PlayIcon from '../assets/images/play.svg'
+import { stripFileExtension } from '../utils/utils'
 
 // Define the props
 const props = defineProps<{
@@ -153,14 +153,6 @@ async function handleImageFileDrop(file: File, newSound: Sound) {
   const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.imageKey, file)
   newSound.imageUrl = fileUrl
   newSound.imageKey = fileKey
-}
-
-/**
- * Strips the file extension from a file name
- * @param fileName The name of the file
- */
-function stripFileExtension(fileName: string) {
-  return fileName.replace(/\.[^/.]+$/, '')
 }
 </script>
 
