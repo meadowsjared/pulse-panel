@@ -10,7 +10,7 @@
     </div>
     <div class="input-group">
       <div class="volume-control-container">
-        <div class="volume-display">{{ volumeDisplay }}</div>
+        <input type="text" class="volume-display" v-model.number="volumeDisplay" />
         <label class="volume-label" for="volume">Volume:</label>
         <button @click="soundStore.playSound(modelValue)" class="play-sound-button">
           <inline-svg :src="PlayIcon" class="w-6 h-6" />
@@ -40,7 +40,7 @@ import { Sound } from '@/@types/sound'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import PlayIcon from '../assets/images/play.svg'
 import { useSoundStore } from '../store/sound'
 
@@ -57,18 +57,30 @@ const soundStore = useSoundStore()
 watch(
   () => [props.modelValue.name, props.modelValue.volume],
   () => {
+    volumeDisplay.value = Math.round((props.modelValue.volume ?? 0) * 100)
     emit('update:modelValue', props.modelValue)
   }
 )
 
 // replace volume of undefined with 1
 const volumeValue = computed({
-  get: () => props.modelValue.volume ?? 1,
-  set: (value: number) => (props.modelValue.volume = value),
+  get: () => props.modelValue.volume ?? 0,
+  set: (value: number) => {
+    props.modelValue.volume = value
+    volumeDisplay.value = Math.round(value * 100)
+  },
 })
 
 // display version of the volume
-const volumeDisplay = computed(() => `${Math.round(volumeValue.value * 100)}%`)
+const volumeDisplay = ref(volumeValue.value * 100)
+
+//update the volumeValue when volumeDisplay changes
+watch(
+  () => volumeDisplay.value,
+  () => {
+    volumeValue.value = volumeDisplay.value / 100
+  }
+)
 
 // Watch for changes to the volume and update the soundStore in case something is playing
 watch(
@@ -76,7 +88,8 @@ watch(
   () => {
     const volume = volumeValue.value
     soundStore.setVolume(volume)
-  }
+  },
+  { immediate: true }
 )
 
 function removeImage() {
@@ -113,7 +126,11 @@ function close() {
 
 .volume-display {
   color: var(--alt-bg-color);
-  padding-right: 0.5rem;
+  padding: 0.125rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.25rem;
+  width: 2.2rem;
+  text-align: center;
 }
 
 .volume-label {
