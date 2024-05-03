@@ -10,6 +10,7 @@
     </div>
     <div class="input-group">
       <div class="volume-control-container">
+        <div class="volume-display">{{ volumeDisplay }}</div>
         <label class="volume-label" for="volume">Volume:</label>
         <button @click="soundStore.playSound(modelValue)" class="play-sound-button">
           <inline-svg :src="PlayIcon" class="w-6 h-6" />
@@ -66,6 +67,9 @@ const volumeValue = computed({
   set: (value: number) => (props.modelValue.volume = value),
 })
 
+// display version of the volume
+const volumeDisplay = computed(() => `${Math.round(volumeValue.value * 100)}%`)
+
 // Watch for changes to the volume and update the soundStore in case something is playing
 watch(
   () => volumeValue.value,
@@ -100,12 +104,16 @@ function close() {
 
 .play-sound-button {
   grid-area: 2 / 1;
-  padding-right: 0.5rem;
 }
 
 .play-sound-button > svg {
   fill: var(--alt-bg-color);
   stroke: var(--alt-bg-color);
+}
+
+.volume-display {
+  color: var(--alt-bg-color);
+  padding-right: 0.5rem;
 }
 
 .volume-label {
