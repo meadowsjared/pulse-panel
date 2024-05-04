@@ -13,7 +13,7 @@
     }"
     class="sound-button relative"
     :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
-    <span class="button-name">{{ modelValue.name || 'New Sound' }}</span>
+    <span v-if="!props.modelValue.hideName" class="button-name">{{ modelValue.name || 'New Sound' }}</span>
     <button
       @click.capture="deleteSound"
       title="Delete"

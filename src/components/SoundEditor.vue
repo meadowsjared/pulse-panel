@@ -7,6 +7,12 @@
     <div class="input-group">
       <label for="name">Name:</label>
       <input type="text" v-model="props.modelValue.name" id="name" />
+      <div class="hide-name-checkbox-group">
+        <input title="hide name on button" type="checkbox" v-model="props.modelValue.hideName" id="hideName" /><label
+          for="hideName"
+          >Hide Name:</label
+        >
+      </div>
     </div>
     <input
       type="file"
@@ -72,8 +78,12 @@ const audioFileInput = ref<VNodeRef | null>(null)
 
 // Watch for changes to the name and update the modelValue
 watch(
-  () => [props.modelValue.name, props.modelValue.volume],
+  () => [props.modelValue.name, props.modelValue.volume, props.modelValue.hideName],
   () => {
+    // if hideName is false and modelValue has the property, delete it
+    if (!props.modelValue.hideName && props.modelValue.hasOwnProperty('hideName')) {
+      delete props.modelValue.hideName
+    }
     volumeDisplay.value = Math.round((props.modelValue.volume ?? 0) * 100)
     emit('update:modelValue', props.modelValue)
   }
@@ -226,6 +236,13 @@ function close() {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+}
+
+.hide-name-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .close-button {
