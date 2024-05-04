@@ -218,7 +218,6 @@ option {
   background-color: var(--link-color);
   color: var(--background-color);
   fill: var(--background-color);
-  fill: var(--background-color);
 }
 .play-sound-button:active:hover {
   background-color: green;
