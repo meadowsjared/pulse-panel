@@ -11,6 +11,14 @@
       </div>
       <div class="bottom-buttons">
         <button
+          class="menu stop-button"
+          :class="{ active: soundStore.playingSoundIds.length > 0 }"
+          @click="soundStore.stopAllSounds"
+          title="Click to stop the current sound">
+          <inline-svg :src="StopIcon" />
+          Stop
+        </button>
+        <button
           class="menu mute-button"
           :class="{ muted: settingsStore.muted }"
           @click="settingsStore.toggleMute"
@@ -40,11 +48,14 @@ import SettingsGear from '../assets/images/settings-gear.svg'
 import Speaker from '../assets/images/speaker.svg'
 import EditIcon from '../assets/images/edit.svg'
 import PlayIcon from '../assets/images/play.svg'
+import StopIcon from '../assets/images/stop.svg'
 import Headphones from '../assets/images/headphones.svg'
+import { useSoundStore } from '../store/sound'
 
 const outputDeviceId = ref<string[]>([])
 const darkMode = ref(true)
 const settingsStore = useSettingsStore()
+const soundStore = useSoundStore()
 
 window.electron?.onDarkModeToggle((value: boolean) => {
   if (settingsStore.darkMode === value) return
@@ -92,11 +103,16 @@ function changeMode() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  overflow: hidden; /* used to hide line as it goes away */
+}
+
+.stop-button.active > svg {
+  fill: var(--alt-text-color);
+  color: var(--alt-text-color);
 }
 
 .mute-button {
   position: relative;
+  overflow: hidden;
 }
 
 .mute-button > svg {
