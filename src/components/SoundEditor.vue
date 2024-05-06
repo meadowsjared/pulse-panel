@@ -84,7 +84,10 @@ watch(
     if (!props.modelValue.hideName && props.modelValue.hasOwnProperty('hideName')) {
       delete props.modelValue.hideName
     }
-    volumeDisplay.value = Math.round((props.modelValue.volume ?? 0) * 100)
+    volumeDisplay.value = Math.round((props.modelValue.volume ?? 1) * 100)
+    if ((props.modelValue.volume ?? 1) === 1) {
+      delete props.modelValue.volume
+    }
     emit('update:modelValue', props.modelValue)
   }
 )
