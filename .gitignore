@@ -27,3 +27,4 @@ dist-ssr
 pnpm-lock.yaml
 .env.production
 .env
+pulse-panel.json
