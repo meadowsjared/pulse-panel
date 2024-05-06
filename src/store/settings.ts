@@ -20,6 +20,9 @@ type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
 type ArraySoundSettings = 'sounds'
 type ArraySettings = 'outputDevices'
 export type DisplayMode = 'edit' | 'play'
+const isProduction = process.env.NODE_ENV === 'production'
+const dbName = isProduction ? 'pulse-panel' : 'pulse-panel-dev'
+const dbStoreName = isProduction ? 'sounds' : 'sounds-dev'
 
 export interface SettingsStore extends ReturnType<typeof useSettingsStore> {}
 
@@ -149,15 +152,15 @@ export const useSettingsStore = defineStore('settings', {
      */
     async saveFile(file: File) {
       // Open (or create) the database
-      const db = await openDB('pulse-panel', 1, {
+      const db = await openDB(dbName, 1, {
         upgrade(db) {
-          db.createObjectStore('sounds')
+          db.createObjectStore(dbStoreName)
         },
       })
 
       // Store the file in the database so it can be accessed later
       const key = v4()
-      await db.put('sounds', file, key)
+      await db.put(dbStoreName, file, key)
 
       // Create a blob URL that points to the file data
       return { fileUrl: URL.createObjectURL(file), fileKey: key }
@@ -169,14 +172,23 @@ export const useSettingsStore = defineStore('settings', {
      */
     async getFile(key: string): Promise<string | null> {
       // open the database
-      const db = await openDB('pulse-panel', 1)
+      const db = await openDB(dbName, 1, {
+        upgrade(db) {
+          db.createObjectStore(dbStoreName)
+        },
+      })
 
       // get the file from the database
-      const file = await db.get('sounds', key)
+      try {
+        const file = await db.get(dbStoreName, key)
 
-      if (file) {
-        // Create a blob URL that points to the file data
-        return URL.createObjectURL(file)
+        if (file) {
+          // Create a blob URL that points to the file data
+          return URL.createObjectURL(file)
+        }
+      } catch (error) {
+        console.warn(error)
+        // do nothing, we return null if the file doesn't exist
       }
       return null
     },
@@ -187,10 +199,10 @@ export const useSettingsStore = defineStore('settings', {
     async deleteFile(path: string | undefined): Promise<void> {
       if (path === undefined) return
       // open the database
-      const db = await openDB('pulse-panel', 1)
+      const db = await openDB(dbName, 1)
 
       // delete the file from the database
-      await db.delete('sounds', path)
+      await db.delete(dbStoreName, path)
     },
     async replaceFile(oldPath: string | undefined, newFile: File): Promise<{ fileUrl: string; fileKey: string }> {
       if (oldPath) {
