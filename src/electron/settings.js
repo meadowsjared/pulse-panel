@@ -30,7 +30,8 @@ function getConfigurationFilePath() {
   const userHome = getUserHome()
   // get the app name from the package.json file:
   const appName = require(join(__dirname, '../../package.json')).name
-  const configDirectory = join(userHome, appName)
+  const isDev = process.env.npm_lifecycle_event === 'app:dev'
+  const configDirectory = isDev ? join(__dirname, '../../') : join(userHome, appName)
   ensureDirectoryExistence(configDirectory) // Make sure the directory exists
   // note: this will store the file here:
   // %LocalAppData%\Programs\pulse-panel\resources\app\pulse-panel.json
