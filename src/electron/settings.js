@@ -1,7 +1,7 @@
 'use strict'
 
 const fs = require('fs')
-const path = require('path')
+const { join } = require('path')
 const nconf = require('nconf').file({
   file: getConfigurationFilePath(),
 })
@@ -16,10 +16,6 @@ function readSetting(settingKey) {
   return nconf.get(settingKey)
 }
 
-function getUserHome() {
-  return process.env[process.platform == 'win32' ? 'AppData' : 'HOME']
-}
-
 function ensureDirectoryExistence(filePath) {
   if (!fs.existsSync(filePath)) {
     fs.mkdirSync(filePath, { recursive: true })
@@ -27,12 +23,13 @@ function ensureDirectoryExistence(filePath) {
 }
 
 function getConfigurationFilePath() {
-  const userHome = getUserHome()
   // get the app name from the package.json file:
-  const appName = require('../../package.json').name
-  const configDirectory = path.join(userHome, appName)
+  const appName = require(join(__dirname, '../../package.json')).name
+  const configDirectory = join(__dirname, '../../')
   ensureDirectoryExistence(configDirectory) // Make sure the directory exists
-  return path.join(configDirectory, `${appName}.json`)
+  // note: this will store the file here:
+  // %LocalAppData%\Programs\pulse-panel\resources\app\pulse-panel.json
+  return join(configDirectory, `${appName}.json`)
 }
 
 module.exports = {
