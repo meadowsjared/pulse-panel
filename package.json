@@ -29,7 +29,7 @@
     },
     "files": [
       "dist",
-      "src/electron/main/main.js"
+      "src/electron/**/*"
     ],
     "mac": {
       "artifactName": "${productName}_${version}.${ext}",
