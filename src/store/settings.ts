@@ -116,7 +116,11 @@ export const useSettingsStore = defineStore('settings', {
         await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
         this[key] = defaultValue
       } else {
-        return this._getImageUrls(key, JSON.parse(returnedArray))
+        const sounds = JSON.parse(returnedArray)
+        if (sounds.length < 1 || sounds[sounds.length - 1].name !== undefined) {
+          sounds.push({ id: v4() }) // add a new sound button if there isn't one
+        }
+        return this._getImageUrls(key, sounds)
       }
 
       return this[key]
