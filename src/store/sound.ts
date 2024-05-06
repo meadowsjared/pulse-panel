@@ -41,6 +41,36 @@ export const useSoundStore = defineStore('sound', {
   },
   actions: {
     /**
+     * Stop all sounds that are currently playing
+     */
+    async stopAllSounds(): Promise<void> {
+      const settingsStore = useSettingsStore()
+      settingsStore.outputDevices.forEach(async (outputDeviceId: string) => {
+        const index = settingsStore.outputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
+        if (
+          settingsStore.allowOverlappingSound === false &&
+          this.outputDeviceData[index].currentAudio &&
+          this.outputDeviceData[index].playingAudio
+        ) {
+          this.outputDeviceData[index].currentAudio.pause()
+          this.outputDeviceData[index].currentAudio.currentTime = 0
+          this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
+          this.currentSound = null
+          this.outputDeviceData[index].numSoundsPlaying--
+          if (this.outputDeviceData[index].currentSoundResolve) {
+            this.outputDeviceData[index].currentSoundResolve()
+            this.outputDeviceData[index].currentSoundResolve = null
+          }
+        } else {
+          this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
+          this.currentSound = null
+        }
+
+        // empty this array
+        this.playingSoundIds = []
+      })
+    },
+    /**
      * Set the volume for the soundboard
      * @param volume the volume to set it to
      */
