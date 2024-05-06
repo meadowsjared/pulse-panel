@@ -1,16 +1,18 @@
+const globals = require('globals')
+const typescriptParser = require('@typescript-eslint/parser')
+
 module.exports = {
-  root: true,
-  env: {
-    browser: true,
-    node: true,
-  },
-  parserOptions: {
-    sourceType: 'module',
-    ecmaVersion: 2018,
-  },
-  parser: '@typescript-eslint/parser',
   // extends: 'standard',
   // add your custom rules here
+  ignores: ['/src/components.d.ts', '/src/auto-imports.d.ts', '/dist/*', '/release/*'],
+  languageOptions: {
+    parser: typescriptParser,
+    ecmaVersion: 2018,
+    sourceType: 'module',
+    globals: {
+      ...globals.browser,
+    },
+  },
   rules: {
     // StandardJS — The Rules
     indent: ['off', 2], // 2 spaces – for indentation
@@ -42,4 +44,4 @@ module.exports = {
     'vue/max-attributes-per-line': 'off',
     'vue/singleline-html-element-content-newline': 0,
   },
-};
+}
