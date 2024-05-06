@@ -1,5 +1,6 @@
 // All of the Node.js APIs are available in the preload process.
 // It has the same sandbox as a Chrome extension.
+const { join } = require('path')
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {
     const element = document.getElementById(selector)
@@ -28,7 +29,7 @@ contextBridge.exposeInMainWorld('electron', {
     chrome: process.versions.chrome,
     electron: process.versions.electron,
     platform: require('os').platform(),
-    vue: require('vue/package.json').version,
-    pinia: require('pinia/package.json').version,
+    vue: require(join(__dirname, '../../../node_modules/vue/package.json')).version,
+    pinia: require(join(__dirname, '../../../node_modules/pinia/package.json')).version,
   },
 })
