@@ -3,7 +3,6 @@
     <p>Push-to-talk hotkey:</p>
     <button
       class="hotkey"
-      ref="hotkeyRef"
       @keydown="handleKeyDown"
       title="this will be the button that pulse-panel with hold down any time sound is playing">
       {{ selectedHotkey ?? 'Press a key...' }}
@@ -20,8 +19,6 @@ import { useSettingsStore } from '../store/settings'
 
 const settingsStore = useSettingsStore()
 const selectedHotkey = ref<null | string>(settingsStore.ptt_hotkey ?? null)
-/** this will hold the value, which we'll be able to send that key to the OS */
-const hotkeyRef = ref<null | HTMLButtonElement>(null)
 
 function handleKeyDown(event: KeyboardEvent) {
   selectedHotkey.value = event.code
