@@ -18,12 +18,20 @@ import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 
 const settingsStore = useSettingsStore()
+settingsStore.fetchString('ptt_hotkey').then(hotkey => {
+  selectedHotkey.value = hotkey
+})
 const selectedHotkey = ref<null | string>(settingsStore.ptt_hotkey ?? null)
 
 function handleKeyDown(event: KeyboardEvent) {
   selectedHotkey.value = event.code
   // save the value to the IndexedDB store
   settingsStore.saveString('ptt_hotkey', event.code)
+}
+
+function resetHotkey() {
+  selectedHotkey.value = null
+  settingsStore.saveString('ptt_hotkey', null)
 }
 </script>
 

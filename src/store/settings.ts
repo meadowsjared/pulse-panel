@@ -73,9 +73,13 @@ export const useSettingsStore = defineStore('settings', {
      * @param key the key it's saved under
      * @param value the value to save
      */
-    async saveString(key: StringSettings, value: string): Promise<void> {
+    async saveString(key: StringSettings, value: string | null): Promise<void> {
       const electron: Settings | undefined = window.electron
-      await electron?.saveSetting?.(key, value)
+      if (value === null) {
+        await electron?.deleteSetting?.(key)
+      } else {
+        await electron?.saveSetting?.(key, value)
+      }
       this[key] = value
     },
     /**
