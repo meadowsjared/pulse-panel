@@ -22,7 +22,6 @@ const settingsStore = useSettingsStore()
 const selectedHotkey = ref<null | string>(settingsStore.ptt_hotkey ?? null)
 /** this will hold the value, which we'll be able to send that key to the OS */
 const hotkeyRef = ref<null | HTMLButtonElement>(null)
-const displayInput = ref<null | HTMLInputElement>(null)
 
 function handleKeyDown(event: KeyboardEvent) {
   selectedHotkey.value = event.code
