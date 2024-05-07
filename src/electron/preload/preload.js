@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('electron', {
   // note: these are defined in /@types/electron-window.d.ts
   readSetting: key => ipcRenderer.invoke('read-setting', key),
   saveSetting: (key, value) => ipcRenderer.invoke('save-setting', key, value),
+  deleteSetting: key => ipcRenderer.invoke('delete-setting', key),
+  sendKey: (key, down) => ipcRenderer.invoke('send-key', key, down),
   toggleDarkMode: value => {
     ipcRenderer.send('toggle-dark-mode', value)
   },

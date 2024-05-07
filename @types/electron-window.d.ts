@@ -12,6 +12,8 @@ export interface Versions {
 export interface Settings {
   readSetting: (key: string) => Promise<string | boolean | number | undefined>
   saveSetting: (key: string, value: string | boolean | number) => Promise<boolean>
+  deleteSetting: (key: string) => Promise<boolean>
+  sendKey: (key: string, down: boolean) => Promise<void>
   toggleDarkMode: (value: boolean) => void
   onDarkModeToggle: (callback: (value: boolean) => void) => void
 }
