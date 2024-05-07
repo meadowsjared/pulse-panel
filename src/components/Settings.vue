@@ -41,6 +41,7 @@
         @input="updateAllowOverlappingSound"
     /></label>
     <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
+    <hotkey-picker />
   </div>
 </template>
 
