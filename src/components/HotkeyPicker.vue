@@ -15,7 +15,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import CloseIcon from '../assets/images/close.svg'
-// import PlayIcon from '../assets/images/play.svg'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 
