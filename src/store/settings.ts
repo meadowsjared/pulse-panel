@@ -14,11 +14,13 @@ interface State {
   displayMode: DisplayMode
   currentEditingSound: Sound | null
   muted: boolean
+  ptt_hotkey: string | null
 }
 
 type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
 type ArraySoundSettings = 'sounds'
 type ArraySettings = 'outputDevices'
+type StringSettings = 'ptt_hotkey'
 export type DisplayMode = 'edit' | 'play'
 const isProduction = process.env.NODE_ENV === 'production'
 const dbName = isProduction ? 'pulse-panel' : 'pulse-panel-dev'
@@ -35,6 +37,7 @@ export const useSettingsStore = defineStore('settings', {
     displayMode: 'play',
     currentEditingSound: null,
     muted: false,
+    ptt_hotkey: null,
   }),
   actions: {
     async toggleMute(): Promise<void> {
@@ -64,6 +67,38 @@ export const useSettingsStore = defineStore('settings', {
     },
     async toggleDisplayMode(): Promise<void> {
       this.displayMode = this.displayMode === 'play' ? 'edit' : 'play'
+    },
+    /**
+     * Save a string setting to the store
+     * @param key the key it's saved under
+     * @param value the value to save
+     */
+    async saveString(key: StringSettings, value: string): Promise<void> {
+      const electron: Settings | undefined = window.electron
+      await electron?.saveSetting?.(key, value)
+      this[key] = value
+    },
+    /**
+     * Fetch a string setting from the store
+     * @param key the key it's saved under
+     * @param defaultValue the default value if it's not set, default to ''
+     * @returns the value of the setting
+     */
+    async fetchString(key: StringSettings, defaultValue: string | null = null): Promise<string | null> {
+      const electron: Settings | undefined = window.electron
+      const returnedString = await electron?.readSetting?.(key)
+      if (returnedString === undefined || typeof returnedString !== 'string') {
+        if (defaultValue === null) {
+          await electron?.deleteSetting?.(key)
+          this[key] = null
+        } else {
+          await electron?.saveSetting?.(key, defaultValue)
+          this[key] = defaultValue
+        }
+      } else {
+        this[key] = returnedString
+      }
+      return this[key]
     },
     /**
      * Save an array setting to the store
