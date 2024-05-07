@@ -7,7 +7,9 @@
       title="this will be the button that pulse-panel with hold down any time sound is playing">
       {{ selectedHotkey ?? 'Press a key...' }}
     </button>
-    <button class="clear-button" @click="selectedHotkey = null"><inline-svg :src="CloseIcon" /></button>
+    <button :disabled="!selectedHotkey" :class="{ hide: !selectedHotkey }" class="clear-button" @click="resetHotkey">
+      <inline-svg :src="CloseIcon" />
+    </button>
   </div>
 </template>
 
@@ -43,6 +45,7 @@ function resetHotkey() {
   border-radius: 0.25rem;
   min-width: 8.75rem;
   height: 100%;
+  min-height: 2rem;
 }
 
 /** we specifically want to highlight this button, even if it's clicked */
@@ -69,5 +72,10 @@ input {
   padding: 0.5rem;
   border: 1px solid #ccc;
   border-radius: 0.25rem;
+}
+
+.clear-button.hide {
+  /** make it invisible, but still take up space */
+  visibility: hidden;
 }
 </style>
