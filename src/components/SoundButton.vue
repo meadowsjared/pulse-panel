@@ -10,6 +10,7 @@
       'has-image': modelValue.imageKey,
       'edit-mode': props.displayMode === 'edit',
       'cursor-default': props.displayMode === 'edit',
+      'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
     }"
     class="sound-button relative"
     :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
@@ -199,5 +200,9 @@ async function handleImageFileDrop(file: File, newSound: Sound) {
 
 .sound-button.playing-sound {
   filter: brightness(50%);
+}
+
+.sound-button.editing-sound {
+  outline: 3px solid var(--alt-text-color);
 }
 </style>
