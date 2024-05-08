@@ -29,7 +29,7 @@
           :class="{ playingAudio: soundStore.outputDeviceData[i]?.playingAudio }"
           class="play-sound-button"
           v-if="outputDeviceId"
-          @click="soundStore.playSound(null, [outputDeviceId], outputDevices)">
+          @click="soundStore.playSound(null, [outputDeviceId], outputDevices, true)">
           <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
         </button>
       </div>
