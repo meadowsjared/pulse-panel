@@ -5,7 +5,7 @@ const { join } = require('path')
 const nconf = require('nconf').file({
   file: getConfigurationFilePath(),
 })
-const robot = require('robotjs')
+const robot = require('@jitsi/robotjs')
 
 function saveSetting(settingKey, settingValue) {
   nconf.set(settingKey, settingValue)
