@@ -8,9 +8,8 @@
   "homepage": "https://github.com/Counsel-of-Big-Brains/pulse-panel/blob/main/README.md",
   "scripts": {
     "dev": "pnpm app:dev",
-    "build": "pnpm app:build",
+    "build": "npm run app:build",
     "preview": "pnpm app:preview",
-    "postinstall": "electron-rebuild -f -w robotjs",
     "vite:dev": "vite",
     "vite:build": "vite build",
     "vite:preview": "vite preview",
@@ -80,7 +79,6 @@
     "electron": "^30.0.2",
     "electron-builder": "^24.13.3",
     "electron-builder-squirrel-windows": "25.0.0-alpha.7",
-    "electron-rebuild": "^3.2.9",
     "eslint": "^9.2.0",
     "globals": "^15.1.0",
     "postcss": "^8.4.38",
