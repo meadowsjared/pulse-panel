@@ -1,9 +1,16 @@
 <template>
   <div class="edit-dialog">
-    <button @click="close" class="close-button absolute right-2 top-2">
-      <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
+    <button
+      @click="soundStore.playSound(modelValue, null, null, true)"
+      title="preview sound"
+      :class="{ 'playing-sound': playingThisSound }"
+      class="preview-button absolute left-0 top-0">
+      <inline-svg class="w-8 h-8" :src="Listen" />
     </button>
     <h1>Edit Sound</h1>
+    <button @click="close" class="close-button absolute right-0 top-0">
+      <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
+    </button>
     <div class="input-group">
       <label for="name">Name:</label>
       <input type="text" v-model="props.modelValue.name" id="name" />
@@ -58,6 +65,7 @@
 <script setup lang="ts">
 import { Sound } from '@/@types/sound'
 import Plus from '../assets/images/plus.svg'
+import Listen from '../assets/images/listen.svg'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { computed, ref, VNodeRef, watch } from 'vue'
@@ -70,6 +78,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<(event: 'update:modelValue', value: Sound) => void>()
+const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -224,6 +233,7 @@ function close() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  position: relative;
 }
 
 .image {
@@ -246,6 +256,18 @@ function close() {
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+.preview-button {
+  outline: var(--alt-bg-color) 1px solid;
+  padding: 0.25rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.25rem;
+}
+.preview-button > svg {
+  width: 100%;
+  height: 100%;
 }
 
 .close-button {
