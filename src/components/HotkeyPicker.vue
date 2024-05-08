@@ -41,7 +41,7 @@ function resetHotkey() {
 .hotkey {
   padding: 0 0.5rem;
   font-size: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--text-color);
   border-radius: 0.25rem;
   min-width: 8.75rem;
   height: 100%;
