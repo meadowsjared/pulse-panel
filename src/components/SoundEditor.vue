@@ -251,6 +251,10 @@ function close() {
   align-items: flex-start;
 }
 
+.input-group > input {
+  width: 100%;
+}
+
 .hide-name-checkbox-group {
   display: flex;
   align-items: center;

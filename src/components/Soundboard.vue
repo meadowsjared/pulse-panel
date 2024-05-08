@@ -92,5 +92,6 @@ function stripAudioUrls(pSounds: Sound[]) {
   height: 100%;
   background: var(--alt-light-text-color);
   padding: 1rem;
+  overflow: auto;
 }
 </style>
