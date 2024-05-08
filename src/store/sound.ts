@@ -131,7 +131,8 @@ export const useSoundStore = defineStore('sound', {
     async playSound(
       audioFile: Sound | null = null,
       activeOutputDevices: string[] | null = null,
-      selectedOutputDevices: (string | null)[] | null = null
+      selectedOutputDevices: (string | null)[] | null = null,
+      preview: boolean = false
     ): Promise<void> {
       // return a promise
       return new Promise(resolve => {
@@ -158,8 +159,13 @@ export const useSoundStore = defineStore('sound', {
               resolve,
               filteredSelectedOutputDevices,
               settingsStore,
-              audioFile
+              audioFile,
+              preview
             )
+            // stop the forEach if preview is true
+            if (preview) {
+              return
+            }
           })
         })()
       })
@@ -176,7 +182,8 @@ export const useSoundStore = defineStore('sound', {
       resolve: () => void,
       selectedOutputDevices: string[],
       settingsStore: SettingsStore,
-      audioFile: Sound | null
+      audioFile: Sound | null,
+      preview: boolean = false
     ): Promise<void> {
       const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
       if (
@@ -221,11 +228,11 @@ export const useSoundStore = defineStore('sound', {
       this.outputDeviceData[index].numSoundsPlaying++
       if (audioFile?.id) this.playingSoundIds.push(audioFile.id)
       this.currentSound = audioFile
-      this._pttHotkeyPress(true)
+      if (!preview) this._pttHotkeyPress(true)
       this.outputDeviceData[index].currentAudio.play()
       this.outputDeviceData[index].currentSoundResolve = resolve // store this so we can end it early if we want to
       this.outputDeviceData[index].currentAudio.onended = () => {
-        this._pttHotkeyPress(false)
+        if (!preview) this._pttHotkeyPress(false)
         this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
         this.currentSound = null
         this.outputDeviceData[index].currentAudio?.remove()
