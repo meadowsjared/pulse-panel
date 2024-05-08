@@ -71,6 +71,16 @@ export const useSoundStore = defineStore('sound', {
       })
     },
     /**
+     * send the PTT key
+     */
+    async _pttHotkeyPress(down: boolean): Promise<void> {
+      const settingsStore = useSettingsStore()
+      if (settingsStore.ptt_hotkey === null) {
+        return
+      }
+      window.electron?.sendKey(settingsStore.ptt_hotkey, down)
+    },
+    /**
      * Set the volume for the soundboard
      * @param volume the volume to set it to
      */
@@ -211,9 +221,11 @@ export const useSoundStore = defineStore('sound', {
       this.outputDeviceData[index].numSoundsPlaying++
       if (audioFile?.id) this.playingSoundIds.push(audioFile.id)
       this.currentSound = audioFile
+      this._pttHotkeyPress(true)
       this.outputDeviceData[index].currentAudio.play()
       this.outputDeviceData[index].currentSoundResolve = resolve // store this so we can end it early if we want to
       this.outputDeviceData[index].currentAudio.onended = () => {
+        this._pttHotkeyPress(false)
         this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
         this.currentSound = null
         this.outputDeviceData[index].currentAudio?.remove()
