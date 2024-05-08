@@ -45,30 +45,23 @@ export const useSoundStore = defineStore('sound', {
      */
     async stopAllSounds(): Promise<void> {
       const settingsStore = useSettingsStore()
+      this._pttHotkeyPress(false)
       settingsStore.outputDevices.forEach(async (outputDeviceId: string) => {
         const index = settingsStore.outputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
-        if (
-          settingsStore.allowOverlappingSound === false &&
-          this.outputDeviceData[index].currentAudio &&
-          this.outputDeviceData[index].playingAudio
-        ) {
+        if (this.outputDeviceData[index].currentAudio && this.outputDeviceData[index].playingAudio) {
           this.outputDeviceData[index].currentAudio.pause()
           this.outputDeviceData[index].currentAudio.currentTime = 0
-          this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
-          this.currentSound = null
           this.outputDeviceData[index].numSoundsPlaying--
+          this.outputDeviceData[index].playingAudio = false
           if (this.outputDeviceData[index].currentSoundResolve) {
             this.outputDeviceData[index].currentSoundResolve()
             this.outputDeviceData[index].currentSoundResolve = null
           }
-        } else {
-          this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
-          this.currentSound = null
         }
-
-        // empty this array
-        this.playingSoundIds = []
       })
+      this.currentSound = null
+      // empty this array
+      this.playingSoundIds = []
     },
     /**
      * send the PTT key
@@ -193,17 +186,16 @@ export const useSoundStore = defineStore('sound', {
       ) {
         this.outputDeviceData[index].currentAudio.pause()
         this.outputDeviceData[index].currentAudio.currentTime = 0
-        this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
-        this.currentSound = null
         this.outputDeviceData[index].numSoundsPlaying--
+        this.outputDeviceData[index].playingAudio = false
         if (this.outputDeviceData[index].currentSoundResolve) {
           this.outputDeviceData[index].currentSoundResolve()
           this.outputDeviceData[index].currentSoundResolve = null
         }
-      } else {
-        this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
-        this.currentSound = null
       }
+      // this._pttHotkeyPress(false) // not necessary since we're playing a new sound clip
+      this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
+      this.currentSound = null
 
       if (audioFile?.audioUrl === undefined && audioFile?.audioKey !== undefined) {
         const audioUrl = await settingsStore.getFile(audioFile.audioKey)
