@@ -50,3 +50,62 @@ select {
 html, body, div#app, div.e-nuxt-container {
   height: 100%
 }
+
+button:focus {
+  outline: none;
+}
+
+/** light and dark button styling */
+button.light, button.dark {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+/** light buttons styling */
+button.light {
+  color: var(--alt-bg-color);
+  fill: var(--alt-bg-color);
+  outline: var(--alt-bg-color) 1px solid;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+}
+
+button.light:hover {
+  background-color: var(--alt-link-color);
+  outline: 1px solid var(--alt-bg-color);
+  color: var(--alt-bright-text-color);
+}
+
+button.light:active {
+  background-color: var(--alt-text-color);
+  color: var(--alt-bright-text-color);
+  outline: 1px solid var(--alt-bg-color);
+}
+
+/** dark buttons styling */
+button.dark {
+  color: var(--alt-bright-text-color);
+  background-color: var(--alt-bg-color);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+button.dark > svg {
+  fill: var(--alt-bright-text-color);
+  stroke: var(--alt-bright-text-color);
+}
+
+button.dark:hover {
+  background-color: var(--alt-link-color);
+  outline: 1px solid var(--alt-bg-color);
+  color: var(--alt-bright-text-color);
+}
+
+button.dark:active {
+  background-color: var(--alt-text-color);
+  color: var(--alt-bright-text-color);
+  outline: 1px solid var(--alt-bg-color);
+  cursor: pointer;
+}
