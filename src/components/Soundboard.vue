@@ -1,13 +1,13 @@
 <template>
   <div class="soundboard">
-    <div v-for="(sound, i) in sounds" :key="sound?.id">
+    <template v-for="(sound, i) in sounds" :key="sound?.id">
       <sound-button
         v-model="sounds[i]"
         :displayMode="settingsStore.displayMode"
         @update:modelValue="handleSoundsUpdate"
         @deleteSound="deleteSound(sounds[i])"
         @editSound="editSound(sounds[i])" />
-    </div>
+    </template>
   </div>
   <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
     <SoundEditor v-model="settingsStore.currentEditingSound" @update:modelValue="updateSound" />
