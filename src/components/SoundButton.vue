@@ -2,9 +2,11 @@
   <button
     v-if="modelValue?.name !== undefined"
     ref="soundButton"
-    @blur="buttonBlurred"
+    @blur="focusVisible = false"
     @click="playSound(false)"
     @auxclick="emit('editSound')"
+    @keydown="handleKeydown"
+    @focus="focusVisible = true"
     v-on:drop="handleFileDrop"
     v-on:dragover.prevent
     :class="{
@@ -13,6 +15,7 @@
       'edit-mode': props.displayMode === 'edit',
       'cursor-default': props.displayMode === 'edit',
       'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
+      focusVisible,
     }"
     class="sound-button relative"
     :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
@@ -70,6 +73,12 @@ const emit = defineEmits<{
 }>()
 
 const numSoundsPlaying = ref(0)
+/**
+ * used to
+ * 1. track if the button is focused by keyboard events
+ * 2. prevent focus events from being triggered when the sound is playing
+ */
+const focusVisible = ref(false)
 const soundButton = ref<HTMLButtonElement | null>(null)
 
 const soundStore = useSoundStore()
@@ -90,18 +99,16 @@ function editSound() {
 }
 
 function playSound(forcePlay: boolean) {
-  soundButton.value?.setAttribute('tabindex', '-1') // remove the tabindex so it can't be focused
   if (!forcePlay && props.displayMode === 'edit') return
   numSoundsPlaying.value++
   soundStore.playSound(props.modelValue).then(() => {
-    soundButton.value?.setAttribute('tabindex', '0') // add the tabindex back
     numSoundsPlaying.value--
   })
 }
 
-function buttonBlurred() {
-  if (numSoundsPlaying.value > 0 && soundButton.value?.getAttribute('tabindex') !== '0') {
-    soundButton.value?.setAttribute('tabindex', '0') // add the tabindex back
+function handleKeydown() {
+  if (!playingThisSound.value) {
+    focusVisible.value = true
   }
 }
 
@@ -201,8 +208,12 @@ async function handleImageFileDrop(file: File, newSound: Sound) {
   background-position: center;
 }
 
-.sound-button:focus-visible {
+.sound-button.focusVisible:focus-visible {
   outline: 2px solid var(--alt-link-color);
+}
+
+.sound-button:focus-visible {
+  outline: none;
 }
 
 .sound-button.has-image {
