@@ -145,18 +145,23 @@ export const useSoundStore = defineStore('sound', {
           const filteredSelectedOutputDevices = selectedOutputDevices.filter(
             (deviceId): deviceId is string => deviceId !== null
           )
+          if (!preview) this._pttHotkeyPress(true)
+          const resolveWithPTTUp = () => {
+            if (!preview) this._pttHotkeyPress(false)
+            resolve()
+          }
           activeOutputDevices.forEach(async (outputDeviceId: string) => {
             await this._playSoundToDevice(
               outputDeviceId,
               audioFile?.volume ?? null,
-              resolve,
+              resolveWithPTTUp,
               filteredSelectedOutputDevices,
               settingsStore,
-              audioFile,
-              preview
+              audioFile
             )
             // stop the forEach if preview is true
             if (preview) {
+              // note, we do not need to unpress the PTT key here, since we are doing a preview
               return
             }
           })
@@ -175,8 +180,7 @@ export const useSoundStore = defineStore('sound', {
       resolve: () => void,
       selectedOutputDevices: string[],
       settingsStore: SettingsStore,
-      audioFile: Sound | null,
-      preview: boolean = false
+      audioFile: Sound | null
     ): Promise<void> {
       const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
       const outputDeviceData = this.outputDeviceData[index]
@@ -224,7 +228,6 @@ export const useSoundStore = defineStore('sound', {
       outputDeviceData.currentAudio.play()
       outputDeviceData.currentSoundResolve = resolve // store this so we can end it early if we want to
       outputDeviceData.currentAudio.onended = () => {
-        if (!preview) this._pttHotkeyPress(false)
         this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
         this.currentSound = null
         outputDeviceData.currentAudio?.remove()
