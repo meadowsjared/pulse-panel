@@ -4,7 +4,7 @@
       @click="soundStore.playSound(modelValue, null, null, true)"
       title="preview sound"
       :class="{ 'playing-sound': playingThisSound }"
-      class="preview-button absolute left-0 top-0">
+      class="light preview-button absolute left-0 top-0">
       <inline-svg class="w-8 h-8" :src="Listen" />
     </button>
     <h1>Edit Sound</h1>
@@ -27,7 +27,7 @@
       @change="handleAudioFileUpload"
       class="file-input hidden"
       accept="audio/*" />
-    <button @click="audioFileInput?.click()" class="browse-button">Browse Audio...</button>
+    <button @click="audioFileInput?.click()" class="dark">Browse Audio...</button>
     <div class="input-group">
       <div class="volume-control-container">
         <input type="text" class="volume-display" v-model.number="volumeDisplay" />
@@ -58,7 +58,7 @@
       @change="handleImageFileUpload"
       class="file-input hidden"
       accept="image/*" />
-    <button @click="imageFileInput?.click()" class="browse-button">Browse Image...</button>
+    <button @click="imageFileInput?.click()" class="dark">Browse Image...</button>
   </div>
 </template>
 
@@ -171,27 +171,6 @@ function close() {
 </script>
 
 <style scoped>
-.browse-button {
-  color: var(--alt-bright-text-color);
-  background-color: var(--alt-bg-color);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-}
-
-.browse-button:hover {
-  background-color: var(--alt-link-color);
-  outline: 1px solid var(--alt-bg-color);
-  color: var(--alt-bright-text-color);
-}
-
-.browse-button:active {
-  background-color: var(--alt-text-color);
-  color: var(--alt-bright-text-color);
-  outline: 1px solid var(--alt-bg-color);
-  cursor: pointer;
-}
-
 .volume-control-container {
   display: grid;
   align-items: center;
@@ -263,19 +242,14 @@ function close() {
 }
 
 .preview-button {
-  outline: var(--alt-bg-color) 1px solid;
   padding: 0.25rem;
   width: 2rem;
-  height: 2rem;
+  aspect-ratio: 1;
   border-radius: 0.25rem;
 }
 .preview-button > svg {
   width: 100%;
   height: 100%;
-}
-
-.close-button {
-  fill: var(--alt-bg-color);
 }
 
 h1 {
