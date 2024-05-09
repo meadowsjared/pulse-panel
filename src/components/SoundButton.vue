@@ -6,7 +6,7 @@
     @click="playSound(false)"
     @auxclick="emit('editSound')"
     @keydown="handleKeydown"
-    @focus="focusVisible = true"
+    @focus="handleFocus"
     v-on:drop="handleFileDrop"
     v-on:dragover.prevent
     :class="{
@@ -108,6 +108,12 @@ function playSound(forcePlay: boolean) {
 
 function handleKeydown() {
   if (!playingThisSound.value) {
+    focusVisible.value = true
+  }
+}
+
+function handleFocus(event: FocusEvent) {
+  if (event.relatedTarget !== null) {
     focusVisible.value = true
   }
 }
