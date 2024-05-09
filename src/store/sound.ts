@@ -179,18 +179,19 @@ export const useSoundStore = defineStore('sound', {
       preview: boolean = false
     ): Promise<void> {
       const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
+      const outputDeviceData = this.outputDeviceData[index]
       if (
         settingsStore.allowOverlappingSound === false &&
-        this.outputDeviceData[index].currentAudio &&
-        this.outputDeviceData[index].playingAudio
+        outputDeviceData.currentAudio &&
+        outputDeviceData.playingAudio
       ) {
-        this.outputDeviceData[index].currentAudio.pause()
-        this.outputDeviceData[index].currentAudio.currentTime = 0
-        this.outputDeviceData[index].numSoundsPlaying--
-        this.outputDeviceData[index].playingAudio = false
-        if (this.outputDeviceData[index].currentSoundResolve) {
-          this.outputDeviceData[index].currentSoundResolve()
-          this.outputDeviceData[index].currentSoundResolve = null
+        outputDeviceData.currentAudio.pause()
+        outputDeviceData.currentAudio.currentTime = 0
+        outputDeviceData.numSoundsPlaying--
+        outputDeviceData.playingAudio = false
+        if (outputDeviceData.currentSoundResolve) {
+          outputDeviceData.currentSoundResolve()
+          outputDeviceData.currentSoundResolve = null
         }
       }
       // this._pttHotkeyPress(false) // not necessary since we're playing a new sound clip
@@ -203,37 +204,36 @@ export const useSoundStore = defineStore('sound', {
           audioFile.audioUrl = audioUrl
         }
       }
-      this.outputDeviceData[index].currentAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
+      outputDeviceData.currentAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
 
-      if (!this.outputDeviceData[index].currentAudio) return
-      await this.outputDeviceData[index].currentAudio.setSinkId(outputDeviceId).catch((error: any) => {
+      if (!outputDeviceData.currentAudio) return
+      await outputDeviceData.currentAudio.setSinkId(outputDeviceId).catch((error: any) => {
         let errorMessage = error
         if (error.name === 'SecurityError') {
           errorMessage = `You need to use HTTPS for selecting audio output device: ${error}`
         }
         console.error(errorMessage)
       })
-      this.outputDeviceData[index].currentAudio.volume = volume ?? this.volume // set the volume to max
-      this.outputDeviceData[index].currentAudio.onplaying = () => {
-        this.outputDeviceData[index].playingAudio = true
+      outputDeviceData.currentAudio.volume = volume ?? this.volume // set the volume to max
+      outputDeviceData.currentAudio.onplaying = () => {
+        outputDeviceData.playingAudio = true
       }
-      this.outputDeviceData[index].numSoundsPlaying++
+      outputDeviceData.numSoundsPlaying++
       if (audioFile?.id) this.playingSoundIds.push(audioFile.id)
       this.currentSound = audioFile
-      if (!preview) this._pttHotkeyPress(true)
-      this.outputDeviceData[index].currentAudio.play()
-      this.outputDeviceData[index].currentSoundResolve = resolve // store this so we can end it early if we want to
-      this.outputDeviceData[index].currentAudio.onended = () => {
+      outputDeviceData.currentAudio.play()
+      outputDeviceData.currentSoundResolve = resolve // store this so we can end it early if we want to
+      outputDeviceData.currentAudio.onended = () => {
         if (!preview) this._pttHotkeyPress(false)
         this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
         this.currentSound = null
-        this.outputDeviceData[index].currentAudio?.remove()
-        this.outputDeviceData[index].currentAudio = null
-        this.outputDeviceData[index].numSoundsPlaying--
-        if (this.outputDeviceData[index].numSoundsPlaying < 1) {
-          this.outputDeviceData[index].playingAudio = false
+        outputDeviceData.currentAudio?.remove()
+        outputDeviceData.currentAudio = null
+        outputDeviceData.numSoundsPlaying--
+        if (outputDeviceData.numSoundsPlaying < 1) {
+          outputDeviceData.playingAudio = false
         }
-        this.outputDeviceData[index].currentSoundResolve?.()
+        outputDeviceData.currentSoundResolve?.()
       }
     },
   },
