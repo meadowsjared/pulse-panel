@@ -168,7 +168,7 @@ select {
   border-radius: 0.5rem;
   border-color: var(--text-color);
 }
-select:focus {
+select:focus-visible {
   --tw-border-opacity: 1;
   border-color: var(--link-color);
   --tw-ring-opacity: 1;
@@ -208,7 +208,7 @@ option {
   justify-content: center;
   align-items: center;
 }
-.play-sound-button:focus {
+.play-sound-button:focus-visible {
   background-color: var(--alt-link-color);
 }
 .play-sound-button:active {
@@ -260,7 +260,7 @@ input[type='checkbox']:checked {
   background-color: var(--link-color);
 }
 input[type='checkbox']:active,
-input[type='checkbox']:focus {
+input[type='checkbox']:focus-visible {
   --tw-ring-shadow: none;
 }
 
