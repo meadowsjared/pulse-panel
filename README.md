@@ -13,7 +13,7 @@ git clone https://github.com/meadowsjared/vite-vue3-electron-ts-template.git
 ### 2. install packages
 
 ```bash
-pnpm i
+bun i
 ```
 
 ### 3. Run
@@ -21,19 +21,19 @@ pnpm i
 ### dev mode
 
 ```bash
-pnpm dev  
+bun dev  
 ```
 
 ### preview mode
 
 ```bash
-pnpm preview  
+bun preview  
 ```
 
 ### build app
 
 ```bash
-pnpm build
+bun build
 ```
 
 [**Angular convention**](https://github.com/conventional-changelog/commitlint/tree/master/@commitlint/config-conventional#type-enum)
