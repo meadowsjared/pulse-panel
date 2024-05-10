@@ -8,7 +8,7 @@
   "homepage": "https://github.com/Counsel-of-Big-Brains/pulse-panel/blob/main/README.md",
   "scripts": {
     "dev": "bun app:dev",
-    "build": "bun run app:build",
+    "build": "bun app:build",
     "preview": "bun app:preview",
     "rebuild": "electron-rebuild",
     "vite:dev": "vite",
@@ -18,8 +18,8 @@
     "watch": "tsc -w",
     "lint": "eslint -c eslint.config.js ./src",
     "app:dev": "tsc && concurrently vite \" electron .\" \"tsc -w\"",
-    "app:build": "bun run vite:build && tsc && electron-builder",
-    "app:preview": "bun run vite:build && tsc && electron ."
+    "app:build": "bun vite:build && tsc && electron-builder",
+    "app:preview": "bun vite:build && tsc && electron ."
   },
   "build": {
     "appId": "YourAppID",
