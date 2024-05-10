@@ -9,7 +9,6 @@ interface OutputDeviceProperties {
   playingAudio: boolean
   /** number of sounds that are currently playing to this device */
   numSoundsPlaying: number
-  currentSoundResolve: (() => void) | null
 }
 
 interface State {
@@ -27,7 +26,6 @@ export const useSoundStore = defineStore('sound', {
         currentAudio: null,
         playingAudio: false,
         numSoundsPlaying: 0,
-        currentSoundResolve: null,
       },
     ],
     playingSoundIds: [],
@@ -53,10 +51,6 @@ export const useSoundStore = defineStore('sound', {
           this.outputDeviceData[index].currentAudio.currentTime = 0
           this.outputDeviceData[index].numSoundsPlaying--
           this.outputDeviceData[index].playingAudio = false
-          if (this.outputDeviceData[index].currentSoundResolve) {
-            this.outputDeviceData[index].currentSoundResolve()
-            this.outputDeviceData[index].currentSoundResolve = null
-          }
         }
       })
       this.currentSound = null
@@ -111,7 +105,6 @@ export const useSoundStore = defineStore('sound', {
           currentAudio: null,
           playingAudio: false,
           numSoundsPlaying: 0,
-          currentSoundResolve: null,
         })
       }
     },
@@ -129,43 +122,47 @@ export const useSoundStore = defineStore('sound', {
     ): Promise<void> {
       // return a promise
       return new Promise(resolve => {
-        ;(async () => {
-          const settingsStore = useSettingsStore()
-          if (settingsStore.muted) return // if muted, don't play the sound
-          if (!activeOutputDevices) {
-            activeOutputDevices = settingsStore.outputDevices
-          }
-          // filter out null values
-          activeOutputDevices = activeOutputDevices.filter((deviceId): deviceId is string => deviceId !== null)
-          if (!activeOutputDevices) return
-          if (!selectedOutputDevices) {
-            selectedOutputDevices = activeOutputDevices
-          }
-          // filter out null values
-          const filteredSelectedOutputDevices = selectedOutputDevices.filter(
-            (deviceId): deviceId is string => deviceId !== null
+        const settingsStore = useSettingsStore()
+        if (settingsStore.muted) return // if muted, don't play the sound
+        if (!activeOutputDevices) {
+          activeOutputDevices = settingsStore.outputDevices
+        }
+        // filter out null values
+        activeOutputDevices = activeOutputDevices.filter((deviceId): deviceId is string => deviceId !== null)
+        if (!activeOutputDevices) return
+        if (!selectedOutputDevices) {
+          selectedOutputDevices = activeOutputDevices
+        }
+        // filter out null values
+        const filteredSelectedOutputDevices = selectedOutputDevices.filter(
+          (deviceId): deviceId is string => deviceId !== null
+        )
+        if (audioFile?.id) {
+          this.playingSoundIds.push(audioFile.id)
+        }
+
+        if (!preview) this._pttHotkeyPress(true)
+        const promiseAr = activeOutputDevices?.map(async (outputDeviceId: string) => {
+          await this._playSoundToDevice(
+            outputDeviceId,
+            audioFile?.volume ?? null,
+            filteredSelectedOutputDevices,
+            settingsStore,
+            audioFile
           )
-          if (!preview) this._pttHotkeyPress(true)
-          const resolveWithPTTUp = () => {
-            if (!preview) this._pttHotkeyPress(false)
-            resolve()
+          // stop the forEach if preview is true
+          if (preview) {
+            // note, we do not need to unpress the PTT key here, since we are doing a preview
+            return
           }
-          activeOutputDevices.forEach(async (outputDeviceId: string) => {
-            await this._playSoundToDevice(
-              outputDeviceId,
-              audioFile?.volume ?? null,
-              resolveWithPTTUp,
-              filteredSelectedOutputDevices,
-              settingsStore,
-              audioFile
-            )
-            // stop the forEach if preview is true
-            if (preview) {
-              // note, we do not need to unpress the PTT key here, since we are doing a preview
-              return
-            }
+        })
+        if (promiseAr) {
+          Promise.all(promiseAr).then(() => {
+            if (!preview) this._pttHotkeyPress(false)
+            this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
+            resolve()
           })
-        })()
+        }
       })
     },
     /**
@@ -177,7 +174,6 @@ export const useSoundStore = defineStore('sound', {
     async _playSoundToDevice(
       outputDeviceId: string,
       volume: number | null,
-      resolve: () => void,
       selectedOutputDevices: string[],
       settingsStore: SettingsStore,
       audioFile: Sound | null
@@ -193,10 +189,6 @@ export const useSoundStore = defineStore('sound', {
         outputDeviceData.currentAudio.currentTime = 0
         outputDeviceData.numSoundsPlaying--
         outputDeviceData.playingAudio = false
-        if (outputDeviceData.currentSoundResolve) {
-          outputDeviceData.currentSoundResolve()
-          outputDeviceData.currentSoundResolve = null
-        }
       }
       // this._pttHotkeyPress(false) // not necessary since we're playing a new sound clip
       this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
@@ -208,9 +200,8 @@ export const useSoundStore = defineStore('sound', {
           audioFile.audioUrl = audioUrl
         }
       }
-      outputDeviceData.currentAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
 
-      if (!outputDeviceData.currentAudio) return
+      outputDeviceData.currentAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
       await outputDeviceData.currentAudio.setSinkId(outputDeviceId).catch((error: any) => {
         let errorMessage = error
         if (error.name === 'SecurityError') {
@@ -218,26 +209,26 @@ export const useSoundStore = defineStore('sound', {
         }
         console.error(errorMessage)
       })
-      outputDeviceData.currentAudio.volume = volume ?? this.volume // set the volume to max
-      outputDeviceData.currentAudio.onplaying = () => {
-        outputDeviceData.playingAudio = true
-      }
-      outputDeviceData.numSoundsPlaying++
-      if (audioFile?.id) this.playingSoundIds.push(audioFile.id)
-      this.currentSound = audioFile
-      outputDeviceData.currentAudio.play()
-      outputDeviceData.currentSoundResolve = resolve // store this so we can end it early if we want to
-      outputDeviceData.currentAudio.onended = () => {
-        this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
-        this.currentSound = null
-        outputDeviceData.currentAudio?.remove()
-        outputDeviceData.currentAudio = null
-        outputDeviceData.numSoundsPlaying--
-        if (outputDeviceData.numSoundsPlaying < 1) {
-          outputDeviceData.playingAudio = false
+      await new Promise<void>(resolve => {
+        if (!outputDeviceData.currentAudio) return
+        outputDeviceData.currentAudio.volume = volume ?? this.volume // set the volume to max
+        outputDeviceData.currentAudio.onplaying = () => {
+          outputDeviceData.playingAudio = true
         }
-        outputDeviceData.currentSoundResolve?.()
-      }
+        outputDeviceData.numSoundsPlaying++
+        this.currentSound = audioFile
+        outputDeviceData.currentAudio.play()
+        outputDeviceData.currentAudio.onended = () => {
+          this.currentSound = null
+          outputDeviceData.currentAudio?.remove()
+          outputDeviceData.currentAudio = null
+          outputDeviceData.numSoundsPlaying--
+          if (outputDeviceData.numSoundsPlaying < 1) {
+            outputDeviceData.playingAudio = false
+          }
+          resolve()
+        }
+      })
     },
   },
 })
