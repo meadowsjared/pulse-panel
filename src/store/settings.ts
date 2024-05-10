@@ -111,7 +111,7 @@ export const useSettingsStore = defineStore('settings', {
      * @returns true if saved successfully
      */
     async saveStringArray(key: ArraySettings, value: string[]): Promise<boolean> {
-      const electron: Settings | undefined = window.electron
+      const electron = window.electron
       await electron?.saveSetting?.(key, JSON.stringify(value))
       this[key] = value
       return true
@@ -124,7 +124,7 @@ export const useSettingsStore = defineStore('settings', {
      */
     async fetchStringArray(key: ArraySettings, defaultValue?: string[]): Promise<string[]> {
       const soundStore = useSoundStore()
-      const electron: Settings | undefined = window.electron
+      const electron = window.electron
       const returnedArray = await electron?.readSetting?.(key)
       if (returnedArray === undefined) {
         if (key === 'outputDevices') {
@@ -144,7 +144,7 @@ export const useSettingsStore = defineStore('settings', {
       return this[key]
     },
     async saveSoundArray(key: ArraySoundSettings, value: Sound[]): Promise<boolean> {
-      const electron: Settings | undefined = window.electron
+      const electron = window.electron
       await electron?.saveSetting?.(key, JSON.stringify(value))
       this[key] = value
       return true
@@ -156,7 +156,7 @@ export const useSettingsStore = defineStore('settings', {
      * @returns the value of the setting
      */
     async fetchSoundSetting(key: ArraySoundSettings, defaultValue: Sound[] = [{ id: v4() }]): Promise<Sound[]> {
-      const electron: Settings | undefined = window.electron
+      const electron = window.electron
       const returnedArray = await electron?.readSetting?.(key)
       if (returnedArray === undefined || typeof returnedArray !== 'string') {
         await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
@@ -260,7 +260,7 @@ export const useSettingsStore = defineStore('settings', {
      * @returns the value of the setting
      */
     async fetchBooleanSetting(key: BooleanSettings, defaultValue: boolean = false): Promise<boolean> {
-      const electron: Settings | undefined = window.electron
+      const electron = window.electron
       const returnedBoolean = await electron?.readSetting?.(key)
       if (returnedBoolean === undefined) {
         await electron?.saveSetting?.(key, defaultValue)
@@ -278,7 +278,7 @@ export const useSettingsStore = defineStore('settings', {
      * @returns true if saved successfully
      */
     async saveBoolean(key: BooleanSettings, value: boolean): Promise<boolean> {
-      const electron: Settings | undefined = window.electron
+      const electron = window.electron
       await electron?.saveSetting(key, value)
       this[key] = value
       if (key === 'darkMode') {
