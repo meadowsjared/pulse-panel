@@ -7,9 +7,10 @@
   "description": "A soundboard app that looks nice too",
   "homepage": "https://github.com/Counsel-of-Big-Brains/pulse-panel/blob/main/README.md",
   "scripts": {
-    "dev": "pnpm app:dev",
-    "build": "npm run app:build",
-    "preview": "pnpm app:preview",
+    "dev": "bun app:dev",
+    "build": "bun run app:build",
+    "preview": "bun app:preview",
+    "rebuild": "electron-rebuild",
     "vite:dev": "vite",
     "vite:build": "vite build",
     "vite:preview": "vite preview",
@@ -17,8 +18,8 @@
     "watch": "tsc -w",
     "lint": "eslint -c eslint.config.js ./src",
     "app:dev": "tsc && concurrently vite \" electron .\" \"tsc -w\"",
-    "app:build": "npm run vite:build && tsc && electron-builder",
-    "app:preview": "npm run vite:build && tsc && electron ."
+    "app:build": "bun run vite:build && tsc && electron-builder",
+    "app:preview": "bun run vite:build && tsc && electron ."
   },
   "build": {
     "appId": "YourAppID",
