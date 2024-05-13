@@ -4,7 +4,7 @@ import { SettingsStore, useSettingsStore } from './settings'
 import { Sound } from '@/@types/sound'
 
 interface OutputDeviceProperties {
-  currentAudio: HTMLAudioElement | null
+  currentAudio: HTMLAudioElement[]
   /** true if this device is playing audio */
   playingAudio: boolean
   /** number of sounds that are currently playing to this device */
@@ -23,7 +23,7 @@ export const useSoundStore = defineStore('sound', {
     volume: 1,
     outputDeviceData: [
       {
-        currentAudio: null,
+        currentAudio: [],
         playingAudio: false,
         numSoundsPlaying: 0,
       },
@@ -46,11 +46,13 @@ export const useSoundStore = defineStore('sound', {
       this._pttHotkeyPress(false)
       settingsStore.outputDevices.forEach(async (outputDeviceId: string) => {
         const index = settingsStore.outputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
-        if (this.outputDeviceData[index].currentAudio && this.outputDeviceData[index].playingAudio) {
-          this.outputDeviceData[index].currentAudio.pause()
-          this.outputDeviceData[index].currentAudio.currentTime = 0
-          this.outputDeviceData[index].numSoundsPlaying--
-          this.outputDeviceData[index].playingAudio = false
+        if (this.outputDeviceData[index].currentAudio.length > 0 && this.outputDeviceData[index].playingAudio) {
+          this.outputDeviceData[index].currentAudio.forEach(audio => {
+            audio.pause()
+            audio.currentTime = 0
+            this.outputDeviceData[index].numSoundsPlaying--
+            this.outputDeviceData[index].playingAudio = false
+          })
         }
       })
       this.currentSound = null
@@ -91,8 +93,10 @@ export const useSoundStore = defineStore('sound', {
       )
       activeOutputDevices.forEach(async (outputDeviceId: string) => {
         const index = filteredSelectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
-        if (this.outputDeviceData[index].currentAudio) {
-          this.outputDeviceData[index].currentAudio.volume = volume
+        if (this.outputDeviceData[index].currentAudio.length > 0) {
+          this.outputDeviceData[index].currentAudio.forEach(audio => {
+            audio.volume = volume
+          })
         }
       })
     },
@@ -102,7 +106,7 @@ export const useSoundStore = defineStore('sound', {
     populatePlayingAudio(length: number): void {
       while (this.outputDeviceData.length < length) {
         this.outputDeviceData.push({
-          currentAudio: null,
+          currentAudio: [],
           playingAudio: false,
           numSoundsPlaying: 0,
         })
@@ -182,13 +186,15 @@ export const useSoundStore = defineStore('sound', {
       const outputDeviceData = this.outputDeviceData[index]
       if (
         settingsStore.allowOverlappingSound === false &&
-        outputDeviceData.currentAudio &&
+        outputDeviceData.currentAudio.length > 0 &&
         outputDeviceData.playingAudio
       ) {
-        outputDeviceData.currentAudio.pause()
-        outputDeviceData.currentAudio.currentTime = 0
-        outputDeviceData.numSoundsPlaying--
-        outputDeviceData.playingAudio = false
+        outputDeviceData.currentAudio.forEach(audio => {
+          audio.pause()
+          audio.currentTime = 0
+          outputDeviceData.numSoundsPlaying--
+          outputDeviceData.playingAudio = false
+        })
       }
       // this._pttHotkeyPress(false) // not necessary since we're playing a new sound clip
       this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
@@ -201,8 +207,9 @@ export const useSoundStore = defineStore('sound', {
         }
       }
 
-      outputDeviceData.currentAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
-      await outputDeviceData.currentAudio.setSinkId(outputDeviceId).catch((error: any) => {
+      const newAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
+      outputDeviceData.currentAudio.push(newAudio)
+      await newAudio.setSinkId(outputDeviceId).catch((error: any) => {
         let errorMessage = error
         if (error.name === 'SecurityError') {
           errorMessage = `You need to use HTTPS for selecting audio output device: ${error}`
@@ -211,17 +218,17 @@ export const useSoundStore = defineStore('sound', {
       })
       await new Promise<void>(resolve => {
         if (!outputDeviceData.currentAudio) return
-        outputDeviceData.currentAudio.volume = volume ?? this.volume // set the volume to max
-        outputDeviceData.currentAudio.onplaying = () => {
+        newAudio.volume = volume ?? this.volume // set the volume to max
+        newAudio.onplaying = () => {
           outputDeviceData.playingAudio = true
         }
         outputDeviceData.numSoundsPlaying++
         this.currentSound = audioFile
-        outputDeviceData.currentAudio.play()
-        outputDeviceData.currentAudio.onended = () => {
+        newAudio.play()
+        newAudio.onended = () => {
           this.currentSound = null
-          outputDeviceData.currentAudio?.remove()
-          outputDeviceData.currentAudio = null
+          newAudio?.remove()
+          outputDeviceData.currentAudio = outputDeviceData.currentAudio.filter(audio => audio !== newAudio)
           outputDeviceData.numSoundsPlaying--
           if (outputDeviceData.numSoundsPlaying < 1) {
             outputDeviceData.playingAudio = false
