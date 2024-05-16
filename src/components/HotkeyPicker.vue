@@ -7,12 +7,15 @@
         class="hotkey"
         :class="{ dark: props.dark }"
         @keydown="handleKeyDown"
+        @keyup="handleKeyUp($event)"
+        @focus="settingsStore.recordingHotkey = true"
+        @blur="settingsStore.recordingHotkey = false"
         title="this will be the button that pulse-panel with hold down any time sound is playing">
-        {{ modelValue ?? 'No Keybind Set' }}
+        {{ modelValue && modelValue?.length > 0 ? modelValue.join(' + ') : 'No Keybind Set' }}
       </button>
       <button
         :disabled="!modelValue"
-        :class="{ dark: props.dark, hide: !modelValue }"
+        :class="{ dark: props.dark, hide: !modelValue || modelValue.length < 1 }"
         class="clear-button"
         @click="resetHotkey">
         <inline-svg :src="CloseIcon" />
@@ -25,21 +28,33 @@
 import CloseIcon from '../assets/images/close.svg'
 import InlineSvg from 'vue-inline-svg'
 import { ref } from 'vue'
+import { useSettingsStore } from '../store/settings'
 
 const props = defineProps<{
-  modelValue: string | undefined
+  modelValue?: string[]
   dark?: boolean
 }>()
 
+const settingsStore = useSettingsStore()
 const hotkeyButton = ref<HTMLButtonElement | null>(null)
+const buttons = ref<string[]>([])
 
 const emit =
-  defineEmits<(event: 'update:modelValue', value: string | undefined, previousValue: string | undefined) => void>()
+  defineEmits<(event: 'update:modelValue', value: string[] | undefined, previousValue: string[] | undefined) => void>()
 
 function handleKeyDown(event: KeyboardEvent) {
-  console.log('event.code', event.code)
-  emit('update:modelValue', event.code, props.modelValue)
-  hotkeyButton.value?.blur()
+  if (buttons.value.includes(event.code)) {
+    return
+  }
+  buttons.value.push(event.code)
+}
+
+function handleKeyUp(event: KeyboardEvent) {
+  setTimeout(() => {
+    emit('update:modelValue', buttons.value, props.modelValue)
+    buttons.value = [] // reset the buttons
+    hotkeyButton.value?.blur()
+  }, 100)
 }
 
 function resetHotkey() {
