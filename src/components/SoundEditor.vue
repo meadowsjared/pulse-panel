@@ -59,6 +59,11 @@
       class="file-input hidden"
       accept="image/*" />
     <button @click="imageFileInput?.click()" class="dark">Browse Image...</button>
+    <div class="flex flex-col text-black">
+      <hotkey-picker v-model="props.modelValue.hotkey" @update:modelValue="updateHotkey" :dark="true"
+        >Keybind:</hotkey-picker
+      >
+    </div>
   </div>
 </template>
 
@@ -87,7 +92,7 @@ const audioFileInput = ref<VNodeRef | null>(null)
 
 // Watch for changes to the name and update the modelValue
 watch(
-  () => [props.modelValue.name, props.modelValue.volume, props.modelValue.hideName],
+  () => [props.modelValue.name, props.modelValue.volume, props.modelValue.hideName, props.modelValue.hotkey],
   () => {
     // if hideName is false and modelValue has the property, delete it
     if (!props.modelValue.hideName && props.modelValue.hasOwnProperty('hideName')) {
@@ -130,6 +135,16 @@ watch(
   },
   { immediate: true }
 )
+
+function updateHotkey(newKey: string, oldKey: string | undefined) {
+  if (oldKey) {
+    settingsStore.removeHotkey(props.modelValue, oldKey)
+  }
+  setTimeout(() => {
+    // we must delay this, otherwise it will play the sound when the hotkey is set
+    settingsStore.addHotkey(props.modelValue, newKey)
+  }, 0)
+}
 
 async function handleAudioFileUpload(event: Event) {
   // Handle the file upload event
