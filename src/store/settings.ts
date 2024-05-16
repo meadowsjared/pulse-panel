@@ -17,6 +17,10 @@ interface State {
   ptt_hotkey: string | null
 }
 
+interface SoundWithHotkey extends Sound {
+  hotkey: string
+}
+
 type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
 type ArraySoundSettings = 'sounds'
 type ArraySettings = 'outputDevices'
@@ -175,15 +179,75 @@ export const useSettingsStore = defineStore('settings', {
       if (returnedArray === undefined || typeof returnedArray !== 'string') {
         await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
         this[key] = defaultValue
+        return this[key]
       } else {
         const sounds = JSON.parse(returnedArray)
         if (sounds.length < 1 || sounds[sounds.length - 1].name !== undefined) {
           sounds.push({ id: v4() }) // add a new sound button if there isn't one
         }
+        this.sounds = sounds
+        this.registerHotkeys()
         return this._getImageUrls(key, sounds)
       }
+    },
+    /**
+     * Register the hotkeys for the sounds when the app loads
+     */
+    async registerHotkeys(): Promise<void> {
+      const soundStore = useSoundStore()
+      const electron = window.electron
+      const startingObject: string[] = []
+      const hotkeys = this.sounds
+        .filter(sound => sound.hotkey !== undefined)
+        .reduce((array, sound) => {
+          if (sound.hotkey && !array.includes(sound.hotkey)) {
+            array.push(sound.hotkey)
+          }
+          return array
+        }, startingObject)
 
-      return this[key]
+      electron?.registerHotkeys(hotkeys)
+      electron?.onKeyPressed(key => {
+        this.sounds
+          .filter(sound => sound.hotkey === key)
+          .forEach(sound => {
+            soundStore.playSound(sound)
+          })
+      })
+    },
+    /**
+     * Remove a hotkey from the store
+     * @param soundId the key to remove
+     */
+    removeHotkey(pSound: Sound, key: string) {
+      const electron = window.electron
+      // get a the previous array of hotkeys that were registered
+      const prevHotkeys = this.sounds.filter((sound): sound is SoundWithHotkey => sound.hotkey !== undefined)
+      // find out if any other hotkeys are using the key
+      const hotkeyAlreadyUsed = prevHotkeys.some(s => s.id !== pSound.id && s.hotkey === key)
+      if (hotkeyAlreadyUsed) {
+        // hotkey already used, no need to unregister it
+        return
+      }
+      electron?.unregisterHotkeys([key])
+    },
+    /**
+     * Add a hotkey to the store
+     * @param key the key to add
+     * @param sound the sound to play
+     */
+    addHotkey(sound: Sound, key: string | undefined) {
+      const electron = window.electron
+      if (key === undefined) return
+      // get a the previous array of hotkeys that were registered
+      const prevHotkeys = this.sounds.filter((sound): sound is SoundWithHotkey => sound.hotkey !== undefined)
+      // check if any other hotkeys are using the key
+      const otherHotkeyAlreadyUsed = prevHotkeys.some(s => s.id !== sound.id && s.hotkey === key)
+      if (otherHotkeyAlreadyUsed) {
+        // hotkey already used, no need to re-add it
+        return
+      }
+      electron?.registerHotkeys([key])
     },
     /**
      * Get the image URLs for the sounds.
