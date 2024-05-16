@@ -64,15 +64,15 @@ const audioOutputDevices = ref<MediaDeviceInfo[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
 
-settingsStore.fetchString('ptt_hotkey').then(hotkey => {
+settingsStore.fetchStringArray('ptt_hotkey').then(hotkey => {
   selectedHotkey.value = hotkey ?? undefined
 })
-const selectedHotkey = ref<string | undefined>(settingsStore.ptt_hotkey ?? undefined)
+const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
 
-function selectedHotkeyUpdated(event: string | undefined) {
+function selectedHotkeyUpdated(event: string[] | undefined) {
   selectedHotkey.value = event
   // save the value to the IndexedDB store
-  settingsStore.saveString('ptt_hotkey', event ?? null)
+  settingsStore.saveStringArray('ptt_hotkey', event ?? [])
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
