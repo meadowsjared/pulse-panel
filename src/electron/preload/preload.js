@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld('electron', {
   readSetting: key => ipcRenderer.invoke('read-setting', key),
   saveSetting: (key, value) => ipcRenderer.invoke('save-setting', key, value),
   deleteSetting: key => ipcRenderer.invoke('delete-setting', key),
-  sendKey: (key, down) => ipcRenderer.invoke('send-key', key, down),
+  sendKey: (keys, down) => ipcRenderer.invoke('send-key', keys, down),
   registerHotkeys: hotkeys => ipcRenderer.invoke('register-hotkeys', hotkeys),
   unregisterHotkeys: hotkeys => ipcRenderer.invoke('unregister-hotkeys', hotkeys),
   onKeyPressed: callback => {

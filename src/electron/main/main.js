@@ -54,7 +54,7 @@ app.whenReady().then(() => {
   ipcMain.handle('read-setting', (_, settingKey) => settings.readSetting(settingKey))
   ipcMain.handle('save-setting', (_, settingKey, settingValue) => settings.saveSetting(settingKey, settingValue))
   ipcMain.handle('delete-setting', (_, settingKey) => settings.deleteSetting(settingKey))
-  ipcMain.handle('send-key', (_, key, down) => settings.sendKey(key, down))
+  ipcMain.handle('send-key', (_, keys, down) => settings.sendKey(keys, down))
   ipcMain.on('toggle-dark-mode', (_, value) => {
     BrowserWindow.getAllWindows().forEach(window => {
       window.webContents.send('dark-mode-updated', value)

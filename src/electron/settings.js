@@ -55,8 +55,15 @@ function hotkeyToRobotjs(hotkey, soundId) {
   return hotkey.toLowerCase()
 }
 
-function sendKey(key, down) {
-  robot.keyToggle(hotkeyToRobotjs(key), down ? 'down' : 'up')
+/**
+ * Send a key press to the system
+ * @param {string[]} keys
+ * @param {boolean} down
+ */
+function sendKey(keys, down) {
+  keys.forEach(key => {
+    robot.keyToggle(hotkeyToRobotjs(key), down ? 'down' : 'up')
+  })
 }
 
 /**
@@ -91,11 +98,9 @@ function hotkeyToQHotkeyEnum(hotkey) {
  * @param {{ [key: string]: string[] }} hotkeys
  */
 function registerHotkeys(hotkeys) {
-  hotkeys.forEach(key => {
-    globalHotkeys.register([hotkeyToQHotkeyEnum(key)], () => {
-      BrowserWindow.getAllWindows().forEach(window => {
-        window.webContents.send('on-key-pressed', key)
-      })
+  globalHotkeys.register(hotkeys.map(hotkeyToQHotkeyEnum), () => {
+    BrowserWindow.getAllWindows().forEach(window => {
+      window.webContents.send('on-key-pressed', hotkeys)
     })
   })
   globalHotkeys.run()
