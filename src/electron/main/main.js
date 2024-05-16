@@ -67,7 +67,7 @@ app.whenReady().then(() => {
 function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 1200,
+    width: 1100,
     height: 900,
     webPreferences: {
       preload: join(__dirname, '../preload/preload.js'),
