@@ -63,7 +63,7 @@ window.electron?.onDarkModeToggle((value: boolean) => {
   settingsStore.darkMode = value
 })
 
-settingsStore.fetchString('ptt_hotkey')
+settingsStore.fetchStringArray('ptt_hotkey')
 settingsStore.fetchMute()
 settingsStore.fetchStringArray('outputDevices').then(outputDevice => {
   outputDeviceId.value = outputDevice
