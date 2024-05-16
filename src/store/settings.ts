@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { Settings } from '../../@types/electron-window'
 import { Sound } from '@/@types/sound'
 import { openDB } from 'idb'
 import { File } from '@/@types/file'
@@ -14,17 +13,18 @@ interface State {
   displayMode: DisplayMode
   currentEditingSound: Sound | null
   muted: boolean
-  ptt_hotkey: string | null
+  recordingHotkey: boolean
+  ptt_hotkey: string[]
 }
 
 interface SoundWithHotkey extends Sound {
-  hotkey: string
+  hotkey: string[]
 }
 
 type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
 type ArraySoundSettings = 'sounds'
-type ArraySettings = 'outputDevices'
-type StringSettings = 'ptt_hotkey'
+type ArraySettings = 'outputDevices' | 'ptt_hotkey'
+// type StringSettings = 'ptt_hotkey'
 export type DisplayMode = 'edit' | 'play'
 const isProduction = process.env.NODE_ENV === 'production'
 const dbName = isProduction ? 'pulse-panel' : 'pulse-panel-dev'
@@ -41,7 +41,8 @@ export const useSettingsStore = defineStore('settings', {
     displayMode: 'play',
     currentEditingSound: null,
     muted: false,
-    ptt_hotkey: null,
+    recordingHotkey: false,
+    ptt_hotkey: [],
   }),
   actions: {
     async toggleMute(): Promise<void> {
@@ -72,54 +73,52 @@ export const useSettingsStore = defineStore('settings', {
     async toggleDisplayMode(): Promise<void> {
       this.displayMode = this.displayMode === 'play' ? 'edit' : 'play'
     },
-    /**
-     * Save a string setting to the store
-     * @param key the key it's saved under
-     * @param value the value to save
-     */
-    async saveString(key: StringSettings, value: string | null): Promise<void> {
-      const electron: Settings | undefined = window.electron
-      if (value === null) {
-        await this._deleteSetting(key)
-      } else {
-        await electron?.saveSetting?.(key, value)
-      }
-      this[key] = value
-    },
-    /**
-     * Fetch a string setting from the store
-     * @param key the key it's saved under
-     * @param defaultValue the default value if it's not set, default to ''
-     * @returns the value of the setting
-     */
-    async fetchString(key: StringSettings, defaultValue: string | null = null): Promise<string | null> {
-      const electron: Settings | undefined = window.electron
-      const returnedString = await electron?.readSetting?.(key)
-      if (returnedString === undefined || typeof returnedString !== 'string') {
-        if (defaultValue === null) {
-          await this._deleteSetting(key)
-          this[key] = null
-        } else {
-          await electron?.saveSetting?.(key, defaultValue)
-          this[key] = defaultValue
-        }
-      } else {
-        this[key] = returnedString
-      }
-      return this[key]
-    },
+    // /**
+    //  * Save a string setting to the store
+    //  * @param key the key it's saved under
+    //  * @param value the value to save
+    //  */
+    // async saveString(key: StringSettings, value: string | null): Promise<void> {
+    //   const electron: Settings | undefined = window.electron
+    //   if (value === null) {
+    //     await this._deleteSetting(key)
+    //   } else {
+    //     await electron?.saveSetting?.(key, value)
+    //   }
+    //   this[key] = value
+    // },
+    // /**
+    //  * Fetch a string setting from the store
+    //  * @param key the key it's saved under
+    //  * @param defaultValue the default value if it's not set, default to ''
+    //  * @returns the value of the setting
+    //  */
+    // async fetchString(key: StringSettings, defaultValue: string | null = null): Promise<string | null> {
+    //   const electron: Settings | undefined = window.electron
+    //   const returnedString = await electron?.readSetting?.(key)
+    //   if (returnedString === undefined || typeof returnedString !== 'string') {
+    //     if (defaultValue === null) {
+    //       await this._deleteSetting(key)
+    //       this[key] = null
+    //     } else {
+    //       await electron?.saveSetting?.(key, defaultValue)
+    //       this[key] = defaultValue
+    //     }
+    //   } else {
+    //     this[key] = returnedString
+    //   }
+    //   return this[key]
+    // },
     /**
      * Delete a string setting from the store
      * @param key the key it's saved under
      */
-    async _deleteSetting(key: StringSettings | BooleanSettings): Promise<void> {
+    async _deleteSetting(key: BooleanSettings): Promise<void> {
       const electron = window.electron
       await electron?.deleteSetting?.(key)
       // if key is a member of BooleanSettings, set it to false
       if (isBooleanSettings(key)) {
         this[key] = false
-      } else {
-        this[key] = null
       }
     },
     /**
@@ -140,7 +139,7 @@ export const useSettingsStore = defineStore('settings', {
      * @param defaultValue the default value if it's not set, default to []
      * @returns the value of the setting
      */
-    async fetchStringArray(key: ArraySettings, defaultValue?: string[]): Promise<string[]> {
+    async fetchStringArray(key: ArraySettings, defaultValue: string[] = []): Promise<string[]> {
       const soundStore = useSoundStore()
       const electron = window.electron
       const returnedArray = await electron?.readSetting?.(key)
@@ -158,7 +157,6 @@ export const useSettingsStore = defineStore('settings', {
       if (key === 'outputDevices') {
         soundStore.populatePlayingAudio(this[key].length)
       }
-
       return this[key]
     },
     async saveSoundArray(key: ArraySoundSettings, value: Sound[]): Promise<boolean> {
@@ -196,20 +194,22 @@ export const useSettingsStore = defineStore('settings', {
     async registerHotkeys(): Promise<void> {
       const soundStore = useSoundStore()
       const electron = window.electron
-      const startingObject: string[] = []
+      const startingObject: string[][] = []
       const hotkeys = this.sounds
         .filter(sound => sound.hotkey !== undefined)
         .reduce((array, sound) => {
-          if (sound.hotkey && !array.includes(sound.hotkey)) {
+          if (sound.hotkey && !array.some(keys => arraysAreEqual(sound.hotkey, keys))) {
             array.push(sound.hotkey)
           }
           return array
         }, startingObject)
 
-      electron?.registerHotkeys(hotkeys)
+      hotkeys.forEach(keys => {
+        electron?.registerHotkeys([...keys])
+      })
       electron?.onKeyPressed(key => {
         this.sounds
-          .filter(sound => sound.hotkey === key)
+          .filter(sound => arraysAreEqual(sound.hotkey, key))
           .forEach(sound => {
             soundStore.playSound(sound)
           })
@@ -219,35 +219,36 @@ export const useSettingsStore = defineStore('settings', {
      * Remove a hotkey from the store
      * @param soundId the key to remove
      */
-    removeHotkey(pSound: Sound, key: string) {
+    removeHotkey(pSound: Sound, keys: string[]) {
       const electron = window.electron
       // get a the previous array of hotkeys that were registered
       const prevHotkeys = this.sounds.filter((sound): sound is SoundWithHotkey => sound.hotkey !== undefined)
       // find out if any other hotkeys are using the key
-      const hotkeyAlreadyUsed = prevHotkeys.some(s => s.id !== pSound.id && s.hotkey === key)
+      const hotkeyAlreadyUsed = prevHotkeys.some(s => s.id !== pSound.id && arraysAreEqual(s.hotkey, keys))
       if (hotkeyAlreadyUsed) {
         // hotkey already used, no need to unregister it
         return
       }
-      electron?.unregisterHotkeys([key])
+      if (keys.length === 0) return
+      electron?.unregisterHotkeys([...keys])
     },
     /**
      * Add a hotkey to the store
-     * @param key the key to add
+     * @param keys the key to add
      * @param sound the sound to play
      */
-    addHotkey(sound: Sound, key: string | undefined) {
+    addHotkey(sound: Sound, keys: string[] | undefined) {
       const electron = window.electron
-      if (key === undefined) return
+      if (keys === undefined) return
       // get a the previous array of hotkeys that were registered
       const prevHotkeys = this.sounds.filter((sound): sound is SoundWithHotkey => sound.hotkey !== undefined)
       // check if any other hotkeys are using the key
-      const otherHotkeyAlreadyUsed = prevHotkeys.some(s => s.id !== sound.id && s.hotkey === key)
+      const otherHotkeyAlreadyUsed = prevHotkeys.some(s => s.id !== sound.id && arraysAreEqual(s.hotkey, keys))
       if (otherHotkeyAlreadyUsed) {
         // hotkey already used, no need to re-add it
         return
       }
-      electron?.registerHotkeys([key])
+      electron?.registerHotkeys([...keys])
     },
     /**
      * Get the image URLs for the sounds.
