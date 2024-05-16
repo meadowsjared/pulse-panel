@@ -41,7 +41,11 @@
         @input="updateAllowOverlappingSound"
     /></label>
     <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
-    <hotkey-picker />
+    <div class="push-to-talk-hotkey">
+      <hotkey-picker v-model="selectedHotkey" @update:modelValue="selectedHotkeyUpdated"
+        >Push-to-Talk Key:</hotkey-picker
+      >
+    </div>
   </div>
 </template>
 
@@ -59,6 +63,17 @@ const outputDevices = ref<(string | null)[]>([])
 const audioOutputDevices = ref<MediaDeviceInfo[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
+
+settingsStore.fetchString('ptt_hotkey').then(hotkey => {
+  selectedHotkey.value = hotkey ?? undefined
+})
+const selectedHotkey = ref<string | undefined>(settingsStore.ptt_hotkey ?? undefined)
+
+function selectedHotkeyUpdated(event: string | undefined) {
+  selectedHotkey.value = event
+  // save the value to the IndexedDB store
+  settingsStore.saveString('ptt_hotkey', event ?? null)
+}
 
 window.electron?.onDarkModeToggle((value: boolean) => {
   if (settingsStore.darkMode === value) return
@@ -280,5 +295,13 @@ input[type='checkbox']:focus-visible {
   display: flex;
   flex-direction: column;
   background: var(--background-color);
+}
+
+.push-to-talk-hotkey {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 0.5ch;
+  margin-top: 1rem;
 }
 </style>
