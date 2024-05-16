@@ -76,7 +76,7 @@ export const useSettingsStore = defineStore('settings', {
     async saveString(key: StringSettings, value: string | null): Promise<void> {
       const electron: Settings | undefined = window.electron
       if (value === null) {
-        await electron?.deleteSetting?.(key)
+        await this._deleteSetting(key)
       } else {
         await electron?.saveSetting?.(key, value)
       }
@@ -93,7 +93,7 @@ export const useSettingsStore = defineStore('settings', {
       const returnedString = await electron?.readSetting?.(key)
       if (returnedString === undefined || typeof returnedString !== 'string') {
         if (defaultValue === null) {
-          await electron?.deleteSetting?.(key)
+          await this._deleteSetting(key)
           this[key] = null
         } else {
           await electron?.saveSetting?.(key, defaultValue)
@@ -103,6 +103,20 @@ export const useSettingsStore = defineStore('settings', {
         this[key] = returnedString
       }
       return this[key]
+    },
+    /**
+     * Delete a string setting from the store
+     * @param key the key it's saved under
+     */
+    async _deleteSetting(key: StringSettings | BooleanSettings): Promise<void> {
+      const electron = window.electron
+      await electron?.deleteSetting?.(key)
+      // if key is a member of BooleanSettings, set it to false
+      if (isBooleanSettings(key)) {
+        this[key] = false
+      } else {
+        this[key] = null
+      }
     },
     /**
      * Save an array setting to the store
@@ -289,3 +303,10 @@ export const useSettingsStore = defineStore('settings', {
     },
   },
 })
+
+function isBooleanSettings(key: string): key is BooleanSettings {
+  if (key === 'darkMode' || key === 'allowOverlappingSound') {
+    return true
+  }
+  return false
+}
