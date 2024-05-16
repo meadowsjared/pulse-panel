@@ -1,39 +1,49 @@
 <template>
-  <div class="parent-div flex justify-center items-center gap-2">
-    <p>Push-to-talk hotkey:</p>
-    <button
-      class="hotkey"
-      @keydown="handleKeyDown"
-      title="this will be the button that pulse-panel with hold down any time sound is playing">
-      {{ selectedHotkey ?? 'Press a key...' }}
-    </button>
-    <button :disabled="!selectedHotkey" :class="{ hide: !selectedHotkey }" class="clear-button" @click="resetHotkey">
-      <inline-svg :src="CloseIcon" />
-    </button>
+  <div :class="{ dark: props.dark, 'gap-2': !props.dark }" class="parent-div flex justify-center items-center gap-2">
+    <slot />
+    <div class="button-group" :class="{ dark: props.dark }">
+      <button
+        ref="hotkeyButton"
+        class="hotkey"
+        :class="{ dark: props.dark }"
+        @keydown="handleKeyDown"
+        title="this will be the button that pulse-panel with hold down any time sound is playing">
+        {{ modelValue ?? 'No Keybind Set' }}
+      </button>
+      <button
+        :disabled="!modelValue"
+        :class="{ dark: props.dark, hide: !modelValue }"
+        class="clear-button"
+        @click="resetHotkey">
+        <inline-svg :src="CloseIcon" />
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import CloseIcon from '../assets/images/close.svg'
 import InlineSvg from 'vue-inline-svg'
-import { useSettingsStore } from '../store/settings'
+import { ref } from 'vue'
 
-const settingsStore = useSettingsStore()
-settingsStore.fetchString('ptt_hotkey').then(hotkey => {
-  selectedHotkey.value = hotkey
-})
-const selectedHotkey = ref<null | string>(settingsStore.ptt_hotkey ?? null)
+const props = defineProps<{
+  modelValue: string | undefined
+  dark?: boolean
+}>()
+
+const hotkeyButton = ref<HTMLButtonElement | null>(null)
+
+const emit =
+  defineEmits<(event: 'update:modelValue', value: string | undefined, previousValue: string | undefined) => void>()
 
 function handleKeyDown(event: KeyboardEvent) {
-  selectedHotkey.value = event.code
-  // save the value to the IndexedDB store
-  settingsStore.saveString('ptt_hotkey', event.code)
+  console.log('event.code', event.code)
+  emit('update:modelValue', event.code, props.modelValue)
+  hotkeyButton.value?.blur()
 }
 
 function resetHotkey() {
-  selectedHotkey.value = null
-  settingsStore.saveString('ptt_hotkey', null)
+  emit('update:modelValue', undefined, props.modelValue)
 }
 </script>
 
@@ -56,9 +66,27 @@ function resetHotkey() {
 
 .parent-div {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  margin-top: 1rem;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.button-group.dark {
+  width: 100%;
+}
+
+.hotkey.dark {
+  flex-grow: 1;
+}
+
+.dark {
+  border-radius: 0.5rem;
+  justify-content: start;
 }
 
 input {
