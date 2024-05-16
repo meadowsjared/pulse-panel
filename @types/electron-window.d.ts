@@ -13,12 +13,12 @@ export interface Settings {
   readSetting: (key: string) => Promise<string | boolean | number | undefined>
   saveSetting: (key: string, value: string | boolean | number) => Promise<boolean>
   deleteSetting: (key: string) => Promise<boolean>
-  sendKey: (key: string, down: boolean) => Promise<void>
+  sendKey: (key: string[], down: boolean) => Promise<void>
   toggleDarkMode: (value: boolean) => void
   onDarkModeToggle: (callback: (value: boolean) => void) => void
   registerHotkeys: (hotkeys: string[]) => void
   unregisterHotkeys: (hotkeys: string[]) => void
-  onKeyPressed: (callback: (key: string) => void) => void
+  onKeyPressed: (callback: (key: string[]) => void) => void
 }
 
 declare global {
