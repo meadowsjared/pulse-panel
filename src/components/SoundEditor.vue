@@ -136,7 +136,7 @@ watch(
   { immediate: true }
 )
 
-function updateHotkey(newKey: string, oldKey: string | undefined) {
+function updateHotkey(newKey: string[], oldKey: string[] | undefined) {
   if (oldKey) {
     settingsStore.removeHotkey(props.modelValue, oldKey)
   }
