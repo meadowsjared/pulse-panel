@@ -67,6 +67,7 @@ function stripAudioUrls(pSounds: Sound[]) {
     return {
       id: sound.id,
       name: sound.name,
+      hotkey: sound.hotkey,
       hideName: sound.hideName,
       audioKey: sound.audioKey,
       imageKey: sound.imageKey,
