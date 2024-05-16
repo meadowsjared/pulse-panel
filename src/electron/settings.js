@@ -6,6 +6,9 @@ const nconf = require('nconf').file({
   file: getConfigurationFilePath(),
 })
 const robot = require('@jitsi/robotjs')
+const { BrowserWindow } = require('electron')
+const { qKeys, qHotkeys } = require('qhotkeys')
+const globalHotkeys = new qHotkeys()
 
 function saveSetting(settingKey, settingValue) {
   nconf.set(settingKey, settingValue)
@@ -24,33 +27,92 @@ function deleteSetting(settingKey) {
 }
 
 /**
- * Send a key to the active window
- * @param {string} key
- * @param {boolean} down
+ * convert a hotkey.code to a robotjs hotkey string
+ * @param {string} hotkey
+ * @param {string} soundId
  */
-function sendKey(key, down) {
-  if (key.startsWith('Arrow')) {
-    key = key.replace('Arrow', '')
+function hotkeyToRobotjs(hotkey, soundId) {
+  if (hotkey.startsWith('Arrow')) {
+    hotkey = hotkey.replace('Arrow', '')
   }
-  if (key.startsWith('Numpad')) {
-    key = key.replace('Numpad', 'numpad_')
+  if (hotkey.startsWith('Numpad')) {
+    hotkey = hotkey.replace('Numpad', 'numpad_')
   }
-  if (key.startsWith('Key')) {
-    key = key.replace('Key', '')
+  if (hotkey.startsWith('Key')) {
+    hotkey = hotkey.replace('Key', '')
   }
-  if (key.startsWith('ShiftRight')) {
+  if (hotkey.startsWith('ShiftRight')) {
     // this one needs the shift to be moved to the right
-    key = key.replace('ShiftRight', 'right_shift')
+    hotkey = hotkey.replace('ShiftRight', 'right_shift')
   }
-  if (key.startsWith('ShiftLeft')) {
+  if (hotkey.startsWith('ShiftLeft')) {
     // this one needs the shift to be moved to the left
-    key = key.replace('ShiftLeft', 'left_shift')
+    hotkey = hotkey.replace('ShiftLeft', 'left_shift')
   }
-  if (key.startsWith('Digit')) {
-    key = key.replace('Digit', '')
+  if (hotkey.startsWith('Digit')) {
+    hotkey = hotkey.replace('Digit', '')
   }
-  key = key.toLowerCase()
-  robot.keyToggle(key, down ? 'down' : 'up')
+  return hotkey.toLowerCase()
+}
+
+function sendKey(key, down) {
+  robot.keyToggle(hotkeyToRobotjs(key), down ? 'down' : 'up')
+}
+
+/**
+ * convert a hotkey.code to a electron global shortcut string
+ * https://www.electronjs.org/docs/latest/api/accelerator
+ * @param {string} hotkey
+ */
+function hotkeyToQHotkeyEnum(hotkey) {
+  if (hotkey.startsWith('Arrow')) {
+    return qKeys[hotkey]
+  }
+  if (hotkey.startsWith('Numpad')) {
+    return qKeys[hotkey]
+  }
+  if (hotkey.startsWith('Key')) {
+    return qKeys[hotkey.replace('Key', '')]
+  }
+  if (hotkey.startsWith('ShiftRight')) {
+    return qKeys[hotkey]
+  }
+  if (hotkey.startsWith('ShiftLeft')) {
+    return qKeys[hotkey.replace('ShiftLeft', 'Shift')]
+  }
+  if (hotkey.startsWith('Digit')) {
+    return qKeys[hotkey.replace('Digit', '')]
+  }
+  throw new Error(`Unknown hotkey: ${hotkey}`)
+}
+
+/**
+ * Registers an array of hotkeys
+ * @param {{ [key: string]: string[] }} hotkeys
+ */
+function registerHotkeys(hotkeys) {
+  hotkeys.forEach(key => {
+    globalHotkeys.register([hotkeyToQHotkeyEnum(key)], () => {
+      BrowserWindow.getAllWindows().forEach(window => {
+        window.webContents.send('on-key-pressed', key)
+      })
+    })
+  })
+  globalHotkeys.run()
+}
+
+/**
+ * Unregisters an array of hotkeys
+ * @param {string[]} hotkeys
+ */
+function unregisterHotkeys(hotkeys) {
+  console.log(`Unregistering hotkeys: ${hotkeys.join(', ')}`)
+  globalHotkeys.unregister(hotkeys.map(hotkeyToQHotkeyEnum))
+}
+
+function stop() {
+  globalHotkeys.unregisterAll()
+  globalHotkeys.stop()
 }
 
 function getUserHome() {
@@ -80,4 +142,7 @@ module.exports = {
   readSetting,
   deleteSetting,
   sendKey,
+  registerHotkeys,
+  unregisterHotkeys,
+  stop,
 }

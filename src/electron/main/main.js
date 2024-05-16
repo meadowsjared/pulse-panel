@@ -60,6 +60,8 @@ app.whenReady().then(() => {
       window.webContents.send('dark-mode-updated', value)
     })
   })
+  ipcMain.handle('register-hotkeys', (_, hotkeys) => settings.registerHotkeys(hotkeys))
+  ipcMain.handle('unregister-hotkeys', (_, hotkeys) => settings.unregisterHotkeys(hotkeys))
 })
 
 function createWindow() {
@@ -143,3 +145,7 @@ function openSettingsWindow() {
     settingsWindow = null
   })
 }
+
+app.on('will-quit', () => {
+  settings.stop()
+})
