@@ -67,7 +67,7 @@ export const useSoundStore = defineStore('sound', {
       if (settingsStore.ptt_hotkey === null) {
         return
       }
-      window.electron?.sendKey(settingsStore.ptt_hotkey, down)
+      window.electron?.sendKey([...settingsStore.ptt_hotkey], down)
     },
     /**
      * Set the volume for the soundboard
@@ -127,7 +127,7 @@ export const useSoundStore = defineStore('sound', {
       // return a promise
       return new Promise(resolve => {
         const settingsStore = useSettingsStore()
-        if (settingsStore.muted) return // if muted, don't play the sound
+        if (settingsStore.muted || settingsStore.recordingHotkey) return // if muted, don't play the sound
         if (!activeOutputDevices) {
           activeOutputDevices = settingsStore.outputDevices
         }
