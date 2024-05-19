@@ -130,6 +130,7 @@ export const useSoundStore = defineStore('sound', {
       return new Promise(resolve => {
         const settingsStore = useSettingsStore()
         if (settingsStore.muted || settingsStore.recordingHotkey || this.disabled) return // if muted, don't play the sound
+        // console.debug('1 this.disabled = ', this.disabled)
         if (!activeOutputDevices) {
           activeOutputDevices = settingsStore.outputDevices
         }
@@ -243,6 +244,16 @@ export const useSoundStore = defineStore('sound', {
           resolve()
         }
       })
+    },
+    /**
+     * test function to play a sound to the default microphone
+     */
+    async testSound(): Promise<void> {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const audioInputDevices = devices.filter(device => device.kind === 'audioinput')
+      const audio = new Audio(chordAlert)
+      await audio.setSinkId('eae27d035b4d936434ef67685a229044255d84ea841cdcdf39beec13effe00ce')
+      audio.play()
     },
   },
 })

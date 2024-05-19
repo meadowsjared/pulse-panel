@@ -22,7 +22,6 @@ jobs:
 
       - name: Build Electron app with Bun
         run: |
-          set env DEBUG=electron-builder
           bun run build -p never
 
       - name: Extract Version

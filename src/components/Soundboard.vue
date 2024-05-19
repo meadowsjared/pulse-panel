@@ -27,6 +27,7 @@ settingsStore.fetchStringArray('outputDevices')
 settingsStore.fetchBooleanSetting('darkMode', true)
 settingsStore.fetchSoundSetting('sounds').then(soundsArray => {
   sounds.value = soundsArray
+  // console.log('sounds', soundsArray)
 })
 
 function updateSound() {
