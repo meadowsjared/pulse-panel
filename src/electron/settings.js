@@ -75,29 +75,36 @@ function hotkeyToQHotkeyEnum(hotkey) {
   if (hotkey.startsWith('Arrow')) {
     return qKeys[hotkey]
   }
-  if (hotkey.startsWith('Numpad')) {
+  if (hotkey === 'BracketLeft') {
+    return qKeys[hotkey]
+  }
+  if (hotkey === 'NumpadArrowLeft') {
     return qKeys[hotkey]
   }
   if (hotkey.startsWith('Key')) {
     return qKeys[hotkey.replace('Key', '')]
   }
-  if (hotkey.startsWith('ShiftRight')) {
-    return qKeys[hotkey]
-  }
-  if (hotkey.startsWith('ShiftLeft')) {
-    return qKeys[hotkey.replace('ShiftLeft', 'Shift')]
-  }
   if (hotkey.startsWith('Digit')) {
     return qKeys[hotkey.replace('Digit', '')]
+  }
+  if (hotkey.endsWith('Left')) {
+    hotkey = hotkey.replace('Left', '')
+  }
+  if (hotkey.startsWith('Control')) {
+    return qKeys[hotkey.replace('Control', 'Ctrl')]
+  }
+  if (qKeys.hasOwnProperty(hotkey)) {
+    return qKeys[hotkey]
   }
   throw new Error(`Unknown hotkey: ${hotkey}`)
 }
 
 /**
  * Registers an array of hotkeys
- * @param {{ [key: string]: string[] }} hotkeys
+ * @param { string[] } hotkeys
  */
 function registerHotkeys(hotkeys) {
+  stop()
   globalHotkeys.register(hotkeys.map(hotkeyToQHotkeyEnum), () => {
     BrowserWindow.getAllWindows().forEach(window => {
       window.webContents.send('on-key-pressed', hotkeys)
@@ -111,7 +118,6 @@ function registerHotkeys(hotkeys) {
  * @param {string[]} hotkeys
  */
 function unregisterHotkeys(hotkeys) {
-  console.log(`Unregistering hotkeys: ${hotkeys.join(', ')}`)
   globalHotkeys.unregister(hotkeys.map(hotkeyToQHotkeyEnum))
 }
 
