@@ -40,7 +40,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
         with:
-          tag_name: ${{ env.APP_VERSION }}
+          tag_name: ${{ github.ref }}
           release_name: Release ${{ github.ref_name }}
           draft: false
           prerelease: false
