@@ -174,7 +174,11 @@ export const useSettingsStore = defineStore('settings', {
     async fetchSoundSetting(key: ArraySoundSettings, defaultValue: Sound[] = [{ id: v4() }]): Promise<Sound[]> {
       const electron = window.electron
       const returnedArray = await electron?.readSetting?.(key)
-      if (returnedArray === undefined || typeof returnedArray !== 'string') {
+      if (
+        returnedArray === undefined ||
+        typeof returnedArray !== 'string' ||
+        (Array.isArray(returnedArray) && returnedArray.length === 0)
+      ) {
         await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
         this[key] = defaultValue
         return this[key]
@@ -210,9 +214,7 @@ export const useSettingsStore = defineStore('settings', {
       electron?.onKeyPressed(key => {
         this.sounds
           .filter(sound => arraysAreEqual(sound.hotkey, key))
-          .forEach(sound => {
-            soundStore.playSound(sound)
-          })
+          .forEach(sound => soundStore.playSound(sound, null, null, undefined, true))
       })
     },
     /**
