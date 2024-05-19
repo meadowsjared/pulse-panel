@@ -377,3 +377,16 @@ function isBooleanSettings(key: string): key is BooleanSettings {
   }
   return false
 }
+
+/**
+ * Check if two arrays are equal
+ * note: this function does not care if they are in the same order
+ * @param arr1 array 1
+ * @param arr2 array 2
+ * @returns true if the arrays are equal
+ */
+function arraysAreEqual(arr1: string[] | undefined, arr2: string[] | undefined): boolean {
+  if (arr1 === undefined || arr2 === undefined) return false
+  if (arr1.length !== arr2.length) return false
+  return arr1.every(value => arr2.includes(value)) && arr2.every(value => arr1.includes(value))
+}
