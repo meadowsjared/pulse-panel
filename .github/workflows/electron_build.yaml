@@ -21,7 +21,9 @@ jobs:
         run: bun install
 
       - name: Build Electron app with Bun
-        run: bun run build
+        run: |
+          set env DEBUG=electron-builder
+          bun run build
 
       - name: Extract Version
         run: echo "APP_VERSION=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
