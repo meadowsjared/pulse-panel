@@ -37,6 +37,7 @@ jobs:
       - name: Create Github Release
         uses: ncipollo/release-action@v1
         with:
+          tag: ${{ env.APP_VERSION }}
           artifacts: ./release/${{ env.APP_VERSION }}/pulse-panel_${{ env.APP_VERSION }}.exe
           replacesArtifacts: false
           token: ${{ secrets.GITHUB_TOKEN }}
