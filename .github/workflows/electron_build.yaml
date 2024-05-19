@@ -1,0 +1,54 @@
+name: Build and Release Pulse Panel
+
+on:
+  push:
+    branches:
+      - main  # Set this to the branch you want to build from
+
+jobs:
+  build:
+    runs-on: windows-latest  # Specifies that the job should run on the latest Windows runner
+
+    steps:
+      - uses: actions/checkout@v3  # Checks out your repository under $GITHUB_WORKSPACE
+
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build Electron app
+        run: bun run build  # Your build script
+
+      - name: Extract Version
+        run: echo "APP_VERSION=$(cat package.json | jq -r '.version')" >> $GITHUB_ENV
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-electron-app
+          path: ./release/**/*
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: release/${{ env.APP_VERSION }}/pulse-panel_${{ env.APP_VERSION }}.exe
+          asset_name: pulse-panel_${{ env.APP_VERSION }}.exe
+          asset_content_type: application/octet-stream
