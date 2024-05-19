@@ -10,7 +10,7 @@
         @keyup="handleKeyUp($event)"
         @focus="settingsStore.recordingHotkey = true"
         @blur="settingsStore.recordingHotkey = false"
-        title="this will be the button that pulse-panel with hold down any time sound is playing">
+        :title="props.title">
         {{ modelValue && modelValue?.length > 0 ? modelValue.join(' + ') : 'No Keybind Set' }}
       </button>
       <button
@@ -33,6 +33,7 @@ import { useSettingsStore } from '../store/settings'
 const props = defineProps<{
   modelValue?: string[]
   dark?: boolean
+  title: string
 }>()
 
 const settingsStore = useSettingsStore()

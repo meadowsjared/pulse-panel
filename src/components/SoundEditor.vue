@@ -60,7 +60,11 @@
       accept="image/*" />
     <button @click="imageFileInput?.click()" class="dark">Browse Image...</button>
     <div class="flex flex-col text-black">
-      <hotkey-picker v-model="props.modelValue.hotkey" @update:modelValue="updateHotkey" :dark="true"
+      <hotkey-picker
+        v-model="props.modelValue.hotkey"
+        @update:modelValue="updateHotkey"
+        :dark="true"
+        title="set a keybind for sound"
         >Keybind:</hotkey-picker
       >
     </div>

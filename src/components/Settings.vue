@@ -42,7 +42,10 @@
     /></label>
     <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
     <div class="push-to-talk-hotkey">
-      <hotkey-picker v-model="selectedHotkey" @update:modelValue="selectedHotkeyUpdated"
+      <hotkey-picker
+        v-model="selectedHotkey"
+        @update:modelValue="selectedHotkeyUpdated"
+        title="this will be the button that pulse-panel with hold down any time sound is playing"
         >Push-to-Talk Key:</hotkey-picker
       >
     </div>
