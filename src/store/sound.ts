@@ -16,6 +16,7 @@ interface State {
   outputDeviceData: OutputDeviceProperties[]
   playingSoundIds: string[]
   currentSound: Sound | null
+  disabled: boolean
 }
 
 export const useSoundStore = defineStore('sound', {
@@ -30,6 +31,7 @@ export const useSoundStore = defineStore('sound', {
     ],
     playingSoundIds: [],
     currentSound: null,
+    disabled: false,
   }),
   getters: {
     // if any sound is playing, this will be true
@@ -43,7 +45,7 @@ export const useSoundStore = defineStore('sound', {
      */
     async stopAllSounds(): Promise<void> {
       const settingsStore = useSettingsStore()
-      this._pttHotkeyPress(false)
+      this._pttHotkeyPress(settingsStore, false)
       settingsStore.outputDevices.forEach(async (outputDeviceId: string) => {
         const index = settingsStore.outputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
         if (this.outputDeviceData[index].currentAudio.length > 0 && this.outputDeviceData[index].playingAudio) {
@@ -62,12 +64,11 @@ export const useSoundStore = defineStore('sound', {
     /**
      * send the PTT key
      */
-    async _pttHotkeyPress(down: boolean): Promise<void> {
-      const settingsStore = useSettingsStore()
+    async _pttHotkeyPress(settingsStore: SettingsStore, down: boolean): Promise<void> {
       if (settingsStore.ptt_hotkey === null) {
         return
       }
-      window.electron?.sendKey([...settingsStore.ptt_hotkey], down)
+      await window.electron?.sendKey([...settingsStore.ptt_hotkey], down)
     },
     /**
      * Set the volume for the soundboard
@@ -122,12 +123,13 @@ export const useSoundStore = defineStore('sound', {
       audioFile: Sound | null = null,
       activeOutputDevices: string[] | null = null,
       selectedOutputDevices: (string | null)[] | null = null,
-      preview: boolean = false
+      preview: boolean = false,
+      preventDoubleTrigger = false
     ): Promise<void> {
       // return a promise
       return new Promise(resolve => {
         const settingsStore = useSettingsStore()
-        if (settingsStore.muted || settingsStore.recordingHotkey) return // if muted, don't play the sound
+        if (settingsStore.muted || settingsStore.recordingHotkey || this.disabled) return // if muted, don't play the sound
         if (!activeOutputDevices) {
           activeOutputDevices = settingsStore.outputDevices
         }
@@ -145,28 +147,33 @@ export const useSoundStore = defineStore('sound', {
           this.playingSoundIds.push(audioFile.id)
         }
 
-        if (!preview) this._pttHotkeyPress(true)
-        const promiseAr = activeOutputDevices?.map(async (outputDeviceId: string) => {
-          await this._playSoundToDevice(
-            outputDeviceId,
-            audioFile?.volume ?? null,
-            filteredSelectedOutputDevices,
-            settingsStore,
-            audioFile
-          )
-          // stop the forEach if preview is true
-          if (preview) {
-            // note, we do not need to unpress the PTT key here, since we are doing a preview
-            return
+        if (preventDoubleTrigger) this.disabled = true
+        const handlePromiseAll = async (promiseAr: Promise<void>[]) => {
+          await Promise.all(promiseAr)
+          this.disabled = true
+          if (!preview) this._pttHotkeyPress(settingsStore, false)
+          this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
+          setTimeout(() => (this.disabled = false), 100)
+          resolve()
+        }
+        this._pttHotkeyPress(settingsStore, true).then(() => {
+          if (preventDoubleTrigger) {
+            setTimeout(() => (this.disabled = false), 100)
+          }
+          const promiseAr = activeOutputDevices?.map(async (outputDeviceId: string, index: number) => {
+            if (preview && index !== 0) return // only play the sound on the first device if previewing
+            await this._playSoundToDevice(
+              outputDeviceId,
+              audioFile?.volume ?? null,
+              filteredSelectedOutputDevices,
+              settingsStore,
+              audioFile
+            )
+          })
+          if (promiseAr) {
+            handlePromiseAll(promiseAr)
           }
         })
-        if (promiseAr) {
-          Promise.all(promiseAr).then(() => {
-            if (!preview) this._pttHotkeyPress(false)
-            this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
-            resolve()
-          })
-        }
       })
     },
     /**
