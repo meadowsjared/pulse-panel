@@ -43,10 +43,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
         with:
-          tag_name: ${{ env.VERSION }}
-          release_name: Pulse Panel ${{ env.VERSION }}
-          draft: false
-          prerelease: false
+          title: Pulse Panel ${{ env.VERSION }}
       # - name: Upload Release Asset
       #   uses: actions/upload-release-asset@v1
       #   env:
