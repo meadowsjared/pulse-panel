@@ -43,7 +43,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
         with:
           tag_name: $APP_VERSION
-          release_name: Pulse Panel ${{ $APP_VERSION }}
+          release_name: Pulse Panel $APP_VERSION
           draft: false
           prerelease: false
       - name: Upload Release Asset
