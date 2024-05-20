@@ -29,7 +29,7 @@ jobs:
         shell: pwsh
         run: |
           $json = Get-Content package.json | ConvertFrom-Json
-          echo "{version}={$(echo $json.version)}" >> $GITHUB_OUTPUT
+          echo "{version}={$(echo $json.version)}" >> $env:GITHUB_ENV
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
