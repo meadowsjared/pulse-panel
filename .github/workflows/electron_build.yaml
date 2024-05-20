@@ -31,11 +31,11 @@ jobs:
           $json = Get-Content package.json | ConvertFrom-Json
           echo "VERSION=$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: my-electron-app
-          path: ./release/**/*.exe
+      # - name: Upload Artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: my-electron-app
+      #     path: ./release/**/*.exe
 
       - name: Create Release
         id: create_release
@@ -43,10 +43,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
         with:
-          tag_name: v${{ env.VERSION }}
-          release_name: Pulse Panel ${{ env.VERSION }}
+          artifacts: ./release/${{ env.VERSION }}/pulse-panel_${{ env.VERSION }}.exe
           draft: false
           prerelease: false
+          generateReleaseNotes: true
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
