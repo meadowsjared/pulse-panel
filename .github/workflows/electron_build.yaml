@@ -43,8 +43,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
         with:
-          tag_name: ${{ steps.read-json.outputs.version }}
-          release_name: Pulse Panel ${{ steps.read-json.outputs.version }}
+          tag_name: ${{ env.version }}
+          release_name: Pulse Panel ${{ env.version }}
           draft: false
           prerelease: false
       - name: Upload Release Asset
@@ -53,6 +53,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/${{ steps.read-json.outputs.version }}/pulse-panel_${{ steps.read-json.outputs.version }}.exe
-          asset_name: pulse-panel_${{ steps.read-json.outputs.version }}.exe
+          asset_path: ./release/${{ env.version }}/pulse-panel_${{ env.version }}.exe
+          asset_name: pulse-panel_${{ env.version }}.exe
           asset_content_type: application/octet-stream
