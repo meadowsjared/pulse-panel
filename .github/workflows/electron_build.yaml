@@ -31,11 +31,11 @@ jobs:
           $json = Get-Content package.json | ConvertFrom-Json
           echo "VERSION=$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: my-electron-app
-          path: ./release/**/*
+      # - name: Upload Artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: my-electron-app
+      #     path: ./release/**/*
 
       - name: Create Release
         id: create_release
