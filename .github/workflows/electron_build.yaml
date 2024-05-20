@@ -26,10 +26,10 @@ jobs:
 
       - name: Read json
         id: read-json
-        shell: bash
+        shell: pwsh
         run: |
           $json = Get-Content package.json | ConvertFrom-Json
-          echo "{version}={$(echo $json.version)}" >> $GITHUB_OUTPUT
+          echo "::set-output name=version::$(echo $json.version)"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
