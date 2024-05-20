@@ -7,7 +7,7 @@ const nconf = require('nconf').file({
 })
 const robot = require('@jitsi/robotjs')
 const { BrowserWindow } = require('electron')
-const { qKeys, qHotkeys } = require('qhotkeys')
+const { qKeys, qHotkeys } = require('@meadowsjared/qhotkeys')
 const globalHotkeys = new qHotkeys()
 
 function saveSetting(settingKey, settingValue) {
