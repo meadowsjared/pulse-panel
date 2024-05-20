@@ -2,8 +2,13 @@
   <div class="soundboard">
     <template v-for="(sound, i) in sounds" :key="sound?.id">
       <sound-button
+        :class="{ placeholder: sound.isPreview }"
         v-model="sounds[i]"
+        :draggable="settingsStore.displayMode === 'edit'"
         :displayMode="settingsStore.displayMode"
+        @dragstart="dragStart(i)"
+        @dragover="dragOver(i)"
+        @drop="drop(i)"
         @update:modelValue="handleSoundsUpdate"
         @deleteSound="deleteSound(sounds[i])"
         @editSound="editSound(sounds[i])" />
@@ -23,12 +28,42 @@ import { v4 } from 'uuid'
 const sounds = ref<Sound[]>([])
 
 const settingsStore = useSettingsStore()
+let draggedIndex: number | null = null
+
 settingsStore.fetchStringArray('outputDevices')
 settingsStore.fetchBooleanSetting('darkMode', true)
 settingsStore.fetchSoundSetting('sounds').then(soundsArray => {
   sounds.value = soundsArray
   // console.log('sounds', soundsArray)
 })
+
+function dragStart(index: number) {
+  if (settingsStore.displayMode !== 'edit') return
+  sounds.value[index].isPreview = true
+  draggedIndex = index
+}
+
+function drop(index: number) {
+  if (settingsStore.displayMode !== 'edit') return
+  if (draggedIndex === null) return
+  if (index === sounds.value.length - 1) index = sounds.value.length - 2
+  const draggedSound = sounds.value[draggedIndex]
+  sounds.value.splice(draggedIndex, 1)
+  sounds.value.splice(index, 0, draggedSound)
+  draggedSound.isPreview = false
+  updateSound()
+}
+
+function dragOver(index: number) {
+  if (settingsStore.displayMode !== 'edit') return
+  if (draggedIndex === null) return
+  if (index !== draggedIndex) {
+    const draggedSound = sounds.value[draggedIndex]
+    sounds.value.splice(draggedIndex, 1)
+    sounds.value.splice(index, 0, draggedSound)
+    draggedIndex = index
+  }
+}
 
 function updateSound() {
   settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
@@ -95,5 +130,9 @@ function stripAudioUrls(pSounds: Sound[]) {
   background: var(--alt-light-text-color);
   padding: 1rem;
   overflow: auto;
+}
+
+.placeholder {
+  opacity: 50%;
 }
 </style>

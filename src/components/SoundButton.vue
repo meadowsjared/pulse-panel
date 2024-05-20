@@ -63,6 +63,7 @@ import { stripFileExtension } from '../utils/utils'
 const props = defineProps<{
   modelValue: Sound
   displayMode: DisplayMode
+  isPreview?: boolean
 }>()
 
 // define the emits
