@@ -29,7 +29,7 @@ jobs:
         shell: pwsh
         run: |
           $json = Get-Content package.json | ConvertFrom-Json
-          echo "::set-output name=version::$(echo $json.version)"
+          echo "VERSION=$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
@@ -43,8 +43,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
         with:
-          tag_name: ${{ steps.read-json.outputs.version }}
-          release_name: Pulse Panel ${{ steps.read-json.outputs.version }}
+          tag_name: ${{ env.VERSION }}
+          release_name: Pulse Panel ${{ env.VERSION }}
           draft: false
           prerelease: false
       - name: Upload Release Asset
@@ -53,6 +53,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release/${{ steps.read-json.outputs.version }}/pulse-panel_${{ steps.read-json.outputs.version }}.exe
-          asset_name: pulse-panel_${{ steps.read-json.outputs.version }}.exe
+          asset_path: ./release/${{ env.VERSION }}/pulse-panel_${{ env.VERSION }}.exe
+          asset_name: pulse-panel_${{ env.VERSION }}.exe
           asset_content_type: application/octet-stream
