@@ -31,11 +31,11 @@ jobs:
           $json = Get-Content package.json | ConvertFrom-Json
           echo "VERSION=$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      # - name: Upload Artifacts
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: my-electron-app
-      #     path: ./release/**/*.exe
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-electron-app
+          path: ./release/**/*.exe
 
       - name: Create Release
         id: create_release
@@ -49,7 +49,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ./release/${{ env.VERSION }}/pulse-panel_${{ env.VERSION }}.exe
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release/${{ env.VERSION }}/pulse-panel_${{ env.VERSION }}.exe
           asset_name: pulse-panel_${{ env.VERSION }}.exe
           asset_content_type: application/octet-stream
