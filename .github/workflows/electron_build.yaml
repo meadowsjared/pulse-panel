@@ -47,6 +47,8 @@ jobs:
           draft: false
           prerelease: false
           generateReleaseNotes: true
+          tag: v${{ env.VERSION }}
+          allowUpdates: true
       - name: Upload Release Asset
         uses: actions/upload-release-asset@v1
         env:
