@@ -47,6 +47,7 @@
           ]
         }
       ],
+      "icon": "/src/assets/pulse-panel_icon.ico",
       "artifactName": "${productName}_${version}.${ext}"
     },
     "nsis": {
