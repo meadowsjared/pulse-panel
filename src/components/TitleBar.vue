@@ -41,7 +41,7 @@ const close = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: var(--background-color);
+  background-color: var(--title-bar-bg-color);
   color: var(--text-color);
   padding: 0 0 0 1rem;
   -webkit-app-region: drag;
@@ -57,8 +57,6 @@ const close = () => {
 
 .buttons button {
   padding: 0.75rem;
-  background-color: transparent;
-  color: var(--text-color);
   border: none;
   cursor: pointer;
   -webkit-app-region: no-drag;
