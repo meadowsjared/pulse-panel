@@ -19,6 +19,11 @@ export interface Settings {
   registerHotkeys: (hotkeys: string[]) => void
   unregisterHotkeys: (hotkeys: string[]) => void
   onKeyPressed: (callback: (key: string[]) => void) => void
+  closeWindow: () => void
+  minimizeWindow: () => void
+  maximizeRestoreWindow: () => void
+  onWindowResized: (callback: (windowIsMaximized: boolean) => void) => void
+  requestMainWindowSized: () => void
 }
 
 declare global {

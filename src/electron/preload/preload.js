@@ -31,6 +31,13 @@ contextBridge.exposeInMainWorld('electron', {
   onDarkModeToggle: callback => {
     ipcRenderer.on('dark-mode-updated', (_, value) => callback(value))
   },
+  closeWindow: () => ipcRenderer.invoke('close-window'),
+  minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
+  maximizeRestoreWindow: () => ipcRenderer.invoke('maximize-restore-window'),
+  onWindowResized: callback => {
+    ipcRenderer.on('main-window-resized', (_, isMaximized) => callback(isMaximized))
+  },
+  requestMainWindowSized: () => ipcRenderer.invoke('request-main-window-sized'),
   versions: {
     node: process.versions.node,
     chrome: process.versions.chrome,

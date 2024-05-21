@@ -1,55 +1,14 @@
 const { join } = require('path')
-const { app, BrowserWindow, Menu, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const settings = require('../settings')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
-let settingsWindow = null
+/** this is the main window of the app
+ * @type {BrowserWindow} */
+let mainWindow = null
 
 app.whenReady().then(() => {
-  const template = [
-    {
-      label: 'File',
-      submenu: [{ role: 'quit' }],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'undo' },
-        { role: 'redo' },
-        { type: 'separator' },
-        { role: 'cut' },
-        { role: 'copy' },
-        { role: 'paste' },
-        { type: 'separator' },
-        { role: 'selectAll' },
-        { type: 'separator' },
-        {
-          label: 'Settings',
-          click: openSettingsWindow,
-        },
-      ],
-    },
-    {
-      label: 'View',
-      submenu: [{ role: 'reload' }, { role: 'toggledevtools' }],
-    },
-    {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'Learn More',
-          click: async () => {
-            const { shell } = require('electron')
-            await shell.openExternal('https://electronjs.org')
-          },
-        },
-      ],
-    },
-  ]
-
-  const menu = Menu.buildFromTemplate(template)
-  Menu.setApplicationMenu(menu)
   // Expose a method to read and save settings
   ipcMain.handle('read-setting', (_, settingKey) => settings.readSetting(settingKey))
   ipcMain.handle('save-setting', (_, settingKey, settingValue) => settings.saveSetting(settingKey, settingValue))
@@ -62,11 +21,19 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('register-hotkeys', (_, hotkeys) => settings.registerHotkeys(hotkeys))
   ipcMain.handle('unregister-hotkeys', (_, hotkeys) => settings.unregisterHotkeys(hotkeys))
+  ipcMain.handle('close-window', () => mainWindow.close())
+  ipcMain.handle('minimize-window', () => mainWindow.minimize())
+  ipcMain.handle('maximize-restore-window', () =>
+    mainWindow.isMaximized() ? mainWindow.restore() : mainWindow.maximize()
+  )
+  ipcMain.handle('restore-window', () => mainWindow.restore())
+  ipcMain.handle('request-main-window-sized', updateMaximizeRestoreMenuItem)
 })
 
 function createWindow() {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
+    frame: false,
     width: 1100,
     height: 900,
     webPreferences: {
@@ -74,6 +41,7 @@ function createWindow() {
       nodeIntegration: true,
     },
   })
+  mainWindow.on('resize', updateMaximizeRestoreMenuItem)
 
   // and load the index.html of the app.
   if (isDev) {
@@ -87,12 +55,12 @@ function createWindow() {
   //     'http://localhost:3000' :
   //     join(__dirname, '../../index.html')
   // );
+}
 
-  // make it so if the main window closes, the settings window will close as well
-  mainWindow.on('closed', function () {
-    if (settingsWindow) {
-      settingsWindow.close()
-    }
+function updateMaximizeRestoreMenuItem() {
+  const isMaximized = mainWindow.isMaximized()
+  BrowserWindow.getAllWindows().forEach(window => {
+    window.webContents.send('main-window-resized', isMaximized)
   })
 }
 
@@ -112,39 +80,10 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (settingsWindow) {
-    settingsWindow.close()
-  }
   if (process.platform !== 'darwin') {
     app.quit()
   }
 })
-
-function openSettingsWindow() {
-  if (settingsWindow) {
-    settingsWindow.focus()
-    return
-  }
-
-  settingsWindow = new BrowserWindow({
-    frame: false,
-    height: 230,
-    resizable: false,
-    width: 600,
-    webPreferences: {
-      preload: join(__dirname, '../preload/preload.js'),
-      nodeIntegration: true,
-    },
-  })
-
-  settingsWindow.loadURL('http://localhost:3000/settings')
-  settingsWindow.webContents.openDevTools()
-
-  settingsWindow.on('closed', function () {
-    console.log('Settings window closed')
-    settingsWindow = null
-  })
-}
 
 app.on('will-quit', () => {
   settings.stop()
