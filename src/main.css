@@ -47,8 +47,8 @@ select {
   font-family: 'Roboto', sans-serif;
 }
 
-html, body, div#app, div.e-nuxt-container {
-  height: 100%
+html, body, div#app {
+  height: 100%;
 }
 
 button:focus {
