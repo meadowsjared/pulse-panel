@@ -292,12 +292,12 @@ input[type='checkbox']:focus-visible {
 }
 
 .main {
-  height: 100vh;
   width: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   background: var(--background-color);
+  padding-bottom: 1rem;
 }
 
 .push-to-talk-hotkey {

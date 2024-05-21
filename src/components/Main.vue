@@ -143,6 +143,7 @@ function changeMode() {
 }
 
 .e-nuxt-container {
+  height: calc(100vh - 38px);
   background: var(--background-color);
   font-family: Helvetica, sans-serif;
   display: flex;

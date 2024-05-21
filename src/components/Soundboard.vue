@@ -122,7 +122,6 @@ function stripAudioUrls(pSounds: Sound[]) {
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   grid-auto-rows: 80px;
   overflow: auto;
-  height: calc(100vh - 38px);
 }
 
 .rightSideBar {
