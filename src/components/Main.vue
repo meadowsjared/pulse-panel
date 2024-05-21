@@ -1,5 +1,5 @@
 <template>
-  <title-bar>Pulse Panel</title-bar>
+  <title-bar>Pulse Panel<img class="pulse-panel-icon" :src="PulsePanelIcon" alt="pulse panel icon" /></title-bar>
   <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
     <side-bar>
       <div class="top-buttons">
@@ -52,6 +52,7 @@ import PlayIcon from '../assets/images/play.svg'
 import StopIcon from '../assets/images/stop.svg'
 import Headphones from '../assets/images/headphones.svg'
 import { useSoundStore } from '../store/sound'
+import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp'
 
 const outputDeviceId = ref<string[]>([])
 const darkMode = ref(true)
@@ -80,6 +81,12 @@ function changeMode() {
 </script>
 
 <style scoped>
+.pulse-panel-icon {
+  width: 20px;
+  aspect-ratio: 1;
+  margin-left: 0.5rem;
+}
+
 .menu {
   display: flex;
   width: var(--menu-width);
