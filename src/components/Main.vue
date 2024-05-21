@@ -1,4 +1,5 @@
 <template>
+  <title-bar>Pulse Panel</title-bar>
   <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
     <side-bar>
       <div class="top-buttons">
@@ -142,7 +143,6 @@ function changeMode() {
 }
 
 .e-nuxt-container {
-  min-height: calc(100vh - 50px);
   background: var(--background-color);
   font-family: Helvetica, sans-serif;
   display: flex;
