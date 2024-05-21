@@ -42,7 +42,7 @@ const close = () => {
   justify-content: space-between;
   align-items: center;
   background-color: var(--title-bar-bg-color);
-  color: var(--text-color);
+  color: var(--alt-bright-text-color);
   padding: 0 0 0 1rem;
   -webkit-app-region: drag;
 }
