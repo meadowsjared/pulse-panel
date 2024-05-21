@@ -27,21 +27,22 @@ app.whenReady().then(() => {
     mainWindow.isMaximized() ? mainWindow.restore() : mainWindow.maximize()
   )
   ipcMain.handle('restore-window', () => mainWindow.restore())
-  ipcMain.handle('request-main-window-sized', updateMaximizeRestoreMenuItem)
+  ipcMain.handle('request-main-window-sized', resizeTriggered)
 })
 
 function createWindow() {
   // Create the browser window.
+  const size = settings.readSetting('window-size') || [1100, 900]
   mainWindow = new BrowserWindow({
     frame: false,
-    width: 1100,
-    height: 900,
+    width: size[0],
+    height: size[1],
     webPreferences: {
       preload: join(__dirname, '../preload/preload.js'),
       nodeIntegration: true,
     },
   })
-  mainWindow.on('resize', updateMaximizeRestoreMenuItem)
+  mainWindow.on('resize', resizeTriggered)
 
   // and load the index.html of the app.
   if (isDev) {
@@ -57,8 +58,10 @@ function createWindow() {
   // );
 }
 
-function updateMaximizeRestoreMenuItem() {
+function resizeTriggered() {
   const isMaximized = mainWindow.isMaximized()
+  const size = mainWindow.getSize()
+  settings.saveSetting('window-size', size)
   BrowserWindow.getAllWindows().forEach(window => {
     window.webContents.send('main-window-resized', isMaximized)
   })
