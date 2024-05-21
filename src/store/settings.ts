@@ -6,6 +6,7 @@ import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
 
 interface State {
+  windowIsMaximized: boolean
   outputDevices: string[]
   darkMode: boolean
   allowOverlappingSound: boolean
@@ -34,6 +35,7 @@ export interface SettingsStore extends ReturnType<typeof useSettingsStore> {}
 
 export const useSettingsStore = defineStore('settings', {
   state: (): State => ({
+    windowIsMaximized: false,
     outputDevices: [],
     darkMode: true,
     allowOverlappingSound: false,
@@ -189,8 +191,21 @@ export const useSettingsStore = defineStore('settings', {
         }
         this.sounds = sounds
         this.registerHotkeys()
+        this.registerWindowResize()
         return this._getImageUrls(key, sounds)
       }
+    },
+    /**
+     * This function listens for windowResize events and sets the windowIsMaximized state
+     * @param isMaximized the state of the window
+     * @returns void
+     */
+    registerWindowResize(): void {
+      const electron = window.electron
+      electron?.onWindowResized(isMaximized => {
+        this.windowIsMaximized = isMaximized
+      })
+      electron?.requestMainWindowSized() // request the current to initialize the windowIsMaximized state
     },
     /**
      * Register the hotkeys for the sounds when the app loads
