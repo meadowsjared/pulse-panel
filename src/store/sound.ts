@@ -48,7 +48,7 @@ export const useSoundStore = defineStore('sound', {
       this._pttHotkeyPress(settingsStore, false)
       settingsStore.outputDevices.forEach(async (outputDeviceId: string) => {
         const index = settingsStore.outputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
-        if (this.outputDeviceData[index].currentAudio.length > 0 && this.outputDeviceData[index].playingAudio) {
+        if (this.outputDeviceData[index]?.currentAudio.length > 0 && this.outputDeviceData[index].playingAudio) {
           this.outputDeviceData[index].currentAudio.forEach(audio => {
             audio.pause()
             audio.currentTime = 0
@@ -144,16 +144,15 @@ export const useSoundStore = defineStore('sound', {
         const filteredSelectedOutputDevices = selectedOutputDevices.filter(
           (deviceId): deviceId is string => deviceId !== null
         )
-        if (audioFile?.id) {
-          this.playingSoundIds.push(audioFile.id)
-        }
+        const audioFileId = audioFile?.id || chordAlert
+        this.playingSoundIds.push(audioFileId)
 
         if (preventDoubleTrigger) this.disabled = true
         const handlePromiseAll = async (promiseAr: Promise<void>[]) => {
           await Promise.all(promiseAr)
           this.disabled = true
           if (!preview) this._pttHotkeyPress(settingsStore, false)
-          this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFile?.id)
+          this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFileId)
           setTimeout(() => (this.disabled = false), 100)
           resolve()
         }
