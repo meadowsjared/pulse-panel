@@ -190,6 +190,7 @@ export const useSoundStore = defineStore('sound', {
       audioFile: Sound | null
     ): Promise<void> {
       const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
+      if (index === -1) return
       const outputDeviceData = this.outputDeviceData[index]
       if (
         settingsStore.allowOverlappingSound === false &&
