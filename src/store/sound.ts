@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import chordAlert from '../assets/wav/457518__graham_makes__chord-alert-notification.wav'
+import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 import { SettingsStore, useSettingsStore } from './settings'
 import { Sound } from '@/@types/sound'
 
@@ -190,7 +190,6 @@ export const useSoundStore = defineStore('sound', {
       audioFile: Sound | null
     ): Promise<void> {
       const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
-      if (index === -1) return
       const outputDeviceData = this.outputDeviceData[index]
       if (
         settingsStore.allowOverlappingSound === false &&
