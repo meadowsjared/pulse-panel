@@ -15,6 +15,7 @@ declare module 'vue' {
     Main: typeof import('./components/Main.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SelectCustom: typeof import('./components/SelectCustom.vue')['default']
     Settings: typeof import('./components/Settings.vue')['default']
     SideBar: typeof import('./components/SideBar.vue')['default']
     Soundboard: typeof import('./components/Soundboard.vue')['default']
