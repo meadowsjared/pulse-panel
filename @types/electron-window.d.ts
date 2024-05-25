@@ -1,5 +1,6 @@
 export interface Versions {
   versions: {
+    app: string
     chrome: string
     electron: string
     node: string

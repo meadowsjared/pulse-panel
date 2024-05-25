@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
   requestMainWindowSized: () => ipcRenderer.invoke('request-main-window-sized'),
   versions: {
+    app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,
     chrome: process.versions.chrome,
     electron: process.versions.electron,
