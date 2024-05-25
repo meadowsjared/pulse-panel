@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('main-window-resized', (_, isMaximized) => callback(isMaximized))
   },
   requestMainWindowSized: () => ipcRenderer.invoke('request-main-window-sized'),
+  openExternalLink: url => ipcRenderer.invoke('open-external-link', url),
   versions: {
     app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,

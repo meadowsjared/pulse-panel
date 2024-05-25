@@ -25,6 +25,7 @@ export interface Settings {
   maximizeRestoreWindow: () => void
   onWindowResized: (callback: (windowIsMaximized: boolean) => void) => void
   requestMainWindowSized: () => void
+  openExternalLink: (url: string) => void
 }
 
 declare global {

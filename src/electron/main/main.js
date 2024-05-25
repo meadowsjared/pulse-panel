@@ -28,6 +28,7 @@ app.whenReady().then(() => {
   )
   ipcMain.handle('restore-window', () => mainWindow.restore())
   ipcMain.handle('request-main-window-sized', resizeTriggered)
+  ipcMain.handle('open-external-link', (_, url) => require('electron').shell.openExternal(url))
 })
 
 function createWindow() {
