@@ -6,8 +6,8 @@
         ref="hotkeyButton"
         class="hotkey"
         :class="{ dark: props.dark }"
-        @keydown="handleKeyDown"
-        @keyup="handleKeyUp($event)"
+        @keydown.prevent="handleKeyDown"
+        @keyup.prevent="handleKeyUp($event)"
         @focus="settingsStore.recordingHotkey = true"
         @blur="settingsStore.recordingHotkey = false"
         :title="props.title">
