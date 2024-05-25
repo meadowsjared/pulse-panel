@@ -150,30 +150,29 @@ export const useSoundStore = defineStore('sound', {
         if (preventDoubleTrigger) this.disabled = true
         const handlePromiseAll = async (promiseAr: Promise<void>[]) => {
           await Promise.all(promiseAr)
-          this.disabled = true
+          if (preventDoubleTrigger) this.disabled = true
           if (!preview) this._pttHotkeyPress(settingsStore, false)
           this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFileId)
           setTimeout(() => (this.disabled = false), 100)
           resolve()
         }
-        this._pttHotkeyPress(settingsStore, true).then(() => {
-          if (preventDoubleTrigger) {
-            setTimeout(() => (this.disabled = false), 100)
-          }
-          const promiseAr = activeOutputDevices?.map(async (outputDeviceId: string, index: number) => {
-            if (preview && index !== 0) return // only play the sound on the first device if previewing
-            await this._playSoundToDevice(
-              outputDeviceId,
-              audioFile?.volume ?? null,
-              filteredSelectedOutputDevices,
-              settingsStore,
-              audioFile
-            )
-          })
-          if (promiseAr) {
-            handlePromiseAll(promiseAr)
-          }
+        if (!preview) this._pttHotkeyPress(settingsStore, true)
+        if (preventDoubleTrigger) {
+          setTimeout(() => (this.disabled = false), 100)
+        }
+        const promiseAr = activeOutputDevices?.map(async (outputDeviceId: string, index: number) => {
+          if (preview && index !== 0) return // only play the sound on the first device if previewing
+          await this._playSoundToDevice(
+            outputDeviceId,
+            audioFile?.volume ?? null,
+            filteredSelectedOutputDevices,
+            settingsStore,
+            audioFile
+          )
         })
+        if (promiseAr) {
+          handlePromiseAll(promiseAr)
+        }
       })
     },
     /**
