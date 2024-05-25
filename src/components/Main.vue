@@ -1,5 +1,12 @@
 <template>
-  <title-bar>Pulse Panel<img class="pulse-panel-icon" :src="PulsePanelIcon" alt="pulse panel icon" /></title-bar>
+  <title-bar
+    >Pulse Panel<img
+      class="pulse-panel-icon"
+      @click="openLink"
+      :src="PulsePanelIcon"
+      :title="appVersion"
+      alt="pulse panel icon"
+  /></title-bar>
   <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
     <side-bar>
       <div class="top-buttons">
@@ -7,8 +14,8 @@
           <inline-svg :src="Speaker" />Soundbar
         </router-link>
         <router-link to="/settings" title="Settings" class="menu">
-          <inline-svg :src="SettingsGear" />Settings</router-link
-        >
+          <inline-svg :src="SettingsGear" />Settings
+        </router-link>
       </div>
       <div class="bottom-buttons">
         <button
@@ -58,6 +65,11 @@ const outputDeviceId = ref<string[]>([])
 const darkMode = ref(true)
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
+const appVersion = `v${window.electron?.versions.app}`
+
+function openLink() {
+  window.electron?.openExternalLink('https://github.com/counsel-of-Big-Brains/pulse-panel')
+}
 
 window.electron?.onDarkModeToggle((value: boolean) => {
   if (settingsStore.darkMode === value) return
@@ -85,6 +97,8 @@ function changeMode() {
   width: 20px;
   aspect-ratio: 1;
   margin-left: 0.5rem;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
 }
 
 .menu {
