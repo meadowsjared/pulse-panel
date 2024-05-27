@@ -48,6 +48,12 @@
         title="this will be the button that pulse-panel with hold down any time sound is playing"
         >Push-to-Talk Key:</hotkey-picker
       >
+      <div class="downloadVBCableGroup">
+        <button @click="downloadVBCable" class="light downloadVBCable">
+          Get VB-Cable<inline-svg :src="Download" class="download-icon" />
+        </button>
+        <div class="vb-cable-status-message" :class="{ vbCableInstalled }">VB-Cable already Installed</div>
+      </div>
     </div>
   </div>
 </template>
@@ -59,6 +65,7 @@ import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import SpeakerIcon from '../assets/images/speaker.svg'
 import Plus from '../assets/images/plus.svg'
+import Download from '../assets/images/download.svg'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -66,11 +73,26 @@ const outputDevices = ref<(string | null)[]>([])
 const audioOutputDevices = ref<MediaDeviceInfo[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
+const vbCableInstalled = ref(false)
 
 settingsStore.fetchStringArray('ptt_hotkey').then(hotkey => {
   selectedHotkey.value = hotkey ?? undefined
 })
-const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
+
+async function downloadVBCable() {
+  // set it to false to reset the animation
+  vbCableInstalled.value = false
+  const installed = await window.electron?.downloadVBCable()
+  if (installed) {
+    return
+  }
+
+  // set it to true to trigger the animation
+  vbCableInstalled.value = true
+  setTimeout(() => {
+    vbCableInstalled.value = false
+  }, 3000)
+}
 
 function selectedHotkeyUpdated(event: string[] | undefined) {
   selectedHotkey.value = event
@@ -306,5 +328,46 @@ input[type='checkbox']:focus-visible {
   align-items: baseline;
   gap: 0.5ch;
   margin-top: 1rem;
+}
+
+.downloadVBCableGroup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  isolation: isolate;
+}
+
+.downloadVBCable {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0.5rem 2rem;
+  align-items: center;
+  margin-top: 1rem;
+  width: 100%;
+}
+.download-icon {
+  width: 1.5rem;
+}
+
+.vb-cable-status-message {
+  --top-overlap: 1rem;
+  width: 100%;
+  margin-top: calc(var(--top-overlap) * -1);
+  padding-top: calc(var(--top-overlap) + 0.5rem);
+  height: 0;
+  border-radius: 0.5rem;
+  color: var(--background-color);
+  background: var(--active-color);
+  z-index: -1;
+  transition: transform 0.4s, height 0.4s;
+  transform: translateY(-100%);
+  font-weight: bold;
+}
+
+.vbCableInstalled {
+  height: 3.5rem;
+  transform: translateY(0);
 }
 </style>
