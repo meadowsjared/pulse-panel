@@ -1,5 +1,5 @@
 const { join } = require('path')
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, shell } = require('electron')
 const settings = require('../settings')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
@@ -28,7 +28,8 @@ app.whenReady().then(() => {
   )
   ipcMain.handle('restore-window', () => mainWindow.restore())
   ipcMain.handle('request-main-window-sized', resizeTriggered)
-  ipcMain.handle('open-external-link', (_, url) => require('electron').shell.openExternal(url))
+  ipcMain.handle('open-external-link', (_, url) => shell.openExternal(url))
+  ipcMain.handle('download-vb-cable', () => settings.downloadVBCable())
 })
 
 function createWindow() {

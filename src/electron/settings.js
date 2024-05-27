@@ -6,8 +6,11 @@ const nconf = require('nconf').file({
   file: getConfigurationFilePath(),
 })
 const robot = require('@jitsi/robotjs')
-const { BrowserWindow } = require('electron')
+const { BrowserWindow, net } = require('electron')
 const { qKeys, qHotkeys } = require('@meadowsjared/qhotkeys')
+const extractZip = require('extract-zip')
+const { exec } = require('child_process')
+const regedit = require('regedit')
 const globalHotkeys = new qHotkeys()
 
 function saveSetting(settingKey, settingValue) {
@@ -148,6 +151,133 @@ function getConfigurationFilePath() {
   return join(configDirectory, `${appName}.json`)
 }
 
+async function downloadVBCable() {
+  if (await vbCableIsInstalled()) {
+    // VBCable already installed
+    cleanUpVBCableInstall()
+    return false
+  }
+
+  const url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'
+  const filePath = join(__dirname, 'VBCABLE_Driver_Pack43.zip')
+  const extractPath = join(__dirname, 'VBCable')
+  const request = net.request(url)
+
+  return await new Promise((resolve, reject) => {
+    request.on('response', response => {
+      const file = fs.createWriteStream(filePath)
+      response.on('data', chunk => {
+        file.write(chunk)
+      })
+      response.on('end', async () => {
+        file.end()
+        try {
+          // Download completed
+          await extractZipFile(filePath, extractPath)
+          // remove the zip file, since it's no longer needed
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath)
+          }
+          runSetupAndCleanup(extractPath)
+          resolve(true)
+        } catch (err) {
+          console.error('Error extracting zip file', err)
+          reject(err)
+        }
+      })
+    })
+    request.on('error', error => {
+      console.error('Request failed:', error)
+      reject(error)
+    })
+    request.end()
+  })
+}
+
+/**
+ * extracts a zip file to the extractPath
+ * @param { string } filePath the zip file which we're extracting
+ * @param { string } extractPath the directory that we're extracting to
+ */
+async function extractZipFile(filePath, extractPath) {
+  try {
+    await extractZip(filePath, { dir: extractPath })
+  } catch (err) {
+    console.error('Extraction error', err)
+  }
+  // Extraction completed
+}
+
+function runSetupAndCleanup(extractPath) {
+  // if VBCABLE_Setup_x64.exe exists, run it
+  const setupPath = join(extractPath, 'VBCABLE_Setup_x64.exe')
+  const setupPath32 = join(extractPath, 'VBCABLE_Setup.exe')
+  if (fs.existsSync(setupPath)) {
+    exec(setupPath, () => {
+      removeVBCableInstallDirectory(extractPath)
+    })
+  } else if (fs.existsSync(setupPath32)) {
+    exec(setupPath32, () => {
+      removeVBCableInstallDirectory(extractPath)
+    })
+  } else {
+    console.error('VBCABLE_Setup_x64.exe not found')
+  }
+}
+
+function removeVBCableInstallDirectory(extractPath) {
+  const maxRetries = 5
+  let attempts = 0
+
+  function attemptRemove() {
+    fs.rm(extractPath, { recursive: true }, err => {
+      if (err) {
+        if (attempts < maxRetries) {
+          attempts++
+          console.log(`Retry ${attempts}/${maxRetries} failed to remove directory, retrying in 1 second...`)
+          setTimeout(attemptRemove, 1000) // Retry after 1 second
+        } else {
+          console.error('Error cleaning up VBCable install', err)
+        }
+      } else {
+        // Successfully removed VBCable install directory
+      }
+    })
+  }
+
+  if (fs.existsSync(extractPath)) {
+    attemptRemove()
+  }
+}
+
+/**
+ * Check if VBCable is installed
+ * @returns {Promise<boolean>}
+ */
+function vbCableIsInstalled() {
+  return new Promise(resolve => {
+    const registryKeyPath = 'HKLM\\SOFTWARE\\VB-Audio\\Cable'
+    regedit.list(registryKeyPath, (err, result) => {
+      if (err) {
+        console.error('Error reading registry', err)
+        resolve(false)
+      }
+      resolve(result[registryKeyPath] !== undefined)
+    })
+  })
+}
+
+function cleanUpVBCableInstall() {
+  const extractPath = join(__dirname, 'VBCable')
+  if (fs.existsSync(extractPath)) {
+    fs.rm(extractPath, { recursive: true }, err => {
+      if (err) {
+        console.error('Error cleaning up VBCable install', err)
+      }
+    })
+  }
+}
+
 module.exports = {
   saveSetting,
   readSetting,
@@ -156,4 +286,5 @@ module.exports = {
   registerHotkeys,
   unregisterHotkeys,
   stop,
+  downloadVBCable,
 }
