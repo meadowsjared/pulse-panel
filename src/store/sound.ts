@@ -247,15 +247,5 @@ export const useSoundStore = defineStore('sound', {
         }
       })
     },
-    /**
-     * test function to play a sound to the default microphone
-     */
-    async testSound(): Promise<void> {
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const audioInputDevices = devices.filter(device => device.kind === 'audioinput')
-      const audio = new Audio(chordAlert)
-      await audio.setSinkId('eae27d035b4d936434ef67685a229044255d84ea841cdcdf39beec13effe00ce')
-      audio.play()
-    },
   },
 })
