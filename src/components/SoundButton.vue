@@ -194,22 +194,22 @@ async function handleImageFileDrop(file: File, newSound: Sound) {
   width: 100%;
   height: 100%;
   fill: white;
-  stroke: var(--alt-bg-color);
+  stroke: var(--text-color);
 }
 
 .add-button > svg {
   width: 50%;
   height: 50%;
   margin: auto;
-  fill: var(--alt-bg-color);
+  fill: var(--text-color);
 }
 
 .sound-button {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--alt-light-text-color);
-  color: var(--alt-bg-color);
+  background: var(--button-color);
+  color: var(--text-color);
   border-radius: 0.313rem;
   background-size: cover;
   background-position: center;
