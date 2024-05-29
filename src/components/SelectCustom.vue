@@ -1,44 +1,37 @@
 <template>
-  <div class="custom-select">
-    <div class="select-parent">
-      <div
-        class="selected-option"
-        tabindex="0"
-        @click="toggleDropdown"
-        @keydown.space="toggleDropdown"
-        @keydown.enter="toggleDropdown"
-        @blur="handleBlur"
-        @focus="handleFocus">
-        {{ displayValue ?? props.defaultText }}
-        <inline-svg :src="SelectArrow" class="select-arrow" :class="{ flipped: isOpen }" />
-      </div>
-      <div class="sizing-div">
-        <div v-for="option in options" :key="option.value">{{ option.label }}</div>
-      </div>
-      <ul v-if="isOpen" class="dropdown">
-        <li
-          v-for="option in options"
-          :key="option.value"
-          :class="{ selected: option.value === props.modelValue }"
-          @click="selectOption(option)"
-          @keydown.up="handleKeypressUp"
-          @keydown.down="handleKeypressDown"
-          @keydown.enter="selectOption(option)"
-          @keydown.tab.prevent="toggleDropdown"
-          @keydown.esc="isOpen = false"
-          @focus="handleFocus"
-          @blur="handleBlur"
-          ref="optionRefs"
-          tabindex="0">
-          {{ option.label }}
-        </li>
-      </ul>
+  <div class="select-parent">
+    <button
+      ref="selectedOption"
+      class="selected-option"
+      :class="{ focused: focused }"
+      @click="toggleDropdown"
+      @focus="handleFocus"
+      @blur="handleBlur">
+      {{ localValue?.label ?? props.defaultText }}
+      <inline-svg :src="SelectArrow" class="select-arrow" :class="{ flipped: isOpen }" />
+    </button>
+    <div class="sizing-div">
+      <div v-for="option in options" :key="option.value">{{ option.label }}</div>
     </div>
+    <ul v-if="isOpen" class="dropdown">
+      <button
+        ref="optionRefs"
+        v-for="option in options"
+        :key="option.value"
+        class="option-value"
+        :class="{ selected: option.value === props.modelValue }"
+        @click="selectOption(option)"
+        @keydown.prevent="handleKeypress"
+        @focus="handleFocus"
+        @blur="handleBlur">
+        {{ option.label }}
+      </button>
+    </ul>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import InlineSvg from 'vue-inline-svg'
 import SelectArrow from '../assets/images/select-arrow.svg'
 
@@ -48,7 +41,7 @@ interface LabelValue {
 }
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: string): void
+  (event: 'update:modelValue', value: string | null): void
   (change: 'change', value: Event): void
 }>()
 
@@ -63,30 +56,31 @@ const props = withDefaults(
   }
 )
 
-const displayValue = computed(() => {
-  return props.options.find(option => option.value === props.modelValue)?.label ?? null
-})
-
 const isOpen = ref(false)
-const selectedOption = ref<string | null>(props.modelValue)
 const focusedOptionIndex = ref<null | number>(null)
 const optionRefs = ref<HTMLElement[]>([])
 const focused = ref(false)
+const selectedOption = ref<HTMLDivElement | null>(null)
+const localValue = ref<LabelValue | null>(findOptionFromValue(props.modelValue))
+
+// update our local value any time the modelValue changes
+watch(
+  () => [props.modelValue, props.options],
+  () => {
+    if (props.modelValue === localValue.value?.value) return
+    localValue.value = findOptionFromValue(props.modelValue)
+  }
+)
 
 function toggleDropdown() {
   isOpen.value = !isOpen.value
   if (isOpen.value) {
     focusedOptionIndex.value = props.options.findIndex(option => option.value === props.modelValue)
-    setTimeout(() => {
+    // allow the options to open before focusing the current value
+    nextTick(() => {
       if (focusedOptionIndex.value === null) return
       optionRefs.value[focusedOptionIndex.value]?.focus()
-    }, 0)
-  } else {
-    const selectedElement: HTMLDivElement | null = document.querySelector<HTMLDivElement>('.selected-option')
-    if (selectedElement) {
-      selectedElement.focus()
-      focusedOptionIndex.value = null
-    }
+    })
   }
 }
 
@@ -97,15 +91,22 @@ function toggleDropdown() {
 function selectOption(option: LabelValue) {
   // selParentRef.value?.focus()
   if (option.value !== props.modelValue) {
-    selectedOption.value = option.value
+    localValue.value = option
     emit('update:modelValue', option.value)
     emitHTMLSelectChange(option)
   }
   isOpen.value = false
-  setTimeout(() => {
-    const selectedElement: HTMLDivElement | null = document.querySelector<HTMLDivElement>('.selected-option')
-    selectedElement?.focus()
-  }, 0)
+  selectedOption.value?.focus()
+}
+
+/**
+ * Finds a match in prop.options from a value
+ * @param value - The value to search for
+ * @returns The option if found, otherwise null
+ */
+function findOptionFromValue(value: string | null) {
+  if (value === null) return null
+  return props.options.find(option => option.value === value) ?? null
 }
 
 /**
@@ -136,26 +137,88 @@ function handleBlur() {
   }, 200)
 }
 
-function handleKeypressUp() {
+/**
+ * Handles keypress events on the dropdown
+ *
+ * This function is responsible for handling navigation and selection
+ * of options in the dropdown
+ *
+ * @param event - The keypress event
+ * @returns void
+ */
+function handleKeypress(event: KeyboardEvent) {
+  // use a switch case on event.key
   if (focusedOptionIndex.value === null) return
-  if (focusedOptionIndex.value === 0) return
-  focusedOptionIndex.value--
-  optionRefs.value[focusedOptionIndex.value]?.focus()
+  switch (event.key) {
+    case 'Enter':
+      selectOption(props.options[focusedOptionIndex.value])
+      return
+    case 'Escape':
+    case 'Tab':
+      isOpen.value = false
+      selectedOption.value?.focus()
+      focusedOptionIndex.value = null
+      return
+  }
+  switch (event.key) {
+    case 'ArrowUp':
+      focusedOptionIndex.value = getKeypressUp(focusedOptionIndex.value)
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
+    case 'ArrowDown':
+      focusedOptionIndex.value = getKeypressDown(focusedOptionIndex.value)
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
+    case 'PageUp':
+      focusedOptionIndex.value = getPageUp(focusedOptionIndex.value)
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
+    case 'PageDown':
+      focusedOptionIndex.value = getPageDown(focusedOptionIndex.value)
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
+    case 'Home':
+      focusedOptionIndex.value = 0
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
+    case 'End':
+      focusedOptionIndex.value = optionRefs.value.length - 1
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
+  }
 }
 
-function handleKeypressDown() {
-  if (focusedOptionIndex.value === null) return
-  if (focusedOptionIndex.value === optionRefs.value.length - 1) return
-  focusedOptionIndex.value++
-  optionRefs.value[focusedOptionIndex.value]?.focus()
+function getPageUp(index: number) {
+  index -= 5
+  index = Math.max(index, 0)
+  return index
+}
+
+function getPageDown(index: number) {
+  index += 5
+  index = Math.min(index, optionRefs.value.length - 1)
+  return index
+}
+
+function getKeypressUp(index: number) {
+  index--
+  index = Math.max(index, 0)
+  return index
+}
+
+function getKeypressDown(index: number) {
+  index++
+  index = Math.min(index, optionRefs.value.length - 1)
+  return index
 }
 </script>
 
 <style scoped>
-.custom-select {
+.select-parent {
   position: relative;
   display: flex;
   text-align: start;
+  flex-direction: column;
   width: max-content;
 }
 
@@ -164,23 +227,31 @@ function handleKeypressDown() {
   background: var(--button-color);
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   border-radius: 0.5rem;
-  width: inherit;
+  flex-wrap: nowrap;
+  width: 100%;
   position: relative;
   user-select: none;
 }
+
+.selected-option.focused {
+  outline: 1px solid var(--active-color);
+}
+
+.selected-option:focus-visible {
+  outline: 1px solid var(--active-color);
+}
+
 .select-arrow {
   position: absolute;
   right: 0;
   transition: transform 0.3s;
+  animation: rotateClose 0.3s forwards;
 }
 
 .select-arrow.flipped {
   animation: rotateOpen 0.3s forwards;
-}
-
-.select-arrow {
-  animation: rotateClose 0.3s forwards;
 }
 
 @keyframes rotateOpen {
@@ -222,22 +293,28 @@ function handleKeypressDown() {
   user-select: none;
 }
 
-.dropdown li {
+.dropdown button {
   cursor: pointer;
   padding: 0 2.5rem 0 0.75rem;
   outline: none;
+  width: 100%;
 }
 
-.dropdown li:focus-visible,
-.dropdown li.selected:focus-visible {
+.dropdown button:focus-visible,
+.dropdown button.selected:focus-visible {
   background-color: var(--button-color);
 }
 
-.dropdown li.selected {
+.dropdown button.selected {
   background-color: var(--alt-bg-color);
 }
 
-.dropdown li:hover {
+.dropdown button:hover {
   background-color: var(--button-color);
+}
+
+.option-value {
+  display: flex;
+  flex-direction: column;
 }
 </style>
