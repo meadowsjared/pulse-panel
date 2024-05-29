@@ -4,14 +4,15 @@
       <sound-button
         :class="{ placeholder: sound.isPreview }"
         v-model="sounds[i]"
-        :draggable="settingsStore.displayMode === 'edit'"
+        :draggable="settingsStore.displayMode === 'edit' && sound.name !== undefined"
         :displayMode="settingsStore.displayMode"
-        @dragstart="dragStart(i)"
+        @dragstart="dragStart(sound, i)"
         @dragover="dragOver(i)"
         @drop="drop(i)"
         @update:modelValue="handleSoundsUpdate"
-        @deleteSound="deleteSound(sounds[i])"
-        @editSound="editSound(sounds[i])" />
+        @deleteSound="deleteSound(sound)"
+        @editSound="editSound(sound)"
+        @dragend="dragEnd(sound)" />
     </template>
   </div>
   <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
@@ -29,6 +30,7 @@ const sounds = ref<Sound[]>([])
 
 const settingsStore = useSettingsStore()
 let draggedIndex: number | null = null
+let draggedIndexStart: number | null = null
 
 settingsStore.fetchStringArray('outputDevices')
 settingsStore.fetchBooleanSetting('darkMode', true)
@@ -37,27 +39,40 @@ settingsStore.fetchSoundSetting('sounds').then(soundsArray => {
   // console.log('sounds', soundsArray)
 })
 
-function dragStart(index: number) {
+function dragEnd(pSound: Sound) {
+  if (draggedIndexStart === null) return
+  sounds.value = sounds.value.filter(sound => !sound.isPreview)
+  pSound.isPreview = false
+  sounds.value.splice(draggedIndexStart, 0, pSound)
+  draggedIndex = null
+  draggedIndexStart = null
+}
+
+function dragStart(pSound: Sound, index: number) {
   if (settingsStore.displayMode !== 'edit') return
-  sounds.value[index].isPreview = true
+  draggedIndexStart = index
+  pSound.isPreview = true
   draggedIndex = index
 }
 
 function drop(index: number) {
   if (settingsStore.displayMode !== 'edit') return
   if (draggedIndex === null) return
-  if (index === sounds.value.length - 1) index = sounds.value.length - 2
+  index = Math.min(index, sounds.value.length - 2)
   const draggedSound = sounds.value[draggedIndex]
   sounds.value.splice(draggedIndex, 1)
   sounds.value.splice(index, 0, draggedSound)
   draggedSound.isPreview = false
   updateSound()
+  draggedIndex = null
+  draggedIndexStart = null
 }
 
 function dragOver(index: number) {
   if (settingsStore.displayMode !== 'edit') return
   if (draggedIndex === null) return
   if (index !== draggedIndex) {
+    index = Math.min(index, sounds.value.length - 2)
     const draggedSound = sounds.value[draggedIndex]
     sounds.value.splice(draggedIndex, 1)
     sounds.value.splice(index, 0, draggedSound)
@@ -95,7 +110,6 @@ function handleSoundsUpdate(event: Sound) {
     })
   }
   settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
-  // console.log('sounds', JSON.stringify(sounds.value, null, 2))
 }
 
 function stripAudioUrls(pSounds: Sound[]) {
