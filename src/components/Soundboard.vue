@@ -127,9 +127,10 @@ function stripAudioUrls(pSounds: Sound[]) {
 .rightSideBar {
   width: 300px;
   height: 100%;
-  background: var(--alt-light-text-color);
+  background: var(--alt-bg-color);
   padding: 1rem;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .placeholder {
