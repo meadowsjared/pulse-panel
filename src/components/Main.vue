@@ -35,7 +35,7 @@
           {{ settingsStore.muted ? 'Muted' : 'Unmuted' }}
         </button>
         <button
-          class="menu"
+          class="menu change-mode"
           :class="{ edit: settingsStore.displayMode === 'edit' }"
           @click="changeMode"
           :title="settingsStore.displayMode === 'edit' ? 'click to go back to playing' : 'click to start editing'">
@@ -106,12 +106,17 @@ function changeMode() {
   width: var(--menu-width);
   align-items: center;
   gap: 1rem;
-  color: var(--alt-bg-color);
+  color: var(--text-color);
   font-weight: bold;
 }
 .menu > svg {
-  fill: var(--alt-bg-color);
+  fill: var(--text-color);
 }
+
+.change-mode.edit > svg {
+  stroke: var(--text-color);
+}
+
 .menu.edit > svg {
   fill: transparent;
 }
@@ -127,10 +132,24 @@ function changeMode() {
   flex-direction: column;
   gap: 1rem;
 }
+.bottom-buttons svg {
+  stroke: none;
+}
+
+.router-link-active {
+  color: var(--active-color);
+}
+.router-link-active > svg {
+  fill: var(--active-color);
+}
+
+.stop-button.active {
+  color: var(--active-color);
+}
 
 .stop-button.active > svg {
-  fill: var(--alt-text-color);
-  color: var(--alt-text-color);
+  fill: var(--active-color);
+  color: var(--active-color);
 }
 
 .mute-button {
@@ -139,7 +158,7 @@ function changeMode() {
 }
 
 .mute-button > svg {
-  fill: var(--alt-bg-color);
+  fill: var(--text-color);
   transition: fill 300ms ease-in-out;
 }
 
@@ -154,7 +173,7 @@ function changeMode() {
   width: 2.8rem;
   height: 0.25rem;
   transform: translate(2.2rem, -2.2rem) rotate(135deg);
-  background: var(--alt-bg-color);
+  background: var(--text-color);
   transition: transform 300ms ease-in-out, background 300ms ease-in-out 300ms;
 }
 
