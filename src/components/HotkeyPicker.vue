@@ -5,7 +5,7 @@
       <button
         ref="hotkeyButton"
         class="hotkey"
-        :class="{ dark: props.dark }"
+        :class="{ dark: props.dark, light: !props.dark }"
         @keydown.prevent="handleKeyDown"
         @keyup.prevent="handleKeyUp($event)"
         @focus="settingsStore.recordingHotkey = true"
@@ -15,8 +15,8 @@
       </button>
       <button
         :disabled="!modelValue"
-        :class="{ dark: props.dark, hide: !modelValue || modelValue.length < 1 }"
-        class="clear-button"
+        :class="{ hide: !modelValue || modelValue.length < 1, dark: props.dark, light: !props.dark }"
+        class="clear-button light"
         @click="resetHotkey">
         <inline-svg :src="CloseIcon" />
       </button>
@@ -67,7 +67,6 @@ function resetHotkey() {
 .hotkey {
   padding: 0 0.5rem;
   font-size: 1rem;
-  border: 1px solid var(--text-color);
   border-radius: 0.25rem;
   min-width: 8.75rem;
   height: 100%;
@@ -85,6 +84,7 @@ function resetHotkey() {
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+  color: var(--text-color);
 }
 
 .button-group {
@@ -108,13 +108,11 @@ function resetHotkey() {
 input {
   padding: 0.5rem;
   font-size: 1rem;
-  border: 1px solid #ccc;
   border-radius: 0.25rem;
 }
 
 .clear-button {
   padding: 0.5rem;
-  border: 1px solid #ccc;
   border-radius: 0.25rem;
 }
 
