@@ -34,7 +34,7 @@ const sideBarOpen = ref(false)
   width: var(--menu-closed-width);
   display: flex;
   flex-direction: column;
-  background: var(--alt-light-text-color);
+  background: var(--alt-bg-color);
   transition: width 0.5s;
 }
 
@@ -67,7 +67,7 @@ const sideBarOpen = ref(false)
 .hamburger {
   width: 34px;
   aspect-ratio: 1;
-  fill: var(--alt-bg-color);
+  fill: var(--text-color);
   --animation-time: 400ms;
 }
 
@@ -75,7 +75,6 @@ const sideBarOpen = ref(false)
   display: flex;
   align-items: center;
   gap: 1rem;
-  color: var(--alt-bg-color);
 }
 
 .button-four > svg {
