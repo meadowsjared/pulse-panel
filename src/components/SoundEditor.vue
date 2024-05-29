@@ -190,6 +190,17 @@ function close() {
 </script>
 
 <style scoped>
+.hide-name-checkbox-group > input[type='checkbox']:checked {
+  background-color: var(--active-color);
+}
+input[type='checkbox'] {
+  --tw-ring-offset-width: unset;
+  --tw-ring-color: transparent;
+}
+input[type='checkbox']:focus-visible {
+  --tw-ring-color: var(--active-color);
+}
+
 .volume-control-container {
   display: grid;
   align-items: center;
@@ -200,20 +211,37 @@ function close() {
 
 .play-sound-button {
   grid-area: 2 / 1;
+  width: max-content;
 }
 
+.close-button > svg,
 .play-sound-button > svg {
-  fill: var(--alt-bg-color);
-  stroke: var(--alt-bg-color);
+  fill: var(--text-color);
+  stroke: none;
+}
+.play-sound-button > svg {
+  fill: var(--accent-text-color);
+  stroke: none;
+}
+.play-sound-button:focus-visible > svg {
+  stroke: var(--active-color);
+  stroke-width: 0.12rem;
+  overflow: visible;
+}
+.play-sound-button:hover > svg {
+  fill: var(--active-color);
 }
 
 .volume-display {
-  color: var(--alt-bg-color);
-  padding: 0.125rem;
+  color: var(--text-color);
+  background: var(--background-color);
+  padding: 0;
   margin-right: 0.5rem;
   margin-bottom: 0.25rem;
   width: 2.2rem;
+  border-radius: 0.25rem;
   text-align: center;
+  border: none;
 }
 
 .volume-label {
@@ -242,6 +270,9 @@ function close() {
 .remove-image-button {
   opacity: 0.5;
 }
+.remove-image-button:focus-visible {
+  opacity: 1;
+}
 
 .input-group {
   display: flex;
@@ -265,21 +296,25 @@ function close() {
   width: 2rem;
   aspect-ratio: 1;
   border-radius: 0.25rem;
+  background: var(--accent-text-color);
 }
 .preview-button > svg {
+  stroke: var(--background-color);
   width: 100%;
   height: 100%;
 }
 
 h1 {
-  color: var(--alt-bg-color);
+  color: var(--text-color);
 }
 
 input {
-  color: var(--alt-bg-color);
+  color: var(--text-color);
+  background: var(--background-color);
+  border: none;
 }
 
 label {
-  color: var(--alt-bg-color);
+  color: var(--text-color);
 }
 </style>
