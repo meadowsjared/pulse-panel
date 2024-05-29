@@ -21,8 +21,12 @@
 }
 
 .darkMode {
-  --background-color: #333;
+  --alt-bg-color: #2C2C2C;
+  --background-color: #181818;
+  --button-color: #585858;
+  --button-text: #f2f2f2;
   --text-color: #c0c0c0;
+  --active-color: #42b983;
   --link-color: #42b983;
   --accent-text-color: #abffab;
   --heavy-light-mode-font: normal;
@@ -65,9 +69,8 @@ button.light, button.dark {
 
 /** light buttons styling */
 button.light {
-  color: var(--alt-bg-color);
-  fill: var(--alt-bg-color);
-  outline: var(--alt-bg-color) 1px solid;
+  color: var(--button-text);
+  background-color: var(--button-color);
   padding: 0.5rem;
   border-radius: 0.5rem;
 }
@@ -79,7 +82,7 @@ button.light:hover {
 }
 
 button.light:active {
-  background-color: var(--alt-text-color);
+  background-color: var(--active-color);
   color: var(--alt-bright-text-color);
   outline: 1px solid var(--alt-bg-color);
 }
@@ -87,7 +90,7 @@ button.light:active {
 /** dark buttons styling */
 button.dark {
   color: var(--alt-bright-text-color);
-  background-color: var(--alt-bg-color);
+  background-color: var(--background-color);
   padding: 0.5rem;
   border-radius: 0.5rem;
   cursor: pointer;
@@ -104,9 +107,27 @@ button.dark:hover {
   color: var(--alt-bright-text-color);
 }
 
+button.dark:focus {
+  outline: 1px solid var(--active-color);
+}
+
 button.dark:active {
-  background-color: var(--alt-text-color);
+  background-color: var(--active-color);
   color: var(--alt-bright-text-color);
   outline: 1px solid var(--alt-bg-color);
   cursor: pointer;
+}
+
+input[type="text"] {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border-radius: 0.5rem;
+}
+::selection {
+  color: var(--background-color);
+  background: var(--active-color);
+}
+
+input[type="text"]:focus-visible {
+  --tw-ring-color: var(--link-color);
 }
