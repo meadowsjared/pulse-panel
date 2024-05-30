@@ -16,6 +16,7 @@ interface State {
   muted: boolean
   recordingHotkey: boolean
   ptt_hotkey: string[]
+  searchText: string
 }
 
 interface SoundWithHotkey extends Sound {
@@ -45,7 +46,16 @@ export const useSettingsStore = defineStore('settings', {
     muted: false,
     recordingHotkey: false,
     ptt_hotkey: [],
+    searchText: '',
   }),
+  getters: {
+    soundsFiltered(): Sound[] {
+      return this.sounds.filter(
+        (sound, index) =>
+          sound.name?.toLowerCase().includes(this.searchText.toLowerCase()) || index > this.sounds.length
+      )
+    },
+  },
   actions: {
     async toggleMute(): Promise<void> {
       this.muted = !this.muted
