@@ -34,14 +34,6 @@
           <inline-svg :src="Headphones" />
           {{ settingsStore.muted ? 'Muted' : 'Unmuted' }}
         </button>
-        <button
-          class="menu change-mode"
-          :class="{ edit: settingsStore.displayMode === 'edit' }"
-          @click="changeMode"
-          :title="settingsStore.displayMode === 'edit' ? 'click to go back to playing' : 'click to start editing'">
-          <inline-svg :src="settingsStore.displayMode === 'edit' ? EditIcon : PlayIcon" />
-          {{ settingsStore.displayMode === 'edit' ? 'Editing' : 'Playing' }}
-        </button>
       </div>
     </side-bar>
     <router-view />
@@ -54,8 +46,6 @@ import { useSettingsStore } from '../store/settings'
 import InlineSvg from 'vue-inline-svg'
 import SettingsGear from '../assets/images/settings-gear.svg'
 import Speaker from '../assets/images/speaker.svg'
-import EditIcon from '../assets/images/edit.svg'
-import PlayIcon from '../assets/images/play.svg'
 import StopIcon from '../assets/images/stop.svg'
 import Headphones from '../assets/images/headphones.svg'
 import { useSoundStore } from '../store/sound'
@@ -86,10 +76,6 @@ settingsStore.fetchBooleanSetting('darkMode', true).then(darkModeValue => {
   darkMode.value = darkModeValue
 })
 settingsStore.fetchBooleanSetting('allowOverlappingSound')
-
-function changeMode() {
-  settingsStore.toggleDisplayMode()
-}
 </script>
 
 <style scoped>
