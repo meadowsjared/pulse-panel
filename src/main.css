@@ -56,6 +56,28 @@ html, body, div#app {
   height: 100%;
 }
 
+button.danger.danger {
+  color: var(--alt-bright-text-color);
+  background-color: rgba(255, 104, 104, 0.5);
+}
+
+button.danger.danger:hover {
+  background-color: rgba(255, 104, 104, 0.8);
+}
+
+button.danger.danger:active {
+  background-color: rgba(255, 104, 104);
+  font-weight: bold;
+  color: var(--background-color);
+  outline: 1px solid var(--alt-bright-text-color);
+}
+
+button.danger.danger:focus-visible {
+  outline: 1px solid var(--active-color);
+  box-shadow: none;
+  border: none;
+}
+
 button:focus {
   outline: none;
 }
