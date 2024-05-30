@@ -89,6 +89,7 @@ function deleteSound(pSound: Sound) {
   settingsStore.deleteFile(pSound.audioKey)
   settingsStore.deleteFile(pSound.imageKey)
   settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
+  settingsStore.currentEditingSound = null
 }
 
 function editSound(pSound: Sound) {
