@@ -22,6 +22,7 @@
 
 .darkMode {
   --alt-bg-color: #2C2C2C;
+  --top-toolbar-color: #414141;
   --background-color: #181818;
   --button-color: #585858;
   --button-text: #f2f2f2;
@@ -97,6 +98,11 @@ button.light {
   border-radius: 0.5rem;
 }
 
+button.light > svg {
+  fill: var(--alt-bright-text-color);
+  stroke: none;
+}
+
 button.light:hover {
   background-color: var(--alt-link-color);
   outline: 1px solid var(--alt-bg-color);
@@ -144,12 +150,14 @@ input[type="text"] {
   background-color: var(--background-color);
   color: var(--text-color);
   border-radius: 0.5rem;
+  border: none;
 }
 ::selection {
   color: var(--background-color);
   background: var(--active-color);
 }
 
+input[type="text"]:focus,
 input[type="text"]:focus-visible {
   --tw-ring-color: var(--link-color);
 }
