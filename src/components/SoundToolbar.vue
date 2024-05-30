@@ -6,16 +6,34 @@
         <inline-svg class="w-6 h-6 rotate-45" :src="Plus" />
       </button>
     </div>
-    <div class="right-buttons"></div>
+    <div class="right-buttons">
+      <toggle class="displayMode" v-model="editMode" @update:modelValue="handleDisplayModeChange">{{
+        editMode ? 'Play Mode' : 'Edit Mode'
+      }}</toggle>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import InlineSvg from 'vue-inline-svg'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import Plus from '../assets/images/plus.svg'
+import { useSettingsStore } from '../store/settings'
 
+const settingsStore = useSettingsStore()
 const searchText = ref('')
+const editMode = ref(settingsStore.displayMode === 'play')
+
+watch(
+  () => settingsStore.displayMode,
+  () => {
+    editMode.value = settingsStore.displayMode === 'play'
+  }
+)
+
+function handleDisplayModeChange() {
+  settingsStore.displayMode = editMode.value ? 'play' : 'edit'
+}
 </script>
 
 <style scoped>
@@ -35,5 +53,9 @@ button.light {
   justify-content: space-between;
   align-items: center;
   background-color: var(--top-toolbar-color);
+}
+
+.toggle-group.displayMode {
+  width: 15.5ch;
 }
 </style>
