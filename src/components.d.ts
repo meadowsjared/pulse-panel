@@ -22,6 +22,7 @@ declare module 'vue' {
     Soundboard: typeof import('./components/Soundboard.vue')['default']
     SoundButton: typeof import('./components/SoundButton.vue')['default']
     SoundEditor: typeof import('./components/SoundEditor.vue')['default']
+    SoundToolbar: typeof import('./components/SoundToolbar.vue')['default']
     SystemInformation: typeof import('./components/SystemInformation.vue')['default']
     TitleBar: typeof import('./components/TitleBar.vue')['default']
   }
