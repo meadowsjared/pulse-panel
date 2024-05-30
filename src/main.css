@@ -115,6 +115,10 @@ button.light:active {
   outline: 1px solid var(--alt-bg-color);
 }
 
+button.light:focus {
+  outline: 1px solid var(--active-color);
+}
+
 /** dark buttons styling */
 button.dark {
   color: var(--alt-bright-text-color);
@@ -159,5 +163,10 @@ input[type="text"] {
 
 input[type="text"]:focus,
 input[type="text"]:focus-visible {
-  --tw-ring-color: var(--link-color);
+  --tw-ring-color: none;
+  outline: 1px solid var(--active-color);
+}
+
+.toggle:focus-visible {
+  outline: 1px solid var(--active-color);
 }
