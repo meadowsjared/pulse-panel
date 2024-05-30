@@ -1,19 +1,22 @@
 <template>
-  <div class="soundboard" :class="{ editing: settingsStore.displayMode === 'edit' }">
-    <template v-for="(sound, i) in sounds" :key="sound?.id">
-      <sound-button
-        :class="{ placeholder: sound.isPreview }"
-        v-model="sounds[i]"
-        :draggable="settingsStore.displayMode === 'edit' && sound.name !== undefined"
-        :displayMode="settingsStore.displayMode"
-        @dragstart="dragStart(sound, i)"
-        @dragover="dragOver(i)"
-        @drop="drop(i)"
-        @update:modelValue="handleSoundsUpdate"
-        @deleteSound="deleteSound(sound)"
-        @editSound="editSound(sound)"
-        @dragend="dragEnd(sound)" />
-    </template>
+  <div class="main">
+    <SoundToolbar />
+    <div class="soundboard" :class="{ editing: settingsStore.displayMode === 'edit' }">
+      <template v-for="(sound, i) in sounds" :key="sound?.id">
+        <sound-button
+          :class="{ placeholder: sound.isPreview }"
+          v-model="sounds[i]"
+          :draggable="settingsStore.displayMode === 'edit' && sound.name !== undefined"
+          :displayMode="settingsStore.displayMode"
+          @dragstart="dragStart(sound, i)"
+          @dragover="dragOver(i)"
+          @drop="drop(i)"
+          @update:modelValue="handleSoundsUpdate"
+          @deleteSound="deleteSound(sound)"
+          @editSound="editSound(sound)"
+          @dragend="dragEnd(sound)" />
+      </template>
+    </div>
   </div>
   <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
     <SoundEditor
@@ -149,6 +152,13 @@ function stripAudioUrls(pSounds: Sound[]) {
 </script>
 
 <style scoped>
+.main {
+  display: flex;
+  height: 100%;
+  flex-grow: 1;
+  flex-direction: column;
+}
+
 .soundboard {
   grid-gap: 1rem;
   display: grid;
