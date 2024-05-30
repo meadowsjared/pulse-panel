@@ -34,7 +34,7 @@
     <button @click="addSound" v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
       <inline-svg :src="Plus" />
     </button>
-    <div class="button-group">
+    <div :class="{ 'button-group': displayMode === 'edit' }">
       <button v-if="displayMode === 'edit'" @click="addSound" title="Add Sound" class="add-button">Add Sound</button>
     </div>
   </div>
