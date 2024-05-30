@@ -1,50 +1,43 @@
 <template>
-  <button
-    v-if="modelValue?.name !== undefined"
-    ref="soundButton"
-    @blur="focusVisible = false"
-    @click="playSound(false)"
-    @auxclick="emit('editSound')"
-    @keydown="handleKeydown"
-    @focus="handleFocus"
-    v-on:drop="handleFileDrop"
-    v-on:dragover.prevent
-    :class="{
-      'playing-sound': playingThisSound,
-      'has-image': modelValue.imageKey,
-      'edit-mode': props.displayMode === 'edit',
-      'cursor-default': props.displayMode === 'edit',
-      'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
-      focusVisible,
-    }"
-    class="sound-button relative"
-    :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
-    <span v-if="!props.modelValue.hideName" class="button-name">{{ modelValue.name || 'New Sound' }}</span>
+  <div v-if="modelValue?.name !== undefined" class="sound-button-container">
     <button
-      @click.capture="deleteSound"
-      title="Delete"
-      v-if="props.displayMode === 'edit'"
-      class="edit-buttons absolute top-0 right-0 w-8 h-8 rotate-45">
+      ref="soundButton"
+      @blur="focusVisible = false"
+      @click="playSound(false)"
+      @auxclick="emit('editSound')"
+      @keydown="handleKeydown"
+      @focus="handleFocus"
+      v-on:drop="handleFileDrop"
+      v-on:dragover.prevent
+      :class="{
+        'playing-sound': playingThisSound,
+        'has-image': modelValue.imageKey,
+        'edit-mode': props.displayMode === 'edit',
+        'cursor-default': props.displayMode === 'edit',
+        'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
+        focusVisible,
+      }"
+      class="sound-button"
+      :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
+      <span v-if="!props.modelValue.hideName" class="button-name">{{ modelValue.name || 'New Sound' }}</span>
+    </button>
+    <div :class="{ 'button-group': displayMode === 'edit' }">
+      <button v-if="displayMode === 'edit'" @click.capture="editSound" title="Edit" class="edit-buttons">
+        Edit Sound
+      </button>
+      <button v-if="displayMode === 'edit'" @click.capture="playSound(true)" title="Play" class="edit-buttons">
+        Play Sound
+      </button>
+    </div>
+  </div>
+  <div v-else class="sound-button-container">
+    <button @click="addSound" v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
       <inline-svg :src="Plus" />
     </button>
-    <button
-      @click.capture="editSound"
-      title="Edit"
-      v-if="props.displayMode === 'edit'"
-      class="edit-buttons absolute left-0 bottom-0 w-8 h-8">
-      <inline-svg :src="EditIcon" />
-    </button>
-    <button
-      @click.capture="playSound(true)"
-      title="Play"
-      v-if="props.displayMode === 'edit'"
-      class="edit-buttons absolute right-0 bottom-0 w-8 h-8">
-      <inline-svg :src="PlayIcon" />
-    </button>
-  </button>
-  <button v-else @click="addSound" v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
-    <inline-svg :src="Plus" />
-  </button>
+    <div class="button-group">
+      <button v-if="displayMode === 'edit'" @click="addSound" title="Add Sound" class="add-button">Add Sound</button>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -55,8 +48,6 @@ import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { File } from '../../@types/file'
 import { DisplayMode, useSettingsStore } from '../store/settings'
-import EditIcon from '../assets/images/edit.svg'
-import PlayIcon from '../assets/images/play.svg'
 import { stripFileExtension } from '../utils/utils'
 
 // Define the props
@@ -204,9 +195,22 @@ async function handleImageFileDrop(file: File, newSound: Sound) {
   fill: var(--text-color);
 }
 
+.button-group {
+  padding: 0.5rem 0 0 0;
+}
+
+.button-group > button {
+  text-wrap: nowrap;
+}
+
+.sound-button-container {
+  display: flex;
+  flex-direction: column;
+}
+
 .sound-button {
   width: 100%;
-  height: 100%;
+  height: var(--grid-height);
   overflow: hidden;
   background: var(--button-color);
   color: var(--text-color);

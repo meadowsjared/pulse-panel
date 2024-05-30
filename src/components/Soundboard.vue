@@ -1,5 +1,5 @@
 <template>
-  <div class="soundboard">
+  <div class="soundboard" :class="{ editing: settingsStore.displayMode === 'edit' }">
     <confirm-dialog
       v-model:showDialog="dialogOpen"
       title="Are you sure?"
@@ -155,8 +155,13 @@ function stripAudioUrls(pSounds: Sound[]) {
   padding: 1rem;
   width: 100%;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  grid-auto-rows: 80px;
+  --grid-height: 80px;
+  grid-auto-rows: var(--grid-height);
   overflow: auto;
+}
+
+.editing {
+  grid-auto-rows: 136px;
 }
 
 .rightSideBar {
