@@ -1,12 +1,5 @@
 <template>
   <div class="soundboard" :class="{ editing: settingsStore.displayMode === 'edit' }">
-    <confirm-dialog
-      v-model:showDialog="dialogOpen"
-      title="Are you sure?"
-      :message="`that you want to delete the '${soundToDelete?.name}' sound?`"
-      @confirm="deleteSoundConfirmed"
-      confirmText="Yes"
-      cancelText="No" />
     <template v-for="(sound, i) in sounds" :key="sound?.id">
       <sound-button
         :class="{ placeholder: sound.isPreview }"
@@ -28,6 +21,13 @@
       @update:modelValue="updateSound"
       @deleteSound="deleteSound($event)" />
   </div>
+  <confirm-dialog
+    v-model:showDialog="dialogOpen"
+    title="Are you sure?"
+    :message="`that you want to delete the '${soundToDelete?.name}' sound?`"
+    @confirm="deleteSoundConfirmed"
+    confirmText="Yes"
+    cancelText="No" />
 </template>
 
 <script setup lang="ts">
