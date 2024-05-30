@@ -1,5 +1,12 @@
 <template>
   <div class="soundboard">
+    <confirm-dialog
+      v-model:showDialog="dialogOpen"
+      title="Are you sure?"
+      :message="`that you want to delete the '${soundToDelete?.name}' sound?`"
+      @confirm="deleteSoundConfirmed"
+      confirmText="Yes"
+      cancelText="No" />
     <template v-for="(sound, i) in sounds" :key="sound?.id">
       <sound-button
         :class="{ placeholder: sound.isPreview }"
@@ -16,7 +23,10 @@
     </template>
   </div>
   <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
-    <SoundEditor v-model="settingsStore.currentEditingSound" @update:modelValue="updateSound" />
+    <SoundEditor
+      v-model="settingsStore.currentEditingSound"
+      @update:modelValue="updateSound"
+      @deleteSound="deleteSound($event)" />
   </div>
 </template>
 
@@ -27,6 +37,8 @@ import { Sound } from '../../@types/sound'
 import { v4 } from 'uuid'
 
 const sounds = ref<Sound[]>([])
+const dialogOpen = ref(false)
+const soundToDelete = ref<Sound | null>(null)
 
 const settingsStore = useSettingsStore()
 let draggedIndex: number | null = null
@@ -85,10 +97,18 @@ function updateSound() {
 }
 
 function deleteSound(pSound: Sound) {
+  dialogOpen.value = true
+  soundToDelete.value = pSound
+}
+
+function deleteSoundConfirmed() {
+  if (soundToDelete.value === null) return
+  const pSound = soundToDelete.value
   sounds.value = sounds.value.filter(sound => sound.id !== pSound.id)
   settingsStore.deleteFile(pSound.audioKey)
   settingsStore.deleteFile(pSound.imageKey)
   settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
+  soundToDelete.value = null
   settingsStore.currentEditingSound = null
 }
 
