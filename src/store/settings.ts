@@ -206,6 +206,24 @@ export const useSettingsStore = defineStore('settings', {
       }
     },
     /**
+     * Get the image URLs for the sounds.
+     * @param sounds the array of sounds
+     * @returns the array of sounds with image URLs
+     */
+    async _getImageUrls(key: ArraySoundSettings, sounds: Sound[]) {
+      if (key === 'sounds') {
+        for (const sound of sounds) {
+          if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
+            const imageUrl = await this.getFile(sound.imageKey)
+            if (imageUrl) {
+              sound.imageUrl = imageUrl
+            }
+          }
+        }
+      }
+      return sounds
+    },
+    /**
      * This function listens for windowResize events and sets the windowIsMaximized state
      * @param isMaximized the state of the window
      * @returns void
@@ -276,24 +294,6 @@ export const useSettingsStore = defineStore('settings', {
         return
       }
       electron?.registerHotkeys([...keys])
-    },
-    /**
-     * Get the image URLs for the sounds.
-     * @param sounds the array of sounds
-     * @returns the array of sounds with image URLs
-     */
-    async _getImageUrls(key: ArraySoundSettings, sounds: Sound[]) {
-      if (key === 'sounds') {
-        for (const sound of sounds) {
-          if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
-            const imageUrl = await this.getFile(sound.imageKey)
-            if (imageUrl) {
-              sound.imageUrl = imageUrl
-            }
-          }
-        }
-      }
-      return sounds
     },
     /**
      * Save a sound to the store
