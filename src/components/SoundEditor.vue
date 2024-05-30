@@ -30,7 +30,12 @@
     <button @click="audioFileInput?.click()" class="dark">Browse Audio...</button>
     <div class="input-group">
       <div class="volume-control-container">
-        <input type="text" class="volume-display" v-model.number="volumeDisplay" />
+        <input
+          ref="volumeInput"
+          type="text"
+          class="volume-display"
+          @keydown.enter="volumeInput?.blur()"
+          v-model.number="volumeDisplay" />
         <label class="volume-label" for="volume">Volume:</label>
         <button @click="soundStore.playSound(modelValue)" class="play-sound-button">
           <inline-svg :src="PlayIcon" class="w-6 h-6" />
@@ -77,7 +82,7 @@ import Plus from '../assets/images/plus.svg'
 import Listen from '../assets/images/listen.svg'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
-import { computed, ref, VNodeRef, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import PlayIcon from '../assets/images/play.svg'
 import { useSoundStore } from '../store/sound'
 import { stripFileExtension } from '../utils/utils'
@@ -91,8 +96,9 @@ const playingThisSound = computed(() => soundStore.playingSoundIds.includes(prop
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
-const imageFileInput = ref<VNodeRef | null>(null)
-const audioFileInput = ref<VNodeRef | null>(null)
+const imageFileInput = ref<HTMLInputElement | null>(null)
+const audioFileInput = ref<HTMLInputElement | null>(null)
+const volumeInput = ref<HTMLInputElement | null>(null)
 
 // Watch for changes to the name and update the modelValue
 watch(
@@ -135,7 +141,7 @@ watch(
   () => volumeValue.value,
   () => {
     const volume = volumeValue.value
-    soundStore.setVolume(volume)
+    soundStore.setVolume(volume, props.modelValue.id)
   },
   { immediate: true }
 )
