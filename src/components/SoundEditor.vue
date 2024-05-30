@@ -73,6 +73,7 @@
         >Keybind:</hotkey-picker
       >
     </div>
+    <button @click="emit('deleteSound', modelValue)" class="dark danger">DELETE</button>
   </div>
 </template>
 
@@ -91,7 +92,10 @@ const props = defineProps<{
   modelValue: Sound
 }>()
 
-const emit = defineEmits<(event: 'update:modelValue', value: Sound) => void>()
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: Sound): void
+  (event: 'deleteSound', sound: Sound): void
+}>()
 const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
 
 const settingsStore = useSettingsStore()
