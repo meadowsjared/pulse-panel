@@ -1,8 +1,8 @@
 <template>
   <div class="toolbar">
     <div class="left-buttons">
-      <input type="text" v-model="searchText" @input="searchTextChanged" placeholder="Search..." />
-      <button class="light" :class="{ hidden: searchText.length === 0 }" @click="clearSearch">
+      <input type="text" v-model="settingsStore.searchText" placeholder="Search..." />
+      <button class="light" :class="{ hidden: settingsStore.searchText.length === 0 }" @click="clearSearch">
         <inline-svg class="w-6 h-6 rotate-45" :src="Plus" />
       </button>
     </div>
@@ -21,7 +21,6 @@ import Plus from '../assets/images/plus.svg'
 import { useSettingsStore } from '../store/settings'
 
 const settingsStore = useSettingsStore()
-const searchText = ref('')
 const editMode = ref(settingsStore.displayMode === 'play')
 
 watch(
@@ -36,12 +35,7 @@ function handleDisplayModeChange() {
 }
 
 function clearSearch() {
-  searchText.value = ''
-  searchTextChanged()
-}
-
-function searchTextChanged() {
-  settingsStore.searchText = searchText.value
+  settingsStore.searchText = ''
 }
 </script>
 
