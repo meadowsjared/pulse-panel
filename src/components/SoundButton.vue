@@ -7,8 +7,8 @@
       @auxclick="emit('editSound')"
       @keydown="handleKeydown"
       @focus="handleFocus"
-      v-on:drop="handleFileDrop"
-      v-on:dragover.prevent
+      @drop.prevent="handleFileDrop"
+      @dragover.prevent
       :class="{
         'playing-sound': playingThisSound,
         'has-image': modelValue.imageKey,
@@ -31,7 +31,7 @@
     </div>
   </div>
   <div v-else class="sound-button-container">
-    <button @click="addSound" v-on:drop="handleFileDrop" v-on:dragover.prevent class="sound-button add-button">
+    <button @click="addSound" @drop="handleFileDrop" @dragover.prevent class="sound-button add-button">
       <inline-svg :src="Plus" />
     </button>
     <div :class="{ 'button-group': displayMode === 'edit' }">
@@ -46,9 +46,7 @@ import { Sound } from '../../@types/sound'
 import { computed, ref } from 'vue'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
-import { File } from '../../@types/file'
 import { DisplayMode, useSettingsStore } from '../store/settings'
-import { stripFileExtension } from '../utils/utils'
 
 // Define the props
 const props = defineProps<{
@@ -61,6 +59,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', value: Sound): void
   (event: 'editSound'): void
+  (event: 'fileDropped', dragEvent: DragEvent, sound: Sound): void
 }>()
 
 const numSoundsPlaying = ref(0)
@@ -116,53 +115,7 @@ function addSound() {
  * @param event The drag event
  */
 async function handleFileDrop(event: DragEvent) {
-  event.preventDefault()
-  const files: FileList | null = event.dataTransfer?.files ?? null
-  if (!files) return
-  // iterate the FileList and handle the files
-  const newSound: Sound = {
-    ...props.modelValue,
-  }
-  // only allow a single file to be dropped for the audio and image at a time
-  // (prevents orphaned files from being uploaded)
-  let audioModified = false
-  let imageModified = false
-  for (const file of Array.from(files)) {
-    if (!audioModified && file.type.includes('audio')) {
-      await handleSoundFileDrop(file, newSound)
-      audioModified = true
-    } else if (!imageModified && file.type.includes('image')) {
-      await handleImageFileDrop(file, newSound)
-      imageModified = true
-    }
-  }
-  if (audioModified || imageModified) {
-    emit('update:modelValue', newSound)
-  }
-}
-
-/**
- * Handles the sound file drop event
- * @param file The file that was dropped
- */
-async function handleSoundFileDrop(file: File, newSound: Sound) {
-  // if the sound is not new, then they are updating an existing sound
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file)
-  // update the audioUrl and path
-  newSound.audioUrl = fileUrl
-  newSound.audioKey = fileKey
-  newSound.name = stripFileExtension(file.name)
-}
-
-/**
- * Handles the image file drop event
- * @param file The file that was dropped
- */
-async function handleImageFileDrop(file: File, newSound: Sound) {
-  const settingsStore = useSettingsStore()
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.imageKey, file)
-  newSound.imageUrl = fileUrl
-  newSound.imageKey = fileKey
+  emit('fileDropped', event, props.modelValue)
 }
 </script>
 
