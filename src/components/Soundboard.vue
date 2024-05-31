@@ -1,17 +1,23 @@
 <template>
   <div class="main">
     <SoundToolbar />
-    <div class="soundboard" :class="{ editing: settingsStore.displayMode === 'edit' }">
-      <template v-for="(sound, i) in sounds" :key="sound?.id">
+    <div
+      class="soundboard"
+      :class="{ editing: settingsStore.displayMode === 'edit' }"
+      @dragover.prevent
+      @drop.prevent="droppedOnBackground">
+      <template v-for="(sound, i) in settingsStore.soundsFiltered" :key="sound?.id">
         <sound-button
+          :data-sound-index="settingsStore.sounds.indexOf(sound)"
           :class="{ placeholder: sound.isPreview }"
-          v-model="sounds[i]"
+          v-model="settingsStore.soundsFiltered[i]"
           :draggable="settingsStore.displayMode === 'edit' && sound.name !== undefined"
           :displayMode="settingsStore.displayMode"
           @dragstart="dragStart(sound, i)"
-          @dragover="dragOver(i)"
-          @drop="drop(i)"
+          @dragover="dragOver(sound)"
+          @drop="drop"
           @update:modelValue="handleSoundsUpdate"
+          @file-dropped="fileDropped"
           @editSound="editSound(sound)"
           @dragend="dragEnd(sound)" />
       </template>
@@ -37,65 +43,135 @@ import { ref } from 'vue'
 import { useSettingsStore } from '../store/settings'
 import { Sound } from '../../@types/sound'
 import { v4 } from 'uuid'
+import { File } from '../../@types/file'
+import { stripFileExtension } from '../utils/utils'
 
-const sounds = ref<Sound[]>([])
 const dialogOpen = ref(false)
 const soundToDelete = ref<Sound | null>(null)
 
 const settingsStore = useSettingsStore()
-let draggedIndex: number | null = null
+// let draggedIndex: number | null = null
 let draggedIndexStart: number | null = null
+let draggedSound: Sound | null = null
+let cancelDragEnd = ref(false)
 
 settingsStore.fetchStringArray('outputDevices')
 settingsStore.fetchBooleanSetting('darkMode', true)
-settingsStore.fetchSoundSetting('sounds').then(soundsArray => {
-  sounds.value = soundsArray
-  // console.log('sounds', soundsArray)
-})
+settingsStore.fetchSoundSetting('sounds')
 
+async function fileDropped(event: DragEvent, sound: Sound) {
+  event.preventDefault()
+  const files: FileList | null = event.dataTransfer?.files ?? null
+  if (!files) return
+  // iterate the FileList and handle the files
+  const newSound: Sound = {
+    ...sound,
+  }
+  // only allow a single file to be dropped for the audio and image at a time
+  // (prevents orphaned files from being uploaded)
+  let audioModified = false
+  let imageModified = false
+  for (const file of Array.from(files)) {
+    if (!audioModified && file.type.includes('audio')) {
+      await handleSoundFileDrop(file, newSound, sound)
+      audioModified = true
+    } else if (!imageModified && file.type.includes('image')) {
+      await handleImageFileDrop(file, newSound, sound)
+      imageModified = true
+    }
+  }
+  if (audioModified || imageModified) {
+    settingsStore.sounds[settingsStore.sounds.findIndex(s => s.id === sound.id)] = newSound
+    updateSound()
+  }
+}
+
+/**
+ * Handles the sound file drop event
+ * @param file The file that was dropped
+ */
+async function handleSoundFileDrop(file: File, newSound: Sound, oldSound: Sound) {
+  // if the sound is not new, then they are updating an existing sound
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldSound.audioKey, file)
+  // update the audioUrl and path
+  newSound.audioUrl = fileUrl
+  newSound.audioKey = fileKey
+  newSound.name = stripFileExtension(file.name)
+}
+
+/**
+ * Handles the image file drop event
+ * @param file The file that was dropped
+ */
+async function handleImageFileDrop(file: File, newSound: Sound, oldSound: Sound) {
+  const settingsStore = useSettingsStore()
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldSound.imageKey, file)
+  newSound.imageUrl = fileUrl
+  newSound.imageKey = fileKey
+}
+
+function droppedOnBackground(event: DragEvent) {
+  if (draggedSound === null) {
+    // treat it as if they dropped it on the new sound button
+    fileDropped(event, settingsStore.sounds[settingsStore.sounds.length - 1])
+    return
+  }
+  cancelDragEnd.value = true
+}
+
+/**
+ * 
+ * @param pSound The sound that was dragged
+ 
+ */
 function dragEnd(pSound: Sound) {
-  if (draggedIndexStart === null) return
-  sounds.value = sounds.value.filter(sound => !sound.isPreview)
-  pSound.isPreview = false
-  sounds.value.splice(draggedIndexStart, 0, pSound)
-  draggedIndex = null
+  if (cancelDragEnd.value) {
+    cancelDragEnd.value = false
+    drop()
+    return
+  }
+  if (draggedIndexStart === null || draggedSound === null) return
+  settingsStore.sounds = settingsStore.sounds.filter(sound => !sound.isPreview)
+  delete draggedSound.isPreview
+  settingsStore.sounds.splice(draggedIndexStart, 0, pSound)
   draggedIndexStart = null
+  draggedSound = null
+  // no need to save, because we're resetting back to the original order
 }
 
 function dragStart(pSound: Sound, index: number) {
   if (settingsStore.displayMode !== 'edit') return
   draggedIndexStart = index
   pSound.isPreview = true
-  draggedIndex = index
+  draggedSound = pSound
 }
 
-function drop(index: number) {
+function drop() {
   if (settingsStore.displayMode !== 'edit') return
-  if (draggedIndex === null) return
-  index = Math.min(index, sounds.value.length - 2)
-  const draggedSound = sounds.value[draggedIndex]
-  sounds.value.splice(draggedIndex, 1)
-  sounds.value.splice(index, 0, draggedSound)
-  draggedSound.isPreview = false
+  if (draggedSound === null) return
+  delete draggedSound.isPreview // remove the preview flag
   updateSound()
-  draggedIndex = null
   draggedIndexStart = null
+  draggedSound = null
 }
 
-function dragOver(index: number) {
+function dragOver(pSound: Sound) {
   if (settingsStore.displayMode !== 'edit') return
-  if (draggedIndex === null) return
-  if (index !== draggedIndex) {
-    index = Math.min(index, sounds.value.length - 2)
-    const draggedSound = sounds.value[draggedIndex]
-    sounds.value.splice(draggedIndex, 1)
-    sounds.value.splice(index, 0, draggedSound)
-    draggedIndex = index
-  }
+  if (draggedSound === null) return
+  let index = settingsStore.sounds.indexOf(pSound)
+  index = Math.min(index, settingsStore.sounds.length - 2)
+  const draggedIndex = settingsStore.sounds.indexOf(draggedSound)
+  settingsStore.sounds.splice(draggedIndex, 1) // remove the previous sound preview
+  settingsStore.sounds.splice(index, 0, draggedSound) // add the sound preview to the new index
 }
 
 function updateSound() {
-  settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
+  if (settingsStore.sounds[settingsStore.sounds.length - 1].name !== undefined) {
+    settingsStore.sounds.push({
+      id: v4(),
+    })
+  }
+  settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
 }
 
 function deleteSound(pSound: Sound) {
@@ -106,10 +182,10 @@ function deleteSound(pSound: Sound) {
 function deleteSoundConfirmed() {
   if (soundToDelete.value === null) return
   const pSound = soundToDelete.value
-  sounds.value = sounds.value.filter(sound => sound.id !== pSound.id)
+  settingsStore.sounds = settingsStore.sounds.filter(sound => sound.id !== pSound.id)
   settingsStore.deleteFile(pSound.audioKey)
   settingsStore.deleteFile(pSound.imageKey)
-  settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
+  settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
   soundToDelete.value = null
   settingsStore.currentEditingSound = null
 }
@@ -122,17 +198,15 @@ function editSound(pSound: Sound) {
   }
 }
 
-function handleSoundsUpdate(event: Sound) {
-  if (event.id === settingsStore.currentEditingSound?.id) {
-    settingsStore.currentEditingSound = event
-  }
+function handleSoundsUpdate(pSound: Sound) {
+  settingsStore.sounds[settingsStore.sounds.findIndex(sound => sound.id === pSound.id)] = pSound
   // add a new sound if sound is null
-  if (sounds.value[sounds.value.length - 1].name !== undefined) {
-    sounds.value.push({
+  if (settingsStore.sounds[settingsStore.sounds.length - 1].name !== undefined) {
+    settingsStore.sounds.push({
       id: v4(),
     })
   }
-  settingsStore.saveSoundArray('sounds', stripAudioUrls(sounds.value))
+  settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
 }
 
 function stripAudioUrls(pSounds: Sound[]) {
@@ -163,6 +237,7 @@ function stripAudioUrls(pSounds: Sound[]) {
   display: grid;
   padding: 1rem;
   width: 100%;
+  height: 100%;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   --grid-height: 80px;
   grid-auto-rows: var(--grid-height);
