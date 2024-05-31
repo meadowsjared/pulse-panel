@@ -202,26 +202,25 @@ export const useSettingsStore = defineStore('settings', {
         this.sounds = sounds
         this.registerHotkeys()
         this.registerWindowResize()
-        return this._getImageUrls(key, sounds)
+        this._getImageUrls(this.sounds)
+        return this.sounds
       }
     },
     /**
-     * Get the image URLs for the sounds.
-     * @param sounds the array of sounds
-     * @returns the array of sounds with image URLs
+     * Lazily get the image URLs for the sounds.
+     * @param sounds[] the array of sounds
+     * @returns void
      */
-    async _getImageUrls(key: ArraySoundSettings, sounds: Sound[]) {
-      if (key === 'sounds') {
-        for (const sound of sounds) {
-          if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
-            const imageUrl = await this.getFile(sound.imageKey)
+    _getImageUrls(sounds: Sound[]) {
+      sounds.forEach(sound => {
+        if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
+          this.getFile(sound.imageKey).then(imageUrl => {
             if (imageUrl) {
               sound.imageUrl = imageUrl
             }
-          }
+          })
         }
-      }
-      return sounds
+      })
     },
     /**
      * This function listens for windowResize events and sets the windowIsMaximized state
