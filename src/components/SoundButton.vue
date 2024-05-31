@@ -7,7 +7,7 @@
       @auxclick="emit('editSound')"
       @keydown="handleKeydown"
       @focus="handleFocus"
-      @drop.prevent="handleFileDrop"
+      @drop.stop.prevent="handleFileDrop"
       @dragover.prevent
       :class="{
         'playing-sound': playingThisSound,
@@ -31,7 +31,7 @@
     </div>
   </div>
   <div v-else class="sound-button-container">
-    <button @click="addSound" @drop="handleFileDrop" @dragover.prevent class="sound-button add-button">
+    <button @click="addSound" @drop.stop.prevent="handleFileDrop" @dragover.prevent class="sound-button add-button">
       <inline-svg :src="Plus" />
     </button>
     <div :class="{ 'button-group': displayMode === 'edit' }">
@@ -114,7 +114,7 @@ function addSound() {
  * Handles the file drop event
  * @param event The drag event
  */
-async function handleFileDrop(event: DragEvent) {
+function handleFileDrop(event: DragEvent) {
   emit('fileDropped', event, props.modelValue)
 }
 </script>
