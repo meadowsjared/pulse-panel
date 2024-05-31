@@ -60,7 +60,6 @@ const props = defineProps<{
 // define the emits
 const emit = defineEmits<{
   (event: 'update:modelValue', value: Sound): void
-  (event: 'deleteSound'): void
   (event: 'editSound'): void
 }>()
 
@@ -77,12 +76,6 @@ const soundStore = useSoundStore()
 const settingsStore = useSettingsStore()
 
 const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
-
-function deleteSound() {
-  if (props.displayMode === 'edit') {
-    emit('deleteSound')
-  }
-}
 
 function editSound() {
   if (props.displayMode === 'edit') {

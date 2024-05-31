@@ -12,7 +12,6 @@
           @dragover="dragOver(i)"
           @drop="drop(i)"
           @update:modelValue="handleSoundsUpdate"
-          @deleteSound="deleteSound(sound)"
           @editSound="editSound(sound)"
           @dragend="dragEnd(sound)" />
       </template>
