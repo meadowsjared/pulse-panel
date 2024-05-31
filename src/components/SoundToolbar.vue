@@ -1,8 +1,8 @@
 <template>
   <div class="toolbar">
     <div class="left-buttons">
-      <input type="text" v-model="searchText" placeholder="Search..." />
-      <button class="light" @click="searchText = ''">
+      <input type="text" v-model="searchText" @input="searchTextChanged" placeholder="Search..." />
+      <button class="light" :class="{ hidden: searchText.length === 0 }" @click="clearSearch">
         <inline-svg class="w-6 h-6 rotate-45" :src="Plus" />
       </button>
     </div>
@@ -33,6 +33,15 @@ watch(
 
 function handleDisplayModeChange() {
   settingsStore.displayMode = editMode.value ? 'play' : 'edit'
+}
+
+function clearSearch() {
+  searchText.value = ''
+  searchTextChanged()
+}
+
+function searchTextChanged() {
+  settingsStore.searchText = searchText.value
 }
 </script>
 
