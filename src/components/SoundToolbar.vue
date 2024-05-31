@@ -16,19 +16,23 @@
 
 <script setup lang="ts">
 import InlineSvg from 'vue-inline-svg'
-import { ref, watch } from 'vue'
+import { computed } from 'vue'
 import Plus from '../assets/images/plus.svg'
 import { useSettingsStore } from '../store/settings'
 
 const settingsStore = useSettingsStore()
-const editMode = ref(settingsStore.displayMode === 'play')
 
-watch(
-  () => settingsStore.displayMode,
-  () => {
-    editMode.value = settingsStore.displayMode === 'play'
-  }
-)
+/**
+ * This computed translates the displayMode from the settings store to a boolean
+ * for the toggle component
+ * @returns boolean
+ */
+const editMode = computed<boolean>({
+  get: () => settingsStore.displayMode === 'play',
+  set: value => {
+    settingsStore.displayMode = value ? 'play' : 'edit'
+  },
+})
 
 function handleDisplayModeChange() {
   settingsStore.displayMode = editMode.value ? 'play' : 'edit'
