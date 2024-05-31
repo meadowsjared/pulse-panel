@@ -174,7 +174,6 @@ export const useSettingsStore = defineStore('settings', {
     async saveSoundArray(key: ArraySoundSettings, value: Sound[]): Promise<boolean> {
       const electron = window.electron
       await electron?.saveSetting?.(key, JSON.stringify(value))
-      this[key] = value
       return true
     },
     /**
