@@ -51,7 +51,6 @@ import Headphones from '../assets/images/headphones.svg'
 import { useSoundStore } from '../store/sound'
 import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp'
 
-const outputDeviceId = ref<string[]>([])
 const darkMode = ref(true)
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
