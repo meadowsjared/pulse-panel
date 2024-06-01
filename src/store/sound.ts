@@ -62,6 +62,29 @@ export const useSoundStore = defineStore('sound', {
       this.playingSoundIds = []
     },
     /**
+     * Mute all sounds by setting their volume to 0
+     */
+    async muteAllSounds(): Promise<void> {
+      this.outputDeviceData.forEach((outputDevice: OutputDeviceProperties) => {
+        outputDevice.currentAudio.forEach(audio => {
+          audio.volume = 0
+        })
+      })
+    },
+    /**
+     * Unmute all sounds by setting their volume to their original volume
+     */
+    async unmuteAllSounds(): Promise<void> {
+      const settingsStore = useSettingsStore()
+      this.outputDeviceData.forEach((outputDevice: OutputDeviceProperties) => {
+        outputDevice.currentAudio.forEach(audio => {
+          // find this audio in the sounds array
+          const volume = settingsStore.sounds.find(sound => sound.id === audio.getAttribute('data-id'))?.volume
+          audio.volume = volume ?? 1
+        })
+      })
+    },
+    /**
      * send the PTT key
      */
     async _pttHotkeyPress(settingsStore: SettingsStore, down: boolean): Promise<void> {

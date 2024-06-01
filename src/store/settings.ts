@@ -59,9 +59,11 @@ export const useSettingsStore = defineStore('settings', {
   actions: {
     async toggleMute(): Promise<void> {
       this.muted = !this.muted
+      const soundStore = useSoundStore()
       if (this.muted) {
-        const soundStore = useSoundStore()
-        soundStore.stopAllSounds()
+        soundStore.muteAllSounds()
+      } else {
+        soundStore.unmuteAllSounds()
       }
       // save the mute setting to the idb store
       const electron = window.electron
