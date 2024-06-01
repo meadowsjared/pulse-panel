@@ -241,12 +241,20 @@ function deleteSound(pSound: Sound) {
 function deleteSoundConfirmed() {
   if (soundToDelete.value === null) return
   const pSound = soundToDelete.value
+  const newEditingIndex = Math.min(
+    settingsStore.sounds.findIndex(sound => sound.id === pSound.id),
+    settingsStore.sounds.length - 3
+  )
   settingsStore.sounds = settingsStore.sounds.filter(sound => sound.id !== pSound.id)
   settingsStore.deleteFile(pSound.audioKey)
   settingsStore.deleteFile(pSound.imageKey)
   settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
+  // check if soundToDelete is the currentEditingSound
+  if (settingsStore.currentEditingSound?.id === pSound.id) {
+    // since we deleted soundToDelete, if we set it to newEditingIndex, it will be the next sound
+    settingsStore.currentEditingSound = settingsStore.sounds[newEditingIndex] ?? null
+  }
   soundToDelete.value = null
-  settingsStore.currentEditingSound = null
 }
 
 function editSound(pSound: Sound) {
