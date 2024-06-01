@@ -46,20 +46,30 @@ import { v4 } from 'uuid'
 import { File } from '../../@types/file'
 import { stripFileExtension } from '../utils/utils'
 
+interface CompilingSoundWithImage {
+  audioFile?: File
+  imageFile?: File
+}
+
+interface SoundWithImage extends CompilingSoundWithImage {
+  // audioFile is required
+  audioFile: File
+}
+
 const dialogOpen = ref(false)
 const soundToDelete = ref<Sound | null>(null)
 
 const settingsStore = useSettingsStore()
-// let draggedIndex: number | null = null
 let draggedIndexStart: number | null = null
 let draggedSound: Sound | null = null
-let cancelDragEnd = ref(false)
+const cancelDragEnd = ref(false)
+const skipBgDrop = ref(false)
 
 settingsStore.fetchStringArray('outputDevices')
 settingsStore.fetchBooleanSetting('darkMode', true)
 settingsStore.fetchSoundSetting('sounds')
 
-async function fileDropped(event: DragEvent, sound: Sound) {
+async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
   event.preventDefault()
   const files: FileList | null = event.dataTransfer?.files ?? null
   if (!files) return
@@ -67,22 +77,67 @@ async function fileDropped(event: DragEvent, sound: Sound) {
   const newSound: Sound = {
     ...sound,
   }
-  // only allow a single file to be dropped for the audio and image at a time
-  // (prevents orphaned files from being uploaded)
-  let audioModified = false
-  let imageModified = false
-  for (const file of Array.from(files)) {
-    if (!audioModified && file.type.includes('audio')) {
-      await handleSoundFileDrop(file, newSound, sound)
-      audioModified = true
-    } else if (!imageModified && file.type.includes('image')) {
-      await handleImageFileDrop(file, newSound, sound)
-      imageModified = true
-    }
-  }
-  if (audioModified || imageModified) {
-    settingsStore.sounds[settingsStore.sounds.findIndex(s => s.id === sound.id)] = newSound
+
+  const fileArray = Array.from(files)
+
+  if (isNewSound) {
+    // go through all the files, and group them by name
+    const combinedFiles: SoundWithImage[] = Object.values(
+      fileArray.reduce<{
+        [fileName: string]: CompilingSoundWithImage
+      }>((prevVal, file) => {
+        const fileName = stripFileExtension(file.name).toLowerCase().replace(/[`’]/g, "'")
+        if (file.type.includes('audio')) {
+          if (!prevVal[fileName]) {
+            prevVal[fileName] = { audioFile: file }
+          } else if (!prevVal[fileName].audioFile) {
+            prevVal[fileName].audioFile = file
+          }
+        } else if (file.type.includes('image')) {
+          if (!prevVal[fileName]) {
+            prevVal[fileName] = { imageFile: file }
+          } else if (!prevVal[fileName].imageFile) {
+            prevVal[fileName].imageFile = file
+          }
+        }
+        return prevVal
+      }, {})
+    ).filter((file): file is SoundWithImage => file.audioFile !== undefined)
+    const promAr = combinedFiles.map(async file => {
+      const newSound: Sound = {
+        id: v4(),
+        name: stripFileExtension(file.audioFile.name),
+      }
+      await handleSoundFileDrop(file.audioFile, newSound, newSound)
+      if (file.imageFile) {
+        await handleImageFileDrop(file.imageFile, newSound, newSound)
+      }
+      return newSound
+    })
+    const soundsToAdd = await Promise.all(promAr)
+    // insert the new sounds before the new sound button
+    settingsStore.sounds.splice(settingsStore.sounds.length - 1, 0, ...soundsToAdd)
     updateSound()
+  } else {
+    // we're updating an existing sound button
+    // only allow a single file to be dropped for the audio and image at a time
+    // (prevents orphaned files from being uploaded)
+    let audioModified = false
+    let imageModified = false
+    const promAr = fileArray.map(async file => {
+      if (!audioModified && file.type.includes('audio')) {
+        await handleSoundFileDrop(file, newSound, sound)
+        audioModified = true
+      } else if (!imageModified && file.type.includes('image')) {
+        await handleImageFileDrop(file, newSound, sound)
+        imageModified = true
+      }
+    })
+    await Promise.all(promAr)
+    if (audioModified || imageModified) {
+      settingsStore.sounds[settingsStore.sounds.findIndex(s => s.id === sound.id)] = newSound
+      updateSound()
+    }
   }
 }
 
@@ -111,23 +166,26 @@ async function handleImageFileDrop(file: File, newSound: Sound, oldSound: Sound)
 }
 
 function droppedOnBackground(event: DragEvent) {
-  if (draggedSound === null) {
-    // treat it as if they dropped it on the new sound button
-    fileDropped(event, settingsStore.sounds[settingsStore.sounds.length - 1])
+  if (skipBgDrop.value) {
+    skipBgDrop.value = false
     return
   }
-  cancelDragEnd.value = true
+  if (draggedSound === null) {
+    // treat it as if they dropped it on the new sound button
+    fileDropped(event, settingsStore.sounds[settingsStore.sounds.length - 1], true)
+  } else {
+    // we should process this as a drop
+    drop()
+  }
 }
 
 /**
- * 
+ * Handles the drag end event, which is when the drag is cancelled
  * @param pSound The sound that was dragged
- 
  */
 function dragEnd(pSound: Sound) {
   if (cancelDragEnd.value) {
     cancelDragEnd.value = false
-    drop()
     return
   }
   if (draggedIndexStart === null || draggedSound === null) return
@@ -147,6 +205,7 @@ function dragStart(pSound: Sound, index: number) {
 }
 
 function drop() {
+  skipBgDrop.value = true
   if (settingsStore.displayMode !== 'edit') return
   if (draggedSound === null) return
   delete draggedSound.isPreview // remove the preview flag

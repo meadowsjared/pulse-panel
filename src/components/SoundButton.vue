@@ -1,5 +1,9 @@
 <template>
-  <div v-if="modelValue?.name !== undefined" class="sound-button-container">
+  <div
+    v-if="modelValue?.name !== undefined"
+    class="sound-button-container"
+    @drop="handleFileDrop(false, $event)"
+    @dragover.prevent>
     <button
       ref="soundButton"
       @blur="focusVisible = false"
@@ -7,8 +11,6 @@
       @auxclick="emit('editSound')"
       @keydown="handleKeydown"
       @focus="handleFocus"
-      @drop.stop.prevent="handleFileDrop"
-      @dragover.prevent
       :class="{
         'playing-sound': playingThisSound,
         'has-image': modelValue.imageKey,
@@ -30,8 +32,8 @@
       </button>
     </div>
   </div>
-  <div v-else class="sound-button-container">
-    <button @click="addSound" @drop.stop.prevent="handleFileDrop" @dragover.prevent class="sound-button add-button">
+  <div v-else class="sound-button-container" @drop="handleFileDrop(true, $event)" @dragover.prevent>
+    <button @click="addSound" class="sound-button add-button">
       <inline-svg :src="Plus" />
     </button>
     <div :class="{ 'button-group': displayMode === 'edit' }">
@@ -59,7 +61,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', value: Sound): void
   (event: 'editSound'): void
-  (event: 'fileDropped', dragEvent: DragEvent, sound: Sound): void
+  (event: 'fileDropped', dragEvent: DragEvent, sound: Sound, isNewSound: boolean): void
 }>()
 
 const numSoundsPlaying = ref(0)
@@ -114,8 +116,8 @@ function addSound() {
  * Handles the file drop event
  * @param event The drag event
  */
-function handleFileDrop(event: DragEvent) {
-  emit('fileDropped', event, props.modelValue)
+function handleFileDrop(isNewSound: boolean, event: DragEvent) {
+  emit('fileDropped', event, props.modelValue, isNewSound)
 }
 </script>
 
