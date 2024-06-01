@@ -69,13 +69,12 @@ window.electron?.onDarkModeToggle((value: boolean) => {
 
 settingsStore.fetchStringArray('ptt_hotkey')
 settingsStore.fetchMute()
-settingsStore.fetchStringArray('outputDevices').then(outputDevice => {
-  outputDeviceId.value = outputDevice
-})
+settingsStore.fetchStringArray('outputDevices')
 settingsStore.fetchBooleanSetting('darkMode', true).then(darkModeValue => {
   darkMode.value = darkModeValue
 })
 settingsStore.fetchBooleanSetting('allowOverlappingSound')
+settingsStore.fetchSoundSetting('sounds')
 </script>
 
 <style scoped>

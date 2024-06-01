@@ -65,10 +65,6 @@ let draggedSound: Sound | null = null
 const cancelDragEnd = ref(false)
 const skipBgDrop = ref(false)
 
-settingsStore.fetchStringArray('outputDevices')
-settingsStore.fetchBooleanSetting('darkMode', true)
-settingsStore.fetchSoundSetting('sounds')
-
 async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
   event.preventDefault()
   const files: FileList | null = event.dataTransfer?.files ?? null
