@@ -111,7 +111,7 @@ export const useSoundStore = defineStore('sound', {
       // return a promise
       return new Promise(resolve => {
         const settingsStore = useSettingsStore()
-        if (settingsStore.muted || settingsStore.recordingHotkey || this.disabled) return // if muted, don't play the sound
+        if (settingsStore.recordingHotkey || this.disabled) return // if muted, don't play the sound
         // console.debug('1 this.disabled = ', this.disabled)
         if (!activeOutputDevices) {
           activeOutputDevices = settingsStore.outputDevices
@@ -212,7 +212,7 @@ export const useSoundStore = defineStore('sound', {
       })
       await new Promise<void>(resolve => {
         if (!outputDeviceData.currentAudio) return
-        newAudio.volume = volume ?? this.volume // set the volume to max
+        newAudio.volume = settingsStore.muted ? 0 : volume ?? this.volume // set the volume to max
         newAudio.onplaying = () => {
           outputDeviceData.playingAudio = true
         }
