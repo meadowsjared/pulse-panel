@@ -31,6 +31,11 @@
         </button>
       </div>
     </div>
+    <div class="default-volume">
+      <label for="default-volume-input">Default Volume:</label>
+      <input-text-number id="default-volume-input" :min="0" :max="100" :bigStep="5" v-model="volumeDisplay" />
+      <input-range-number :bigStep="5" v-model="volumeDisplay" />
+    </div>
     <label
       >Allow overlapping sounds<input
         type="checkbox"
@@ -57,13 +62,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import SpeakerIcon from '../assets/images/speaker.svg'
 import Plus from '../assets/images/plus.svg'
 import Download from '../assets/images/download.svg'
+import { throttle } from 'lodash'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -73,6 +79,22 @@ const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
 const vbCableInstalled = ref(false)
+
+/**
+ * Displays the volume as a percentage
+ */
+const volumeDisplay = computed({
+  get: () => Math.round(settingsStore.defaultVolume * 100),
+  set: (value: number) => {
+    saveVolumeDebounced(value)
+  },
+})
+
+const saveVolumeDebounced = throttle((value: number) => {
+  const newValue = Math.round(value) / 100
+  if (settingsStore.defaultVolume === newValue) return
+  settingsStore.saveDefaultVolume(newValue)
+}, 100)
 
 settingsStore.fetchStringArray('ptt_hotkey').then(hotkey => {
   selectedHotkey.value = hotkey ?? undefined
@@ -192,6 +214,31 @@ function updateAllowOverlappingSound(event: Event) {
 </script>
 
 <style scoped>
+.default-volume {
+  margin: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+.default-volume label {
+  margin: 0;
+  padding: 0;
+}
+.default-volume input[type='text'] {
+  width: 3rem;
+  text-align: center;
+  padding: 0;
+  outline: 1px solid var(--text-color);
+  outline-offset: 1px;
+}
+.default-volume input[type='text']:focus-visible {
+  outline-color: var(--active-color);
+}
+.default-volume input[type='range'] {
+  margin: 0 0 0.1rem 0;
+}
+
 h1 {
   margin-top: 1rem;
   margin-bottom: 0.5rem;
@@ -200,7 +247,7 @@ h1 {
 }
 
 h2 {
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
   margin-bottom: 0.5rem;
   color: var(--active-color);
 }
