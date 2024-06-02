@@ -17,7 +17,7 @@
       <div class="hide-name-checkbox-group">
         <input title="hide name on button" type="checkbox" v-model="props.modelValue.hideName" id="hideName" /><label
           for="hideName"
-          >Hide Name:</label
+          >Hide Name</label
         >
       </div>
     </div>
@@ -181,11 +181,12 @@ function close() {
 
 <style scoped>
 .hide-name-checkbox-group > input[type='checkbox']:checked {
-  background-color: var(--active-color);
+  background-color: var(--button-color);
 }
 input[type='checkbox'] {
   --tw-ring-offset-width: unset;
   --tw-ring-color: transparent;
+  background-color: var(--input-bg-color);
 }
 input[type='checkbox']:focus-visible {
   --tw-ring-color: var(--active-color);
@@ -210,7 +211,7 @@ input[type='checkbox']:focus-visible {
   stroke: none;
 }
 .play-sound-button > svg {
-  fill: var(--accent-text-color);
+  fill: var(--button-color);
   stroke: none;
 }
 .play-sound-button:focus-visible > svg {
@@ -224,7 +225,7 @@ input[type='checkbox']:focus-visible {
 
 .volume-display {
   color: var(--text-color);
-  background: var(--background-color);
+  background: var(--input-bg-color);
   padding: 0;
   margin-right: 0.5rem;
   margin-bottom: 0.25rem;
@@ -290,12 +291,14 @@ input[type='checkbox']:focus-visible {
   width: 2rem;
   aspect-ratio: 1;
   border-radius: 0.25rem;
-  background: var(--accent-text-color);
 }
 .preview-button > svg {
-  stroke: var(--background-color);
+  stroke: var(--text-color);
   width: 100%;
   height: 100%;
+}
+.preview-button:active > svg {
+  stroke: var(--background-color);
 }
 
 h1 {

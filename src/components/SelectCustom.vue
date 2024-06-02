@@ -224,7 +224,7 @@ function getKeypressDown(index: number) {
 
 .selected-option {
   padding: 0.5rem 2.5rem 0.5rem 0.75rem;
-  background: var(--button-color);
+  background: var(--input-bg-color);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -306,7 +306,7 @@ function getKeypressDown(index: number) {
 }
 
 .dropdown button.selected {
-  background-color: var(--alt-bg-color);
+  background-color: var(--input-bg-color);
 }
 
 .dropdown button:hover {
