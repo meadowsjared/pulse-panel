@@ -120,4 +120,8 @@ input {
   /** make it invisible, but still take up space */
   visibility: hidden;
 }
+
+.clear-button > svg {
+  stroke: currentColor;
+}
 </style>
