@@ -30,24 +30,18 @@
     <button @click="audioFileInput?.click()" class="dark">Browse Audio...</button>
     <div class="input-group">
       <div class="volume-control-container">
-        <input
-          ref="volumeInput"
-          type="text"
+        <input-text-number
+          id="volume-display"
           class="volume-display"
-          @keydown.enter="volumeInput?.blur()"
-          v-model.number="volumeDisplay" />
-        <label class="volume-label" for="volume">Volume:</label>
+          :min="0"
+          :max="100"
+          :bigStep="5"
+          v-model="volumeDisplay" />
+        <label class="volume-label" for="volume-display">Volume:</label>
         <button @click="soundStore.playSound(modelValue)" class="play-sound-button">
           <inline-svg :src="PlayIcon" class="w-6 h-6" />
         </button>
-        <input
-          class="volume-slider"
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          v-model.number="volumeValue"
-          id="volume" />
+        <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
       </div>
     </div>
     <div
@@ -87,6 +81,7 @@ import { computed, ref, watch } from 'vue'
 import PlayIcon from '../assets/images/play.svg'
 import { useSoundStore } from '../store/sound'
 import { stripFileExtension } from '../utils/utils'
+import { throttle } from 'lodash'
 
 const props = defineProps<{
   modelValue: Sound
@@ -102,7 +97,22 @@ const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
 const imageFileInput = ref<HTMLInputElement | null>(null)
 const audioFileInput = ref<HTMLInputElement | null>(null)
-const volumeInput = ref<HTMLInputElement | null>(null)
+
+/**
+ * Displays the volume as a percentage
+ */
+const volumeDisplay = computed({
+  get: () => Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100),
+  set: (value: number) => {
+    saveVolumeDebounced(value)
+  },
+})
+
+const saveVolumeDebounced = throttle((value: number) => {
+  const newValue = Math.round(value) / 100
+  if (props.modelValue.volume === newValue) return
+  props.modelValue.volume = newValue
+}, 100)
 
 // Watch for changes to the name and update the modelValue
 watch(
@@ -118,36 +128,6 @@ watch(
     }
     emit('update:modelValue', props.modelValue)
   }
-)
-
-// replace volume of undefined with 1
-const volumeValue = computed({
-  get: () => props.modelValue.volume ?? settingsStore.defaultVolume, // default volume to max if not set
-  set: (value: number) => {
-    props.modelValue.volume = value
-    volumeDisplay.value = Math.round(value * 100)
-  },
-})
-
-// display version of the volume
-const volumeDisplay = ref(volumeValue.value * 100)
-
-//update the volumeValue when volumeDisplay changes
-watch(
-  () => volumeDisplay.value,
-  () => {
-    volumeValue.value = volumeDisplay.value / 100
-  }
-)
-
-// Watch for changes to the volume and update the soundStore in case something is playing
-watch(
-  () => volumeValue.value,
-  () => {
-    const volume = volumeValue.value
-    soundStore.setVolume(volume, props.modelValue.id)
-  },
-  { immediate: true }
 )
 
 function updateHotkey(newKey: string[], oldKey: string[] | undefined) {
