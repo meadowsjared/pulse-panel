@@ -112,8 +112,8 @@ watch(
     if (!props.modelValue.hideName && props.modelValue.hasOwnProperty('hideName')) {
       delete props.modelValue.hideName
     }
-    volumeDisplay.value = Math.round((props.modelValue.volume ?? 1) * 100)
-    if ((props.modelValue.volume ?? 1) === 1) {
+    volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100)
+    if ((props.modelValue.volume ?? settingsStore.defaultVolume) === settingsStore.defaultVolume) {
       delete props.modelValue.volume
     }
     emit('update:modelValue', props.modelValue)
@@ -122,7 +122,7 @@ watch(
 
 // replace volume of undefined with 1
 const volumeValue = computed({
-  get: () => props.modelValue.volume ?? 1, // default volume to max if not set
+  get: () => props.modelValue.volume ?? settingsStore.defaultVolume, // default volume to max if not set
   set: (value: number) => {
     props.modelValue.volume = value
     volumeDisplay.value = Math.round(value * 100)
