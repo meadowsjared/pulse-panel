@@ -12,7 +12,6 @@ interface OutputDeviceProperties {
 }
 
 interface State {
-  volume: number
   outputDeviceData: OutputDeviceProperties[]
   playingSoundIds: string[]
   currentSound: Sound | null
@@ -21,7 +20,6 @@ interface State {
 
 export const useSoundStore = defineStore('sound', {
   state: (): State => ({
-    volume: 1,
     outputDeviceData: [
       {
         currentAudio: [],
@@ -169,7 +167,7 @@ export const useSoundStore = defineStore('sound', {
           if (preview && index !== 0) return // only play the sound on the first device if previewing
           await this._playSoundToDevice(
             outputDeviceId,
-            audioFile?.volume ?? null,
+            audioFile?.volume ?? settingsStore.defaultVolume,
             filteredSelectedOutputDevices,
             settingsStore,
             audioFile
@@ -188,7 +186,7 @@ export const useSoundStore = defineStore('sound', {
      */
     async _playSoundToDevice(
       outputDeviceId: string,
-      volume: number | null,
+      volume: number,
       selectedOutputDevices: string[],
       settingsStore: SettingsStore,
       audioFile: Sound | null
@@ -235,7 +233,7 @@ export const useSoundStore = defineStore('sound', {
       })
       await new Promise<void>(resolve => {
         if (!outputDeviceData.currentAudio) return
-        newAudio.volume = settingsStore.muted ? 0 : volume ?? this.volume // set the volume to max
+        newAudio.volume = settingsStore.muted ? 0 : volume
         newAudio.onplaying = () => {
           outputDeviceData.playingAudio = true
         }
