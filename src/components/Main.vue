@@ -74,6 +74,7 @@ settingsStore.fetchBooleanSetting('darkMode', true).then(darkModeValue => {
 })
 settingsStore.fetchBooleanSetting('allowOverlappingSound')
 settingsStore.fetchSoundSetting('sounds')
+settingsStore.fetchDefaultVolume()
 </script>
 
 <style scoped>
