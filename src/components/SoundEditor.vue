@@ -27,7 +27,7 @@
       @change="handleAudioFileUpload"
       class="file-input hidden"
       accept="audio/*" />
-    <button @click="audioFileInput?.click()" class="dark">Browse Audio...</button>
+    <button @click="audioFileInput?.click()" class="light">Browse Audio...</button>
     <div class="input-group">
       <div class="volume-control-container">
         <input-text-number
@@ -57,17 +57,17 @@
       @change="handleImageFileUpload"
       class="file-input hidden"
       accept="image/*" />
-    <button @click="imageFileInput?.click()" class="dark">Browse Image...</button>
+    <button @click="imageFileInput?.click()" class="light">Browse Image...</button>
     <div class="flex flex-col text-black">
       <hotkey-picker
         v-model="props.modelValue.hotkey"
         @update:modelValue="updateHotkey"
-        :dark="true"
+        :dark="false"
         title="set a keybind for sound"
         >Keybind:</hotkey-picker
       >
     </div>
-    <button @click="emit('deleteSound', modelValue)" class="dark danger">DELETE</button>
+    <button @click="emit('deleteSound', modelValue)" class="light danger">DELETE</button>
   </div>
 </template>
 
@@ -268,6 +268,10 @@ input[type='checkbox']:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+}
+
+.input-group > label {
+  margin-bottom: 0.25rem;
 }
 
 .input-group > input {
