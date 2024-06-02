@@ -6,6 +6,7 @@ import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
 
 interface State {
+  defaultVolume: number
   windowIsMaximized: boolean
   outputDevices: string[]
   darkMode: boolean
@@ -36,6 +37,7 @@ export interface SettingsStore extends ReturnType<typeof useSettingsStore> {}
 
 export const useSettingsStore = defineStore('settings', {
   state: (): State => ({
+    defaultVolume: NaN,
     windowIsMaximized: false,
     outputDevices: [],
     darkMode: true,
@@ -57,6 +59,35 @@ export const useSettingsStore = defineStore('settings', {
     },
   },
   actions: {
+    /**
+     * Fetch the default volume from the store
+     * @returns the default volume
+     */
+    async fetchDefaultVolume(): Promise<number> {
+      const electron = window.electron
+      const volume = await electron?.readSetting?.('defaultVolume')
+      if (volume === undefined) {
+        await electron?.saveSetting?.('defaultVolume', 1)
+        this.defaultVolume = 1
+      } else if (typeof volume === 'number') {
+        this.defaultVolume = volume
+      }
+      return this.defaultVolume
+    },
+    /**
+     * Set the default volume
+     * @param volume the volume to set
+     * @returns void
+     */
+    async saveDefaultVolume(volume: number): Promise<void> {
+      this.defaultVolume = volume
+      const electron = window.electron
+      await electron?.saveSetting?.('defaultVolume', volume)
+    },
+    /**
+     * Toggle the mute state
+     * @returns void
+     */
     async toggleMute(): Promise<void> {
       this.muted = !this.muted
       const soundStore = useSoundStore()
@@ -69,6 +100,10 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.saveSetting?.('muted', this.muted)
     },
+    /**
+     * Fetch the mute state from the store
+     * @returns the current mute state
+     */
     async fetchMute(): Promise<boolean> {
       const electron = window.electron
       const mute = await electron?.readSetting?.('muted')
