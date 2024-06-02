@@ -13,6 +13,7 @@ declare module 'vue' {
     Header: typeof import('./components/Header.vue')['default']
     Home: typeof import('./components/Home.vue')['default']
     HotkeyPicker: typeof import('./components/HotkeyPicker.vue')['default']
+    InputTextNumber: typeof import('./components/InputTextNumber.vue')['default']
     Main: typeof import('./components/Main.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
