@@ -254,17 +254,16 @@ function removeVBCableInstallDirectory(extractPath) {
  * Check if VBCable is installed
  * @returns {Promise<boolean>}
  */
-function vbCableIsInstalled() {
-  return new Promise(resolve => {
-    const registryKeyPath = 'HKLM\\SOFTWARE\\VB-Audio\\Cable'
-    regedit.list(registryKeyPath, (err, result) => {
-      if (err) {
-        console.error('Error reading registry', err)
-        resolve(false)
-      }
-      resolve(result[registryKeyPath] !== undefined)
-    })
-  })
+async function vbCableIsInstalled() {
+  const registryKeyPath = 'HKLM\\SOFTWARE\\VB-Audio\\Cable'
+  regedit.setExternalVBSLocation('resources/regedit/vbs')
+  try {
+    const result = await regedit.promisified.list(registryKeyPath)
+    return result && result[registryKeyPath] && result[registryKeyPath].exists
+  } catch (err) {
+    console.error('Error reading registry', err)
+    return false // assume VBCable is not installed
+  }
 }
 
 function cleanUpVBCableInstall() {
