@@ -139,12 +139,17 @@ function ensureDirectoryExistence(filePath) {
   }
 }
 
-function getConfigurationFilePath() {
+function getConfigDirectoryAndAppName() {
   const userHome = getUserHome()
   // get the app name from the package.json file:
   const appName = require(join(__dirname, '../../package.json')).name
   const isDev = process.env.npm_lifecycle_event === 'app:dev'
   const configDirectory = isDev ? join(__dirname, '../../') : join(userHome, appName)
+  return { configDirectory, appName }
+}
+
+function getConfigurationFilePath() {
+  const { configDirectory, appName } = getConfigDirectoryAndAppName()
   ensureDirectoryExistence(configDirectory) // Make sure the directory exists
   // note: this will store the file here:
   // %LocalAppData%\Programs\pulse-panel\resources\app\pulse-panel.json
@@ -158,9 +163,10 @@ async function downloadVBCable() {
     return false
   }
 
+  const { configDirectory } = getConfigDirectoryAndAppName()
   const url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'
-  const filePath = join(__dirname, 'VBCABLE_Driver_Pack43.zip')
-  const extractPath = join(__dirname, 'VBCable')
+  const filePath = join(configDirectory, 'VBCABLE_Driver_Pack43.zip')
+  const extractPath = join(configDirectory, 'VBCable')
   const request = net.request(url)
 
   return await new Promise((resolve, reject) => {
