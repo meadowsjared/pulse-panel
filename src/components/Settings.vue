@@ -103,9 +103,9 @@ settingsStore.fetchStringArray('ptt_hotkey').then(hotkey => {
 async function downloadVBCable() {
   // set it to false to reset the animation
   vbCableInstalled.value = false
-  const installed = await window.electron?.downloadVBCable()
-  if (installed) {
-    return
+  const vbCableWasInstalled = await window.electron?.downloadVBCable()
+  if (vbCableWasInstalled) {
+    return // if it was installed, we don't need to show anything, because the installer should be shown
   }
 
   // set it to true to trigger the animation
