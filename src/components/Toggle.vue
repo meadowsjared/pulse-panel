@@ -64,7 +64,7 @@ const toggle = () => {
   left: 0.25rem;
   --animation-length: 0.5s;
   --scale: 1.7;
-  --stretch-width: 40px;
+  --stretch-width: 41px;
 }
 
 .toggle-switch.clicked {
@@ -85,17 +85,11 @@ const toggle = () => {
     width: 20px;
   }
   10% {
-    transform: translate(0.4rem, 0);
+    transform: translate(0, 0);
     width: var(--stretch-width);
   }
-  60% {
-    transform: translate(0.1rem, 0);
-  }
-  80% {
-    transform: translate(0.4rem, 0);
-  }
   90% {
-    transform: translate(0.3rem, 0);
+    transform: translate(0, 0);
     width: var(--stretch-width);
   }
   100% {
@@ -110,17 +104,11 @@ const toggle = () => {
     width: 20px;
   }
   10% {
-    transform: translate(1.3rem, 0);
-  }
-  60% {
-    transform: translate(-0.3rem, 0);
+    transform: translate(0, 0);
     width: var(--stretch-width);
   }
-  80% {
-    transform: translate(0.2rem, 0);
-  }
   90% {
-    transform: translate(0.1rem, 0);
+    transform: translate(0, 0);
     width: var(--stretch-width);
   }
   100% {
