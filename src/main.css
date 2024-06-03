@@ -28,6 +28,7 @@
   --button-color: hsl(153, 47%, 30%);
   --button-color: hsl(235, 86%, 65%); /* discord buttons */
   --button-color: #23a459;
+  --button-accent-color: #a3a3a3;
   --button-text: #f2f2f2;
   --text-color: #c0c0c0;
   --active-color: #23a459;

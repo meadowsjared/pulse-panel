@@ -396,11 +396,12 @@ input[type='checkbox']:focus-visible {
   height: 0;
   border-radius: 0.5rem;
   color: var(--background-color);
-  background: var(--active-color);
+  background: var(--button-accent-color);
   z-index: -1;
   transition: transform 0.4s, height 0.4s;
   transform: translateY(-100%);
   font-weight: bold;
+  overflow: hidden;
 }
 
 .vbCableInstalled {
