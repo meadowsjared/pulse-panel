@@ -23,6 +23,7 @@
 .darkMode {
   --alt-bg-color: #2C2C2C;
   --top-toolbar-color: #414141;
+  --top-toolbar-color-light: #5e5e5e;
   --background-color: hsl(0, 0%, 20%);
   --input-bg-color: hsl(0, 0%, 13%);
   --button-color: hsl(153, 47%, 30%);

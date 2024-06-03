@@ -284,7 +284,7 @@ function getKeypressDown(index: number) {
   left: 0;
   width: max-content;
   overflow-y: auto;
-  background-color: var(--background-color);
+  background-color: var(--alt-bg-color);
   list-style: none;
   outline: 1px solid var(--button-color);
   margin: 0;
@@ -302,15 +302,15 @@ function getKeypressDown(index: number) {
 
 .dropdown button:focus-visible,
 .dropdown button.selected:focus-visible {
-  background-color: var(--button-color);
+  background-color: var(--top-toolbar-color);
 }
 
 .dropdown button.selected {
-  background-color: var(--input-bg-color);
+  background-color: var(--top-toolbar-color-light);
 }
 
 .dropdown button:hover {
-  background-color: var(--button-color);
+  background-color: var(--top-toolbar-color);
 }
 
 .option-value {
