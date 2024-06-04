@@ -2,12 +2,12 @@
   <div class="title-bar" :class="{ darkMode: settingsStore.darkMode }">
     <div class="title"><slot /></div>
     <div class="buttons">
-      <button @click="minimize"><inline-svg :src="minimizeIcon" /></button>
-      <button @click="maximize">
+      <button @click="minimize" tabindex="-1"><inline-svg :src="minimizeIcon" /></button>
+      <button @click="maximize" tabindex="-1">
         <inline-svg v-if="settingsStore.windowIsMaximized" :src="restoreIcon" />
         <inline-svg v-else :src="stopIcon" />
       </button>
-      <button @click="close">
+      <button @click="close" tabindex="-1">
         <inline-svg :src="closeIcon" />
       </button>
     </div>
