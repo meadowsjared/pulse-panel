@@ -11,29 +11,32 @@
       @auxclick="emit('editSound')"
       @keydown="handleKeydown"
       @focus="handleFocus"
-      :class="{
-        'playing-sound': playingThisSound,
-        'has-image': modelValue.imageKey,
-        'edit-mode': props.displayMode === 'edit',
-        'cursor-default': props.displayMode === 'edit',
-        'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
-        focusVisible,
-      }"
-      class="sound-button"
+      :class="[
+        'sound-button',
+        {
+          'playing-sound': playingThisSound,
+          'has-image': modelValue.imageKey,
+          'edit-mode': props.displayMode === 'edit',
+          'cursor-default': props.displayMode === 'edit',
+          'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
+          focusVisible,
+        },
+      ]"
       :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
       <span v-if="!props.modelValue.hideName" class="button-name">{{ modelValue.name || 'New Sound' }}</span>
     </button>
-    <div :class="{ 'button-group': displayMode === 'edit' }">
-      <button v-if="displayMode === 'edit'" @click.capture="editSound" title="Edit" class="edit-buttons">Edit</button>
-      <button v-if="displayMode === 'edit'" @click.capture="playSound" title="Play" class="edit-buttons">Play</button>
+    <div :class="['button-group', { 'button-group-visible': displayMode === 'edit' }]" @click.capture="editSound">
+      <button title="Edit" class="edit-buttons" :tabindex="displayMode !== 'edit' ? -1 : 0">Edit Sound</button>
     </div>
   </div>
   <div v-else class="sound-button-container" @drop="handleFileDrop(true, $event)" @dragover.prevent>
     <button @click="addSound" class="sound-button add-button">
       <inline-svg :src="Plus" />
     </button>
-    <div :class="{ 'button-group': displayMode === 'edit' }">
-      <button v-if="displayMode === 'edit'" @click="addSound" title="Add Sound" class="add-button">Add Sound</button>
+    <div :class="['button-group', { 'button-group-visible': displayMode === 'edit' }]" @click="addSound">
+      <button title="Add Sound" class="edit-buttons add-button" :tabindex="displayMode !== 'edit' ? -1 : 0">
+        Add Sound
+      </button>
     </div>
   </div>
 </template>
@@ -125,14 +128,21 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
 }
 
 .button-group {
-  display: flex;
-  padding: 0.35rem 0 0 0;
+  cursor: pointer;
+  position: relative;
+  height: 1rem;
+  --transition-duration: 0.3s;
+  transition: top var(--transition-duration), height var(--transition-duration);
+  top: -30px;
+  z-index: 0;
 }
 
-.button-group > button {
-  text-wrap: nowrap;
+.button-group-visible {
+  top: 0;
+  height: 32px;
 }
 
+/* center the plus button on the add sound button */
 .add-button > svg {
   width: 50%;
   height: 50%;
@@ -142,7 +152,13 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
 
 .edit-buttons {
   border-radius: 0.313rem;
-  width: 50%;
+  width: 100%;
+  margin: 0.25rem 0;
+}
+
+/* if the user hovers over .button-group, add outline to the .edit-buttons */
+.button-group:hover .edit-buttons {
+  color: var(--button-color);
 }
 
 .edit-buttons:hover {
@@ -166,7 +182,7 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
 
 .sound-button {
   width: 100%;
-  height: var(--grid-height);
+  height: 80px;
   overflow: hidden;
   background: var(--button-color);
   color: var(--text-color);
@@ -174,6 +190,7 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   background-size: cover;
   background-position: center;
   outline-offset: 0.125rem;
+  z-index: 1;
 }
 
 .sound-button.focusVisible:focus-visible {

@@ -1,11 +1,7 @@
 <template>
   <div class="main">
     <SoundToolbar />
-    <div
-      class="soundboard"
-      :class="{ editing: settingsStore.displayMode === 'edit' }"
-      @dragover.prevent
-      @drop.prevent="droppedOnBackground">
+    <div class="soundboard" @dragover.prevent @drop.prevent="droppedOnBackground">
       <template v-for="(sound, i) in settingsStore.soundsFiltered" :key="sound?.id">
         <sound-button
           :data-sound-index="settingsStore.sounds.indexOf(sound)"
@@ -296,20 +292,15 @@ function stripAudioUrls(pSounds: Sound[]) {
 }
 
 .soundboard {
-  gap: 1rem;
+  gap: 0 1rem;
   display: grid;
   padding: 1rem;
   width: 100%;
   height: 100%;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  --grid-height: 80px;
-  grid-auto-rows: var(--grid-height);
+  --grid-height: 110px;
+  grid-auto-rows: max-content;
   overflow: auto;
-}
-
-.editing {
-  gap: 0.25rem 1rem;
-  grid-auto-rows: 110px;
 }
 
 .rightSideBar {
