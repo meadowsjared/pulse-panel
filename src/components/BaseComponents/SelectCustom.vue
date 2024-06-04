@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import InlineSvg from 'vue-inline-svg'
-import SelectArrow from '../assets/images/select-arrow.svg'
+import SelectArrow from '../../assets/images/select-arrow.svg'
 
 interface LabelValue {
   label: string
