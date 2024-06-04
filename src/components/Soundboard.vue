@@ -296,7 +296,7 @@ function stripAudioUrls(pSounds: Sound[]) {
 }
 
 .soundboard {
-  grid-gap: 1rem;
+  gap: 1rem;
   display: grid;
   padding: 1rem;
   width: 100%;
@@ -308,7 +308,8 @@ function stripAudioUrls(pSounds: Sound[]) {
 }
 
 .editing {
-  grid-auto-rows: 136px;
+  gap: 0.25rem 1rem;
+  grid-auto-rows: 110px;
 }
 
 .rightSideBar {

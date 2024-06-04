@@ -7,7 +7,7 @@
     <button
       ref="soundButton"
       @blur="focusVisible = false"
-      @click="playSound(false)"
+      @click="playSound()"
       @auxclick="emit('editSound')"
       @keydown="handleKeydown"
       @focus="handleFocus"
@@ -24,12 +24,8 @@
       <span v-if="!props.modelValue.hideName" class="button-name">{{ modelValue.name || 'New Sound' }}</span>
     </button>
     <div :class="{ 'button-group': displayMode === 'edit' }">
-      <button v-if="displayMode === 'edit'" @click.capture="editSound" title="Edit" class="edit-buttons">
-        Edit Sound
-      </button>
-      <button v-if="displayMode === 'edit'" @click.capture="playSound(true)" title="Play" class="edit-buttons">
-        Play Sound
-      </button>
+      <button v-if="displayMode === 'edit'" @click.capture="editSound" title="Edit" class="edit-buttons">Edit</button>
+      <button v-if="displayMode === 'edit'" @click.capture="playSound" title="Play" class="edit-buttons">Play</button>
     </div>
   </div>
   <div v-else class="sound-button-container" @drop="handleFileDrop(true, $event)" @dragover.prevent>
@@ -84,8 +80,7 @@ function editSound() {
   }
 }
 
-function playSound(forcePlay: boolean) {
-  if (!forcePlay && props.displayMode === 'edit') return
+function playSound() {
   numSoundsPlaying.value++
   soundStore.playSound(props.modelValue).then(() => {
     numSoundsPlaying.value--
@@ -129,11 +124,13 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   font-weight: bold;
 }
 
-.edit-buttons > svg {
-  width: 100%;
-  height: 100%;
-  fill: white;
-  stroke: var(--text-color);
+.button-group {
+  display: flex;
+  padding: 0.35rem 0 0 0;
+}
+
+.button-group > button {
+  text-wrap: nowrap;
 }
 
 .add-button > svg {
@@ -143,17 +140,28 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   fill: var(--text-color);
 }
 
-.button-group {
-  padding: 0.5rem 0 0 0;
+.edit-buttons {
+  border-radius: 0.313rem;
+  width: 50%;
 }
 
-.button-group > button {
-  text-wrap: nowrap;
+.edit-buttons:hover {
+  color: var(--button-color);
+}
+
+.edit-buttons:focus-visible {
+  outline: 1px solid var(--active-color);
 }
 
 .sound-button-container {
   display: flex;
   flex-direction: column;
+  border-radius: 0.25rem;
+}
+
+.sound-button:has(+ .button-group:hover),
+.sound-button:hover {
+  outline: 2px solid var(--active-color);
 }
 
 .sound-button {
@@ -165,6 +173,7 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   border-radius: 0.313rem;
   background-size: cover;
   background-position: center;
+  outline-offset: 0.125rem;
 }
 
 .sound-button.focusVisible:focus-visible {
