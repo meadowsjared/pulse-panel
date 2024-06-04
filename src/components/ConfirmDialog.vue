@@ -4,8 +4,8 @@
       <h2>{{ title }}</h2>
       <p class="message">{{ message }}</p>
       <div class="button-group">
-        <button class="dark danger" @click="confirm">{{ confirmText }}</button>
-        <button class="dark" @click="cancel">{{ cancelText }}</button>
+        <button class="light danger" @click="confirm">{{ confirmText }}</button>
+        <button class="light" @click="cancel">{{ cancelText }}</button>
       </div>
     </div>
   </div>
@@ -52,7 +52,7 @@ const cancel = () => {
 
 .dialog {
   opacity: 2;
-  background-color: var(--button-color);
+  background-color: var(--background-color);
   border: 1px solid #ccc;
   padding: 20px;
   max-width: 20rem;
@@ -83,10 +83,6 @@ const cancel = () => {
 
 .button-group > button {
   min-width: calc(7ch + 2rem);
-}
-
-button.dark {
-  padding: 0.5rem 1rem;
 }
 
 p {
