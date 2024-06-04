@@ -89,12 +89,17 @@ settingsStore.fetchAllOutputDevices()
 
 .menu {
   display: flex;
-  width: var(--menu-width);
+  width: calc(var(--menu-width) - var(--padding-width) * 2);
   align-items: center;
   gap: 1rem;
   color: var(--text-color);
   font-weight: bold;
 }
+.menu:focus-visible {
+  outline: 2px solid var(--active-color);
+  outline-offset: 4px;
+}
+
 .menu > svg {
   fill: var(--text-color);
 }

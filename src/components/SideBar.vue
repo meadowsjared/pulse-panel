@@ -31,6 +31,7 @@ const sideBarOpen = ref(false)
 .sideBar {
   --menu-width: 9rem;
   --menu-closed-width: 50px;
+  --padding-width: 0.5rem;
   width: var(--menu-closed-width);
   display: flex;
   flex-direction: column;
@@ -58,7 +59,7 @@ const sideBarOpen = ref(false)
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 0.5rem;
+  padding: var(--padding-width);
   gap: 1rem;
   height: 100%;
   justify-content: space-between;
@@ -75,6 +76,12 @@ const sideBarOpen = ref(false)
   display: flex;
   align-items: center;
   gap: 1rem;
+  width: var(--menu-width);
+}
+
+.button-four:focus-visible {
+  outline: 2px solid var(--active-color);
+  outline-offset: 4px;
 }
 
 .button-four > svg {
