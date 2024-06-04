@@ -193,12 +193,8 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   z-index: 1;
 }
 
-.sound-button.focusVisible:focus-visible {
-  outline: 2px solid var(--alt-link-color);
-}
-
-.sound-button:focus-visible {
-  outline: none;
+.sound-button.focusVisible {
+  outline: 2px solid var(--active-color);
 }
 
 .sound-button.has-image {
