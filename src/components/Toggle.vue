@@ -62,13 +62,13 @@ const toggle = () => {
   position: absolute;
   top: 15%;
   left: 0.25rem;
-  --animation-length: 0.5s;
+  --animation-length: 0.3s;
   --scale: 1.7;
   --stretch-width: 41px;
 }
 
 .toggle-switch.clicked {
-  animation: bounce-left var(--animation-length) forwards;
+  animation: stretch-left var(--animation-length) forwards;
 }
 
 .toggle-switch.toggled:not(.clicked) {
@@ -76,10 +76,10 @@ const toggle = () => {
 }
 
 .toggle-switch.clicked.toggled {
-  animation: bounce-right var(--animation-length) forwards;
+  animation: stretch-right var(--animation-length) forwards;
 }
 
-@keyframes bounce-right {
+@keyframes stretch-right {
   0% {
     transform: translate(0, 0);
     width: 20px;
@@ -98,7 +98,7 @@ const toggle = () => {
   }
 }
 
-@keyframes bounce-left {
+@keyframes stretch-left {
   0% {
     transform: translate(1.3rem, 0);
     width: 20px;

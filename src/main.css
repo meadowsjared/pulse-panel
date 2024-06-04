@@ -173,5 +173,5 @@ input[type="text"]:focus-visible {
 }
 
 .toggle:focus-visible {
-  outline: 1px solid var(--active-color);
+  outline: 2px solid var(--text-color);
 }
