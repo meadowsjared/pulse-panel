@@ -3,7 +3,7 @@
     <button class="toggle">
       <div :class="['toggle-switch', { toggled: modelValue, clicked }]"></div>
     </button>
-    <div class="toggleText">
+    <div class="toggleText" v-bind="$attrs">
       <slot />
     </div>
   </div>

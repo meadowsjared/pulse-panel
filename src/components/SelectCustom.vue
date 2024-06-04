@@ -6,7 +6,8 @@
       :class="{ focused: focused }"
       @click="toggleDropdown"
       @focus="handleFocus"
-      @blur="handleBlur">
+      @blur="handleBlur"
+      v-bind="$attrs">
       {{ localValue?.label ?? props.defaultText }}
       <inline-svg :src="SelectArrow" class="select-arrow" :class="{ flipped: isOpen }" />
     </button>
