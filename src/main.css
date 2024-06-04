@@ -75,11 +75,10 @@ button.danger.danger:active {
   background-color: rgba(255, 104, 104);
   font-weight: bold;
   color: var(--background-color);
-  outline: 1px solid var(--alt-bright-text-color);
 }
 
 button.danger.danger:focus-visible {
-  outline: 1px solid var(--active-color);
+  outline: 2px solid var(--active-color);
   box-shadow: none;
   border: none;
 }
@@ -96,6 +95,10 @@ button.light, button.dark {
   outline-offset: 2px;
 }
 
+button.dark:focus-visible, button.light:focus-visible {
+  outline: 2px solid var(--active-color);
+}
+
 /** light buttons styling */
 button.light {
   color: var(--button-text);
@@ -109,18 +112,12 @@ button.light > svg {
 
 button.light:hover {
   background-color: var(--alt-link-color);
-  outline: 1px solid var(--alt-bg-color);
   color: var(--alt-bright-text-color);
 }
 
 button.light:active {
   background-color: var(--active-color);
   color: var(--input-bg-color);
-  outline: 1px solid var(--alt-bg-color);
-}
-
-button.light:focus-visible {
-  outline: 2px solid var(--active-color);
 }
 
 /** dark buttons styling */
@@ -136,18 +133,12 @@ button.dark > svg {
 
 button.dark:hover {
   background-color: var(--alt-link-color);
-  outline: 1px solid var(--alt-bg-color);
   color: var(--alt-bright-text-color);
-}
-
-button.dark:focus-visible {
-  outline: 2px solid var(--active-color);
 }
 
 button.dark:active {
   background-color: var(--active-color);
   color: var(--alt-bright-text-color);
-  outline: 1px solid var(--alt-bg-color);
   cursor: pointer;
 }
 
