@@ -5,7 +5,7 @@
       <button
         ref="hotkeyButton"
         class="hotkey"
-        :class="{ dark: props.dark, light: !props.dark }"
+        :class="{ dark: props.dark, light: !props.dark, focused: settingsStore.recordingHotkey }"
         @keydown.prevent="handleKeyDown"
         @keyup.prevent="handleKeyUp"
         @click="settingsStore.recordingHotkey = true"
@@ -91,9 +91,14 @@ function resetHotkey() {
   min-height: 2rem;
 }
 
-/** we specifically want to highlight this button, even if it's clicked */
-.hotkey:focus {
-  outline: var(--alt-text-color) 2px solid;
+/** handle focusing if they keyboard-navigated */
+.hotkey:focus-visible {
+  outline: var(--active-color) 2px solid;
+}
+
+/** handle focusing if they clicked */
+.hotkey.focused {
+  outline: var(--active-color) 2px solid;
 }
 
 .parent-div {
