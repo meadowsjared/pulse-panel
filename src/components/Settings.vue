@@ -320,10 +320,6 @@ label {
   cursor: pointer;
   border-radius: 0.25rem;
 }
-label:focus-within {
-  outline: 1px dashed var(--active-color);
-  outline-offset: 2px;
-}
 
 input[type='checkbox'] {
   border-radius: 0.4rem;
