@@ -13,12 +13,12 @@ declare module 'vue' {
     Header: typeof import('./components/Header.vue')['default']
     Home: typeof import('./components/Home.vue')['default']
     HotkeyPicker: typeof import('./components/HotkeyPicker.vue')['default']
-    InputRangeNumber: typeof import('./components/InputRangeNumber.vue')['default']
-    InputTextNumber: typeof import('./components/InputTextNumber.vue')['default']
+    InputRangeNumber: typeof import('./components/BaseComponents/InputRangeNumber.vue')['default']
+    InputTextNumber: typeof import('./components/BaseComponents/InputTextNumber.vue')['default']
     Main: typeof import('./components/Main.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    SelectCustom: typeof import('./components/SelectCustom.vue')['default']
+    SelectCustom: typeof import('./components/BaseComponents/SelectCustom.vue')['default']
     Settings: typeof import('./components/Settings.vue')['default']
     SideBar: typeof import('./components/SideBar.vue')['default']
     Soundboard: typeof import('./components/Soundboard.vue')['default']
@@ -27,6 +27,6 @@ declare module 'vue' {
     SoundToolbar: typeof import('./components/SoundToolbar.vue')['default']
     SystemInformation: typeof import('./components/SystemInformation.vue')['default']
     TitleBar: typeof import('./components/TitleBar.vue')['default']
-    Toggle: typeof import('./components/Toggle.vue')['default']
+    Toggle: typeof import('./components/BaseComponents/Toggle.vue')['default']
   }
 }
