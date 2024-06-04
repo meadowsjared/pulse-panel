@@ -219,6 +219,11 @@ input[type='checkbox']:focus-visible {
   width: max-content;
 }
 
+.close-button:focus-visible {
+  outline: 2px solid var(--active-color);
+  outline-offset: 2px;
+}
+
 .close-button > svg,
 .play-sound-button > svg {
   fill: var(--text-color);
@@ -232,6 +237,7 @@ input[type='checkbox']:focus-visible {
   stroke: var(--active-color);
   stroke-width: 0.12rem;
   overflow: visible;
+  fill: var(--accent-text-color);
 }
 .play-sound-button:hover > svg {
   fill: var(--active-color);
