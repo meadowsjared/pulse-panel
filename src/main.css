@@ -93,15 +93,13 @@ button.light, button.dark {
   padding: 0.5rem;
   border-radius: 0.5rem;
   cursor: pointer;
+  outline-offset: 2px;
 }
 
 /** light buttons styling */
 button.light {
   color: var(--button-text);
   background-color: var(--button-color);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  outline-offset: 2px;
 }
 
 button.light > svg {
@@ -129,10 +127,6 @@ button.light:focus-visible {
 button.dark {
   color: var(--alt-bright-text-color);
   background-color: var(--background-color);
-  padding: 0.5rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  outline-offset: 2px;
 }
 
 button.dark > svg {
