@@ -101,6 +101,7 @@ button.light {
   background-color: var(--button-color);
   padding: 0.5rem;
   border-radius: 0.5rem;
+  outline-offset: 2px;
 }
 
 button.light > svg {
@@ -120,8 +121,8 @@ button.light:active {
   outline: 1px solid var(--alt-bg-color);
 }
 
-button.light:focus {
-  outline: 1px solid var(--active-color);
+button.light:focus-visible {
+  outline: 2px solid var(--active-color);
 }
 
 /** dark buttons styling */
@@ -131,6 +132,7 @@ button.dark {
   padding: 0.5rem;
   border-radius: 0.5rem;
   cursor: pointer;
+  outline-offset: 2px;
 }
 
 button.dark > svg {
@@ -144,8 +146,8 @@ button.dark:hover {
   color: var(--alt-bright-text-color);
 }
 
-button.dark:focus {
-  outline: 1px solid var(--active-color);
+button.dark:focus-visible {
+  outline: 2px solid var(--active-color);
 }
 
 button.dark:active {
