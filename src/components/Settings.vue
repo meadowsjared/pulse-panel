@@ -21,7 +21,7 @@
           v-model="outputDevices[i]"
           @change="optionSelected($event, i)"
           defaultText="Select an output device"
-          :options="audioOutputDevices.map(option => ({ label: option.label, value: option.deviceId }))" />
+          :options="settingsStore.allOutputDevices.map(option => ({ label: option.label, value: option.deviceId }))" />
         <button
           :class="{ playingAudio: soundStore.outputDeviceData[i]?.playingAudio }"
           class="play-sound-button light"
@@ -74,7 +74,6 @@ import { throttle } from 'lodash'
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
 const outputDevices = ref<(string | null)[]>([])
-const audioOutputDevices = ref<MediaDeviceInfo[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
@@ -140,9 +139,7 @@ watch(
 settingsStore.fetchStringArray('outputDevices').then(outputDevice => {
   outputDevices.value = outputDevice
 })
-settingsStore.getOutputDevices().then(devices => {
-  audioOutputDevices.value = devices
-})
+settingsStore.fetchAllOutputDevices() // fetch the audio output devices again, just in case it has changed
 settingsStore.fetchBooleanSetting('allowOverlappingSound').then(value => {
   allowOverlappingSound.value = value
 })

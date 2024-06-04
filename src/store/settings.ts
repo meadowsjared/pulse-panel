@@ -9,6 +9,7 @@ interface State {
   defaultVolume: number
   windowIsMaximized: boolean
   outputDevices: string[]
+  allOutputDevices: MediaDeviceInfo[]
   darkMode: boolean
   allowOverlappingSound: boolean
   sounds: Sound[]
@@ -40,6 +41,7 @@ export const useSettingsStore = defineStore('settings', {
     defaultVolume: NaN,
     windowIsMaximized: false,
     outputDevices: [],
+    allOutputDevices: [],
     darkMode: true,
     allowOverlappingSound: false,
     sounds: [],
@@ -115,9 +117,11 @@ export const useSettingsStore = defineStore('settings', {
       }
       return this.muted
     },
-    async getOutputDevices(): Promise<MediaDeviceInfo[]> {
+    async fetchAllOutputDevices(): Promise<MediaDeviceInfo[]> {
       const devices = await navigator.mediaDevices.enumerateDevices()
-      return devices.filter(device => device.kind === 'audiooutput')
+      const devicesFiltered = devices.filter(device => device.kind === 'audiooutput')
+      this.allOutputDevices = devicesFiltered
+      return devicesFiltered
     },
     async toggleDisplayMode(): Promise<void> {
       this.displayMode = this.displayMode === 'play' ? 'edit' : 'play'
