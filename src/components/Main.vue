@@ -10,10 +10,14 @@
   <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
     <side-bar>
       <div class="top-buttons">
-        <router-link to="/soundboard" title="Soundboard" class="menu">
+        <router-link
+          @keypress.space.prevent="navigateTo('/soundboard')"
+          to="/soundboard"
+          title="Soundboard"
+          class="menu">
           <inline-svg :src="Speaker" />Soundbar
         </router-link>
-        <router-link to="/settings" title="Settings" class="menu">
+        <router-link @keypress.space.prevent="navigateTo('/settings')" to="/settings" title="Settings" class="menu">
           <inline-svg :src="SettingsGear" />Settings
         </router-link>
       </div>
@@ -50,11 +54,20 @@ import StopIcon from '../assets/images/stop.svg'
 import Headphones from '../assets/images/headphones.svg'
 import { useSoundStore } from '../store/sound'
 import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp'
+import Router from '../router'
 
 const darkMode = ref(true)
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
 const appVersion = `v${window.electron?.versions.app}`
+
+/**
+ * Navigates to the given path
+ * @param path path to navigate to
+ */
+function navigateTo(path: string) {
+  Router.push(path)
+}
 
 function openLink() {
   window.electron?.openExternalLink('https://github.com/counsel-of-Big-Brains/pulse-panel')
