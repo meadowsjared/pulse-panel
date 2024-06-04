@@ -1,12 +1,14 @@
 <template>
   <div class="sideBar" :class="{ opened: sideBarOpen }">
-    <div class="menu">
+    <div :class="['menu', { active: hamburgerActive }]">
       <button
         class="button-four"
         aria-controls="primary-navigation"
         title="Show main menu"
         :aria-expanded="sideBarOpen"
         :data-state="sideBarOpen ? 'open' : 'closed'"
+        @keydown.enter.space.prevent="handleEnterKeyDown"
+        @keyup.space.enter="handleEnterKeyUp"
         @click="sideBarOpen = !sideBarOpen">
         <svg fill="var(--button-color)" class="hamburger" viewBox="10 10 80 80">
           <rect class="line middle" width="80" height="10" x="10" y="45" rx="5"></rect>
@@ -25,6 +27,16 @@
 import { ref } from 'vue'
 
 const sideBarOpen = ref(false)
+const hamburgerActive = ref(false)
+
+function handleEnterKeyDown() {
+  hamburgerActive.value = true
+}
+
+function handleEnterKeyUp() {
+  sideBarOpen.value = !sideBarOpen.value
+  hamburgerActive.value = false
+}
 </script>
 
 <style scoped>
@@ -48,6 +60,22 @@ const sideBarOpen = ref(false)
   padding: 0.5rem;
   font-weight: bold;
   overflow: hidden;
+}
+
+.menu > button:active,
+.menu:active {
+  color: var(--link-color);
+}
+
+.menu > button:active > svg,
+.menu:active > svg {
+  fill: var(--link-color);
+}
+.menu.active {
+  color: var(--link-color);
+}
+.menu.active > button > svg {
+  fill: var(--link-color);
 }
 
 .main {

@@ -7,32 +7,48 @@
       :title="appVersion"
       alt="pulse panel icon"
   /></title-bar>
-  <div class="e-nuxt-container" :class="{ darkMode: settingsStore.darkMode }">
+  <div :class="['e-nuxt-container', { darkMode: settingsStore.darkMode }]">
     <side-bar>
       <div class="top-buttons">
         <router-link
+          ref="routerLinks"
+          @keydown.space.enter="activateRouterLink(0, true)"
+          @keyup.space.enter="activateRouterLink(0, false)"
           @keypress.space.prevent="navigateTo('/soundboard')"
           to="/soundboard"
           title="Soundboard"
-          class="menu">
+          :class="['menu', { keyActive: routerLinkActive[0] }]">
           <inline-svg :src="Speaker" />Soundbar
         </router-link>
-        <router-link @keypress.space.prevent="navigateTo('/settings')" to="/settings" title="Settings" class="menu">
+        <router-link
+          ref="routerLinks"
+          @keydown.space.enter="activateRouterLink(1, true)"
+          @keyup.space.enter="activateRouterLink(1, false)"
+          @keypress.space.prevent="navigateTo('/settings')"
+          to="/settings"
+          title="Settings"
+          :class="['menu', { keyActive: routerLinkActive[1] }]">
           <inline-svg :src="SettingsGear" />Settings
         </router-link>
       </div>
       <div class="bottom-buttons">
         <button
-          class="menu stop-button"
-          :class="{ active: soundStore.playingSoundIds.length > 0 }"
+          :class="[
+            'menu',
+            'stop-button',
+            { active: soundStore.playingSoundIds.length > 0, keyActive: stopAllSoundsActive },
+          ]"
+          @keydown.space.enter.prevent="stopAllSoundsActive = true"
+          @keyup.space.enter="stopAllSoundsActive = false"
           @click="soundStore.stopAllSounds"
           title="Click to stop the current sound">
           <inline-svg :src="StopIcon" />
           Stop
         </button>
         <button
-          class="menu mute-button"
-          :class="{ muted: settingsStore.muted }"
+          :class="['menu', 'mute-button', { muted: settingsStore.muted, keyActive: muteButtonActive }]"
+          @keydown.space.enter.prevent="muteButtonActive = true"
+          @keyup.space.enter=";(muteButtonActive = false) || settingsStore.toggleMute()"
           @click="settingsStore.toggleMute"
           :title="settingsStore.muted ? 'Click to unmute soundboard' : 'Click to mute soundboard'">
           <inline-svg :src="Headphones" />
@@ -60,6 +76,14 @@ const darkMode = ref(true)
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
 const appVersion = `v${window.electron?.versions.app}`
+const routerLinks = ref<HTMLElement[]>([])
+const routerLinkActive = ref([false, false])
+const stopAllSoundsActive = ref(false)
+const muteButtonActive = ref(false)
+
+function activateRouterLink(index: number, activate: boolean) {
+  routerLinkActive.value[index] = activate
+}
 
 /**
  * Navigates to the given path
@@ -111,6 +135,18 @@ settingsStore.fetchAllOutputDevices()
 .menu:focus-visible {
   outline: 2px solid var(--active-color);
   outline-offset: 4px;
+}
+.menu:active {
+  color: var(--link-color);
+}
+.menu:active > svg {
+  fill: var(--link-color);
+}
+.menu.keyActive {
+  color: var(--link-color);
+}
+.menu.keyActive > svg {
+  fill: var(--link-color);
 }
 
 .menu > svg {
