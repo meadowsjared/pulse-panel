@@ -57,17 +57,19 @@
       @change="handleImageFileUpload"
       class="file-input hidden"
       accept="image/*" />
-    <button @click="imageFileInput?.click()" class="light">Browse Image...</button>
+    <button ref="browseImageButton" @click="imageFileInput?.click()" class="light">Browse Image...</button>
     <div class="flex flex-col text-black">
       <hotkey-picker
         v-model="props.modelValue.hotkey"
         @update:modelValue="updateHotkey"
+        @focus-next-element="focusNextElement"
+        @focus-prev-element="focusPrevElement"
         :dark="false"
         title="set a keybind for sound"
         >Keybind:</hotkey-picker
       >
     </div>
-    <button @click="emit('deleteSound', modelValue)" class="light danger">DELETE</button>
+    <button ref="deleteButton" @click="emit('deleteSound', modelValue)" class="light danger">DELETE</button>
   </div>
 </template>
 
@@ -97,6 +99,8 @@ const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
 const imageFileInput = ref<HTMLInputElement | null>(null)
 const audioFileInput = ref<HTMLInputElement | null>(null)
+const deleteButton = ref<HTMLButtonElement | null>(null)
+const browseImageButton = ref<HTMLButtonElement | null>(null)
 
 /**
  * Displays the volume as a percentage
@@ -129,6 +133,16 @@ watch(
     emit('update:modelValue', props.modelValue)
   }
 )
+
+function focusNextElement() {
+  // Focus the next element
+  deleteButton.value?.focus()
+}
+
+function focusPrevElement() {
+  // Focus the previous element
+  browseImageButton.value?.focus()
+}
 
 function updateHotkey(newKey: string[], oldKey: string[] | undefined) {
   if (oldKey) {

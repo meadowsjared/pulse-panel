@@ -7,8 +7,8 @@
         class="hotkey"
         :class="{ dark: props.dark, light: !props.dark }"
         @keydown.prevent="handleKeyDown"
-        @keyup.prevent="handleKeyUp($event)"
-        @focus="settingsStore.recordingHotkey = true"
+        @keyup.prevent="handleKeyUp"
+        @click="settingsStore.recordingHotkey = true"
         @blur="settingsStore.recordingHotkey = false"
         :title="props.title">
         {{ modelValue && modelValue?.length > 0 ? modelValue.join(' + ') : 'No Keybind Set' }}
@@ -40,17 +40,35 @@ const settingsStore = useSettingsStore()
 const hotkeyButton = ref<HTMLButtonElement | null>(null)
 const buttons = ref<string[]>([])
 
-const emit =
-  defineEmits<(event: 'update:modelValue', value: string[] | undefined, previousValue: string[] | undefined) => void>()
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: string[] | undefined, previousValue: string[] | undefined): void
+  (event: 'focusNextElement'): void
+  (event: 'focusPrevElement'): void
+}>()
 
 function handleKeyDown(event: KeyboardEvent) {
+  if (!settingsStore.recordingHotkey) {
+    // if we're not recording and the tab key is pressed, focus the next button
+    if (event.code === 'Tab') {
+      // check if the shift key is pressed
+      if (event.shiftKey) {
+        emit('focusPrevElement')
+      } else {
+        emit('focusNextElement')
+      }
+    }
+    return
+  }
   if (buttons.value.includes(event.code)) {
     return
   }
   buttons.value.push(event.code)
 }
 
-function handleKeyUp(event: KeyboardEvent) {
+function handleKeyUp() {
+  if (!settingsStore.recordingHotkey) {
+    return
+  }
   setTimeout(() => {
     emit('update:modelValue', buttons.value, props.modelValue)
     buttons.value = [] // reset the buttons
@@ -75,8 +93,7 @@ function resetHotkey() {
 
 /** we specifically want to highlight this button, even if it's clicked */
 .hotkey:focus {
-  outline: var(--alt-text-color) 1px solid;
-  border: var(--alt-text-color) 1px solid;
+  outline: var(--alt-text-color) 2px solid;
 }
 
 .parent-div {
