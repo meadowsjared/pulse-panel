@@ -6,18 +6,16 @@
     @dragover.prevent>
     <button
       ref="soundButton"
-      @blur="focusVisible = false"
       @click="playSound()"
       @auxclick="emit('editSound')"
-      @keydown="handleKeydown"
-      @focus="handleFocus"
+      @blur="focusVisible = false"
+      @keyup="handleKeyup"
       :class="[
         'sound-button',
         {
           'playing-sound': playingThisSound,
           'has-image': modelValue.imageKey,
           'edit-mode': props.displayMode === 'edit',
-          'cursor-default': props.displayMode === 'edit',
           'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
           focusVisible,
         },
@@ -30,7 +28,11 @@
     </div>
   </div>
   <div v-else class="sound-button-container" @drop="handleFileDrop(true, $event)" @dragover.prevent>
-    <button @click="addSound" class="sound-button add-button">
+    <button
+      @click="addSound"
+      @blur="focusVisible = false"
+      @keyup="handleKeyup"
+      :class="['sound-button add-button', { focusVisible }]">
       <inline-svg :src="Plus" />
     </button>
     <div :class="['button-group', { 'button-group-visible': displayMode === 'edit' }]" @click="addSound">
@@ -65,9 +67,9 @@ const emit = defineEmits<{
 
 const numSoundsPlaying = ref(0)
 /**
- * used to
- * 1. track if the button is focused by keyboard events
- * 2. prevent focus events from being triggered when the sound is playing
+ * used to manually handle the focus state of the button by:
+ * 1. tracking if the button is focused by keyboard events
+ * 2. preventing focus events from being triggered by the ptt_hotkey
  */
 const focusVisible = ref(false)
 const soundButton = ref<HTMLButtonElement | null>(null)
@@ -85,21 +87,23 @@ function editSound() {
 
 function playSound() {
   numSoundsPlaying.value++
-  soundStore.playSound(props.modelValue).then(() => {
+  soundStore.playSound(props.modelValue, null, null, undefined, true).then(() => {
     numSoundsPlaying.value--
   })
 }
 
-function handleKeydown() {
-  if (!playingThisSound.value) {
-    focusVisible.value = true
+/**
+ * Handles the keyup event
+ * The reason why we do this is to prevent the ptt_hotkey from accidentally triggering the soundButton to be focused
+ * @param event The keyup event
+ */
+function handleKeyup(event: KeyboardEvent) {
+  // if the soundStore is sending a ptt_hotkey and the keyup event is the ptt_hotkey, prevent the default action (which will focus it)
+  if (soundStore.sendingPttHotkey && settingsStore.ptt_hotkey.includes(event.code)) {
+    event.preventDefault()
+    return
   }
-}
-
-function handleFocus(event: FocusEvent) {
-  if (event.relatedTarget !== null) {
-    focusVisible.value = true
-  }
+  focusVisible.value = true
 }
 
 function addSound() {
