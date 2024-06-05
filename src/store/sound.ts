@@ -15,7 +15,7 @@ interface State {
   outputDeviceData: OutputDeviceProperties[]
   playingSoundIds: string[]
   currentSound: Sound | null
-  disabled: boolean
+  sendingPttHotkey: boolean
 }
 
 export const useSoundStore = defineStore('sound', {
@@ -29,7 +29,7 @@ export const useSoundStore = defineStore('sound', {
     ],
     playingSoundIds: [],
     currentSound: null,
-    disabled: false,
+    sendingPttHotkey: false,
   }),
   getters: {
     // if any sound is playing, this will be true
@@ -127,12 +127,12 @@ export const useSoundStore = defineStore('sound', {
       activeOutputDevices: string[] | null = null,
       selectedOutputDevices: (string | null)[] | null = null,
       preview: boolean = false,
-      preventDoubleTrigger = false
+      preventFalseKeyTrigger = false
     ): Promise<void> {
       // return a promise
       return new Promise(resolve => {
         const settingsStore = useSettingsStore()
-        if (settingsStore.recordingHotkey || this.disabled) return // if muted, don't play the sound
+        if (settingsStore.recordingHotkey) return // if muted, don't play the sound //  || this.sendingKey
         // console.debug('1 this.disabled = ', this.disabled)
         if (!activeOutputDevices) {
           activeOutputDevices = settingsStore.outputDevices
@@ -150,18 +150,20 @@ export const useSoundStore = defineStore('sound', {
         const audioFileId = audioFile?.id || chordAlert
         this.playingSoundIds.push(audioFileId)
 
-        if (preventDoubleTrigger) this.disabled = true
+        if (preventFalseKeyTrigger) this.sendingPttHotkey = true
         const handlePromiseAll = async (promiseAr: Promise<void>[]) => {
           await Promise.all(promiseAr)
-          if (preventDoubleTrigger) this.disabled = true
+          if (preventFalseKeyTrigger) this.sendingPttHotkey = true
           if (!preview) this._pttHotkeyPress(settingsStore, false)
           this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFileId)
-          setTimeout(() => (this.disabled = false), 100)
+          if (preventFalseKeyTrigger) {
+            setTimeout(() => (this.sendingPttHotkey = false), 100)
+          }
           resolve()
         }
         if (!preview) this._pttHotkeyPress(settingsStore, true)
-        if (preventDoubleTrigger) {
-          setTimeout(() => (this.disabled = false), 100)
+        if (preventFalseKeyTrigger) {
+          setTimeout(() => (this.sendingPttHotkey = false), 100)
         }
         const promiseAr = activeOutputDevices?.map(async (outputDeviceId: string, index: number) => {
           if (preview && index !== 0) return // only play the sound on the first device if previewing
