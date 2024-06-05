@@ -38,7 +38,11 @@
           :bigStep="5"
           v-model="volumeDisplay" />
         <label class="volume-label" for="volume-display">Volume:</label>
-        <button @click="soundStore.playSound(modelValue)" class="play-sound-button">
+        <button
+          @click="soundStore.playSound(modelValue, null, null, undefined, true)"
+          :class="['play-sound-button', { focusVisible }]"
+          @blur="focusVisible = false"
+          @keyup="handleKeyup">
           <inline-svg :src="PlayIcon" class="w-6 h-6" />
         </button>
         <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
@@ -101,6 +105,7 @@ const imageFileInput = ref<HTMLInputElement | null>(null)
 const audioFileInput = ref<HTMLInputElement | null>(null)
 const deleteButton = ref<HTMLButtonElement | null>(null)
 const browseImageButton = ref<HTMLButtonElement | null>(null)
+const focusVisible = ref(false)
 
 /**
  * Displays the volume as a percentage
@@ -133,6 +138,23 @@ watch(
     emit('update:modelValue', props.modelValue)
   }
 )
+
+/**
+ * Handles the keyup event
+ * The reason why we do this is to prevent the ptt_hotkey from accidentally triggering the soundButton to be focused
+ * @param event The keyup event
+ */
+function handleKeyup(event: KeyboardEvent) {
+  // if the soundStore is sending a ptt_hotkey and the keyup event is the ptt_hotkey, prevent the default action (which will focus it)
+  console.log('soundStore.sendingPttHotkey', soundStore.sendingPttHotkey)
+  if (soundStore.sendingPttHotkey && settingsStore.ptt_hotkey.includes(event.code)) {
+    console.log('prevented focus')
+    event.preventDefault()
+    return
+  }
+  console.log('allowed focused', event.code)
+  focusVisible.value = true
+}
 
 function focusNextElement() {
   // Focus the next element
@@ -233,7 +255,7 @@ input[type='checkbox']:focus-visible {
   fill: var(--button-color);
   stroke: none;
 }
-.play-sound-button:focus-visible > svg {
+.play-sound-button.focusVisible > svg {
   stroke: var(--active-color);
   stroke-width: 0.12rem;
   overflow: visible;
