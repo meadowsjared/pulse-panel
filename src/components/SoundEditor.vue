@@ -262,7 +262,10 @@ input[type='checkbox']:focus-visible {
   fill: var(--accent-text-color);
 }
 .play-sound-button:hover > svg {
-  fill: var(--active-color);
+  fill: var(--link-color);
+}
+.play-sound-button:active > svg {
+  fill: var(--accent-text-color);
 }
 
 .volume-display {
