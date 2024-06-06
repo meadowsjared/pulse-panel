@@ -113,6 +113,8 @@ const focusVisible = ref(false)
 const volumeDisplay = computed({
   get: () => Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100),
   set: (value: number) => {
+    value = Math.min(100, Math.max(0, Math.round(value)))
+    soundStore.setVolume(value / 100, props.modelValue.id)
     saveVolumeDebounced(value)
   },
 })
@@ -120,7 +122,15 @@ const volumeDisplay = computed({
 const saveVolumeDebounced = throttle((value: number) => {
   const newValue = Math.round(value) / 100
   if (props.modelValue.volume === newValue) return
-  props.modelValue.volume = newValue
+  // we don't need to handle this here, but if we don't, it will trigger once
+  // when it's set to the same number as the default volume,
+  // and then a second time when the volume is deleted,
+  // because no volume will turn into the default volume
+  if (newValue === settingsStore.defaultVolume) {
+    delete props.modelValue.volume
+  } else {
+    props.modelValue.volume = newValue
+  }
 }, 100)
 
 // Watch for changes to the name and update the modelValue
