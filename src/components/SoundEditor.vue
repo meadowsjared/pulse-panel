@@ -146,13 +146,10 @@ watch(
  */
 function handleKeyup(event: KeyboardEvent) {
   // if the soundStore is sending a ptt_hotkey and the keyup event is the ptt_hotkey, prevent the default action (which will focus it)
-  console.log('soundStore.sendingPttHotkey', soundStore.sendingPttHotkey)
   if (soundStore.sendingPttHotkey && settingsStore.ptt_hotkey.includes(event.code)) {
-    console.log('prevented focus')
     event.preventDefault()
     return
   }
-  console.log('allowed focused', event.code)
   focusVisible.value = true
 }
 
