@@ -7,7 +7,7 @@
           :data-sound-index="settingsStore.sounds.indexOf(sound)"
           :class="{ placeholder: sound.isPreview }"
           v-model="settingsStore.soundsFiltered[i]"
-          :draggable="settingsStore.displayMode === 'edit' && sound.name !== undefined"
+          :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
           :displayMode="settingsStore.displayMode"
           @dragstart="dragStart(sound, i)"
           @dragover="dragOver(sound)"
@@ -28,7 +28,7 @@
   <confirm-dialog
     v-model:showDialog="dialogOpen"
     title="Are you sure?"
-    :message="`that you want to delete the '${soundToDelete?.name}' sound?`"
+    :message="`that you want to delete the '${soundToDelete?.title}' sound?`"
     @confirm="deleteSoundConfirmed"
     confirmText="Yes"
     cancelText="No" />
@@ -97,7 +97,7 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
     const promAr = combinedFiles.map(async file => {
       const newSound: Sound = {
         id: v4(),
-        name: stripFileExtension(file.audioFile.name),
+        title: stripFileExtension(file.audioFile.name),
       }
       await handleSoundFileDrop(file.audioFile, newSound, undefined)
       if (file.imageFile) {
@@ -141,7 +141,7 @@ async function handleSoundFileDrop(file: File, newSound: Sound, oldAudioKey: str
   // update the audioUrl and path
   newSound.audioUrl = fileUrl
   newSound.audioKey = fileKey
-  newSound.name = stripFileExtension(file.name)
+  newSound.title = stripFileExtension(file.name)
 }
 
 /**
@@ -215,7 +215,7 @@ function dragOver(pSound: Sound) {
 }
 
 function updateSound() {
-  if (settingsStore.sounds[settingsStore.sounds.length - 1].name !== undefined) {
+  if (settingsStore.sounds[settingsStore.sounds.length - 1].title !== undefined) {
     settingsStore.sounds.push({
       id: v4(),
     })
@@ -258,7 +258,7 @@ function editSound(pSound: Sound) {
 function handleSoundsUpdate(pSound: Sound) {
   settingsStore.sounds[settingsStore.sounds.findIndex(sound => sound.id === pSound.id)] = pSound
   // add a new sound if sound is null
-  if (settingsStore.sounds[settingsStore.sounds.length - 1].name !== undefined) {
+  if (settingsStore.sounds[settingsStore.sounds.length - 1].title !== undefined) {
     settingsStore.sounds.push({
       id: v4(),
     })
@@ -270,7 +270,7 @@ function stripAudioUrls(pSounds: Sound[]) {
   return pSounds.map(sound => {
     return {
       id: sound.id,
-      name: sound.name,
+      name: sound.title,
       hotkey: sound.hotkey,
       hideName: sound.hideName,
       audioKey: sound.audioKey,

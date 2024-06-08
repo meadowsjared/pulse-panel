@@ -13,7 +13,7 @@
     </button>
     <div class="input-group">
       <label for="name">Name:</label>
-      <input type="text" v-model="props.modelValue.name" id="name" />
+      <input type="text" v-model="props.modelValue.title" id="name" />
       <div class="hide-name-checkbox-group">
         <input title="hide name on button" type="checkbox" v-model="props.modelValue.hideName" id="hideName" /><label
           for="hideName"
@@ -135,7 +135,7 @@ const saveVolumeDebounced = throttle((value: number) => {
 
 // Watch for changes to the name and update the modelValue
 watch(
-  () => [props.modelValue.name, props.modelValue.volume, props.modelValue.hideName, props.modelValue.hotkey],
+  () => [props.modelValue.title, props.modelValue.volume, props.modelValue.hideName, props.modelValue.hotkey],
   () => {
     // if hideName is false and modelValue has the property, delete it
     if (!props.modelValue.hideName && props.modelValue.hasOwnProperty('hideName')) {
@@ -190,7 +190,7 @@ async function handleAudioFileUpload(event: Event) {
   if (!target.files || !target.files[0]) return
   const file = target.files[0]
   const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file)
-  props.modelValue.name = stripFileExtension(file.name)
+  props.modelValue.title = stripFileExtension(file.name)
   props.modelValue.audioKey = fileKey
   props.modelValue.audioUrl = fileUrl
   emit('update:modelValue', props.modelValue)

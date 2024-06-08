@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="modelValue?.name !== undefined"
+    v-if="modelValue?.title !== undefined"
     class="sound-button-container"
     @drop="handleFileDrop(false, $event)"
     @dragover.prevent>
@@ -21,7 +21,7 @@
         },
       ]"
       :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
-      <span v-if="!props.modelValue.hideName" class="button-name">{{ modelValue.name || 'New Sound' }}</span>
+      <span v-if="!props.modelValue.hideName" class="button-name">{{ modelValue.title || 'New Sound' }}</span>
     </button>
     <div :class="['button-group', { 'button-group-visible': displayMode === 'edit' }]" @click.capture="editSound">
       <button title="Edit" class="edit-buttons" :tabindex="displayMode !== 'edit' ? -1 : 0">Edit Sound</button>
@@ -108,7 +108,7 @@ function handleKeyup(event: KeyboardEvent) {
 
 function addSound() {
   const newSound: Sound = {
-    name: '',
+    title: '',
     id: props.modelValue?.id,
   }
   emit('update:modelValue', newSound)
