@@ -50,9 +50,9 @@ export const useSoundStore = defineStore('sound', {
           this.outputDeviceData[index].currentAudio.forEach(audio => {
             audio.pause()
             audio.currentTime = 0
-            this.outputDeviceData[index].numSoundsPlaying--
-            this.outputDeviceData[index].playingAudio = false
           })
+          this.outputDeviceData[index].numSoundsPlaying--
+          this.outputDeviceData[index].playingAudio = false
         }
       })
       this.currentSound = null
@@ -148,6 +148,11 @@ export const useSoundStore = defineStore('sound', {
           (deviceId): deviceId is string => deviceId !== null
         )
         const audioFileId = audioFile?.id || chordAlert
+        // if we don't allow overlapping sounds, and there is a sound playing, remove it
+        if (settingsStore.allowOverlappingSound === false && this.playingSoundIds.length > 0) {
+          this.playingSoundIds = []
+          // note: we actually stop the sounds playing in _playSoundToDevice for each device
+        }
         this.playingSoundIds.push(audioFileId)
 
         if (preventFalseKeyTrigger) this.sendingPttHotkey = true
@@ -159,12 +164,14 @@ export const useSoundStore = defineStore('sound', {
           if (preventFalseKeyTrigger) {
             setTimeout(() => (this.sendingPttHotkey = false), 100)
           }
+          this.currentSound = null
           resolve()
         }
         if (!preview) this._pttHotkeyPress(settingsStore, true)
         if (preventFalseKeyTrigger) {
           setTimeout(() => (this.sendingPttHotkey = false), 100)
         }
+        this.currentSound = audioFile
         const promiseAr = activeOutputDevices?.map(async (outputDeviceId: string, index: number) => {
           if (preview && index !== 0) return // only play the sound on the first device if previewing
           await this._playSoundToDevice(
@@ -207,13 +214,10 @@ export const useSoundStore = defineStore('sound', {
         outputDeviceData.currentAudio.forEach(audio => {
           audio.pause()
           audio.currentTime = 0
-          outputDeviceData.numSoundsPlaying--
-          outputDeviceData.playingAudio = false
         })
+        outputDeviceData.numSoundsPlaying--
+        outputDeviceData.playingAudio = false
       }
-      // this._pttHotkeyPress(false) // not necessary since we're playing a new sound clip
-      this.playingSoundIds = this.playingSoundIds.filter(id => id !== this.currentSound?.id)
-      this.currentSound = null
 
       if (audioFile?.audioUrl === undefined && audioFile?.audioKey !== undefined) {
         const audioUrl = await settingsStore.getFile(audioFile.audioKey)
@@ -240,10 +244,8 @@ export const useSoundStore = defineStore('sound', {
           outputDeviceData.playingAudio = true
         }
         outputDeviceData.numSoundsPlaying++
-        this.currentSound = audioFile
         newAudio.play()
         newAudio.onended = () => {
-          this.currentSound = null
           newAudio?.remove()
           outputDeviceData.currentAudio = outputDeviceData.currentAudio.filter(audio => audio !== newAudio)
           outputDeviceData.numSoundsPlaying--
