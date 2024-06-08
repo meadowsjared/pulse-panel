@@ -270,9 +270,9 @@ function stripAudioUrls(pSounds: Sound[]) {
   return pSounds.map(sound => {
     return {
       id: sound.id,
-      name: sound.title,
+      title: sound.title,
       hotkey: sound.hotkey,
-      hideName: sound.hideName,
+      hideTitle: sound.hideTitle,
       audioKey: sound.audioKey,
       imageKey: sound.imageKey,
       volume: sound.volume,

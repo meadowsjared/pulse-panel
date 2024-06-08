@@ -135,11 +135,11 @@ const saveVolumeDebounced = throttle((value: number) => {
 
 // Watch for changes to the name and update the modelValue
 watch(
-  () => [props.modelValue.title, props.modelValue.volume, props.modelValue.hideName, props.modelValue.hotkey],
+  () => [props.modelValue.title, props.modelValue.volume, props.modelValue.hideTitle, props.modelValue.hotkey],
   () => {
     // if hideName is false and modelValue has the property, delete it
-    if (!props.modelValue.hideName && props.modelValue.hasOwnProperty('hideName')) {
-      delete props.modelValue.hideName
+    if (!props.modelValue.hideTitle && props.modelValue.hasOwnProperty('hideName')) {
+      delete props.modelValue.hideTitle
     }
     volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100)
     if ((props.modelValue.volume ?? settingsStore.defaultVolume) === settingsStore.defaultVolume) {

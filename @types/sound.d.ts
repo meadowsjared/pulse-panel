@@ -1,7 +1,7 @@
 export interface Sound {
   id: string
   title?: string
-  hideName?: boolean
+  hideTitle?: boolean
   hotkey?: string[]
   audioUrl?: string
   audioKey?: string
