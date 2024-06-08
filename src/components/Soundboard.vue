@@ -271,8 +271,9 @@ function stripAudioUrls(pSounds: Sound[]) {
     return {
       id: sound.id,
       title: sound.title,
-      hotkey: sound.hotkey,
       hideTitle: sound.hideTitle,
+      tags: sound.tags,
+      hotkey: sound.hotkey,
       audioKey: sound.audioKey,
       imageKey: sound.imageKey,
       volume: sound.volume,

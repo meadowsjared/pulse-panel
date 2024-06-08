@@ -14,12 +14,13 @@
     <div class="input-group">
       <label for="title">Sound title:</label>
       <input type="text" v-model="props.modelValue.title" id="title" />
-      <div class="hide-title-checkbox-group">
-        <input title="hide title on button" type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label
-          for="hideTitle"
+      <div class="hide-title-checkbox-group" title="hide title on button">
+        <input type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label for="hideTitle"
           >Hide title</label
         >
       </div>
+      <label for="tags">Tags:</label>
+      <input type="text" v-model="props.modelValue.tags" id="tags" />
     </div>
     <input
       type="file"
@@ -335,7 +336,7 @@ input[type='checkbox']:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin: 0.5rem 0;
 }
 
 .preview-button {
