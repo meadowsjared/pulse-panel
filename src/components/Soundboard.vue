@@ -66,9 +66,8 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
   const files: FileList | null = event.dataTransfer?.files ?? null
   if (!files) return
   // iterate the FileList and handle the files
-  const newSound: Sound = {
-    ...sound,
-  }
+  const oldImageKey = sound.imageKey
+  const oldAudioKey = sound.audioKey
 
   const fileArray = Array.from(files)
 
@@ -100,9 +99,9 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
         id: v4(),
         name: stripFileExtension(file.audioFile.name),
       }
-      await handleSoundFileDrop(file.audioFile, newSound, newSound)
+      await handleSoundFileDrop(file.audioFile, newSound, undefined)
       if (file.imageFile) {
-        await handleImageFileDrop(file.imageFile, newSound, newSound)
+        await handleImageFileDrop(file.imageFile, newSound, undefined)
       }
       return newSound
     })
@@ -118,16 +117,15 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
     let imageModified = false
     const promAr = fileArray.map(async file => {
       if (!audioModified && file.type.includes('audio')) {
-        await handleSoundFileDrop(file, newSound, sound)
+        await handleSoundFileDrop(file, sound, oldAudioKey)
         audioModified = true
       } else if (!imageModified && file.type.includes('image')) {
-        await handleImageFileDrop(file, newSound, sound)
+        await handleImageFileDrop(file, sound, oldImageKey)
         imageModified = true
       }
     })
     await Promise.all(promAr)
     if (audioModified || imageModified) {
-      settingsStore.sounds[settingsStore.sounds.findIndex(s => s.id === sound.id)] = newSound
       updateSound()
     }
   }
@@ -137,9 +135,9 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
  * Handles the sound file drop event
  * @param file The file that was dropped
  */
-async function handleSoundFileDrop(file: File, newSound: Sound, oldSound: Sound) {
+async function handleSoundFileDrop(file: File, newSound: Sound, oldAudioKey: string | undefined) {
   // if the sound is not new, then they are updating an existing sound
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldSound.audioKey, file)
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldAudioKey, file)
   // update the audioUrl and path
   newSound.audioUrl = fileUrl
   newSound.audioKey = fileKey
@@ -150,9 +148,9 @@ async function handleSoundFileDrop(file: File, newSound: Sound, oldSound: Sound)
  * Handles the image file drop event
  * @param file The file that was dropped
  */
-async function handleImageFileDrop(file: File, newSound: Sound, oldSound: Sound) {
+async function handleImageFileDrop(file: File, newSound: Sound, oldImageKey: string | undefined) {
   const settingsStore = useSettingsStore()
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldSound.imageKey, file)
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldImageKey, file)
   newSound.imageUrl = fileUrl
   newSound.imageKey = fileKey
 }
