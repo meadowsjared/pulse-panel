@@ -12,12 +12,12 @@
       <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
     </button>
     <div class="input-group">
-      <label for="name">Name:</label>
-      <input type="text" v-model="props.modelValue.title" id="name" />
-      <div class="hide-name-checkbox-group">
-        <input title="hide name on button" type="checkbox" v-model="props.modelValue.hideName" id="hideName" /><label
-          for="hideName"
-          >Hide Name</label
+      <label for="title">Sound title:</label>
+      <input type="text" v-model="props.modelValue.title" id="title" />
+      <div class="hide-title-checkbox-group">
+        <input title="hide title on button" type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label
+          for="hideTitle"
+          >Hide title</label
         >
       </div>
     </div>
@@ -133,12 +133,12 @@ const saveVolumeDebounced = throttle((value: number) => {
   }
 }, 100)
 
-// Watch for changes to the name and update the modelValue
+// Watch for changes to the title and update the modelValue
 watch(
   () => [props.modelValue.title, props.modelValue.volume, props.modelValue.hideTitle, props.modelValue.hotkey],
   () => {
-    // if hideName is false and modelValue has the property, delete it
-    if (!props.modelValue.hideTitle && props.modelValue.hasOwnProperty('hideName')) {
+    // if hideTitle is false and modelValue has the property, delete it
+    if (!props.modelValue.hideTitle && props.modelValue.hasOwnProperty('hideTitle')) {
       delete props.modelValue.hideTitle
     }
     volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100)
@@ -223,7 +223,7 @@ function close() {
 </script>
 
 <style scoped>
-.hide-name-checkbox-group > input[type='checkbox']:checked {
+.hide-title-checkbox-group > input[type='checkbox']:checked {
   background-color: var(--button-color);
 }
 input[type='checkbox'] {
@@ -331,7 +331,7 @@ input[type='checkbox']:focus-visible {
   width: 100%;
 }
 
-.hide-name-checkbox-group {
+.hide-title-checkbox-group {
   display: flex;
   align-items: center;
   gap: 0.5rem;
