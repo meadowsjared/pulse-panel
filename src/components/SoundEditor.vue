@@ -13,14 +13,18 @@
     </button>
     <div class="input-group">
       <label for="title">Sound title:</label>
-      <input type="text" v-model="props.modelValue.title" id="title" />
+      <input type="text" v-model="props.modelValue.title" id="title" placeholder="Enter text for the button" />
       <div class="hide-title-checkbox-group" title="hide title on button">
         <input type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label for="hideTitle"
           >Hide title</label
         >
       </div>
-      <label for="tags">Tags:</label>
-      <input type="text" v-model="props.modelValue.tags" id="tags" />
+      <label for="tags" @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
+      <tag-input
+        ref="tagInputRef"
+        id="tags"
+        v-model="props.modelValue.tags"
+        placeholder="Tags are used for searching" />
     </div>
     <input
       type="file"
@@ -88,6 +92,7 @@ import { computed, ref, watch } from 'vue'
 import PlayIcon from '../assets/images/play.svg'
 import { useSoundStore } from '../store/sound'
 import { stripFileExtension } from '../utils/utils'
+import { TagInputRef } from './BaseComponents/TagInputTypes'
 import { throttle } from 'lodash'
 
 const props = defineProps<{
@@ -106,6 +111,7 @@ const imageFileInput = ref<HTMLInputElement | null>(null)
 const audioFileInput = ref<HTMLInputElement | null>(null)
 const deleteButton = ref<HTMLButtonElement | null>(null)
 const browseImageButton = ref<HTMLButtonElement | null>(null)
+const tagInputRef = ref<TagInputRef | null>(null)
 const focusVisible = ref(false)
 
 /**
@@ -136,7 +142,13 @@ const saveVolumeDebounced = throttle((value: number) => {
 
 // Watch for changes to the title and update the modelValue
 watch(
-  () => [props.modelValue.title, props.modelValue.volume, props.modelValue.hideTitle, props.modelValue.hotkey],
+  () => [
+    props.modelValue.title,
+    props.modelValue.volume,
+    props.modelValue.hideTitle,
+    props.modelValue.hotkey,
+    props.modelValue.tags,
+  ],
   () => {
     // if hideTitle is false and modelValue has the property, delete it
     if (!props.modelValue.hideTitle && props.modelValue.hasOwnProperty('hideTitle')) {
@@ -145,6 +157,9 @@ watch(
     volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100)
     if ((props.modelValue.volume ?? settingsStore.defaultVolume) === settingsStore.defaultVolume) {
       delete props.modelValue.volume
+    }
+    if (props.modelValue.tags?.length === 0) {
+      delete props.modelValue.tags
     }
     emit('update:modelValue', props.modelValue)
   }
