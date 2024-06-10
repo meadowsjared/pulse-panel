@@ -32,6 +32,7 @@
   --button-accent-color: #a3a3a3;
   --button-text: #f2f2f2;
   --text-color: #c0c0c0;
+  --text-placeholder-color: #6C7280;
   --active-color: #23a459;
   --link-color: #42b983;
   --accent-text-color: #abffab;
@@ -142,7 +143,7 @@ button.dark:active {
   cursor: pointer;
 }
 
-input[type="text"] {
+input[type="text"], .tag-input {
   background-color: var(--input-bg-color);
   color: var(--text-color);
   border-radius: 0.5rem;
@@ -153,8 +154,8 @@ input[type="text"] {
   background: var(--active-color);
 }
 
-input[type="text"]:focus,
-input[type="text"]:focus-visible {
+input[type="text"]:focus, .tag-input:focus,
+input[type="text"]:focus-visible, .tag-input:focus-visible {
   --tw-ring-color: none;
   outline: 1px solid var(--active-color);
 }

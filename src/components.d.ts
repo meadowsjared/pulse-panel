@@ -26,6 +26,7 @@ declare module 'vue' {
     SoundEditor: typeof import('./components/SoundEditor.vue')['default']
     SoundToolbar: typeof import('./components/SoundToolbar.vue')['default']
     SystemInformation: typeof import('./components/SystemInformation.vue')['default']
+    TagInput: typeof import('./components/BaseComponents/TagInput.vue')['default']
     TitleBar: typeof import('./components/TitleBar.vue')['default']
     Toggle: typeof import('./components/BaseComponents/Toggle.vue')['default']
   }
