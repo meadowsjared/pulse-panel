@@ -184,7 +184,7 @@ export const useSettingsStore = defineStore('settings', {
      */
     async saveStringArray(key: ArraySettings, value: string[]): Promise<boolean> {
       const electron = window.electron
-      await electron?.saveSetting?.(key, JSON.stringify(value))
+      await electron?.saveSetting?.(key, value)
       this[key] = value
       return true
     },
@@ -198,16 +198,16 @@ export const useSettingsStore = defineStore('settings', {
       const soundStore = useSoundStore()
       const electron = window.electron
       const returnedArray = await electron?.readSetting?.(key)
-      if (returnedArray === undefined) {
+      if (returnedArray === undefined || !Array.isArray(returnedArray)) {
         if (key === 'outputDevices') {
           const devices = await navigator.mediaDevices.enumerateDevices()
           const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')
           defaultValue = [audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default']
         }
-        await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
+        await electron?.saveSetting?.(key, defaultValue)
         this[key] = defaultValue ?? []
-      } else if (typeof returnedArray === 'string') {
-        this[key] = JSON.parse(returnedArray)
+      } else {
+        this[key] = returnedArray
       }
       if (key === 'outputDevices') {
         soundStore.populatePlayingAudio(this[key].length)
