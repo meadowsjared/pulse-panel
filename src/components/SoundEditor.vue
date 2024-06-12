@@ -55,12 +55,11 @@
         <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
       </div>
     </div>
-    <div
-      :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}"
-      class="image w-full aspect-square relative mt-4">
+    <div class="relative">
       <button @click="removeImage" class="remove-image-button absolute top-2 right-2 w-8 h-8 bg-white">
         <inline-svg :src="Plus" class="w-full h-full rotate-45" />
       </button>
+      <img :src="modelValue.imageUrl" alt="preview button" class="image" />
     </div>
     <input
       type="file"
@@ -324,8 +323,8 @@ input[type='checkbox']:focus-visible {
 }
 
 .image {
-  background-position: center;
-  background-size: cover;
+  object-fit: cover;
+  aspect-ratio: 1 / 1;
 }
 
 .remove-image-button {
