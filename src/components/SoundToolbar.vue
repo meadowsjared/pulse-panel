@@ -60,6 +60,8 @@ button.light {
   justify-content: space-between;
   align-items: center;
   background-color: var(--top-toolbar-color);
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .toggle-group.displayMode {

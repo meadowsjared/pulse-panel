@@ -112,6 +112,7 @@ function resetHotkey() {
 .button-group {
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .button-group.dark {
