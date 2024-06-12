@@ -13,73 +13,75 @@
         <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
       </button>
     </div>
-    <div class="input-group">
-      <label for="title">Sound title:</label>
-      <input type="text" v-model="props.modelValue.title" id="title" placeholder="Enter text for the button" />
-      <div class="hide-title-checkbox-group" title="hide title on button">
-        <input type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label for="hideTitle"
-          >Hide title</label
+    <div class="sound-properties">
+      <div class="input-group">
+        <label for="title">Sound title:</label>
+        <input type="text" v-model="props.modelValue.title" id="title" placeholder="Enter text for the button" />
+        <div class="hide-title-checkbox-group" title="hide title on button">
+          <input type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label for="hideTitle"
+            >Hide title</label
+          >
+        </div>
+        <label for="tags" @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
+        <tag-input
+          ref="tagInputRef"
+          id="tags"
+          v-model="props.modelValue.tags"
+          placeholder="Tags are used for searching" />
+      </div>
+      <input
+        type="file"
+        ref="audioFileInput"
+        @change="handleAudioFileUpload"
+        class="file-input hidden"
+        accept="audio/*" />
+      <button @click="audioFileInput?.click()" class="light">Browse Audio...</button>
+      <div class="input-group">
+        <div class="volume-control-container">
+          <input-text-number
+            id="volume-display"
+            class="volume-display"
+            :min="0"
+            :max="100"
+            :bigStep="5"
+            v-model="volumeDisplay" />
+          <label class="volume-label" for="volume-display">Volume:</label>
+          <button
+            @click="soundStore.playSound(modelValue, null, null, undefined, true)"
+            :class="['play-sound-button', { focusVisible }]"
+            @blur="focusVisible = false"
+            @keyup="handleKeyup">
+            <inline-svg :src="PlayIcon" class="w-6 h-6" />
+          </button>
+          <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
+        </div>
+      </div>
+      <div class="relative">
+        <button @click="removeImage" class="remove-image-button absolute top-2 right-2 w-8 h-8 bg-white">
+          <inline-svg :src="Plus" alt="remove image" class="w-full h-full rotate-45" />
+        </button>
+        <img :src="modelValue.imageUrl" alt="preview button" class="image" />
+      </div>
+      <input
+        type="file"
+        ref="imageFileInput"
+        @change="handleImageFileUpload"
+        class="file-input hidden"
+        accept="image/*" />
+      <button ref="browseImageButton" @click="imageFileInput?.click()" class="light">Browse Image...</button>
+      <div class="flex flex-col text-black">
+        <hotkey-picker
+          v-model="props.modelValue.hotkey"
+          @update:modelValue="updateHotkey"
+          @focus-next-element="focusNextElement"
+          @focus-prev-element="focusPrevElement"
+          :dark="false"
+          title="set a keybind for sound"
+          >Keybind:</hotkey-picker
         >
       </div>
-      <label for="tags" @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
-      <tag-input
-        ref="tagInputRef"
-        id="tags"
-        v-model="props.modelValue.tags"
-        placeholder="Tags are used for searching" />
+      <button ref="deleteButton" @click="emit('deleteSound', modelValue)" class="light danger">DELETE</button>
     </div>
-    <input
-      type="file"
-      ref="audioFileInput"
-      @change="handleAudioFileUpload"
-      class="file-input hidden"
-      accept="audio/*" />
-    <button @click="audioFileInput?.click()" class="light">Browse Audio...</button>
-    <div class="input-group">
-      <div class="volume-control-container">
-        <input-text-number
-          id="volume-display"
-          class="volume-display"
-          :min="0"
-          :max="100"
-          :bigStep="5"
-          v-model="volumeDisplay" />
-        <label class="volume-label" for="volume-display">Volume:</label>
-        <button
-          @click="soundStore.playSound(modelValue, null, null, undefined, true)"
-          :class="['play-sound-button', { focusVisible }]"
-          @blur="focusVisible = false"
-          @keyup="handleKeyup">
-          <inline-svg :src="PlayIcon" class="w-6 h-6" />
-        </button>
-        <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
-      </div>
-    </div>
-    <div class="relative">
-      <button @click="removeImage" class="remove-image-button absolute top-2 right-2 w-8 h-8 bg-white">
-        <inline-svg :src="Plus" class="w-full h-full rotate-45" />
-      </button>
-      <img :src="modelValue.imageUrl" alt="preview button" class="image" />
-    </div>
-    <input
-      type="file"
-      ref="imageFileInput"
-      @change="handleImageFileUpload"
-      class="file-input hidden"
-      accept="image/*" />
-    <button ref="browseImageButton" @click="imageFileInput?.click()" class="light">Browse Image...</button>
-    <div class="flex flex-col text-black">
-      <hotkey-picker
-        v-model="props.modelValue.hotkey"
-        @update:modelValue="updateHotkey"
-        @focus-next-element="focusNextElement"
-        @focus-prev-element="focusPrevElement"
-        :dark="false"
-        title="set a keybind for sound"
-        >Keybind:</hotkey-picker
-      >
-    </div>
-    <button ref="deleteButton" @click="emit('deleteSound', modelValue)" class="light danger">DELETE</button>
   </div>
 </template>
 
@@ -240,6 +242,22 @@ function close() {
 </script>
 
 <style scoped>
+.title-bar {
+  position: sticky;
+  top: 0;
+  background: var(--top-toolbar-color);
+  padding: 0.75rem 1rem;
+  z-index: 1;
+  gap: 0.5rem;
+}
+
+.sound-properties {
+  padding: 0.5rem 1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .hide-title-checkbox-group > input[type='checkbox']:checked {
   background-color: var(--button-color);
 }
@@ -313,13 +331,6 @@ input[type='checkbox']:focus-visible {
   grid-area: 2 / 2;
   width: 100%;
   cursor: pointer;
-}
-
-.edit-dialog {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  position: relative;
 }
 
 .image {
