@@ -56,7 +56,7 @@
           <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
         </div>
       </div>
-      <div class="relative">
+      <div v-if="modelValue.imageUrl" class="relative">
         <button @click="removeImage" class="remove-image-button absolute top-2 right-2 w-8 h-8 bg-white">
           <inline-svg :src="Plus" alt="remove image" class="w-full h-full rotate-45" />
         </button>
@@ -335,6 +335,7 @@ input[type='checkbox']:focus-visible {
 
 .image {
   object-fit: cover;
+  width: 100%;
   aspect-ratio: 1 / 1;
 }
 
