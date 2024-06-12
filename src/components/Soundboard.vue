@@ -19,12 +19,14 @@
       </template>
     </div>
   </div>
-  <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
-    <SoundEditor
-      v-model="settingsStore.currentEditingSound"
-      @update:modelValue="updateSound"
-      @deleteSound="deleteSound($event)" />
-  </div>
+  <Transition name="slide-right">
+    <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
+      <SoundEditor
+        v-model="settingsStore.currentEditingSound"
+        @update:modelValue="updateSound"
+        @deleteSound="deleteSound($event)" />
+    </div>
+  </Transition>
   <confirm-dialog
     v-model:showDialog="dialogOpen"
     title="Are you sure?"
@@ -302,16 +304,31 @@ function stripAudioUrls(pSounds: Sound[]) {
   overflow: auto;
 }
 
+.placeholder {
+  opacity: 50%;
+}
+
 .rightSideBar {
   width: 300px;
-  height: 100%;
+  min-width: 208px;
+  overflow: hidden;
   background: var(--alt-bg-color);
-  padding: 1rem;
+}
+
+.rightSideBar > .edit-dialog {
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-.placeholder {
-  opacity: 50%;
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+.slide-right-enter-from,
+.slide-right-leave-to {
+  width: 0;
 }
 </style>
