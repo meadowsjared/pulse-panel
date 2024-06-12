@@ -1,16 +1,18 @@
 <template>
   <div class="edit-dialog">
-    <button
-      @click="soundStore.playSound(modelValue, null, null, true)"
-      title="preview sound"
-      :class="{ 'playing-sound': playingThisSound }"
-      class="light preview-button absolute left-0 top-0">
-      <inline-svg class="w-8 h-8" :src="Listen" />
-    </button>
-    <h1>Edit Sound</h1>
-    <button @click="close" class="close-button absolute right-0 top-0">
-      <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
-    </button>
+    <div class="title-bar flex justify-between">
+      <button
+        @click="soundStore.playSound(modelValue, null, null, true)"
+        title="preview sound"
+        :class="{ 'playing-sound': playingThisSound }"
+        class="light preview-button">
+        <inline-svg class="w-8 h-8" :src="Listen" />
+      </button>
+      <h1>Edit Sound</h1>
+      <button @click="close" class="close-button">
+        <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
+      </button>
+    </div>
     <div class="input-group">
       <label for="title">Sound title:</label>
       <input type="text" v-model="props.modelValue.title" id="title" placeholder="Enter text for the button" />
