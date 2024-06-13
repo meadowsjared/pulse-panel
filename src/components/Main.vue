@@ -1,11 +1,12 @@
 <template>
   <title-bar
-    >Pulse Panel<img
+    >{{ settingsStore.appName
+    }}<img
       class="pulse-panel-icon"
       @click="openLink"
       :src="PulsePanelIcon"
       :title="appVersion"
-      alt="pulse panel icon"
+      :alt="`${settingsStore.appName} icon`"
   /></title-bar>
   <div :class="['e-nuxt-container', { darkMode: settingsStore.darkMode }]">
     <side-bar>

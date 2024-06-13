@@ -6,6 +6,7 @@ import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
 
 interface State {
+  appName: string
   defaultVolume: number
   windowIsMaximized: boolean
   outputDevices: string[]
@@ -38,6 +39,7 @@ export interface SettingsStore extends ReturnType<typeof useSettingsStore> {}
 
 export const useSettingsStore = defineStore('settings', {
   state: (): State => ({
+    appName: 'Pulse Panel',
     defaultVolume: NaN,
     windowIsMaximized: false,
     outputDevices: [],
