@@ -57,7 +57,7 @@ export const useSettingsStore = defineStore('settings', {
       return this.sounds.filter(
         (sound, index) =>
           sound.title?.toLowerCase().includes(this.searchText.toLowerCase()) ||
-          sound.tags?.some(tag => tag.includes(this.searchText.toLowerCase())) ||
+          sound.tags?.some(tag => tag.toLowerCase().includes(this.searchText.toLowerCase())) ||
           index > this.sounds.length - 2
       )
     },
