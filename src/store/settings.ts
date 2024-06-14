@@ -58,8 +58,34 @@ export const useSettingsStore = defineStore('settings', {
     soundsFiltered(): Sound[] {
       return this.sounds.filter(
         (sound, index) =>
-          sound.title?.toLowerCase().includes(this.searchText.toLowerCase()) ||
-          sound.tags?.some(tag => tag.toLowerCase().includes(this.searchText.toLowerCase())) ||
+          this.searchText.trim() === '' ||
+          // compare the words from the title to the words from the search text
+          // if either the (titleWord.length > 1 && titleWord is in the searchWord)
+          // or the searchWord is in the titleWord, return true
+          sound.title
+            ?.toLowerCase()
+            .split(/[^a-zA-Z0-9_']/)
+            .filter(titleWord => titleWord !== '')
+            .some(titleWord =>
+              this.searchText
+                .toLowerCase()
+                .split(/[^a-zA-Z0-9_']/)
+                .filter(searchWord => searchWord !== '')
+                .some(
+                  searchWord =>
+                    (titleWord.length > 1 && searchWord.includes(titleWord)) || titleWord.includes(searchWord)
+                )
+            ) ||
+          // compare the words from the tags to the words from the search text
+          // if either the (tag.length > 1 && tag is in the searchWord)
+          // or the searchWord is in the tag, return true
+          sound.tags?.some(tag =>
+            this.searchText
+              .toLowerCase()
+              .split(/[^a-zA-Z0-9_']/)
+              .filter(searchWord => searchWord !== '')
+              .some(searchWord => (tag.length > 1 && searchWord.includes(tag)) || tag.includes(searchWord))
+          ) ||
           index > this.sounds.length - 2
       )
     },
