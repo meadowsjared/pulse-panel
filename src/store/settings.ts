@@ -73,7 +73,8 @@ export const useSettingsStore = defineStore('settings', {
                 .filter(searchWord => searchWord !== '')
                 .some(
                   searchWord =>
-                    (titleWord.length > 1 && searchWord.includes(titleWord)) || titleWord.includes(searchWord)
+                    (titleWord.length > 1 && searchWord.toLowerCase().includes(titleWord.toLowerCase())) ||
+                    titleWord.toLowerCase().includes(searchWord.toLowerCase())
                 )
             ) ||
           // compare the words from the tags to the words from the search text
@@ -84,7 +85,11 @@ export const useSettingsStore = defineStore('settings', {
               .toLowerCase()
               .split(/[^a-zA-Z0-9_']/)
               .filter(searchWord => searchWord !== '')
-              .some(searchWord => (tag.length > 1 && searchWord.includes(tag)) || tag.includes(searchWord))
+              .some(
+                searchWord =>
+                  (tag.length > 1 && searchWord.toLowerCase().includes(tag.toLowerCase())) ||
+                  tag.toLowerCase().includes(searchWord.toLowerCase())
+              )
           ) ||
           index > this.sounds.length - 2
       )
