@@ -265,7 +265,12 @@ async function vbCableIsInstalled() {
   regedit.setExternalVBSLocation('resources/regedit/vbs')
   try {
     const result = await regedit.promisified.list(registryKeyPath)
-    return result && result[registryKeyPath] && result[registryKeyPath].exists
+    return (
+      result &&
+      result[registryKeyPath] &&
+      result[registryKeyPath].exists &&
+      fs.existsSync('C:\\Program Files\\VB\\CABLE\\VBCABLE_ControlPanel.exe')
+    )
   } catch (err) {
     console.error('Error reading registry', err)
     return false // assume VBCable is not installed
