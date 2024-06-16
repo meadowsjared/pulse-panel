@@ -184,7 +184,7 @@ async function downloadVBCable() {
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath)
           }
-          runSetupAndCleanup(extractPath)
+          await runSetupAndCleanup(extractPath)
           resolve(true)
         } catch (err) {
           console.error('Error extracting zip file', err)
@@ -214,45 +214,58 @@ async function extractZipFile(filePath, extractPath) {
   // Extraction completed
 }
 
-function runSetupAndCleanup(extractPath) {
+async function runSetupAndCleanup(extractPath) {
   // if VBCABLE_Setup_x64.exe exists, run it
   const setupPath = join(extractPath, 'VBCABLE_Setup_x64.exe')
   const setupPath32 = join(extractPath, 'VBCABLE_Setup.exe')
-  if (fs.existsSync(setupPath)) {
-    exec(setupPath, () => {
-      removeVBCableInstallDirectory(extractPath)
-    })
-  } else if (fs.existsSync(setupPath32)) {
-    exec(setupPath32, () => {
-      removeVBCableInstallDirectory(extractPath)
-    })
-  } else {
-    console.error('VBCABLE_Setup_x64.exe not found')
-  }
+  return new Promise((resolve, reject) => {
+    if (fs.existsSync(setupPath)) {
+      exec(setupPath, async () => {
+        await removeVBCableInstallDirectory(extractPath)
+        resolve()
+      })
+    } else if (fs.existsSync(setupPath32)) {
+      exec(setupPath32, async () => {
+        await removeVBCableInstallDirectory(extractPath)
+        resolve()
+      })
+    } else {
+      reject('VBCABLE_Setup_x64.exe not found')
+      console.error('VBCABLE_Setup_x64.exe not found')
+    }
+  })
 }
 
-function removeVBCableInstallDirectory(extractPath) {
+async function removeVBCableInstallDirectory(extractPath) {
   const maxRetries = 5
   let attempts = 0
 
   function attemptRemove() {
-    fs.rm(extractPath, { recursive: true }, err => {
-      if (err) {
-        if (attempts < maxRetries) {
-          attempts++
-          console.log(`Retry ${attempts}/${maxRetries} failed to remove directory, retrying in 1 second...`)
-          setTimeout(attemptRemove, 1000) // Retry after 1 second
-        } else {
-          console.error('Error cleaning up VBCable install', err)
-        }
+    function removeCallback(err, resolve, reject) {
+      if (err && attempts < maxRetries) {
+        attempts++
+        console.log(`Retry ${attempts}/${maxRetries} failed to remove directory, retrying in 1 second...`)
+
+        setTimeout(async () => {
+          // Retry after 1 second
+          attemptRemove().then(resolve).catch(reject)
+        }, 1000)
+      } else if (err) {
+        reject(err)
+        console.error('Error cleaning up VBCable install', err)
       } else {
+        resolve()
         // Successfully removed VBCable install directory
       }
+    }
+
+    return new Promise((resolve, reject) => {
+      fs.rm(extractPath, { recursive: true }, err => removeCallback(err, resolve, reject))
     })
   }
 
   if (fs.existsSync(extractPath)) {
-    attemptRemove()
+    await attemptRemove()
   }
 }
 
