@@ -57,7 +57,6 @@
         </button>
         <div class="vb-cable-status-message" :class="{ vbCableInstalled }">VB-Cable already Installed</div>
       </div>
-      <p class="note">Note: To install VB-Cable, you must run "{{ settingsStore.appName }}" as an administrator.</p>
     </div>
   </div>
 </template>
@@ -410,11 +409,5 @@ input[type='checkbox']:focus-visible {
 .vbCableInstalled {
   height: 3.5rem;
   transform: translateY(0);
-}
-
-.note {
-  font-size: 0.9rem;
-  width: 50%;
-  text-wrap: balance;
 }
 </style>
