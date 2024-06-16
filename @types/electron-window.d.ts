@@ -26,7 +26,7 @@ export interface Settings {
   onWindowResized: (callback: (windowIsMaximized: boolean) => void) => void
   requestMainWindowSized: () => void
   openExternalLink: (url: string) => void
-  downloadVBCable: () => Promise<boolean>
+  downloadVBCable: (appName: string) => Promise<boolean>
 }
 
 declare global {

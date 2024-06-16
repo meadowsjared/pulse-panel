@@ -156,7 +156,7 @@ function getConfigurationFilePath() {
   return join(configDirectory, `${appName}.json`)
 }
 
-async function downloadVBCable() {
+async function downloadVBCable(appName) {
   if (await vbCableIsInstalled()) {
     // VBCable already installed
     cleanUpVBCableInstall()
@@ -184,7 +184,7 @@ async function downloadVBCable() {
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath)
           }
-          await runSetupAndCleanup(extractPath)
+          await runSetupAndCleanup(appName, extractPath)
           resolve(true)
         } catch (err) {
           console.error('Error extracting zip file', err)
@@ -214,7 +214,7 @@ async function extractZipFile(filePath, extractPath) {
   // Extraction completed
 }
 
-async function runSetupAndCleanup(extractPath) {
+async function runSetupAndCleanup(appName, extractPath) {
   // if VBCABLE_Setup_x64.exe exists, run it
   const setupPath = join(extractPath, 'VBCABLE_Setup_x64.exe')
   const setupPath32 = join(extractPath, 'VBCABLE_Setup.exe')

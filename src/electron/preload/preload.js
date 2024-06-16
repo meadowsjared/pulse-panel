@@ -39,7 +39,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
   requestMainWindowSized: () => ipcRenderer.invoke('request-main-window-sized'),
   openExternalLink: url => ipcRenderer.invoke('open-external-link', url),
-  downloadVBCable: () => ipcRenderer.invoke('download-vb-cable'),
+  downloadVBCable: appName => ipcRenderer.invoke('download-vb-cable', appName),
   versions: {
     app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,

@@ -29,7 +29,7 @@ app.whenReady().then(() => {
   ipcMain.handle('restore-window', () => mainWindow.restore())
   ipcMain.handle('request-main-window-sized', resizeTriggered)
   ipcMain.handle('open-external-link', (_, url) => shell.openExternal(url))
-  ipcMain.handle('download-vb-cable', () => settings.downloadVBCable())
+  ipcMain.handle('download-vb-cable', (_, appName) => settings.downloadVBCable(appName))
 })
 
 function createWindow() {
