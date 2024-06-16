@@ -163,17 +163,26 @@ async function optionSelected(payload: Event, outputIndex: number) {
     console.debug('payload.target', payload.target)
     throw new Error('Event target is not a select element.')
   }
-  const device = payload.target.value
+  const deviceId = payload.target.value
   // ensure there is a blank option at the end of the array
   // note: we re-assign the array to trigger the watcher
+  addOutputDevice(deviceId, outputIndex)
+}
+
+/**
+ * Add an output device to the outputDevices array
+ * @param deviceId - the device to add
+ * @param outputIndex - the index to add the device to
+ */
+function addOutputDevice(deviceId: string, outputIndex: number = outputDevices.value.length - 1) {
   if (outputDevices.value[outputDevices.value.length - 1] !== null) {
     outputDevices.value = [
       ...outputDevices.value.slice(0, outputIndex),
-      device,
+      deviceId,
       ...outputDevices.value.slice(outputIndex + 1),
     ]
   }
-  saveAndPlaySoundToOutputDevice(device)
+  saveAndPlaySoundToOutputDevice(deviceId)
 }
 
 /**
