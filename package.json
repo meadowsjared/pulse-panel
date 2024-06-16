@@ -69,6 +69,7 @@
   "dependencies": {
     "@jitsi/robotjs": "^0.6.13",
     "@meadowsjared/qhotkeys": "^1.1.0",
+    "@slosk/sudo-prompt": "^9.2.2",
     "@tailwindcss/forms": "^0.5.7",
     "extract-zip": "^2.0.1",
     "idb": "^8.0.0",
