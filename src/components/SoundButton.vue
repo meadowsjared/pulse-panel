@@ -21,7 +21,7 @@
         },
       ]"
       :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
-      <span v-if="!props.modelValue.hideTitle" class="button-name">{{ modelValue.title || 'New Sound' }}</span>
+      <span v-if="!props.modelValue.hideTitle" class="button-title">{{ modelValue.title || 'New Sound' }}</span>
     </button>
     <div :class="['button-group', { 'button-group-visible': displayMode === 'edit' }]" @click.capture="editSound">
       <button title="Edit" class="edit-buttons" :tabindex="displayMode !== 'edit' ? -1 : 0">Edit Sound</button>
@@ -124,7 +124,7 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
 </script>
 
 <style scoped>
-.button-name {
+.button-title {
   bottom: 0;
   left: 0;
   right: 0;
@@ -195,6 +195,9 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   background-position: center;
   outline-offset: 0.125rem;
   z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .sound-button.focusVisible {
