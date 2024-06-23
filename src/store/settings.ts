@@ -6,6 +6,7 @@ import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
 
 interface State {
+  /** friendly name of the app */
   appName: string
   defaultVolume: number
   windowIsMaximized: boolean

@@ -55,7 +55,7 @@
         <button @click="downloadVBCable" class="light downloadVBCable">
           Get VB-Cable<inline-svg :src="Download" class="download-icon" />
         </button>
-        <div class="vb-cable-status-message" :class="{ vbCableInstalled }">VB-Cable already Installed</div>
+        <div class="vb-cable-status-message" :class="{ showVBCableMessage }">{{ vbCableMessage }}</div>
       </div>
     </div>
   </div>
@@ -77,7 +77,8 @@ const outputDevices = ref<(string | null)[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
-const vbCableInstalled = ref(false)
+const showVBCableMessage = ref(false)
+const vbCableMessage = ref('')
 
 /**
  * Displays the volume as a percentage
@@ -100,18 +101,41 @@ settingsStore.fetchStringArray('ptt_hotkey').then(hotkey => {
 })
 
 async function downloadVBCable() {
+  // before we run the installer, make a backup copy of settingsStore.allOutputDevices
+  // so we can know which device was added by the installer
+  const originalOutputDeviceIds = settingsStore.allOutputDevices.map(device => device.deviceId)
+
   // set it to false to reset the animation
-  vbCableInstalled.value = false
-  const vbCableWasInstalled = await window.electron?.downloadVBCable()
-  if (vbCableWasInstalled) {
-    return // if it was installed, we don't need to show anything, because the installer should be shown
+  showVBCableMessage.value = false
+  const vbCableResult = await window.electron?.downloadVBCable(settingsStore.appName)
+
+  if (vbCableResult?.vbCableInstallerRan) {
+    // update the output devices, since they installed VB-Cable will be the default
+    settingsStore.fetchAllOutputDevices().then(() => {
+      // check originalOutputDeviceIds against settingsStore.allOutputDevices
+      // and add the new device to the outputDevices array
+      const newDevice = settingsStore.allOutputDevices.find(
+        device => !originalOutputDeviceIds.includes(device.deviceId)
+      )
+      if (newDevice) {
+        // we add the new device to the end of the array, since we know it was added by VB-Cable
+        addOutputDevice(newDevice.deviceId)
+      }
+    })
   }
 
-  // set it to true to trigger the animation
-  vbCableInstalled.value = true
-  setTimeout(() => {
-    vbCableInstalled.value = false
-  }, 3000)
+  if (vbCableResult?.errors?.some(errorObj => errorObj.message === 'User did not grant permission.')) {
+    vbCableMessage.value = 'Download Permission Denied'
+    showVBCableMessage.value = true
+    return
+    // console.error('Error downloading VB-Cable:', vbCableResult.error)
+  }
+
+  if (vbCableResult?.vbCableAlreadyInstalled) {
+    // set it to true to trigger the animation
+    showVBCableMessage.value = true
+    vbCableMessage.value = 'VB-Cable Already Installed'
+  }
 }
 
 function selectedHotkeyUpdated(event: string[] | undefined) {
@@ -174,13 +198,11 @@ async function optionSelected(payload: Event, outputIndex: number) {
  * @param outputIndex - the index to add the device to
  */
 function addOutputDevice(deviceId: string, outputIndex: number = outputDevices.value.length - 1) {
-  if (outputDevices.value[outputDevices.value.length - 1] !== null) {
-    outputDevices.value = [
-      ...outputDevices.value.slice(0, outputIndex),
-      deviceId,
-      ...outputDevices.value.slice(outputIndex + 1),
-    ]
-  }
+  outputDevices.value = [
+    ...outputDevices.value.slice(0, outputIndex),
+    deviceId,
+    ...outputDevices.value.slice(outputIndex + 1),
+  ]
   saveAndPlaySoundToOutputDevice(deviceId)
 }
 
@@ -381,7 +403,7 @@ input[type='checkbox']:focus-visible {
   display: flex;
   justify-content: center;
   gap: 2rem;
-  padding: 0.5rem 2rem;
+  padding: 0.5rem 3rem;
   align-items: center;
   margin-top: 1rem;
   width: 100%;
@@ -390,8 +412,31 @@ input[type='checkbox']:focus-visible {
   width: 1.5rem;
 }
 
+@keyframes showMessage {
+  0% {
+    height: 0;
+    transform: translateY(-100%);
+  }
+  10% {
+    /* Start and hold the message for a bit after transitioning */
+    transform: translateY(0%);
+    height: 3.5rem;
+  }
+  90% {
+    height: 3.5rem;
+    transform: translateY(0%);
+  }
+  100% {
+    height: 0;
+    /* Start hiding the message after 3 seconds */
+    transform: translateY(-100%);
+  }
+}
+
 .vb-cable-status-message {
   --top-overlap: 1rem;
+  --transition-length: 0.4s;
+  --duration: 3s;
   width: 100%;
   margin-top: calc(var(--top-overlap) * -1);
   padding-top: calc(var(--top-overlap) + 0.5rem);
@@ -400,14 +445,12 @@ input[type='checkbox']:focus-visible {
   color: var(--background-color);
   background: var(--button-accent-color);
   z-index: -1;
-  transition: transform 0.4s, height 0.4s;
   transform: translateY(-100%);
   font-weight: bold;
   overflow: hidden;
 }
 
-.vbCableInstalled {
-  height: 3.5rem;
-  transform: translateY(0);
+.showVBCableMessage {
+  animation: showMessage calc(2 * var(--transition-length) + var(--duration)) ease forwards;
 }
 </style>

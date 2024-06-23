@@ -9,9 +9,9 @@ const robot = require('@jitsi/robotjs')
 const { BrowserWindow, net } = require('electron')
 const { qKeys, qHotkeys } = require('@meadowsjared/qhotkeys')
 const extractZip = require('extract-zip')
-const { exec } = require('child_process')
 const regedit = require('regedit')
 const globalHotkeys = new qHotkeys()
+const sudo = require('@slosk/sudo-prompt')
 
 function saveSetting(settingKey, settingValue) {
   nconf.set(settingKey, settingValue)
@@ -156,18 +156,55 @@ function getConfigurationFilePath() {
   return join(configDirectory, `${appName}.json`)
 }
 
-async function downloadVBCable(appName) {
-  if (await vbCableIsInstalled()) {
-    // VBCable already installed
-    cleanUpVBCableInstall()
-    return false
+/**
+ *
+ * @param { vbCableResult } result
+ */
+function cleanResult(result) {
+  if (result.messages.length === 0) {
+    delete result.messages
   }
+  if (result.errors.length === 0) {
+    delete result.errors
+  }
+  return result
+}
 
+/**
+ * extends the properties of sudoExecResult
+ * @extends { vbCableResult }
+ * @typedef { Object } vbCableResult
+ * @property { boolean | undefined } vbCableAlreadyInstalled
+ * properties from sudoExecResult:
+ * @property { boolean | undefined } vbCableInstallerRan
+ * @property { string[] | undefined } messages
+ * @property { any[] | undefined } errors
+ */
+
+/**
+ * @param {string} appName
+ * @returns {Promise<vbCableResult>}
+ */
+async function downloadVBCable(appName) {
   const { configDirectory } = getConfigDirectoryAndAppName()
   const url = 'https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip'
   const filePath = join(configDirectory, 'VBCABLE_Driver_Pack43.zip')
   const extractPath = join(configDirectory, 'VBCable')
   const request = net.request(url)
+  /**
+   * @type { vbCableResult }
+   */
+  const mainResponse = { messages: [], errors: [] }
+
+  /**
+   * @type { vbCableResult }
+   */
+  if (await vbCableIsInstalled(mainResponse)) {
+    // VBCable already installed
+    await removeVBCableInstallDirectory(mainResponse, extractPath)
+    mainResponse.vbCableAlreadyInstalled = true
+    return cleanResult(mainResponse)
+  }
 
   return await new Promise((resolve, reject) => {
     request.on('response', response => {
@@ -179,22 +216,24 @@ async function downloadVBCable(appName) {
         file.end()
         try {
           // Download completed
-          await extractZipFile(filePath, extractPath)
+          await extractZipFile(mainResponse, filePath, extractPath)
           // remove the zip file, since it's no longer needed
           if (fs.existsSync(filePath)) {
             fs.unlinkSync(filePath)
           }
-          await runSetupAndCleanup(appName, extractPath)
-          resolve(true)
+          const result = await runSetupAndCleanup(mainResponse, appName, extractPath)
+          resolve(cleanResult(result))
         } catch (err) {
           console.error('Error extracting zip file', err)
-          reject(err)
+          mainResponse.errors.push(err)
+          reject(cleanResult(mainResponse))
         }
       })
     })
     request.on('error', error => {
       console.error('Request failed:', error)
-      reject(error)
+      mainResponse.errors.push(error)
+      reject(cleanResult(mainResponse))
     })
     request.end()
   })
@@ -202,78 +241,169 @@ async function downloadVBCable(appName) {
 
 /**
  * extracts a zip file to the extractPath
+ * @param { vbCableResult } response
  * @param { string } filePath the zip file which we're extracting
  * @param { string } extractPath the directory that we're extracting to
  */
-async function extractZipFile(filePath, extractPath) {
+async function extractZipFile(response, filePath, extractPath) {
   try {
     await extractZip(filePath, { dir: extractPath })
   } catch (err) {
+    response.errors.push(err)
+    response.messages.push('Error extracting zip file')
     console.error('Extraction error', err)
   }
   // Extraction completed
 }
 
-async function runSetupAndCleanup(appName, extractPath) {
+/**
+ * Run the VBCable setup and cleanup
+ * @param { vbCableResult } response
+ * @param { string } appName the name of the app
+ * @param { string } extractPath the path to the extracted VBCable files
+ * @returns {Promise<vbCableResult>}
+ */
+async function runSetupAndCleanup(response, appName, extractPath) {
   // if VBCABLE_Setup_x64.exe exists, run it
   const setupPath = join(extractPath, 'VBCABLE_Setup_x64.exe')
   const setupPath32 = join(extractPath, 'VBCABLE_Setup.exe')
   return new Promise((resolve, reject) => {
-    if (fs.existsSync(setupPath)) {
-      exec(setupPath, async () => {
-        await removeVBCableInstallDirectory(extractPath)
-        resolve()
-      })
-    } else if (fs.existsSync(setupPath32)) {
-      exec(setupPath32, async () => {
-        await removeVBCableInstallDirectory(extractPath)
-        resolve()
-      })
-    } else {
-      reject('VBCABLE_Setup_x64.exe not found')
-      console.error('VBCABLE_Setup_x64.exe not found')
-    }
+    ;(async () => {
+      /**
+       * @type { sudoExecResult }
+       */
+      if (fs.existsSync(setupPath)) {
+        await sudoExec(response, appName, setupPath)
+        await removeVBCableInstallDirectory(response, extractPath)
+        // add removeDirResult messages and errors to sudoExecResult
+        resolve(response)
+      } else if (fs.existsSync(setupPath32)) {
+        await sudoExec(response, appName, setupPath32)
+        await removeVBCableInstallDirectory(response, extractPath)
+        resolve(response)
+      } else {
+        await removeVBCableInstallDirectory(response, extractPath)
+        // removeDirResult.messages.push(...removeDirResult.messages)
+        response.messages.push('VBCABLE_Setup_x64.exe not found')
+        console.error('VBCABLE_Setup_x64.exe not found')
+        reject(response)
+      }
+    })()
   })
 }
 
-async function removeVBCableInstallDirectory(extractPath) {
+/**
+ * @typedef {Object} sudoExecResult
+ * @property { boolean } vbCableInstallerRan
+ * @property { string[] } messages
+ * @property { any[] } errors
+ */
+
+/**
+ * Run a command with sudo
+ * @param {sudoExecResult} response
+ * @param {string} appName
+ * @param {string} command
+ * @returns {Promise<sudoExecResult>}
+ */
+function sudoExec(response, appName, command) {
+  return new Promise(resolve => {
+    const options = {
+      name: appName,
+      icns: '/src/assets/pulse-panel_icon.ico', // (optional)
+    }
+    sudo.exec(command, options, error => {
+      if (error) {
+        response.messages.push('Error running VBCABLE_Setup')
+        response.errors.push(error)
+        response.vbCableInstallerRan = false
+        resolve(response)
+        return
+      }
+      response.vbCableInstallerRan = true
+      resolve(response)
+    })
+  })
+}
+
+/**
+ * @typedef {Object} RemoveDirResult
+ * @property { string[] } messages
+ * @property { any[] } errors
+ */
+
+/**
+ * @param { RemoveDirResult } response
+ * @param { string } extractPath
+ * @returns { Promise<RemoveDirResult> }
+ */
+async function removeVBCableInstallDirectory(response, extractPath) {
+  /**
+   * @type { RemoveDirResult }
+   */
+  if (fs.existsSync(extractPath)) {
+    try {
+      await attemptRemove(response, extractPath)
+    } catch (err) {
+      // Handle error
+      response.messages.push('Error removing VBCable install directory')
+      response.errors.push(err)
+    }
+  } else {
+    response.messages.push('VBCable install directory already removed')
+  }
+
+  return response
+}
+
+/**
+ * Attempt to remove the VBCable install directory
+ * @param { RemoveDirResult } response
+ * @param {string} extractPath
+ * @returns { Promise<RemoveDirResult> }
+ * @throws {Error} if the directory cannot be removed after 5 retries
+ */
+function attemptRemove(response, extractPath) {
   const maxRetries = 5
   let attempts = 0
+  /**
+   *
+   * @param {*} err
+   * @param { (value: RemoveDirResult | PromiseLike<RemoveDirResult>) => void } resolve
+   * @param { (reason?: any) => void } reject
+   */
+  const removeCallback = (err, resolve, reject) => {
+    if (err && attempts < maxRetries) {
+      attempts++
+      response.messages.push(`Retry ${attempts}/${maxRetries} failed to remove directory, retrying in 1 second...`)
 
-  function attemptRemove() {
-    function removeCallback(err, resolve, reject) {
-      if (err && attempts < maxRetries) {
-        attempts++
-        console.log(`Retry ${attempts}/${maxRetries} failed to remove directory, retrying in 1 second...`)
-
-        setTimeout(async () => {
-          // Retry after 1 second
-          attemptRemove().then(resolve).catch(reject)
-        }, 1000)
-      } else if (err) {
-        reject(err)
-        console.error('Error cleaning up VBCable install', err)
-      } else {
-        resolve()
-        // Successfully removed VBCable install directory
-      }
+      setTimeout(async () => {
+        // Retry after 1 second
+        attemptRemove()
+          .then(() => resolve(response))
+          .catch(errParam => reject(errParam))
+      }, 1000)
+    } else if (err) {
+      response.messages.push(`Error cleaning up VBCable install: ${err}`)
+      response.errors.push(err)
+      console.error('Error cleaning up VBCable install', err)
+      reject(response)
+    } else {
+      resolve(response)
     }
-
-    return new Promise((resolve, reject) => {
-      fs.rm(extractPath, { recursive: true }, err => removeCallback(err, resolve, reject))
-    })
   }
 
-  if (fs.existsSync(extractPath)) {
-    await attemptRemove()
-  }
+  return new Promise((resolve, reject) => {
+    fs.rm(extractPath, { recursive: true }, err => removeCallback(err, resolve, reject))
+  })
 }
 
 /**
  * Check if VBCable is installed
+ * @param { vbCableResult } response
  * @returns {Promise<boolean>}
  */
-async function vbCableIsInstalled() {
+async function vbCableIsInstalled(response) {
   const registryKeyPath = 'HKLM\\SOFTWARE\\VB-Audio\\Cable'
   regedit.setExternalVBSLocation('resources/regedit/vbs')
   try {
@@ -285,19 +415,10 @@ async function vbCableIsInstalled() {
       fs.existsSync('C:\\Program Files\\VB\\CABLE\\VBCABLE_ControlPanel.exe')
     )
   } catch (err) {
+    response.messages.push('Error reading registry')
+    response.errors.push(err)
     console.error('Error reading registry', err)
     return false // assume VBCable is not installed
-  }
-}
-
-function cleanUpVBCableInstall() {
-  const extractPath = join(__dirname, 'VBCable')
-  if (fs.existsSync(extractPath)) {
-    fs.rm(extractPath, { recursive: true }, err => {
-      if (err) {
-        console.error('Error cleaning up VBCable install', err)
-      }
-    })
   }
 }
 
