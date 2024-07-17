@@ -141,7 +141,7 @@ async function downloadVBCable() {
 function selectedHotkeyUpdated(event: string[] | undefined) {
   selectedHotkey.value = event
   // save the value to the IndexedDB store
-  settingsStore.saveStringArray('ptt_hotkey', event ?? [])
+  settingsStore.saveStringArray('ptt_hotkey', [...(event ?? [])])
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
