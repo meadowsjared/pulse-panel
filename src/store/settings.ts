@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import { Sound } from '@/@types/sound'
+import { Sound } from '../../@types/sound.d'
 import { openDB } from 'idb'
-import { File } from '@/@types/file'
+import { File } from '../../@types/file.d'
 import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
 
