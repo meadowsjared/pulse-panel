@@ -44,23 +44,5 @@ jobs:
           generateReleaseNotes: true
           tag: v${{ env.VERSION }}
           allowUpdates: true
-      - name: Semantic Release
-        uses: cycjimmy/semantic-release-action@v4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          branches: |
-            [
-              '+([0-9])?(.{+([0-9]),x}).x',
-              'main',
-              'next',
-              'next-major',
-              {
-                name: 'beta',
-                prerelease: true
-              },
-              {
-                name: 'alpha',
-                prerelease: true
-              }
-            ]
+      - uses: phips28/gh-action-bump-version@v11.0.7
+        name: Automated Version Bump
