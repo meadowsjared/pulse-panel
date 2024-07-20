@@ -44,5 +44,7 @@ jobs:
           generateReleaseNotes: true
           tag: v${{ env.VERSION }}
           allowUpdates: true
-      - name: Automated Version Bump
-        uses: yoichiro/gh-action-increment-value@v5
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
