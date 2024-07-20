@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest  # Specifies that the job should run on the latest Windows runner
+    runs-on: ubuntu-latest  # Specifies that the job should run on the latest Ubuntu runner
 
     steps:
       - uses: actions/checkout@v3  # Checks out your repository under $GITHUB_WORKSPACE
