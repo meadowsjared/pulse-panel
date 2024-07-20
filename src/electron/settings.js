@@ -5,9 +5,9 @@ const { join } = require('path')
 const nconf = require('nconf').file({
   file: getConfigurationFilePath(),
 })
-const robot = require('@jitsi/robotjs')
+const robot = require('@meadowsjared/robotjs')
 const { BrowserWindow, net } = require('electron')
-const { qKeys, qHotkeys } = require('@meadowsjared/qhotkeys')
+const { qKeys, qHotkeys } = require('qhotkeys')
 const extractZip = require('extract-zip')
 const regedit = require('regedit')
 const globalHotkeys = new qHotkeys()
