@@ -44,5 +44,5 @@ jobs:
           generateReleaseNotes: true
           tag: v${{ env.VERSION }}
           allowUpdates: true
-      - name: Automated Version Bump
-        uses: remorses/bump-version@v8
+      - uses: phips28/gh-action-bump-version@v11.0.7
+        name: Automated Version Bump
