@@ -4,6 +4,13 @@ import { openDB } from 'idb'
 import { File } from '../../@types/file.d'
 import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
+import { Settings, Versions } from '../../@types/electron-window.d'
+
+declare global {
+  interface Window {
+    electron?: Settings & Versions
+  }
+}
 
 interface State {
   /** friendly name of the app */
