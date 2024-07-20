@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 import { SettingsStore, useSettingsStore } from './settings'
-import { Sound } from '@/@types/sound'
+import { Sound } from '../../@types/sound.d'
+const chordAlert = require('../assets/wav/new-notification-7-210334.mp3')
 
 interface OutputDeviceProperties {
   currentAudio: HTMLAudioElement[]
@@ -147,7 +147,7 @@ export const useSoundStore = defineStore('sound', {
         const filteredSelectedOutputDevices = selectedOutputDevices.filter(
           (deviceId): deviceId is string => deviceId !== null
         )
-        const audioFileId = audioFile?.id || chordAlert
+        const audioFileId: string = audioFile?.id || chordAlert
         // if we don't allow overlapping sounds, and there is a sound playing, remove it
         if (settingsStore.allowOverlappingSound === false && this.playingSoundIds.length > 0) {
           this.playingSoundIds = []
