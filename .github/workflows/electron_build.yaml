@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Specifies that the job should run on the latest Ubuntu runner
+    runs-on: windows-latest  # Specifies that the job should run on the latest Ubuntu runner
 
     steps:
       - uses: actions/checkout@v3  # Checks out your repository under $GITHUB_WORKSPACE
@@ -44,6 +44,5 @@ jobs:
           generateReleaseNotes: true
           tag: v${{ env.VERSION }}
           allowUpdates: true
-      - uses: phips28/gh-action-bump-version@v11.0.7
-        name: Automated Version Bump
-
+      - name: Automated Version Bump
+        uses: yoichiro/gh-action-increment-value@v5
