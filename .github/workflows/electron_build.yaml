@@ -44,10 +44,6 @@ jobs:
           generateReleaseNotes: true
           tag: v${{ env.VERSION }}
           allowUpdates: true
-      - uses: phips28/gh-action-bump-version@95099cd5edcdae43499bc94202b9d907e739e9c8
-        name: bump version number
-        with:
-          tag-prefix: 'v'
-          version-type: 'patch'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: phips28/gh-action-bump-version@v11.0.7
+        name: Automated Version Bump
+
