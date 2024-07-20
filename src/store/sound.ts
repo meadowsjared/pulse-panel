@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { SettingsStore, useSettingsStore } from './settings'
 import { Sound } from '../../@types/sound.d'
-const chordAlert = require('../assets/wav/new-notification-7-210334.mp3')
+import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 
 interface OutputDeviceProperties {
   currentAudio: HTMLAudioElement[]
