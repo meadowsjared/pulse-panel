@@ -60,5 +60,9 @@ jobs:
           generateReleaseNotes: true
           tag: v${{ env.VERSION }}
           allowUpdates: true
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 'latest'
       - uses: phips28/gh-action-bump-version@v11.0.7
         name: Automated Version Bump
