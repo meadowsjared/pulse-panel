@@ -7,7 +7,7 @@ const nconf = require('nconf').file({
 })
 const robot = require('@meadowsjared/robotjs')
 const { BrowserWindow, net } = require('electron')
-const { qKeys, qHotkeys } = require('qhotkeys')
+const { qKeys, qHotkeys } = require('@meadowsjared/qhotkeys')
 const extractZip = require('extract-zip')
 const regedit = require('regedit')
 const globalHotkeys = new qHotkeys()
