@@ -60,9 +60,11 @@ jobs:
       #     generateReleaseNotes: true
       #     tag: v${{ env.VERSION }}
       #     allowUpdates: true
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          bun-version: 'latest'
+          node-version: '16'
+      - name: Verify npm installation
+        run: npm --version
       - uses: phips28/gh-action-bump-version@v11.0.7
         name: Automated Version Bump
