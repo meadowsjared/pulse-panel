@@ -47,19 +47,19 @@ jobs:
           $json = Get-Content package.json | ConvertFrom-Json
           echo "VERSION=$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Create Release
-        id: create_release
-        uses: ncipollo/release-action@v1.14.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
-        with:
-          artifacts: ./release/${{ env.VERSION }}/pulse-panel_${{ env.VERSION }}.exe
-          name: Pulse Panel v${{ env.VERSION }}
-          draft: false
-          prerelease: false
-          generateReleaseNotes: true
-          tag: v${{ env.VERSION }}
-          allowUpdates: true
+      # - name: Create Release
+      #   id: create_release
+      #   uses: ncipollo/release-action@v1.14.0
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # GitHub automatically creates this secret to use in your workflow
+      #   with:
+      #     artifacts: ./release/${{ env.VERSION }}/pulse-panel_${{ env.VERSION }}.exe
+      #     name: Pulse Panel v${{ env.VERSION }}
+      #     draft: false
+      #     prerelease: false
+      #     generateReleaseNotes: true
+      #     tag: v${{ env.VERSION }}
+      #     allowUpdates: true
       - name: Set up Bun
         uses: oven-sh/setup-bun@v1
         with:
