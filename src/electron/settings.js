@@ -7,7 +7,7 @@ const nconf = require('nconf').file({
 })
 const robot = require('@meadowsjared/robotjs')
 const { BrowserWindow, net } = require('electron')
-const { qKeys, qHotkeys } = require('@meadowsjared/qhotkeys')
+const { qKeys, qHotkeys } = require('qhotkeys')
 const extractZip = require('extract-zip')
 const regedit = require('regedit')
 const globalHotkeys = new qHotkeys()
@@ -65,6 +65,7 @@ function hotkeyToRobotjs(hotkey, soundId) {
  */
 function sendKey(keys, down) {
   keys.forEach(key => {
+    console.log('Sending key:', hotkeyToRobotjs(key), down ? 'down' : 'up')
     robot.keyToggle(hotkeyToRobotjs(key), down ? 'down' : 'up')
   })
 }
