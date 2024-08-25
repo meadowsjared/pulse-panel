@@ -8,6 +8,7 @@ export interface Sound {
   audioKey?: string
   imageUrl?: string
   imageKey?: string
+  color?: string
   volume?: number
   isPreview?: boolean
 }
