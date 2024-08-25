@@ -17,10 +17,15 @@
       <div class="input-group">
         <label for="title">Sound title:</label>
         <input type="text" v-model="props.modelValue.title" id="title" placeholder="Enter text for the button" />
-        <div class="hide-title-checkbox-group" title="hide title on button">
-          <input type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label for="hideTitle"
-            >Hide title</label
-          >
+        <div class="hide-title-checkbox-group">
+          <div title="hide title on button">
+            <input type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label for="hideTitle"
+              >Hide title</label
+            >
+          </div>
+          <div title="set title color button">
+            <color-picker v-model="props.modelValue.color" />
+          </div>
         </div>
         <label for="tags" @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
         <tag-input
@@ -151,11 +156,15 @@ watch(
     props.modelValue.hideTitle,
     props.modelValue.hotkey,
     props.modelValue.tags,
+    props.modelValue.color,
   ],
   () => {
     // if hideTitle is false and modelValue has the property, delete it
     if (!props.modelValue.hideTitle && props.modelValue.hasOwnProperty('hideTitle')) {
       delete props.modelValue.hideTitle
+    }
+    if (props.modelValue.color === '#ffffff') {
+      delete props.modelValue.color
     }
     volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100)
     if ((props.modelValue.volume ?? settingsStore.defaultVolume) === settingsStore.defaultVolume) {
@@ -258,7 +267,19 @@ function close() {
   gap: 1rem;
 }
 
-.hide-title-checkbox-group > input[type='checkbox']:checked {
+.hide-title-checkbox-group {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.hide-title-checkbox-group > div {
+  display: flex;
+  align-items: center;
+  justify-self: center;
+  gap: 0.5rem;
+}
+.hide-title-checkbox-group > div > input[type='checkbox']:checked {
   background-color: var(--button-color);
 }
 input[type='checkbox'] {
