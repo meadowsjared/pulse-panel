@@ -21,7 +21,12 @@
         },
       ]"
       :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
-      <span v-if="!props.modelValue.hideTitle" class="button-title">{{ modelValue.title || 'New Sound' }}</span>
+      <span
+        v-if="!props.modelValue.hideTitle"
+        class="button-title"
+        :style="`color: ${props.modelValue.color ?? '#ffffff'}`"
+        >{{ modelValue.title || 'New Sound' }}</span
+      >
     </button>
     <div :class="['button-group', { 'button-group-visible': displayMode === 'edit' }]" @click.capture="editSound">
       <button title="Edit" class="edit-buttons" :tabindex="displayMode !== 'edit' ? -1 : 0">Edit Sound</button>
