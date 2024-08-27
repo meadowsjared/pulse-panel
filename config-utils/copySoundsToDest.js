@@ -32,6 +32,7 @@ function copySourceSoundsToDestination(sourcePath, destinationPath) {
    * @property {string | undefined} imageUrl
    * @property {string | undefined} imageKey
    * @property {number | undefined} volume
+   * @property {string | undefined} color
    * @property {boolean | undefined} isPreview
    */
 
@@ -42,7 +43,7 @@ function copySourceSoundsToDestination(sourcePath, destinationPath) {
   const sourceSounds = JSON.parse(sourceObject.sounds)
   // console.log('sourceObject', sourceSounds[sourceSounds.length - 1])
 
-  const fieldsToCopy = ['id', 'hideTitle', 'hotkey', 'isPreview', 'tags', 'volume']
+  const fieldsToCopy = ['id', 'hideTitle', 'hotkey', 'isPreview', 'tags', 'volume', 'color']
 
   let count = {
     found: 0,
