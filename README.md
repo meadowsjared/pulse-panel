@@ -9,7 +9,7 @@
  
 ![screenshot](./src/assets/screenshot.png)
 
-## To Build
+## Build Pulse Panel from source:
 
 ### 1. clone this repository
 
