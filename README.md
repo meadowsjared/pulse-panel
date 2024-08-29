@@ -1,13 +1,20 @@
-# Vite+Vue3+Electron+Typescript template
+# Pulse Panel
+## A feature-rich Windows soundboard app with a sleek and intuitive design.
 
+
+## Get Pulse Panel:
+### [**DOWNLOAD THE LATEST RELEASE**](https://github.com/Counsel-of-Big-Brains/pulse-panel/releases/latest/)
+ 
+<br>
+ 
 ![screenshot](./src/assets/screenshot.png)
 
-## Get Started
+## To Build
 
 ### 1. clone this repository
 
 ```bash
-git clone https://github.com/meadowsjared/vite-vue3-electron-ts-template.git
+git clone https://github.com/Counsel-of-Big-Brains/pulse-panel.git
 ```
 
 ### 2. install packages
