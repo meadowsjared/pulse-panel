@@ -296,7 +296,10 @@ function close() {
   width: 100%;
   justify-content: space-between;
   gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0;
 }
+
 .hide-title-checkbox-group > div {
   display: flex;
   align-items: center;
@@ -403,13 +406,6 @@ input[type='checkbox']:focus-visible {
 
 .input-group > input {
   width: 100%;
-}
-
-.hide-title-checkbox-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
 }
 
 .preview-button {
