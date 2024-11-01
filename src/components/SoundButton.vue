@@ -134,6 +134,7 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   left: 0;
   right: 0;
   font-weight: bold;
+  text-wrap: pretty;
 }
 
 .button-group {
