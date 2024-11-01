@@ -24,7 +24,7 @@
       <span
         v-if="!props.modelValue.hideTitle"
         class="button-title"
-        :style="`color: ${props.modelValue.color ?? '#ffffff'}`"
+        :style="props.modelValue.color && `color: ${props.modelValue.color}`"
         >{{ modelValue.title || 'New Sound' }}</span
       >
     </button>
