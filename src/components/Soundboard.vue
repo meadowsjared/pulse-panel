@@ -296,7 +296,7 @@ function stripAudioUrls(pSounds: Sound[]) {
 .soundboard {
   gap: 0 1rem;
   display: grid;
-  padding: 1rem;
+  padding: 1rem 1rem 0 1rem;
   width: 100%;
   height: 100%;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
