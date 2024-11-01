@@ -22,8 +22,9 @@
       ]"
       :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
       <span
+        ref="buttonTitle"
         v-if="!props.modelValue.hideTitle"
-        class="button-title"
+        :class="['button-title', { 'four-lines': isFourLines, 'five-or-more-lines': isFiveOrMoreLines }]"
         :style="props.modelValue.color && `color: ${props.modelValue.color}`"
         >{{ modelValue.title || 'New Sound' }}</span
       >
@@ -51,7 +52,7 @@
 <script setup lang="ts">
 import { useSoundStore } from '../store/sound'
 import { Sound } from '../../@types/sound'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'
 import { DisplayMode, useSettingsStore } from '../store/settings'
@@ -77,12 +78,36 @@ const numSoundsPlaying = ref(0)
  * 2. preventing focus events from being triggered by the ptt_hotkey
  */
 const focusVisible = ref(false)
+const lineHeight = ref(0)
 const soundButton = ref<HTMLButtonElement | null>(null)
+const buttonTitle = ref<HTMLElement | null>(null)
 
 const soundStore = useSoundStore()
 const settingsStore = useSettingsStore()
 
+onMounted(() => {
+  if (buttonTitle.value) {
+    lineHeight.value = parseFloat(getComputedStyle(buttonTitle.value).lineHeight)
+  }
+})
+
 const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
+
+const isFourLines = computed(() => {
+  if (buttonTitle.value) {
+    const height = buttonTitle.value.offsetHeight
+    return height >= lineHeight.value * 4 && height < lineHeight.value * 5
+  }
+  return false
+})
+
+const isFiveOrMoreLines = computed(() => {
+  if (buttonTitle.value) {
+    const height = buttonTitle.value.offsetHeight
+    return height >= lineHeight.value * 5
+  }
+  return false
+})
 
 function editSound() {
   if (props.displayMode === 'edit') {
@@ -135,6 +160,14 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   right: 0;
   font-weight: bold;
   text-wrap: pretty;
+}
+
+.four-lines {
+  line-height: 1.1;
+}
+
+.five-or-more-lines {
+  line-height: 1;
 }
 
 .button-group {
