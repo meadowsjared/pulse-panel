@@ -251,6 +251,36 @@ function close() {
 </script>
 
 <style scoped>
+.edit-dialog {
+  height: calc(100% - 3.5rem);
+}
+
+.sound-properties {
+  margin-bottom: 8rem;
+  height: 100%;
+  overflow: hidden auto;
+  --scrollbar-width: 10px;
+  scroll-margin-block: 50px;
+  padding: 0.5rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sound-properties::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+  padding-right: 1.5rem;
+}
+
+.sound-properties::-webkit-scrollbar-thumb {
+  background: var(--text-color);
+  border-radius: calc(var(--scrollbar-width) / 2);
+}
+
+.sound-properties::-webkit-scrollbar-track {
+  background: var(--input-bg-color);
+}
+
 .title-bar {
   position: sticky;
   top: 0;
@@ -258,13 +288,6 @@ function close() {
   padding: 0.75rem 1rem;
   z-index: 1;
   gap: 0.5rem;
-}
-
-.sound-properties {
-  padding: 0.5rem 1rem 1rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .hide-title-checkbox-group {

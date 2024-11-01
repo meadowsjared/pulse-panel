@@ -303,6 +303,20 @@ function stripAudioUrls(pSounds: Sound[]) {
   --grid-height: 110px;
   grid-auto-rows: max-content;
   overflow: auto;
+  --scrollbar-width: 10px;
+}
+
+.soundboard::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+}
+
+.soundboard::-webkit-scrollbar-thumb {
+  background: var(--text-color);
+  border-radius: calc(var(--scrollbar-width) / 2);
+}
+
+.soundboard::-webkit-scrollbar-track {
+  background: var(--input-bg-color);
 }
 
 .placeholder {
@@ -314,12 +328,6 @@ function stripAudioUrls(pSounds: Sound[]) {
   min-width: 208px;
   overflow: hidden;
   background: var(--alt-bg-color);
-}
-
-.rightSideBar > .edit-dialog {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 .slide-right-enter-active,
