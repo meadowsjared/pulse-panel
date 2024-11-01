@@ -303,7 +303,7 @@ function stripAudioUrls(pSounds: Sound[]) {
   --grid-height: 110px;
   grid-auto-rows: max-content;
   overflow: auto;
-  --scrollbar-width: 10px;
+  --scrollbar-width: 14px;
 }
 
 .soundboard::-webkit-scrollbar {
@@ -313,6 +313,7 @@ function stripAudioUrls(pSounds: Sound[]) {
 .soundboard::-webkit-scrollbar-thumb {
   background: var(--text-color);
   border-radius: calc(var(--scrollbar-width) / 2);
+  border: 4px solid var(--input-bg-color);
 }
 
 .soundboard::-webkit-scrollbar-track {

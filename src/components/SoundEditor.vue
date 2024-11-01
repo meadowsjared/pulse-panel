@@ -259,7 +259,7 @@ function close() {
   margin-bottom: 8rem;
   height: 100%;
   overflow: hidden auto;
-  --scrollbar-width: 10px;
+  --scrollbar-width: 14px;
   scroll-margin-block: 50px;
   padding: 0.5rem 1rem 1rem;
   display: flex;
@@ -275,6 +275,7 @@ function close() {
 .sound-properties::-webkit-scrollbar-thumb {
   background: var(--text-color);
   border-radius: calc(var(--scrollbar-width) / 2);
+  border: 4px solid var(--input-bg-color);
 }
 
 .sound-properties::-webkit-scrollbar-track {
