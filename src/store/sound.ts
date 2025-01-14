@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { SettingsStore, useSettingsStore } from './settings'
-import { Sound } from '../../@types/sound.d'
+import { Sound } from '../@types/sound'
 import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 
 interface OutputDeviceProperties {

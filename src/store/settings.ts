@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
-import { Sound } from '../../@types/sound.d'
+import { Sound } from '../@types/sound'
 import { openDB } from 'idb'
-import { File } from '../../@types/file.d'
+import { File } from '../@types/file'
 import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
-import { Settings, Versions } from '../../@types/electron-window.d'
+import { Settings, Versions } from '../@types/electron-window'
 
 declare global {
   interface Window {
