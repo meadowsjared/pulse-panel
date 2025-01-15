@@ -51,7 +51,7 @@
 
 <script setup lang="ts">
 import { useSoundStore } from '../store/sound'
-import { Sound } from '../../@types/sound'
+import { Sound } from '../@types/sound'
 import { computed, onMounted, ref } from 'vue'
 import Plus from '../assets/images/plus.svg'
 import InlineSvg from 'vue-inline-svg'

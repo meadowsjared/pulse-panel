@@ -39,9 +39,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useSettingsStore } from '../store/settings'
-import { Sound } from '../../@types/sound'
+import { Sound } from '../@types/sound'
 import { v4 } from 'uuid'
-import { File } from '../../@types/file'
+import { File } from '../@types/file'
 import { stripFileExtension } from '../utils/utils'
 
 interface CompilingSoundWithImage {
