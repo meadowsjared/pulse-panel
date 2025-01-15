@@ -118,9 +118,12 @@ export const useSoundStore = defineStore('sound', {
     },
     /**
      * Play a sound, if another sound is playing, it can stop it
-     * @param activeOutputDevices device array to play the sound on
-     * @param volume volume to play the sound at, defaults to `this.volume`
      * @param audioFile the file to play, defaults to `chordAlert`
+     * @param activeOutputDevices device array to play the sound on
+     * @param selectedOutputDevices device array to play the sound on
+     * @param preview if true, it will not key up the PTT key
+     * @param volume volume to play the sound at, defaults to `this.volume`
+     * @returns a promise that resolves with an object containing the duration of the sound and `done` promise
      */
     async playSound(
       audioFile: Sound | null = null,
@@ -128,36 +131,62 @@ export const useSoundStore = defineStore('sound', {
       selectedOutputDevices: (string | null)[] | null = null,
       preview: boolean = false,
       preventFalseKeyTrigger = false
-    ): Promise<void> {
-      // return a promise
-      return new Promise(resolve => {
-        const settingsStore = useSettingsStore()
-        if (settingsStore.recordingHotkey) return // if muted, don't play the sound //  || this.sendingKey
-        // console.debug('1 this.disabled = ', this.disabled)
-        if (!activeOutputDevices) {
-          activeOutputDevices = settingsStore.outputDevices
-        }
-        // filter out null values
-        activeOutputDevices = activeOutputDevices.filter((deviceId): deviceId is string => deviceId !== null)
-        if (!activeOutputDevices) return
-        if (!selectedOutputDevices) {
-          selectedOutputDevices = activeOutputDevices
-        }
-        // filter out null values
-        const filteredSelectedOutputDevices = selectedOutputDevices.filter(
-          (deviceId): deviceId is string => deviceId !== null
-        )
-        const audioFileId: string = audioFile?.id || chordAlert
-        // if we don't allow overlapping sounds, and there is a sound playing, remove it
-        if (settingsStore.allowOverlappingSound === false && this.playingSoundIds.length > 0) {
-          this.playingSoundIds = []
-          // note: we actually stop the sounds playing in _playSoundToDevice for each device
-        }
-        this.playingSoundIds.push(audioFileId)
+    ): Promise<{ duration: number | null; done: Promise<void> }> {
+      const settingsStore = useSettingsStore()
+      if (settingsStore.recordingHotkey) return { duration: null, done: Promise.resolve() } // if muted, don't play the sound //  || this.sendingKey
+      // console.debug('1 this.disabled = ', this.disabled)
+      if (!activeOutputDevices) {
+        activeOutputDevices = settingsStore.outputDevices
+      }
+      // filter out null values
+      activeOutputDevices = activeOutputDevices.filter((deviceId): deviceId is string => deviceId !== null)
+      if (!activeOutputDevices) return { duration: null, done: Promise.resolve() }
+      if (!selectedOutputDevices) {
+        selectedOutputDevices = activeOutputDevices
+      }
+      // filter out null values
+      const filteredSelectedOutputDevices = selectedOutputDevices.filter(
+        (deviceId): deviceId is string => deviceId !== null
+      )
+      const audioFileId: string = audioFile?.id || chordAlert
+      // if we don't allow overlapping sounds, and there is a sound playing, remove it
+      if (settingsStore.allowOverlappingSound === false && this.playingSoundIds.length > 0) {
+        this.playingSoundIds = []
+        // note: we actually stop the sounds playing in _playSoundToDevice for each device
+      }
+      this.playingSoundIds.push(audioFileId)
 
-        if (preventFalseKeyTrigger) this.sendingPttHotkey = true
-        const handlePromiseAll = async (promiseAr: Promise<void>[]) => {
-          await Promise.all(promiseAr)
+      if (preventFalseKeyTrigger) this.sendingPttHotkey = true
+      if (!preview) this._pttHotkeyPress(settingsStore, true)
+      if (preventFalseKeyTrigger) {
+        setTimeout(() => (this.sendingPttHotkey = false), 100)
+      }
+      this.currentSound = audioFile
+      let firstDuration: null | number = null
+      let promiseAr: Promise<{ duration: number | null; done: Promise<void> }[]>[] | null = null
+      const durationPromise = new Promise<void>(resolve => {
+        promiseAr = activeOutputDevices?.map<Promise<{ duration: number | null; done: Promise<void> }[]>>(
+          async (outputDeviceId: string, index: number) => {
+            if (preview && index !== 0) return // only play the sound on the first device if previewing
+            const { duration, done } = await this._playSoundToDevice(
+              outputDeviceId,
+              audioFile?.volume ?? settingsStore.defaultVolume,
+              filteredSelectedOutputDevices,
+              settingsStore,
+              audioFile
+            )
+            if (firstDuration === null && duration) {
+              firstDuration = duration
+              resolve()
+            }
+            return done
+          }
+        )
+      })
+
+      // convert the array of promises to a single promise that resolves when all promises are done
+      const done = new Promise<void>(resolve => {
+        ;(promiseAr === null ? Promise.resolve() : Promise.all(promiseAr)).then(() => {
           if (preventFalseKeyTrigger) this.sendingPttHotkey = true
           if (!preview) this._pttHotkeyPress(settingsStore, false)
           this.playingSoundIds = this.playingSoundIds.filter(id => id !== audioFileId)
@@ -166,31 +195,26 @@ export const useSoundStore = defineStore('sound', {
           }
           this.currentSound = null
           resolve()
-        }
-        if (!preview) this._pttHotkeyPress(settingsStore, true)
-        if (preventFalseKeyTrigger) {
-          setTimeout(() => (this.sendingPttHotkey = false), 100)
-        }
-        this.currentSound = audioFile
-        const promiseAr = activeOutputDevices?.map(async (outputDeviceId: string, index: number) => {
-          if (preview && index !== 0) return // only play the sound on the first device if previewing
-          await this._playSoundToDevice(
-            outputDeviceId,
-            audioFile?.volume ?? settingsStore.defaultVolume,
-            filteredSelectedOutputDevices,
-            settingsStore,
-            audioFile
-          )
         })
-        if (promiseAr) {
-          handlePromiseAll(promiseAr)
-        }
       })
+      await durationPromise
+      return { duration: firstDuration, done }
+    },
+    /** get the duration of an audio file */
+    async getAudioDuration(audioUrl: string): Promise<number> {
+      const audioContext = new window.AudioContext()
+      const response = await fetch(audioUrl)
+      const arrayBuffer = await response.arrayBuffer()
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+      return audioBuffer.duration
     },
     /**
      * Play a sound on a specific device
      * @param outputDeviceId the device to play the sound on
      * @param volume volume to play the sound at, defaults to `this.volume`
+     * @param selectedOutputDevices list of available output devices
+     * @param settingsStore the settings store
+     * @param audioFile the file to play, defaults to `chordAlert`
      * @param resolve the resolve function to call when the sound is done playing
      */
     async _playSoundToDevice(
@@ -199,11 +223,11 @@ export const useSoundStore = defineStore('sound', {
       selectedOutputDevices: string[],
       settingsStore: SettingsStore,
       audioFile: Sound | null
-    ): Promise<void> {
+    ): Promise<{ duration: number | null; done: Promise<void> }> {
       const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
       if (index === -1) {
         console.error('Output device not found', { outputDeviceId, selectedOutputDevices })
-        return
+        return { duration: null, done: Promise.resolve() }
       }
       const outputDeviceData = this.outputDeviceData[index]
       if (
@@ -218,12 +242,15 @@ export const useSoundStore = defineStore('sound', {
         outputDeviceData.numSoundsPlaying--
         outputDeviceData.playingAudio = false
       }
-
+      let duration: number | null = null
       if (audioFile?.audioUrl === undefined && audioFile?.audioKey !== undefined) {
         const audioUrl = await settingsStore.getFile(audioFile.audioKey)
         if (audioUrl) {
           audioFile.audioUrl = audioUrl
+          duration = await this.getAudioDuration(audioUrl)
         }
+      } else {
+        duration = await this.getAudioDuration(audioFile?.audioUrl ?? chordAlert)
       }
 
       const newAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
@@ -237,7 +264,7 @@ export const useSoundStore = defineStore('sound', {
         }
         console.error(errorMessage)
       })
-      await new Promise<void>(resolve => {
+      const done = new Promise<void>(resolve => {
         if (!outputDeviceData.currentAudio) return
         newAudio.volume = settingsStore.muted ? 0 : volume
         newAudio.onplaying = () => {
@@ -255,6 +282,8 @@ export const useSoundStore = defineStore('sound', {
           resolve()
         }
       })
+
+      return { duration, done }
     },
   },
 })
