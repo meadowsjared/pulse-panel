@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { Sound } from '@/@types/sound'
+import { Sound } from '../@types/sound'
 import Plus from '../assets/images/plus.svg'
 import Listen from '../assets/images/listen.svg'
 import InlineSvg from 'vue-inline-svg'
