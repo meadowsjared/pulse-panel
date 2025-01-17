@@ -13,6 +13,7 @@
       :class="[
         'sound-button',
         {
+          reset: resetAnimation,
           'playing-sound': playingThisSound,
           'has-image': modelValue.imageKey,
           'edit-mode': props.displayMode === 'edit',
@@ -20,7 +21,7 @@
           focusVisible,
         },
       ]"
-      :style="modelValue.imageUrl ? { backgroundImage: `url(${modelValue.imageUrl})` } : {}">
+      :style="mergedStyle">
       <span
         ref="buttonTitle"
         v-if="!props.modelValue.hideTitle"
@@ -91,6 +92,15 @@ onMounted(() => {
   }
 })
 
+const mergedStyle = computed(() => {
+  return {
+    ...(props.modelValue.imageUrl ? { backgroundImage: `url(${props.modelValue.imageUrl})` } : {}),
+    ...(props.modelValue.duration ? { '--sound-duration': `${props.modelValue.duration}s` } : {}),
+  }
+})
+
+const resetAnimation = ref(false)
+
 const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
 
 const isFourLines = computed(() => {
@@ -115,10 +125,15 @@ function editSound() {
   }
 }
 
-function playSound() {
+async function playSound() {
   numSoundsPlaying.value++
+  resetAnimation.value = true
   soundStore.playSound(props.modelValue, null, null, undefined, true).then(() => {
     numSoundsPlaying.value--
+  })
+  // Reset the animation by toggling the resetAnimation ref
+  setTimeout(() => {
+    resetAnimation.value = false
   })
 }
 
@@ -237,6 +252,30 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   display: flex;
   justify-content: center;
   align-items: center;
+  position: relative;
+  isolation: isolate;
+}
+
+.sound-button.playing-sound::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  animation: play-progress var(--sound-duration) linear forwards;
+}
+
+.sound-button.playing-sound.reset::after {
+  animation: none;
+  right: 100%;
+}
+
+@keyframes play-progress {
+  from {
+    right: 100%;
+  }
+  to {
+    right: 0;
+  }
 }
 
 .sound-button.focusVisible {
@@ -249,10 +288,6 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   text-shadow: 0px 0px 8px rgba(0, 0, 0, var(--opacity)), 4px 4px 8px rgba(0, 0, 0, var(--opacity)),
     4px -4px 8px rgba(0, 0, 0, var(--opacity)), -4px 4px 8px rgba(0, 0, 0, var(--opacity)),
     -4px -4px 8px rgba(0, 0, 0, var(--opacity));
-}
-
-.sound-button.playing-sound {
-  filter: brightness(50%);
 }
 
 .sound-button.editing-sound {
