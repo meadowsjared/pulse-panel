@@ -200,14 +200,6 @@ export const useSoundStore = defineStore('sound', {
       await durationPromise
       return { duration: firstDuration, done }
     },
-    /** get the duration of an audio file */
-    async getAudioDuration(audioUrl: string): Promise<number> {
-      const audioContext = new window.AudioContext()
-      const response = await fetch(audioUrl)
-      const arrayBuffer = await response.arrayBuffer()
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-      return audioBuffer.duration
-    },
     /**
      * Play a sound on a specific device
      * @param outputDeviceId the device to play the sound on
@@ -241,16 +233,6 @@ export const useSoundStore = defineStore('sound', {
         })
         outputDeviceData.numSoundsPlaying--
         outputDeviceData.playingAudio = false
-      }
-      let duration: number | null = null
-      if (audioFile?.audioUrl === undefined && audioFile?.audioKey !== undefined) {
-        const audioUrl = await settingsStore.getFile(audioFile.audioKey)
-        if (audioUrl) {
-          audioFile.audioUrl = audioUrl
-          duration = await this.getAudioDuration(audioUrl)
-        }
-      } else {
-        duration = await this.getAudioDuration(audioFile?.audioUrl ?? chordAlert)
       }
 
       const newAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
