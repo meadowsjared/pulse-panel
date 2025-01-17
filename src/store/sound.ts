@@ -123,7 +123,7 @@ export const useSoundStore = defineStore('sound', {
      * @param selectedOutputDevices device array to play the sound on
      * @param preview if true, it will not key up the PTT key
      * @param volume volume to play the sound at, defaults to `this.volume`
-     * @returns a promise that resolves with an object containing the duration of the sound and `done` promise
+     * @returns a Promise<void> that resolves when the sound is done playing
      */
     async playSound(
       audioFile: Sound | null = null,
@@ -131,16 +131,16 @@ export const useSoundStore = defineStore('sound', {
       selectedOutputDevices: (string | null)[] | null = null,
       preview: boolean = false,
       preventFalseKeyTrigger = false
-    ): Promise<{ duration: number | null; done: Promise<void> }> {
+    ): Promise<void> {
       const settingsStore = useSettingsStore()
-      if (settingsStore.recordingHotkey) return { duration: null, done: Promise.resolve() } // if muted, don't play the sound //  || this.sendingKey
+      if (settingsStore.recordingHotkey) return Promise.resolve() // if muted, don't play the sound //  || this.sendingKey
       // console.debug('1 this.disabled = ', this.disabled)
       if (!activeOutputDevices) {
         activeOutputDevices = settingsStore.outputDevices
       }
       // filter out null values
       activeOutputDevices = activeOutputDevices.filter((deviceId): deviceId is string => deviceId !== null)
-      if (!activeOutputDevices) return { duration: null, done: Promise.resolve() }
+      if (!activeOutputDevices) return Promise.resolve()
       if (!selectedOutputDevices) {
         selectedOutputDevices = activeOutputDevices
       }
@@ -162,27 +162,18 @@ export const useSoundStore = defineStore('sound', {
         setTimeout(() => (this.sendingPttHotkey = false), 100)
       }
       this.currentSound = audioFile
-      let firstDuration: null | number = null
-      let promiseAr: Promise<{ duration: number | null; done: Promise<void> }[]>[] | null = null
-      const durationPromise = new Promise<void>(resolve => {
-        promiseAr = activeOutputDevices?.map<Promise<{ duration: number | null; done: Promise<void> }[]>>(
-          async (outputDeviceId: string, index: number) => {
-            if (preview && index !== 0) return // only play the sound on the first device if previewing
-            const { duration, done } = await this._playSoundToDevice(
-              outputDeviceId,
-              audioFile?.volume ?? settingsStore.defaultVolume,
-              filteredSelectedOutputDevices,
-              settingsStore,
-              audioFile
-            )
-            if (firstDuration === null && duration) {
-              firstDuration = duration
-              resolve()
-            }
-            return done
-          }
-        )
-      })
+      const promiseAr: Promise<void>[] = activeOutputDevices?.map<Promise<void>>(
+        async (outputDeviceId: string, index: number) => {
+          if (preview && index !== 0) return // only play the sound on the first device if previewing
+          await this._playSoundToDevice(
+            outputDeviceId,
+            audioFile?.volume ?? settingsStore.defaultVolume,
+            filteredSelectedOutputDevices,
+            settingsStore,
+            audioFile
+          )
+        }
+      )
 
       // convert the array of promises to a single promise that resolves when all promises are done
       const done = new Promise<void>(resolve => {
@@ -197,8 +188,7 @@ export const useSoundStore = defineStore('sound', {
           resolve()
         })
       })
-      await durationPromise
-      return { duration: firstDuration, done }
+      return done
     },
     /**
      * Play a sound on a specific device
@@ -215,11 +205,11 @@ export const useSoundStore = defineStore('sound', {
       selectedOutputDevices: string[],
       settingsStore: SettingsStore,
       audioFile: Sound | null
-    ): Promise<{ duration: number | null; done: Promise<void> }> {
+    ): Promise<void> {
       const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
       if (index === -1) {
         console.error('Output device not found', { outputDeviceId, selectedOutputDevices })
-        return { duration: null, done: Promise.resolve() }
+        return Promise.resolve()
       }
       const outputDeviceData = this.outputDeviceData[index]
       if (
@@ -265,7 +255,7 @@ export const useSoundStore = defineStore('sound', {
         }
       })
 
-      return { duration: audioFile?.duration ?? null, done }
+      return done
     },
   },
 })
