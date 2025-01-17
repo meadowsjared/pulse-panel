@@ -11,4 +11,5 @@ export interface Sound {
   color?: string
   volume?: number
   isPreview?: boolean
+  duration?: number
 }

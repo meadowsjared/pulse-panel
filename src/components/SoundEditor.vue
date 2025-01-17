@@ -221,6 +221,9 @@ async function handleAudioFileUpload(event: Event) {
   props.modelValue.title = stripFileExtension(file.name)
   props.modelValue.audioKey = fileKey
   props.modelValue.audioUrl = fileUrl
+  const audioContext = new window.AudioContext()
+  props.modelValue.duration = await settingsStore.getAudioDuration(fileUrl, audioContext)
+  await audioContext.close()
   emit('update:modelValue', props.modelValue)
 }
 

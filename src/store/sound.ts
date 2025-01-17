@@ -283,7 +283,7 @@ export const useSoundStore = defineStore('sound', {
         }
       })
 
-      return { duration, done }
+      return { duration: audioFile?.duration ?? null, done }
     },
   },
 })

@@ -5,6 +5,7 @@ import { File } from '../@types/file'
 import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
 import { Settings, Versions } from '../@types/electron-window'
+import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 
 declare global {
   interface Window {
@@ -289,21 +290,43 @@ export const useSettingsStore = defineStore('settings', {
         return this.sounds
       }
     },
+    /** get the duration of an audio file */
+    async getAudioDuration(audioUrl: string, audioContext: AudioContext): Promise<number | undefined> {
+      try {
+        const response = await fetch(audioUrl)
+        const arrayBuffer = await response.arrayBuffer()
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+        return audioBuffer.duration
+      } catch (error) {
+        return undefined
+      }
+    },
     /**
      * Lazily get the image URLs for the sounds.
      * @param sounds[] the array of sounds
      * @returns void
      */
-    _getImageUrls(sounds: Sound[]) {
-      sounds.forEach(sound => {
+    async _getImageUrls(sounds: Sound[]) {
+      const audioContext = new window.AudioContext()
+      for (const sound of sounds) {
         if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
-          this.getFile(sound.imageKey).then(imageUrl => {
+          await this.getFile(sound.imageKey).then((imageUrl: string) => {
             if (imageUrl) {
               sound.imageUrl = imageUrl
             }
           })
         }
-      })
+        if (sound?.audioUrl === undefined && sound?.audioKey !== undefined) {
+          const audioUrl = await this.getFile(sound.audioKey)
+          if (audioUrl) {
+            sound.audioUrl = audioUrl
+            sound.duration = await this.getAudioDuration(audioUrl, audioContext)
+          }
+        } else {
+          sound.duration = await this.getAudioDuration(sound?.audioUrl ?? chordAlert, audioContext)
+        }
+      }
+      await audioContext.close()
     },
     /**
      * This function listens for windowResize events and sets the windowIsMaximized state
