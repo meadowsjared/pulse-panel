@@ -18,7 +18,8 @@
     },
     "types": ["vite/client", "node"]
   },
-  "include": ["electron/**/*", "**/*.vue", "components.d.ts", "@types/**/*.d.ts"],
+  "include": ["**/*.ts", "@types/**/*.d.ts", "**/*.vue", "electron/**/*", "components.d.ts", "auto-imports.d.ts"],
+  "exclude": ["node_modules", "dist", "electron"],
   "references": [
     {
       "path": "./tsconfig.node.json"
