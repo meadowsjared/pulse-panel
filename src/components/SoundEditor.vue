@@ -201,7 +201,7 @@ function focusPrevElement() {
   browseImageButton.value?.focus()
 }
 
-function updateHotkey(newKey: string[], oldKey: string[] | undefined) {
+function updateHotkey(newKey: string[] | undefined, oldKey: string[] | undefined) {
   if (oldKey) {
     settingsStore.removeHotkey(props.modelValue, oldKey)
   }

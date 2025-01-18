@@ -310,7 +310,7 @@ export const useSettingsStore = defineStore('settings', {
       const audioContext = new window.AudioContext()
       for (const sound of sounds) {
         if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
-          await this.getFile(sound.imageKey).then((imageUrl: string) => {
+          await this.getFile(sound.imageKey).then((imageUrl: string | null) => {
             if (imageUrl) {
               sound.imageUrl = imageUrl
             }

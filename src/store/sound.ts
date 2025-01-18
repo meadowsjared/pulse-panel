@@ -148,7 +148,7 @@ export const useSoundStore = defineStore('sound', {
       const filteredSelectedOutputDevices = selectedOutputDevices.filter(
         (deviceId): deviceId is string => deviceId !== null
       )
-      const audioFileId: string = audioFile?.id || chordAlert
+      const audioFileId: string = audioFile?.id ?? chordAlert
       // if we don't allow overlapping sounds, and there is a sound playing, remove it
       if (settingsStore.allowOverlappingSound === false && this.playingSoundIds.length > 0) {
         this.playingSoundIds = []

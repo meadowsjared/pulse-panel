@@ -41,7 +41,7 @@ const hotkeyButton = ref<HTMLButtonElement | null>(null)
 const buttons = ref<string[]>([])
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: string[] | undefined, previousValue: string[] | undefined): void
+  (event: 'update:modelValue', newKey: string[] | undefined, oldKey: string[] | undefined): void
   (event: 'focusNextElement'): void
   (event: 'focusPrevElement'): void
 }>()
