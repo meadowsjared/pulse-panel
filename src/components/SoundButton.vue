@@ -13,7 +13,7 @@
       :class="[
         'sound-button',
         {
-          reset: resetAnimation,
+          reset: props.modelValue.reset,
           'playing-sound': playingThisSound,
           'has-image': modelValue.imageKey,
           'edit-mode': props.displayMode === 'edit',
@@ -99,8 +99,6 @@ const mergedStyle = computed(() => {
   }
 })
 
-const resetAnimation = ref(false)
-
 const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
 
 const isFourLines = computed(() => {
@@ -127,13 +125,8 @@ function editSound() {
 
 async function playSound() {
   numSoundsPlaying.value++
-  resetAnimation.value = true
   soundStore.playSound(props.modelValue, null, null, undefined, true).then(() => {
     numSoundsPlaying.value--
-  })
-  // Reset the animation by toggling the resetAnimation ref
-  setTimeout(() => {
-    resetAnimation.value = false
   })
 }
 

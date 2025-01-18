@@ -132,6 +132,13 @@ export const useSoundStore = defineStore('sound', {
       preview: boolean = false,
       preventFalseKeyTrigger = false
     ): Promise<void> {
+      if (audioFile) {
+        audioFile.reset = true
+        // Reset the animation by toggling the resetAnimation ref
+        setTimeout(() => {
+          delete audioFile.reset
+        })
+      }
       const settingsStore = useSettingsStore()
       if (settingsStore.recordingHotkey) return Promise.resolve() // if muted, don't play the sound //  || this.sendingKey
       // console.debug('1 this.disabled = ', this.disabled)

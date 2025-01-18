@@ -12,4 +12,6 @@ export interface Sound {
   volume?: number
   isPreview?: boolean
   duration?: number
+  /** used for resetting the progress bar animation */
+  reset?: boolean
 }
