@@ -6,7 +6,7 @@
     @dragover.prevent>
     <button
       ref="soundButton"
-      @click="playSound()"
+      @click="playSound"
       @auxclick="emit('editSound')"
       @blur="focusVisible = false"
       @keyup="handleKeyup"
