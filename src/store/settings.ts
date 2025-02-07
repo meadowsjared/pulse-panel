@@ -291,12 +291,20 @@ export const useSettingsStore = defineStore('settings', {
       }
     },
     /** get the duration of an audio file */
-    async getAudioDuration(audioUrl: string, audioContext: AudioContext): Promise<number | undefined> {
+    async getAudioDuration(audioUrl: string, audioContext?: AudioContext): Promise<number | undefined> {
       try {
         const response = await fetch(audioUrl)
         const arrayBuffer = await response.arrayBuffer()
-        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
-        return audioBuffer.duration
+        let closeAudioContext = false
+        if (!audioContext) {
+          audioContext = new window.AudioContext()
+          closeAudioContext = true
+        }
+        const duration = (await audioContext.decodeAudioData(arrayBuffer)).duration
+        if (closeAudioContext) {
+          await audioContext.close()
+        }
+        return duration
       } catch (error) {
         return undefined
       }
