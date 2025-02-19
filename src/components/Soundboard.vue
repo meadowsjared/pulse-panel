@@ -304,7 +304,8 @@ function stripAudioUrls(pSounds: Sound[]) {
   padding: 1rem 1rem 0 1rem;
   width: 100%;
   height: 100%;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  --grid-min-col-size: 80px;
+  grid-template-columns: repeat(auto-fill, minmax(min(var(--grid-min-col-size), 100%), 1fr));
   --grid-height: 110px;
   grid-auto-rows: max-content;
   overflow: auto;
