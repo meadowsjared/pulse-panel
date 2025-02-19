@@ -5,7 +5,7 @@
   "author": "Jared Meadows <meadowsjared@gmail.com>",
   "main": "src/electron/main/main.js",
   "description": "A soundboard app that looks nice too",
-  "homepage": "https://github.com/Counsel-of-Big-Brains/pulse-panel/blob/main/README.md",
+  "homepage": "https://github.com/meadowsjared/pulse-panel/blob/main/README.md",
   "scripts": {
     "dev": "bun app:dev",
     "build": "bun app:build",

@@ -3,7 +3,7 @@
 
 
 ## Get Pulse Panel:
-### [**DOWNLOAD THE LATEST RELEASE**](https://github.com/Counsel-of-Big-Brains/pulse-panel/releases/latest/)
+### [**DOWNLOAD THE LATEST RELEASE**](https://github.com/meadowsjared/pulse-panel/releases/latest/)
  
 <br>
  
@@ -14,7 +14,7 @@
 ### 1. clone this repository
 
 ```bash
-git clone https://github.com/Counsel-of-Big-Brains/pulse-panel.git
+git clone https://github.com/meadowsjared/pulse-panel.git
 ```
 
 ### 2. install packages

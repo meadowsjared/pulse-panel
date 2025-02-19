@@ -95,7 +95,7 @@ function navigateTo(path: string) {
 }
 
 function openLink() {
-  window.electron?.openExternalLink('https://github.com/counsel-of-Big-Brains/pulse-panel')
+  window.electron?.openExternalLink('https://github.com/meadowsjared/pulse-panel')
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
