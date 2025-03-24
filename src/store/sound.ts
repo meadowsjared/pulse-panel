@@ -118,7 +118,7 @@ export const useSoundStore = defineStore('sound', {
     },
     /**
      * Play a sound, if another sound is playing, it can stop it
-     * @param audioFile the file to play, defaults to `chordAlert`
+     * @param soundObject the file to play, defaults to `chordAlert`
      * @param activeOutputDevices device array to play the sound on
      * @param selectedOutputDevices device array to play the sound on
      * @param preview if true, it will not key up the PTT key
@@ -126,17 +126,17 @@ export const useSoundStore = defineStore('sound', {
      * @returns a Promise<void> that resolves when the sound is done playing
      */
     async playSound(
-      audioFile: Sound | null = null,
+      soundObject: Sound | null = null,
       activeOutputDevices: string[] | null = null,
       selectedOutputDevices: (string | null)[] | null = null,
       preview: boolean = false,
       preventFalseKeyTrigger = false
     ): Promise<void> {
-      if (audioFile) {
-        audioFile.reset = true
+      if (soundObject) {
+        soundObject.reset = true
         // Reset the animation by toggling the resetAnimation ref
         setTimeout(() => {
-          delete audioFile.reset
+          delete soundObject.reset
         })
       }
       const settingsStore = useSettingsStore()
@@ -155,7 +155,7 @@ export const useSoundStore = defineStore('sound', {
       const filteredSelectedOutputDevices = selectedOutputDevices.filter(
         (deviceId): deviceId is string => deviceId !== null
       )
-      const audioFileId: string = audioFile?.id ?? chordAlert
+      const audioFileId: string = soundObject?.id ?? chordAlert
       // if we don't allow overlapping sounds, and there is a sound playing, remove it
       if (settingsStore.allowOverlappingSound === false && this.playingSoundIds.length > 0) {
         this.playingSoundIds = []
@@ -168,16 +168,16 @@ export const useSoundStore = defineStore('sound', {
       if (preventFalseKeyTrigger) {
         setTimeout(() => (this.sendingPttHotkey = false), 100)
       }
-      this.currentSound = audioFile
+      this.currentSound = soundObject
       const promiseAr: Promise<void>[] = activeOutputDevices?.map<Promise<void>>(
         async (outputDeviceId: string, index: number) => {
           if (preview && index !== 0) return // only play the sound on the first device if previewing
           await this._playSoundToDevice(
             outputDeviceId,
-            audioFile?.volume ?? settingsStore.defaultVolume,
+            soundObject?.volume ?? settingsStore.defaultVolume,
             filteredSelectedOutputDevices,
             settingsStore,
-            audioFile
+            soundObject
           )
         }
       )
@@ -203,7 +203,7 @@ export const useSoundStore = defineStore('sound', {
      * @param volume volume to play the sound at, defaults to `this.volume`
      * @param selectedOutputDevices list of available output devices
      * @param settingsStore the settings store
-     * @param audioFile the file to play, defaults to `chordAlert`
+     * @param soundObject the file to play, defaults to `chordAlert`
      * @param resolve the resolve function to call when the sound is done playing
      */
     async _playSoundToDevice(
@@ -211,7 +211,7 @@ export const useSoundStore = defineStore('sound', {
       volume: number,
       selectedOutputDevices: string[],
       settingsStore: SettingsStore,
-      audioFile: Sound | null
+      soundObject: Sound | null
     ): Promise<void> {
       const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
       if (index === -1) {
@@ -232,9 +232,9 @@ export const useSoundStore = defineStore('sound', {
         outputDeviceData.playingAudio = false
       }
 
-      const newAudio = new Audio(audioFile?.audioUrl ?? chordAlert)
+      const newAudio = new Audio(soundObject?.audioUrl ?? chordAlert)
       // add the id of the audio to the newAudio object so we can keep track of that later
-      newAudio.setAttribute('data-id', audioFile?.id ?? chordAlert)
+      newAudio.setAttribute('data-id', soundObject?.id ?? chordAlert)
       outputDeviceData.currentAudio.push(newAudio)
       await newAudio.setSinkId(outputDeviceId).catch((error: any) => {
         let errorMessage = error
