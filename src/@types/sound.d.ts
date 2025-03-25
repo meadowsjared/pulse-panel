@@ -14,4 +14,11 @@ export interface Sound {
   duration?: number
   /** used for resetting the progress bar animation */
   reset?: boolean
+  activeSegment?: SoundSegment
+  soundSegments?: SoundSegment[]
+}
+
+export interface SoundSegment {
+  start: number
+  end: number
 }
