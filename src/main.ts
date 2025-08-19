@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import Index from './Index.vue'
 import router from './router'
 import './main.css'
+import 'vue-color/style.css'
 import { useSettingsStore } from './store/settings'
 
 // (
