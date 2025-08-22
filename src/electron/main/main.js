@@ -95,3 +95,11 @@ app.on('window-all-closed', () => {
 app.on('will-quit', () => {
   settings.stop()
 })
+
+app.on('browser-window-focus', () => {
+  mainWindow.setAccentColor('#237b23')
+})
+
+app.on('browser-window-blur', () => {
+  mainWindow.setAccentColor('#404040')
+})
