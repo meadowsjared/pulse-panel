@@ -13,8 +13,6 @@
 <script setup lang="ts">
 import { useModel } from 'vue'
 
-const emit = defineEmits<(event: 'update:modelValue', value: number) => void>()
-
 const props = withDefaults(
   defineProps<{
     modelValue: number
