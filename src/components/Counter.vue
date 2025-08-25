@@ -5,14 +5,14 @@
       <button
         type="button"
         @click="counterStore.add()"
-        class="bg-arubaGreen rounded px-3 py-1 my-4 text-white active:bg-greenSeduction active:text-neutralLight-400"
+        class="bg-aruba-green rounded-sm px-3 py-1 my-4 text-white active:bg-green-seduction active:text-neutral-light-400"
       >
         <inline-svg :src="addIcon" class="w-6 h-6" />
       </button>
       <button
         type="button"
         @click="counterStore.subtract()"
-        class="bg-arubaGreen rounded px-3 py-1 my-4 text-white active:bg-greenSeduction active:text-neutralLight-400"
+        class="bg-aruba-green rounded-sm px-3 py-1 my-4 text-white active:bg-green-seduction active:text-neutral-light-400"
       >
         <inline-svg :src="subtractIcon" class="w-6 h-6" />
       </button>
