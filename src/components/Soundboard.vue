@@ -286,6 +286,7 @@ function stripAudioUrls(pSounds: Sound[]) {
       imageKey: sound.imageKey,
       volume: sound.volume,
       color: sound.color,
+      soundSegments: sound.soundSegments,
     }
   })
 }
