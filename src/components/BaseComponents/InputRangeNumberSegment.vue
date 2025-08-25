@@ -2,8 +2,8 @@
   <div class="w-full flex" v-bind="$attrs">
     <div class="flex w-full flex-col justify-center">
       <div class="flex gap-1 items-center justify-center">
-        <input type="text" class="text-input" :value="innerModelValue.start" @input="handleInput($event, 'start')" />
-        <input type="text" class="text-input" :value="innerModelValue.end" @input="handleInput($event, 'end')" />
+        <input type="text" class="text-input" v-model="innerModelValue.start" @input="handleInput($event, 'start')" />
+        <input type="text" class="text-input" v-model="innerModelValue.end" @input="handleInput($event, 'end')" />
       </div>
       <div class="segment-line" ref="containerRef">
         <button
