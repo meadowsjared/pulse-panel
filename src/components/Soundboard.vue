@@ -23,7 +23,7 @@
     <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
       <SoundEditor
         v-model="settingsStore.currentEditingSound"
-        @update:modelValue="updateSound"
+        @update:modelValue="updateCurrentEditingSound"
         @deleteSound="deleteSound($event)" />
     </div>
   </Transition>
@@ -220,6 +220,17 @@ function dragOver(pSound: Sound) {
   if (index === draggedIndex) return
   settingsStore.sounds.splice(draggedIndex, 1) // remove the previous sound preview
   settingsStore.sounds.splice(index, 0, draggedSound) // add the sound preview to the new index
+}
+
+function updateCurrentEditingSound() {
+  if (settingsStore.currentEditingSound !== null) {
+    const currentSound = settingsStore.currentEditingSound
+    const index = settingsStore.sounds.findIndex(sound => sound.id === currentSound.id)
+    if (index !== -1) {
+      settingsStore.sounds[index] = settingsStore.currentEditingSound
+      updateSound()
+    }
+  }
 }
 
 function updateSound() {
