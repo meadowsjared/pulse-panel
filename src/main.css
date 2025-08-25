@@ -15,6 +15,7 @@
   --link-color: #367d64;
   --accent-text-color: #2ea32e;
   --heavy-light-mode-font: bold;
+  --slider-background: #efefef;
 
   color: var(--text-color);
   font-family: 'Roboto', sans-serif;
