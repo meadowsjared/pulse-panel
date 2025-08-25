@@ -61,6 +61,41 @@
           <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
         </div>
       </div>
+      <div class="input-group flex flex-col mb-1 w-full">
+        <label for="">Segments:</label>
+        <div
+          v-for="(segment, index) in modelValue.soundSegments"
+          :key="'input-range-segment' + index"
+          class="flex gap-2 w-full items-center">
+          <button
+            @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
+            :class="['play-sound-button flex items-center', { focusVisible }]"
+            @blur="focusVisible = false"
+            @keyup="handleKeyup">
+            <inline-svg :src="PlayIcon" class="w-6 h-6" />
+          </button>
+          <button
+            @click="soundStore.playSound(modelValue, null, null, true, undefined, segment)"
+            title="preview sound"
+            :class="{ 'playing-sound': playingThisSound }"
+            class="light preview-button w-8 h-8 flex items-center justify-center">
+            <inline-svg class="w-8 h-8" :src="Listen" />
+          </button>
+          <input-range-number-segment
+            v-if="modelValue.soundSegments"
+            class="segment-slider flex-1"
+            @update:model-value="handleSegmentChange($event, index)"
+            :step="1"
+            :bigStep="10"
+            v-model="modelValue.soundSegments[index]" />
+          <button @click="removeSegment(segment)" class="close-button flex items-center">
+            <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
+          </button>
+        </div>
+        <button @click="addSegment" class="close-button w-full flex items-center justify-center">
+          <inline-svg class="w-8 h-8" :src="Plus" />
+        </button>
+      </div>
       <div v-if="modelValue.imageUrl" class="relative">
         <button @click="removeImage" class="remove-image-button absolute top-2 right-2 w-8 h-8 bg-white">
           <inline-svg :src="Plus" alt="remove image" class="w-full h-full rotate-45" />
@@ -102,6 +137,7 @@ import { useSoundStore } from '../store/sound'
 import { stripFileExtension } from '../utils/utils'
 import { TagInputRef } from './BaseComponents/TagInputTypes'
 import { throttle } from 'lodash'
+import { SoundSegment } from '../@types/sound.d'
 
 const props = defineProps<{
   modelValue: Sound
@@ -111,7 +147,7 @@ const emit = defineEmits<{
   (event: 'update:modelValue', value: Sound): void
   (event: 'deleteSound', sound: Sound): void
 }>()
-const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
+const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id))
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -176,6 +212,34 @@ watch(
     emit('update:modelValue', props.modelValue)
   }
 )
+
+function handleSegmentChange(segment: SoundSegment, index: number) {
+  if (props.modelValue.soundSegments && props.modelValue.soundSegments[index] !== segment) {
+    emit('update:modelValue', props.modelValue)
+  }
+}
+
+/**
+ * Adds a segment to the segments array
+ */
+function addSegment() {
+  if (!props.modelValue.soundSegments) props.modelValue.soundSegments = []
+  props.modelValue.soundSegments.push({ start: 0, end: 100 })
+  emit('update:modelValue', props.modelValue)
+}
+
+/**
+ * Removes a segment from the segments array
+ * @param segment The segment to remove
+ */
+function removeSegment(segment: SoundSegment) {
+  props.modelValue.soundSegments?.splice(props.modelValue.soundSegments?.indexOf(segment) ?? -1, 1)
+  if (props.modelValue.soundSegments?.length === 0) {
+    delete props.modelValue.soundSegments
+  }
+  // delete props.modelValue.soundSegments
+  emit('update:modelValue', props.modelValue)
+}
 
 /**
  * Handles the keyup event
@@ -403,6 +467,7 @@ input[type='checkbox']:focus-visible {
 
 .input-group > label {
   margin-bottom: 0.25rem;
+  text-align: left;
 }
 
 .input-group > input {
