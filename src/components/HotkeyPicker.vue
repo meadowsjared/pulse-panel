@@ -70,7 +70,7 @@ function handleKeyUp() {
     return
   }
   setTimeout(() => {
-    emit('update:modelValue', buttons.value, props.modelValue)
+    emit('update:modelValue', toRaw(buttons.value), props.modelValue)
     buttons.value = [] // reset the buttons
     hotkeyButton.value?.blur()
   }, 100)
