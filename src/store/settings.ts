@@ -6,6 +6,7 @@ import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
 import { Settings, Versions } from '../@types/electron-window'
 import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
+import { toRaw } from 'vue'
 
 declare global {
   interface Window {
@@ -354,19 +355,27 @@ export const useSettingsStore = defineStore('settings', {
     async registerHotkeys(): Promise<void> {
       const soundStore = useSoundStore()
       const electron = window.electron
-      const startingObject: string[][] = []
-      const hotkeys = this.sounds
+      const hotkeys: string[][] = []
+      // add hotkeys for digit0 through digit9 and numpad0 through numpad9
+      for (let i = 0; i <= 9; i++) {
+        if (!hotkeys.some(keys => arraysAreEqual(keys, [`Digit${i}`]))) {
+          hotkeys.push([`Digit${i}`])
+        }
+      }
+      for (let i = 0; i <= 9; i++) {
+        if (!hotkeys.some(keys => arraysAreEqual(keys, [`Numpad${i}`]))) {
+          hotkeys.push([`Numpad${i}`])
+        }
+      }
+      this.sounds
         .filter(sound => sound.hotkey !== undefined)
-        .reduce((array, sound) => {
-          if (sound.hotkey && !array.some(keys => arraysAreEqual(sound.hotkey, keys))) {
-            array.push(sound.hotkey)
+        .forEach(sound => {
+          if (sound.hotkey && !hotkeys.some(keys => arraysAreEqual(sound.hotkey, keys))) {
+            hotkeys.push(toRaw(sound.hotkey))
           }
-          return array
-        }, startingObject)
+        })
 
-      hotkeys.forEach(keys => {
-        electron?.registerHotkeys([...keys])
-      })
+      electron?.registerHotkeys(hotkeys)
       electron?.onKeyPressed(key => {
         this.sounds
           .filter(sound => arraysAreEqual(sound.hotkey, key))
@@ -388,7 +397,7 @@ export const useSettingsStore = defineStore('settings', {
         return
       }
       if (keys.length === 0) return
-      electron?.unregisterHotkeys([...keys])
+      electron?.unregisterHotkeys([toRaw(keys)])
     },
     /**
      * Add a hotkey to the store
@@ -406,7 +415,7 @@ export const useSettingsStore = defineStore('settings', {
         // hotkey already used, no need to re-add it
         return
       }
-      electron?.registerHotkeys([...keys])
+      electron?.addHotkeys([keys])
     },
     /**
      * Save a sound to the store
