@@ -118,6 +118,22 @@ function registerHotkeys(hotkeys) {
 }
 
 /**
+ * Adds an array of hotkeys
+ * @param { Array<string[]> } hotkeysArray
+ */
+function addHotkeys(hotkeysArray) {
+  console.log('Adding hotkeys:', hotkeysArray)
+  hotkeysArray.forEach(hotkeys => {
+    globalHotkeys.register(hotkeys.map(hotkeyToQHotkeyEnum), () => {
+      console.log('Hotkey pressed:', hotkeys)
+      BrowserWindow.getAllWindows().forEach(window => {
+        window.webContents.send('on-key-pressed', hotkeys)
+      })
+    })
+  })
+}
+
+/**
  * Unregisters an array of hotkeys
  * @param {string[]} hotkeys
  */
@@ -429,6 +445,7 @@ module.exports = {
   deleteSetting,
   sendKey,
   registerHotkeys,
+  addHotkeys,
   unregisterHotkeys,
   stop,
   downloadVBCable,
