@@ -26,6 +26,7 @@ interface State {
   sounds: Sound[]
   displayMode: DisplayMode
   currentEditingSound: Sound | null
+  hoveredSound: Sound | null
   muted: boolean
   recordingHotkey: boolean
   ptt_hotkey: string[]
@@ -59,6 +60,7 @@ export const useSettingsStore = defineStore('settings', {
     sounds: [],
     displayMode: 'play',
     currentEditingSound: null,
+    hoveredSound: null,
     muted: false,
     recordingHotkey: false,
     ptt_hotkey: [],
@@ -170,6 +172,20 @@ export const useSettingsStore = defineStore('settings', {
     },
     async toggleDisplayMode(): Promise<void> {
       this.displayMode = this.displayMode === 'play' ? 'edit' : 'play'
+    },
+    async setHoveringSound(sound: Sound | null) {
+      this.hoveredSound = sound
+    },
+    async playHoveredSoundSegment(segmentIndex: number) {
+      const soundStore = useSoundStore()
+      if (this.hoveredSound) {
+        const segment = this.hoveredSound.soundSegments?.[segmentIndex] ?? null
+        if (segment) {
+          soundStore.playSound(this.hoveredSound, null, null, undefined, true, segment)
+        } else if (segmentIndex === 0) {
+          soundStore.playSound(this.hoveredSound, null, null, undefined, true)
+        }
+      }
     },
     // /**
     //  * Save a string setting to the store
@@ -376,10 +392,16 @@ export const useSettingsStore = defineStore('settings', {
         })
 
       electron?.registerHotkeys(hotkeys)
-      electron?.onKeyPressed(key => {
+      electron?.onKeyPressed(keys => {
         this.sounds
-          .filter(sound => arraysAreEqual(sound.hotkey, key))
+          .filter(sound => arraysAreEqual(sound.hotkey, keys))
           .forEach(sound => soundStore.playSound(sound, null, null, undefined, true))
+        if (keys.length === 1 && (keys[0].startsWith('Digit') || keys[0].startsWith('Numpad'))) {
+          const soundNumber = parseInt(keys[0].replace('Digit', '').replace('Numpad', ''), 10)
+          if (!Number.isNaN(soundNumber)) {
+            this.playHoveredSoundSegment(soundNumber - 1)
+          }
+        }
       })
     },
     /**
