@@ -99,7 +99,7 @@ const mergedStyle = computed(() => {
   }
 })
 
-const playingThisSound = computed(() => soundStore.playingSoundIds.includes(props.modelValue.id))
+const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id))
 
 const isFourLines = computed(() => {
   if (buttonTitle.value) {
