@@ -20,6 +20,7 @@ app.whenReady().then(() => {
     })
   })
   ipcMain.handle('register-hotkeys', (_, hotkeys) => settings.registerHotkeys(hotkeys))
+  ipcMain.handle('add-hotkeys', (_, hotkeys) => settings.addHotkeys(hotkeys))
   ipcMain.handle('unregister-hotkeys', (_, hotkeys) => settings.unregisterHotkeys(hotkeys))
   ipcMain.handle('close-window', () => mainWindow.close())
   ipcMain.handle('minimize-window', () => mainWindow.minimize())

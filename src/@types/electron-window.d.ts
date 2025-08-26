@@ -24,6 +24,7 @@ export interface Settings {
   sendKey: (key: string[], down: boolean) => Promise<void>
   toggleDarkMode: (value: boolean) => void
   onDarkModeToggle: (callback: (value: boolean) => void) => void
+  addHotkeys: (hotkeys: string[][]) => void
   registerHotkeys: (hotkeys: string[]) => void
   unregisterHotkeys: (hotkeys: string[]) => void
   onKeyPressed: (callback: (key: string[]) => void) => void

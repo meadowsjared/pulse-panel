@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('electron', {
   deleteSetting: key => ipcRenderer.invoke('delete-setting', key),
   sendKey: (keys, down) => ipcRenderer.invoke('send-key', keys, down),
   registerHotkeys: hotkeys => ipcRenderer.invoke('register-hotkeys', hotkeys),
+  addHotkeys: hotkeys => ipcRenderer.invoke('add-hotkeys', hotkeys),
   unregisterHotkeys: hotkeys => ipcRenderer.invoke('unregister-hotkeys', hotkeys),
   onKeyPressed: callback => {
     ipcRenderer.on('on-key-pressed', (_, key) => callback(key))
