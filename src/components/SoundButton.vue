@@ -7,7 +7,10 @@
     <button
       ref="soundButton"
       @click="playSound"
-      @auxclick="emit('editSound')"
+      @mousedown="handleMouseDown"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @auxclick="handleAuxClick"
       @blur="focusVisible = false"
       @keyup="handleKeyup"
       :class="[
@@ -123,6 +126,32 @@ function editSound() {
   }
 }
 
+function handleAuxClick(event: MouseEvent) {
+  if (event.button === 2) {
+    emit('editSound')
+    return
+  }
+  if (event.button === 1) {
+    playSoundSegment(2)
+    // return
+  }
+}
+
+function handleMouseDown(event: MouseEvent) {
+  if (event.button === 1) {
+    event.preventDefault()
+  }
+}
+
+async function playSoundSegment(soundNumber: number) {
+  numSoundsPlaying.value++
+  const segment = props.modelValue.soundSegments?.[soundNumber - 1] ??
+    props.modelValue.soundSegments?.[0] ?? { start: 0, end: 0 }
+  soundStore.playSound(props.modelValue, null, null, undefined, true, segment).then(() => {
+    numSoundsPlaying.value--
+  })
+}
+
 async function playSound() {
   numSoundsPlaying.value++
   soundStore.playSound(props.modelValue, null, null, undefined, true).then(() => {
@@ -142,6 +171,14 @@ function handleKeyup(event: KeyboardEvent) {
     return
   }
   focusVisible.value = true
+}
+
+function handleMouseEnter() {
+  settingsStore.setHoveringSound(props.modelValue)
+}
+
+function handleMouseLeave() {
+  settingsStore.setHoveringSound(null)
 }
 
 function addSound() {
