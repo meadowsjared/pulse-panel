@@ -105,13 +105,15 @@ function hotkeyToQHotkeyEnum(hotkey) {
 
 /**
  * Registers an array of hotkeys
- * @param { string[] } hotkeys
+ * @param { string[][] } hotkeys
  */
-function registerHotkeys(hotkeys) {
+function registerHotkeys(hotkeysArray) {
   stop()
-  globalHotkeys.register(hotkeys.map(hotkeyToQHotkeyEnum), () => {
-    BrowserWindow.getAllWindows().forEach(window => {
-      window.webContents.send('on-key-pressed', hotkeys)
+  hotkeysArray.forEach(hotkeys => {
+    globalHotkeys.register(hotkeys.map(hotkeyToQHotkeyEnum), () => {
+      BrowserWindow.getAllWindows().forEach(window => {
+        window.webContents.send('on-key-pressed', hotkeys)
+      })
     })
   })
   globalHotkeys.run()
@@ -119,7 +121,7 @@ function registerHotkeys(hotkeys) {
 
 /**
  * Adds an array of hotkeys
- * @param { Array<string[]> } hotkeysArray
+ * @param { string[][] } hotkeysArray
  */
 function addHotkeys(hotkeysArray) {
   // console.log('Adding hotkeys:', hotkeysArray)
@@ -135,10 +137,12 @@ function addHotkeys(hotkeysArray) {
 
 /**
  * Unregisters an array of hotkeys
- * @param {string[]} hotkeys
+ * @param {string[][]} hotkeysArray
  */
-function unregisterHotkeys(hotkeys) {
-  globalHotkeys.unregister(hotkeys.map(hotkeyToQHotkeyEnum))
+function unregisterHotkeys(hotkeysArray) {
+  hotkeysArray.forEach(hotkeys => {
+    globalHotkeys.unregister(hotkeys.map(hotkeyToQHotkeyEnum))
+  })
 }
 
 function stop() {
