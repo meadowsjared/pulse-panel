@@ -69,12 +69,14 @@ const props = withDefaults(
     max?: number
     step?: number
     bigStep?: number
+    precision?: number
   }>(),
   {
     min: 0,
     max: 100,
     step: 1,
     bigStep: 10,
+    precision: 2,
   }
 )
 
@@ -174,6 +176,9 @@ function handleMouseMove(event: MouseEvent) {
   let newValue = minValue.value + percentage * (maxValue.value - minValue.value)
   newValue = Math.round(newValue / props.step) * props.step // Apply step rounding
   newValue = Math.max(minValue.value, Math.min(newValue, maxValue.value)) // Clamp to min/max bounds
+  // round the newValue to the nearest {precision}
+  const factor = Math.pow(10, props.precision)
+  newValue = Math.round(newValue * factor) / factor
   const segment = innerModelValue.value
   const newSegment = { ...segment, [isDragging.value]: newValue }
   innerModelValue.value = newSegment
