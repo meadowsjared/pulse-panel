@@ -46,15 +46,11 @@ watch(
  * Commits the current input value by parsing it and emitting the update.
  */
 function commitValue() {
-  console.log('Committing value:', displayValue.value)
   const totalSeconds = parseMMSSToSeconds(displayValue.value)
-  console.log('Parsed total seconds:', totalSeconds)
   const timeString = formatSecondsToMMSS(totalSeconds)
-  console.log('Formatted time string:', timeString)
   if (displayValue.value !== timeString) {
     displayValue.value = timeString
   }
-  console.log('Parsed time:', displayValue.value, 'to seconds:', totalSeconds)
   emit('update:modelValue', totalSeconds)
 }
 
