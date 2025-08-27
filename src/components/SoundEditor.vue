@@ -203,6 +203,7 @@ watch(
     props.modelValue.hotkey,
     props.modelValue.tags,
     props.modelValue.color,
+    props.modelValue.soundSegments,
   ],
   () => {
     // if hideTitle is false and modelValue has the property, delete it
@@ -220,7 +221,8 @@ watch(
       delete props.modelValue.tags
     }
     emit('update:modelValue', props.modelValue)
-  }
+  },
+  { deep: true }
 )
 
 function handleSegmentChange(segment: SoundSegment, index: number) {
