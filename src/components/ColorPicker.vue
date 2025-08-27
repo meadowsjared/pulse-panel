@@ -62,7 +62,7 @@ onUnmounted(() => {
 }
 
 .color-swatch {
-  width: 32px;
+  width: 64px;
   height: 32px;
   border: 2px solid #ccc;
   border-radius: 4px;
@@ -82,6 +82,11 @@ onUnmounted(() => {
   z-index: 1000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-radius: 4px;
-  background: white;
+  --vc-body-bg: var(--top-toolbar-color);
+  --vc-input-bg: var(--top-toolbar-color-light);
+  --vc-input-text: var(--button-text);
+  --vc-input-label: var(--button-text);
+  --vc-picker-bg: var(--alt-bg-color);
+  --vc-chrome-toggle-btn-highlighted: var(--background-color);
 }
 </style>
