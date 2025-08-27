@@ -2,18 +2,20 @@
   <div class="w-full flex" v-bind="$attrs">
     <div class="flex w-full flex-col justify-center">
       <div class="flex gap-1 items-center justify-center">
-        <input
-          type="text"
+        <input-text-number
           class="text-input"
-          v-model="displayValue.start"
-          @blur="commitValue('start')"
-          @keydown.enter="commitValue('start')" />
-        <input
-          type="text"
+          v-model="innerModelValue.start"
+          :min="props.min"
+          :max="props.max"
+          :step="props.step"
+          :big-step="props.bigStep" />
+        <input-text-number
           class="text-input"
-          v-model="displayValue.end"
-          @blur="commitValue('end')"
-          @keydown.enter="commitValue('end')" />
+          v-model="innerModelValue.end"
+          :min="props.min"
+          :max="props.max"
+          :step="props.step"
+          :big-step="props.bigStep" />
       </div>
       <div class="segment-line" ref="containerRef">
         <button
@@ -95,15 +97,6 @@ const containerRef = ref<HTMLElement>()
 const isDragging = ref<'start' | 'end' | null>(null)
 const rangeEndRef = ref<HTMLInputElement>()
 const endRangeHandleRef = ref<HTMLButtonElement>()
-const displayValue = ref<SoundSegmentText>({
-  start: '0',
-  end: '0',
-})
-
-interface SoundSegmentText {
-  start: string
-  end: string
-}
 
 const handleWidthInPx = computed(() => {
   if (!containerRef.value) return 0
@@ -131,19 +124,6 @@ onMounted(() => {
     })
   }
 })
-
-watch(
-  () => innerModelValue.value,
-  newSegment => {
-    if (parseFloat(displayValue.value.start) !== newSegment.start) {
-      displayValue.value.start = String(newSegment.start)
-    }
-    if (parseFloat(displayValue.value.end) !== newSegment.end) {
-      displayValue.value.end = String(newSegment.end)
-    }
-  },
-  { immediate: true, deep: true }
-)
 
 // Calculate the position of the start handle based on the value
 const startPosition = computed(() => {
@@ -178,22 +158,6 @@ const lineWidth = computed(() => {
   const width = Math.max(endPixelPosition - startPixelPosition - handleWidthInPx.value / 2, 0)
   return width + handleWidthInPx.value / 2
 })
-
-function commitValue(type: 'start' | 'end') {
-  const parsedValue = parseFloat(displayValue.value[type])
-  if (!isNaN(parsedValue)) {
-    if (parsedValue !== innerModelValue.value[type]) {
-      const newSegment = { ...innerModelValue.value, [type]: parsedValue }
-      innerModelValue.value = newSegment
-    }
-    if (displayValue.value[type] !== String(parsedValue)) {
-      displayValue.value[type] = String(parsedValue)
-    }
-  } else {
-    // On invalid input, snap back to the last known good value.
-    displayValue.value[type] = String(innerModelValue.value[type])
-  }
-}
 
 function getPosition(value: number, offset: number, containerWidth2: Ref<number>) {
   const percentage = (value - minValue.value) / (maxValue.value - minValue.value)

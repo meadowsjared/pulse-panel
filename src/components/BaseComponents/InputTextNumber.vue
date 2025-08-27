@@ -2,19 +2,19 @@
   <input
     ref="textInputElement"
     type="text"
-    v-model.number="innerModelValue"
-    @keydown.enter="textInputElement?.blur()"
-    @keydown.up.prevent=";(max === undefined || innerModelValue < max) && innerModelValue++"
-    @keydown.down.prevent=";(min === undefined || innerModelValue > min) && innerModelValue--"
-    @keydown.page-down.prevent="decreaseBigStep"
-    @keydown.page-up.prevent="increaseBigStep"
+    v-model.number="displayValue"
+    @keydown.enter="commitValue"
+    @blur="commitValue"
+    @keydown.up.prevent="adjustValue($event, step)"
+    @keydown.down.prevent="adjustValue($event, -step)"
+    @keydown.page-up.prevent="adjustValue($event, bigStep)"
+    @keydown.page-down.prevent="adjustValue($event, -bigStep)"
     v-bind="$attrs" />
 </template>
 
 <script setup lang="ts">
-import { ref, useModel } from 'vue'
-
 const textInputElement = ref<HTMLInputElement | null>(null)
+const displayValue = ref('')
 const emit = defineEmits<(event: 'update:modelValue', value: number) => void>()
 
 const props = withDefaults(
@@ -31,21 +31,47 @@ const props = withDefaults(
   }
 )
 
-const innerModelValue = useModel(props, 'modelValue')
+watch(
+  () => props.modelValue,
+  newValue => {
+    if (parseFloat(displayValue.value) !== newValue) {
+      console.log('Updating display value:', newValue)
+      displayValue.value = String(newValue)
+    }
+  },
+  { immediate: true, deep: true }
+)
 
-function increaseBigStep() {
-  if (props.max === undefined) {
-    innerModelValue.value = innerModelValue.value + props.bigStep
+function commitValue() {
+  const parsedValue = parseFloat(displayValue.value)
+  if (!isNaN(parsedValue)) {
+    if (parsedValue !== props.modelValue) {
+      emit('update:modelValue', parsedValue)
+    }
+    if (displayValue.value !== String(parsedValue)) {
+      displayValue.value = String(parsedValue)
+    }
   } else {
-    innerModelValue.value = Math.min(innerModelValue.value + props.bigStep, props.max)
+    // On invalid input, snap back to the last known good value.
+    displayValue.value = String(props.modelValue)
   }
+  textInputElement.value?.blur()
 }
 
-function decreaseBigStep() {
-  if (props.min === undefined) {
-    innerModelValue.value = innerModelValue.value - props.bigStep
+function adjustValue(event: KeyboardEvent, delta: number) {
+  event.preventDefault()
+  let newValue
+  if (delta > 0) {
+    if (props.max === undefined) {
+      newValue = props.modelValue + delta
+    } else {
+      newValue = Math.min(props.modelValue + delta, props.max)
+    }
+  } else if (props.min === undefined) {
+    newValue = props.modelValue + delta
   } else {
-    innerModelValue.value = Math.max(innerModelValue.value - props.bigStep, props.min)
+    newValue = Math.max(props.modelValue + delta, props.min)
   }
+  emit('update:modelValue', newValue)
 }
 </script>
