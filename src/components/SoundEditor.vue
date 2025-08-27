@@ -85,9 +85,10 @@
             v-if="modelValue.soundSegments"
             class="segment-slider flex-1"
             @update:model-value="handleSegmentChange($event, index)"
-            :step="modelValue.duration ? modelValue.duration / 100 : 1"
-            :bigStep="modelValue.duration ? modelValue.duration / 10 : 10"
-            :max="modelValue.duration ?? 100"
+            :step="duration / 100"
+            :bigStep="duration / 10"
+            :max="duration"
+            :precision="precision"
             v-model="modelValue.soundSegments[index]" />
           <button @click="removeSegment(segment)" class="close-button flex items-center">
             <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
@@ -158,6 +159,8 @@ const deleteButton = ref<HTMLButtonElement | null>(null)
 const browseImageButton = ref<HTMLButtonElement | null>(null)
 const tagInputRef = ref<TagInputRef | null>(null)
 const focusVisible = ref(false)
+/** how many decimal points should we round to */
+const precision = ref(2)
 
 /**
  * Displays the volume as a percentage
@@ -169,6 +172,12 @@ const volumeDisplay = computed({
     soundStore.setVolume(value / 100, props.modelValue.id)
     saveVolumeDebounced(value)
   },
+})
+
+/** round the duration up to the nearest precision */
+const duration = computed(() => {
+  const multiplier = Math.pow(10, precision.value)
+  return Math.ceil((props.modelValue.duration ?? 100) * multiplier) / multiplier
 })
 
 const saveVolumeDebounced = throttle((value: number) => {
@@ -225,7 +234,7 @@ function handleSegmentChange(segment: SoundSegment, index: number) {
  */
 function addSegment() {
   if (!props.modelValue.soundSegments) props.modelValue.soundSegments = []
-  props.modelValue.soundSegments.push({ start: 0, end: props.modelValue.duration ?? 100 })
+  props.modelValue.soundSegments.push({ start: 0, end: duration.value })
   emit('update:modelValue', props.modelValue)
 }
 
