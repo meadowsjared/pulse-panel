@@ -89,6 +89,7 @@
             :bigStep="duration / 10"
             :max="duration"
             :precision="precision"
+            format="time"
             v-model="modelValue.soundSegments[index]" />
           <button @click="removeSegment(segment)" class="close-button flex items-center">
             <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
