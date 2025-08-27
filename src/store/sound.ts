@@ -143,15 +143,11 @@ export const useSoundStore = defineStore('sound', {
       const settingsStore = useSettingsStore()
       if (settingsStore.recordingHotkey) return Promise.resolve() // if muted, don't play the sound //  || this.sendingKey
       // console.debug('1 this.disabled = ', this.disabled)
-      if (!activeOutputDevices) {
-        activeOutputDevices = settingsStore.outputDevices
-      }
+      activeOutputDevices ??= settingsStore.outputDevices
       // filter out null values
       activeOutputDevices = activeOutputDevices.filter((deviceId): deviceId is string => deviceId !== null)
       if (!activeOutputDevices) return Promise.resolve()
-      if (!selectedOutputDevices) {
-        selectedOutputDevices = activeOutputDevices
-      }
+      selectedOutputDevices ??= activeOutputDevices
       // filter out null values
       const filteredSelectedOutputDevices = selectedOutputDevices.filter(
         (deviceId): deviceId is string => deviceId !== null
