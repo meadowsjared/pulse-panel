@@ -193,13 +193,6 @@ export const useSoundStore = defineStore('sound', {
           )
         }
       )
-      if (segment.start !== 0 || segment.end !== 100) {
-        setTimeout(() => {
-          // stop this sound after 1 second
-          this.stopSound(soundObject, settingsStore, audioFileId, instanceId)
-          if (this.playingSoundIds.length === 0 && !preview) this._pttHotkeyPress(settingsStore, false)
-        }, (segment.end - segment.start) * 1000)
-      }
 
       // convert the array of promises to a single promise that resolves when all promises are done
       const done = new Promise<void>(resolve => {
@@ -276,17 +269,7 @@ export const useSoundStore = defineStore('sound', {
         console.error(errorMessage)
       })
       const done = new Promise<void>(resolve => {
-        if (!outputDeviceData.currentAudio) return
-        if (soundSegment) {
-          newAudio.currentTime = soundSegment.start
-        }
-        newAudio.volume = settingsStore.muted ? 0 : volume
-        newAudio.onplaying = () => {
-          outputDeviceData.playingAudio = true
-        }
-        outputDeviceData.numSoundsPlaying++
-        newAudio.play()
-        newAudio.onended = () => {
+        const onEnded = () => {
           outputDeviceData.currentAudio = outputDeviceData.currentAudio.filter(
             audio => audio.getAttribute('data-id') !== `${soundId}_${instanceId}`
           )
@@ -297,6 +280,24 @@ export const useSoundStore = defineStore('sound', {
           }
           resolve()
         }
+        if (!outputDeviceData.currentAudio) return
+        if (soundSegment) {
+          newAudio.currentTime = soundSegment.start
+          // set the stop time
+          newAudio.ontimeupdate = () => {
+            if (newAudio.currentTime >= soundSegment.end) {
+              newAudio.pause()
+              onEnded()
+            }
+          }
+        }
+        newAudio.volume = settingsStore.muted ? 0 : volume
+        newAudio.onplaying = () => {
+          outputDeviceData.playingAudio = true
+        }
+        outputDeviceData.numSoundsPlaying++
+        newAudio.play()
+        newAudio.onended = onEnded
       })
 
       return done
