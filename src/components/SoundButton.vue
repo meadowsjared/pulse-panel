@@ -98,7 +98,13 @@ onMounted(() => {
 const mergedStyle = computed(() => {
   return {
     ...(props.modelValue.imageUrl ? { backgroundImage: `url(${props.modelValue.imageUrl})` } : {}),
-    ...(props.modelValue.duration ? { '--sound-duration': `${props.modelValue.duration}s` } : {}),
+    ...(props.modelValue.activeSegment
+      ? {
+          '--sound-duration': `${
+            (props.modelValue.activeSegment?.end ?? 100) - (props.modelValue.activeSegment?.start ?? 0)
+          }s`,
+        }
+      : {}),
   }
 })
 

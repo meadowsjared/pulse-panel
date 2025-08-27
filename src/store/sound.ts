@@ -173,7 +173,10 @@ export const useSoundStore = defineStore('sound', {
         setTimeout(() => (this.sendingPttHotkey = false), 100)
       }
       this.currentSound = soundObject
-      const segment = soundSegment ?? soundObject?.soundSegments?.[0] ?? { start: 0, end: 100 }
+      const segment = soundSegment ?? soundObject?.soundSegments?.[0] ?? { start: 0, end: soundObject?.duration ?? 100 }
+      if (this.currentSound) {
+        this.currentSound.activeSegment = segment
+      }
       const promiseAr: Promise<void>[] = activeOutputDevices?.map<Promise<void>>(
         async (outputDeviceId: string, index: number) => {
           if (preview && index !== 0) return // only play the sound on the first device if previewing
@@ -206,6 +209,9 @@ export const useSoundStore = defineStore('sound', {
           }
           if (preventFalseKeyTrigger) {
             setTimeout(() => (this.sendingPttHotkey = false), 100)
+          }
+          if (this.currentSound) {
+            delete this.currentSound.activeSegment
           }
           this.currentSound = null
           resolve()
