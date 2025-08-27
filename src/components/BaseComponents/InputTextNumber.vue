@@ -35,7 +35,6 @@ watch(
   () => props.modelValue,
   newValue => {
     if (parseFloat(displayValue.value) !== newValue) {
-      console.log('Updating display value:', newValue)
       displayValue.value = String(newValue)
     }
   },
