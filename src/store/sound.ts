@@ -198,7 +198,7 @@ export const useSoundStore = defineStore('sound', {
           // stop this sound after 1 second
           this.stopSound(soundObject, settingsStore, audioFileId, instanceId)
           if (this.playingSoundIds.length === 0 && !preview) this._pttHotkeyPress(settingsStore, false)
-        }, (((soundObject?.duration ?? 1000) * (segment.end - segment.start)) / 100) * 1000)
+        }, (segment.end - segment.start) * 1000)
       }
 
       // convert the array of promises to a single promise that resolves when all promises are done
@@ -278,7 +278,7 @@ export const useSoundStore = defineStore('sound', {
       const done = new Promise<void>(resolve => {
         if (!outputDeviceData.currentAudio) return
         if (soundSegment) {
-          newAudio.currentTime = ((soundObject?.duration ?? 1000) * soundSegment.start) / 100
+          newAudio.currentTime = soundSegment.start
         }
         newAudio.volume = settingsStore.muted ? 0 : volume
         newAudio.onplaying = () => {

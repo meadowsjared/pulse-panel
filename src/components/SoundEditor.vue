@@ -85,8 +85,9 @@
             v-if="modelValue.soundSegments"
             class="segment-slider flex-1"
             @update:model-value="handleSegmentChange($event, index)"
-            :step="1"
-            :bigStep="10"
+            :step="modelValue.duration ? modelValue.duration / 100 : 1"
+            :bigStep="modelValue.duration ? modelValue.duration / 10 : 10"
+            :max="modelValue.duration ?? 100"
             v-model="modelValue.soundSegments[index]" />
           <button @click="removeSegment(segment)" class="close-button flex items-center">
             <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
@@ -224,7 +225,7 @@ function handleSegmentChange(segment: SoundSegment, index: number) {
  */
 function addSegment() {
   if (!props.modelValue.soundSegments) props.modelValue.soundSegments = []
-  props.modelValue.soundSegments.push({ start: 0, end: 100 })
+  props.modelValue.soundSegments.push({ start: 0, end: props.modelValue.duration ?? 100 })
   emit('update:modelValue', props.modelValue)
 }
 
