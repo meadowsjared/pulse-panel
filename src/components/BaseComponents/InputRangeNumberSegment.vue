@@ -1,7 +1,23 @@
 <template>
   <div class="w-full flex" v-bind="$attrs">
     <div class="flex w-full flex-col justify-center">
-      <div class="flex gap-1 items-center justify-center">
+      <div v-if="props.format === 'time'" class="flex gap-1 items-center justify-center">
+        <InputTimeFormatted
+          class="text-input"
+          v-model="innerModelValue.start"
+          :min="props.min"
+          :max="props.max"
+          :step="props.step"
+          :big-step="props.bigStep" />
+        <InputTimeFormatted
+          class="text-input"
+          v-model="innerModelValue.end"
+          :min="props.min"
+          :max="props.max"
+          :step="props.step"
+          :big-step="props.bigStep" />
+      </div>
+      <div v-else class="flex gap-1 items-center justify-center">
         <input-text-number
           class="text-input"
           v-model="innerModelValue.start"
@@ -72,8 +88,6 @@
 import { SoundSegment } from '@/src/@types/sound'
 import { useModel, ref, computed, onUnmounted } from 'vue'
 
-const emit = defineEmits<(event: 'update:modelValue', value: SoundSegment) => void>()
-
 const props = withDefaults(
   defineProps<{
     modelValue: SoundSegment
@@ -82,6 +96,7 @@ const props = withDefaults(
     step?: number
     bigStep?: number
     precision?: number
+    format?: 'number' | 'time'
   }>(),
   {
     min: 0,
@@ -89,6 +104,7 @@ const props = withDefaults(
     step: 1,
     bigStep: 10,
     precision: 2,
+    format: 'number',
   }
 )
 
@@ -251,7 +267,7 @@ onUnmounted(() => {
 }
 
 .text-input {
-  width: 50px;
+  width: 60px;
   height: 20px;
   padding: 4px;
   text-align: center;

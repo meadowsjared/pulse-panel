@@ -18,6 +18,7 @@ declare module 'vue' {
     InputRangeNumber: typeof import('./components/BaseComponents/InputRangeNumber.vue')['default']
     InputRangeNumberSegment: typeof import('./components/BaseComponents/InputRangeNumberSegment.vue')['default']
     InputTextNumber: typeof import('./components/BaseComponents/InputTextNumber.vue')['default']
+    InputTimeFormatted: typeof import('./components/BaseComponents/InputTimeFormatted.vue')['default']
     Main: typeof import('./components/Main.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
