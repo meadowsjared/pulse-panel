@@ -61,6 +61,9 @@
           <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
         </div>
       </div>
+      <div class="flex flex-row gap-1" title="Total duration of the sound">
+        <span>Total Duration: </span><span>{{ formatSecondsToMMSS(duration) }}</span>
+      </div>
       <div class="input-group flex flex-col mb-1 w-full">
         <label for="">Segments:</label>
         <div
@@ -137,7 +140,7 @@ import { useSettingsStore } from '../store/settings'
 import { computed, ref, watch } from 'vue'
 import PlayIcon from '../assets/images/play.svg'
 import { useSoundStore } from '../store/sound'
-import { stripFileExtension } from '../utils/utils'
+import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils'
 import { TagInputRef } from './BaseComponents/TagInputTypes'
 import { throttle } from 'lodash'
 import { SoundSegment } from '../@types/sound.d'
