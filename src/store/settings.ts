@@ -31,6 +31,12 @@ interface State {
   recordingHotkey: boolean
   ptt_hotkey: string[]
   searchText: string
+  quickTagsAr?: LabelActive[]
+}
+
+interface LabelActive {
+  label: string
+  active: boolean
 }
 
 interface SoundWithHotkey extends Sound {
@@ -40,6 +46,7 @@ interface SoundWithHotkey extends Sound {
 type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
 type ArraySoundSettings = 'sounds'
 type ArraySettings = 'outputDevices' | 'ptt_hotkey'
+type QuickTagButtonSettings = 'quickTagsAr'
 // type StringSettings = 'ptt_hotkey'
 export type DisplayMode = 'edit' | 'play'
 const isProduction = process.env.NODE_ENV === 'production'
@@ -65,6 +72,7 @@ export const useSettingsStore = defineStore('settings', {
     recordingHotkey: false,
     ptt_hotkey: [],
     searchText: '',
+    quickTagsAr: [],
   }),
   getters: {
     soundsFiltered(): Sound[] {
@@ -536,6 +544,59 @@ export const useSettingsStore = defineStore('settings', {
         window.electron?.toggleDarkMode(value)
       }
       return true // saved successfully
+    },
+    /**
+     * Fetch the quick tags from the store
+     * @param key the key it's saved under
+     * @param defaultValue the default value if it's not set
+     * @returns the value of the setting
+     */
+    async fetchFilters(key: QuickTagButtonSettings, defaultValue: string[] = []): Promise<LabelActive[]> {
+      const electron = window.electron
+      const returnedArray = await electron?.readSetting?.(key)
+      if (returnedArray === undefined || !Array.isArray(returnedArray)) {
+        await electron?.saveSetting?.(key, defaultValue)
+        this[key] = defaultValue.map(tag => ({ label: tag, active: false }))
+        return this[key]
+      } else {
+        this[key] = returnedArray.map((tag: string) => ({ label: tag, active: false }))
+        return this[key]
+      }
+    },
+    /** add quickTags */
+    async addQuickTags(tags: string[]): Promise<void> {
+      // add the tags to the quickTags array if they don't already exist
+      const tagsAr = tags.map(tag => ({ label: tag, active: false }))
+      this.quickTagsAr ??= []
+      // add all the elements from tags that aren't already in quickTagsAr
+      this.quickTagsAr = this.quickTagsAr.concat(
+        tagsAr.filter(tag => !this.quickTagsAr?.some(t => t.label === tag.label))
+      )
+      const electron = window.electron
+      await electron?.saveSetting?.('quickTagsAr', toRaw(this.quickTagsAr.map(t => t.label)))
+    },
+    /** remove a quickTag */
+    async removeQuickTag(index: number): Promise<void> {
+      if (this.quickTagsAr === undefined) return
+      this.quickTagsAr.splice(index, 1)
+      const electron = window.electron
+      await electron?.saveSetting?.('quickTagsAr', toRaw(this.quickTagsAr.map(t => t.label)))
+    },
+    /** set the quickTags */
+    async setQuickTags(tags: string[]): Promise<void> {
+      this.quickTagsAr = tags.map(tag => ({ label: tag, active: false }))
+      const electron = window.electron
+      await electron?.saveSetting?.('quickTagsAr', toRaw(this.quickTagsAr.map(t => t.label)))
+    },
+    /** toggle the quickTag */
+    async toggleQuickTag(tagLabel: string): Promise<void> {
+      if (this.quickTagsAr === undefined) return
+      const tag = this.quickTagsAr.find(t => t.label === tagLabel)
+      if (tag) {
+        tag.active = !tag.active
+        const electron = window.electron
+        await electron?.saveSetting?.('quickTagsAr', toRaw(this.quickTagsAr.map(t => t.label)))
+      }
     },
   },
 })
