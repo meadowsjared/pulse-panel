@@ -1,5 +1,5 @@
 <template>
-  <div class="select-parent">
+  <div class="select-parent" v-bind="$attrs">
     <button
       ref="selectedOption"
       class="selected-option"
@@ -14,7 +14,7 @@
     <div class="sizing-div">
       <div v-for="option in options" :key="option.value">{{ option.label }}</div>
     </div>
-    <ul v-if="isOpen" class="dropdown">
+    <ul v-if="isOpen" class="dropdown w-full">
       <button
         ref="optionRefs"
         v-for="option in options"
@@ -283,7 +283,6 @@ function getKeypressDown(index: number) {
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  width: max-content;
   overflow-y: auto;
   background-color: var(--alt-bg-color);
   list-style: none;
