@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { Sound } from '../@types/sound'
+import { LabelActive, Sound } from '../@types/sound'
 import { openDB } from 'idb'
 import { File } from '../@types/file'
 import { v4 } from 'uuid'
@@ -32,11 +32,6 @@ interface State {
   ptt_hotkey: string[]
   searchText: string
   quickTagsAr?: LabelActive[]
-}
-
-interface LabelActive {
-  label: string
-  active: boolean
 }
 
 interface SoundWithHotkey extends Sound {
