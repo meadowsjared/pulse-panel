@@ -15,7 +15,7 @@
           :tabindex="i === outputDevices.length - 1 || i === 0 ? -1 : 0"
           @click="deleteOutputDevice(i)"
           title="Remove Output Device">
-          <inline-svg class="w-full h-full rotate-45" :src="Plus" />
+          <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
         </button>
         <select-custom
           v-model="outputDevices[i]"
@@ -43,19 +43,41 @@
         @input="updateAllowOverlappingSound"
     /></label>
     <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
-    <div class="push-to-talk-hotkey">
-      <hotkey-picker
-        v-model="selectedHotkey"
-        :dark="false"
-        @update:modelValue="selectedHotkeyUpdated"
-        title="this will be the button that pulse-panel with hold down any time sound is playing"
-        >Push-to-Talk Key:</hotkey-picker
-      >
-      <div class="downloadVBCableGroup">
-        <button @click="downloadVBCable" class="light downloadVBCable">
-          Get VB-Cable<inline-svg :src="Download" class="download-icon" />
-        </button>
-        <div class="vb-cable-status-message" :class="{ showVBCableMessage }">{{ vbCableMessage }}</div>
+    <hotkey-picker
+      class="push-to-talk-hotkey"
+      v-model="selectedHotkey"
+      :dark="false"
+      @update:modelValue="selectedHotkeyUpdated"
+      title="this will be the button that pulse-panel with hold down any time sound is playing"
+      >Push-to-Talk Key:</hotkey-picker
+    >
+    <div class="downloadVBCableGroup mx-auto mt-2">
+      <button @click="downloadVBCable" class="light downloadVBCable">
+        Get VB-Cable<inline-svg :src="Download" class="download-icon" />
+      </button>
+      <div class="vb-cable-status-message" :class="{ showVBCableMessage }">{{ vbCableMessage }}</div>
+    </div>
+    <div class="flex justify-center mt-4 flex-col">
+      <h2>Quick Tags:</h2>
+      <div class="flex justify-center gap-2 flex-wrap flex-col">
+        <div v-if="settingsStore.quickTags.length === 0">No tags however,</div>
+        <div>{{ allTags.length }} tags are available</div>
+        <div class="flex justify-center">
+          <div v-for="(tag, index) in settingsStore.quickTags" class="tag">
+            {{ tag.label
+            }}<button class="remove-button" @click="removeTag(index)">
+              <inline-svg :src="PlusIcon" class="rotate-45" />
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-center mt-2">
+        <select-custom
+          v-model="newTag"
+          class="flex items-center"
+          @change="tagSelected($event)"
+          defaultText="Select an tag from the list of used tags"
+          :options="allTags.map((tag, index) => ({ label: tag || '', value: tag || `tag-${index}` }))" />
       </div>
     </div>
   </div>
@@ -67,9 +89,9 @@ import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import SpeakerIcon from '../assets/images/speaker.svg'
-import Plus from '../assets/images/plus.svg'
 import Download from '../assets/images/download.svg'
 import { throttle } from 'lodash'
+import PlusIcon from '../assets/images/plus.svg'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -79,6 +101,7 @@ const darkMode = ref(true)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
 const showVBCableMessage = ref(false)
 const vbCableMessage = ref('')
+const newTag = ref<string | null>(null)
 
 /**
  * Displays the volume as a percentage
@@ -90,6 +113,19 @@ const volumeDisplay = computed({
   },
 })
 
+/**
+ * list of unique tags from all sounds
+ */
+const allTags = computed(() => {
+  const tagsSet = new Set<string>()
+  settingsStore.sounds.forEach(sound => {
+    if (sound.tags) {
+      sound.tags.forEach(tag => tagsSet.add(tag))
+    }
+  })
+  return Array.from(tagsSet).sort()
+})
+
 const saveVolumeDebounced = throttle((value: number) => {
   const newValue = Math.round(value) / 100
   if (settingsStore.defaultVolume === newValue) return
@@ -99,6 +135,22 @@ const saveVolumeDebounced = throttle((value: number) => {
 settingsStore.fetchStringArray('ptt_hotkey').then(hotkey => {
   selectedHotkey.value = hotkey ?? undefined
 })
+
+function tagSelected(payload: Event) {
+  if (!(payload.target instanceof HTMLSelectElement)) {
+    console.debug('payload.target', payload.target)
+    throw new Error('Event target is not a select element.')
+  }
+  const tag = payload.target.value
+  if (tag && !settingsStore.quickTags.some(t => t.label === tag)) {
+    settingsStore.addQuickTags([tag])
+  }
+  newTag.value = null
+}
+
+function removeTag(index: number) {
+  settingsStore.removeQuickTag(index)
+}
 
 async function downloadVBCable() {
   // before we run the installer, make a backup copy of settingsStore.allOutputDevices
@@ -387,7 +439,6 @@ input[type='checkbox']:focus-visible {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 0.5ch;
   margin-top: 1rem;
 }
 
@@ -452,5 +503,22 @@ input[type='checkbox']:focus-visible {
 
 .showVBCableMessage {
   animation: showMessage calc(2 * var(--transition-length) + var(--duration)) ease forwards;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0 0 10px;
+  margin: 4px 0 4px 4px;
+  background-color: var(--button-accent-color);
+  border-radius: 500rem;
+  color: var(--input-bg-color);
+}
+
+.remove-button {
+  padding: 0.5rem;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
 }
 </style>
