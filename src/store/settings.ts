@@ -76,43 +76,52 @@ export const useSettingsStore = defineStore('settings', {
   }),
   getters: {
     soundsFiltered(): Sound[] {
-      return this.sounds.filter(
-        (sound, index) =>
-          this.searchText.trim() === '' ||
-          // compare the words from the title to the words from the search text
-          // if either the (titleWord.length > 1 && titleWord is in the searchWord)
-          // or the searchWord is in the titleWord, return true
-          sound.title
-            ?.toLowerCase()
-            .split(/[^a-zA-Z0-9_']/)
-            .filter(titleWord => titleWord !== '')
-            .some(titleWord =>
+      return this.sounds
+        .filter(
+          sound =>
+            this.quickTagsAr?.filter(tag => tag.active === true).length === 0 ||
+            this.quickTagsAr?.filter(tag => tag.active === true).every(tag => sound.tags?.includes(tag.label) === true)
+        )
+        .filter(
+          (sound, index) =>
+            this.searchText.trim() === '' ||
+            // compare the words from the title to the words from the search text
+            // if either the (titleWord.length > 1 && titleWord is in the searchWord)
+            // or the searchWord is in the titleWord, return true
+            sound.title
+              ?.toLowerCase()
+              .split(/[^a-zA-Z0-9_']/)
+              .filter(titleWord => titleWord !== '')
+              .some(titleWord =>
+                this.searchText
+                  .toLowerCase()
+                  .split(/[^a-zA-Z0-9_']/)
+                  .filter(searchWord => searchWord !== '')
+                  .some(
+                    searchWord =>
+                      (titleWord.length > 1 && searchWord.toLowerCase().includes(titleWord.toLowerCase())) ||
+                      titleWord.toLowerCase().includes(searchWord.toLowerCase())
+                  )
+              ) ||
+            // compare the words from the tags to the words from the search text
+            // if either the (tag.length > 1 && tag is in the searchWord)
+            // or the searchWord is in the tag, return true
+            sound.tags?.some(tag =>
               this.searchText
                 .toLowerCase()
                 .split(/[^a-zA-Z0-9_']/)
                 .filter(searchWord => searchWord !== '')
                 .some(
                   searchWord =>
-                    (titleWord.length > 1 && searchWord.toLowerCase().includes(titleWord.toLowerCase())) ||
-                    titleWord.toLowerCase().includes(searchWord.toLowerCase())
+                    (tag.length > 1 && searchWord.toLowerCase().includes(tag.toLowerCase())) ||
+                    tag.toLowerCase().includes(searchWord.toLowerCase())
                 )
             ) ||
-          // compare the words from the tags to the words from the search text
-          // if either the (tag.length > 1 && tag is in the searchWord)
-          // or the searchWord is in the tag, return true
-          sound.tags?.some(tag =>
-            this.searchText
-              .toLowerCase()
-              .split(/[^a-zA-Z0-9_']/)
-              .filter(searchWord => searchWord !== '')
-              .some(
-                searchWord =>
-                  (tag.length > 1 && searchWord.toLowerCase().includes(tag.toLowerCase())) ||
-                  tag.toLowerCase().includes(searchWord.toLowerCase())
-              )
-          ) ||
-          index > this.sounds.length - 2
-      )
+            index > this.sounds.length - 2
+        )
+    },
+    quickTags(): LabelActive[] {
+      return this.quickTagsAr ?? []
     },
   },
   actions: {
