@@ -1,3 +1,4 @@
+import { LabelActive } from './sound'
 export interface Versions {
   versions: {
     app: string
@@ -18,8 +19,8 @@ interface vbCableResult {
 }
 
 export interface Settings {
-  readSetting: (key: string) => Promise<string | boolean | number | string[] | undefined>
-  saveSetting: (key: string, value: string | boolean | number | string[]) => Promise<boolean>
+  readSetting: (key: string) => Promise<string | boolean | number | string[] | LabelActive[] | undefined>
+  saveSetting: (key: string, value: string | boolean | number | string[] | LabelActive[]) => Promise<boolean>
   deleteSetting: (key: string) => Promise<boolean>
   sendKey: (key: string[], down: boolean) => Promise<void>
   toggleDarkMode: (value: boolean) => void
