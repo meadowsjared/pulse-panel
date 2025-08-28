@@ -1,6 +1,9 @@
 <template>
   <div class="title-bar" :class="{ darkMode: settingsStore.darkMode }">
-    <div class="title"><slot /></div>
+    <div class="title">
+      <slot />
+      <quick-tag-buttons />
+    </div>
     <div class="buttons">
       <button @click="minimize" tabindex="-1"><inline-svg :src="minimizeIcon" /></button>
       <button @click="maximize" tabindex="-1">
