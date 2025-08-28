@@ -20,6 +20,7 @@ declare module 'vue' {
     InputTextNumber: typeof import('./components/BaseComponents/InputTextNumber.vue')['default']
     InputTimeFormatted: typeof import('./components/BaseComponents/InputTimeFormatted.vue')['default']
     Main: typeof import('./components/Main.vue')['default']
+    QuickTagButtons: typeof import('./components/QuickTagButtons.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SelectCustom: typeof import('./components/BaseComponents/SelectCustom.vue')['default']
