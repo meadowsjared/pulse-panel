@@ -22,3 +22,8 @@ export interface SoundSegment {
   start: number
   end: number
 }
+
+export interface LabelActive {
+  label: string
+  active: boolean
+}
