@@ -271,6 +271,10 @@ export const useSettingsStore = defineStore('settings', {
      * @returns the value of the setting
      */
     async fetchStringArray(key: ArraySettings, defaultValue: string[] = []): Promise<string[]> {
+      function isStringArray(arr: unknown[]): arr is string[] {
+        return arr.length === 0 || typeof arr[0] === 'string'
+      }
+
       const soundStore = useSoundStore()
       const electron = window.electron
       const returnedArray = await electron?.readSetting?.(key)
@@ -282,8 +286,10 @@ export const useSettingsStore = defineStore('settings', {
         }
         await electron?.saveSetting?.(key, defaultValue)
         this[key] = defaultValue ?? []
-      } else {
+      } else if (isStringArray(returnedArray)) {
         this[key] = returnedArray
+      } else {
+        console.error('Invalid array format for key:', key)
       }
       if (key === 'outputDevices') {
         soundStore.populatePlayingAudio(this[key].length)
@@ -560,16 +566,23 @@ export const useSettingsStore = defineStore('settings', {
      * @param defaultValue the default value if it's not set
      * @returns the value of the setting
      */
-    async fetchFilters(key: QuickTagButtonSettings, defaultValue: string[] = []): Promise<LabelActive[]> {
+    async fetchFilters(key: QuickTagButtonSettings, defaultValue: LabelActive[] = []): Promise<LabelActive[]> {
+      function isLabelArray(arr: unknown[]): arr is LabelActive[] {
+        return arr.length === 0 || typeof arr[0] === 'object'
+      }
+
       const electron = window.electron
       const returnedArray = await electron?.readSetting?.(key)
       if (returnedArray === undefined || !Array.isArray(returnedArray)) {
-        await electron?.saveSetting?.(key, defaultValue)
-        this[key] = defaultValue.map(tag => ({ label: tag, active: false }))
+        await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
+        this[key] = defaultValue
+        return this[key]
+      } else if (isLabelArray(returnedArray)) {
+        this[key] = returnedArray
         return this[key]
       } else {
-        this[key] = returnedArray.map((tag: string) => ({ label: tag, active: false }))
-        return this[key]
+        console.error('Invalid array format for key:', key, returnedArray)
+        return defaultValue
       }
     },
     /** add quickTags */
@@ -582,20 +595,29 @@ export const useSettingsStore = defineStore('settings', {
         tagsAr.filter(tag => !this.quickTagsAr?.some(t => t.label === tag.label))
       )
       const electron = window.electron
-      await electron?.saveSetting?.('quickTagsAr', toRaw(this.quickTagsAr.map(t => t.label)))
+      await electron?.saveSetting?.(
+        'quickTagsAr',
+        this.quickTagsAr.map(t => toRaw(t))
+      )
     },
     /** remove a quickTag */
     async removeQuickTag(index: number): Promise<void> {
       if (this.quickTagsAr === undefined) return
       this.quickTagsAr.splice(index, 1)
       const electron = window.electron
-      await electron?.saveSetting?.('quickTagsAr', toRaw(this.quickTagsAr.map(t => t.label)))
+      await electron?.saveSetting?.(
+        'quickTagsAr',
+        this.quickTagsAr.map(t => toRaw(t))
+      )
     },
     /** set the quickTags */
     async setQuickTags(tags: string[]): Promise<void> {
       this.quickTagsAr = tags.map(tag => ({ label: tag, active: false }))
       const electron = window.electron
-      await electron?.saveSetting?.('quickTagsAr', toRaw(this.quickTagsAr.map(t => t.label)))
+      await electron?.saveSetting?.(
+        'quickTagsAr',
+        this.quickTagsAr.map(t => toRaw(t))
+      )
     },
     /** toggle the quickTag */
     async toggleQuickTag(tagLabel: string): Promise<void> {
@@ -604,7 +626,10 @@ export const useSettingsStore = defineStore('settings', {
       if (tag) {
         tag.active = !tag.active
         const electron = window.electron
-        await electron?.saveSetting?.('quickTagsAr', toRaw(this.quickTagsAr.map(t => t.label)))
+        await electron?.saveSetting?.(
+          'quickTagsAr',
+          this.quickTagsAr.map(t => toRaw(t))
+        )
       }
     },
   },
