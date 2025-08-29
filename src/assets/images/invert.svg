@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+
+<svg width="700" height="700" viewBox="0 0 448 448" xmlns="http://www.w3.org/2000/svg">
+  <defs id="defs12" />
+  <circle
+    fill="none"
+    stroke="#000000"
+    stroke-miterlimit="10"
+    stroke-width="32"
+    cx="224"
+    cy="224"
+    r="208"
+    style="fill: #ffffff; fill-opacity: 1" />
+  <path d="m 224,144 v 160 a 80,80 0 0 0 0,-160 z" />
+  <path d="m 224,16 v 128 a 80,80 0 0 0 0,160 V 432 C 109.12,432 16,338.88 16,224 16,109.12 109.12,16 224,16 Z" />
+</svg>
