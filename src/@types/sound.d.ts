@@ -26,4 +26,5 @@ export interface SoundSegment {
 export interface LabelActive {
   label: string
   active: boolean
+  negated?: true
 }

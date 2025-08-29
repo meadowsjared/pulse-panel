@@ -78,10 +78,18 @@ export const useSettingsStore = defineStore('settings', {
           const activeOrNegatedTags = this.quickTagsAr?.filter(tag => tag.active === true || tag.negated === true) ?? []
           const invertedMatch =
             activeOrNegatedTags.length === 0 ||
-            activeOrNegatedTags.every(anTag => anTag.active && sound.tags?.includes(anTag.label) === false)
+            activeOrNegatedTags.every(
+              anTag =>
+                (anTag.active && sound.tags?.includes(anTag.label) === false) ||
+                (anTag.negated && sound.tags?.includes(anTag.label))
+            )
           const normalMatch =
             activeOrNegatedTags.length === 0 ||
-            activeOrNegatedTags.every(anTag => anTag.active && sound.tags?.includes(anTag.label) === true)
+            activeOrNegatedTags.every(
+              anTag =>
+                (anTag.active && sound.tags?.includes(anTag.label) === true) ||
+                (anTag.negated && !sound.tags?.includes(anTag.label))
+            )
           return this.invertQuickTags ? invertedMatch : normalMatch
         })
         .filter(
@@ -627,6 +635,9 @@ export const useSettingsStore = defineStore('settings', {
       const tag = this.quickTagsAr.find(t => t.label === tagLabel)
       if (tag) {
         tag.active = !tag.active
+        if (tag.negated) {
+          delete tag.negated
+        }
         const electron = window.electron
         await electron?.saveSetting?.(
           'quickTagsAr',
@@ -639,6 +650,23 @@ export const useSettingsStore = defineStore('settings', {
       this.invertQuickTags = !this.invertQuickTags
       const electron = window.electron
       await electron?.saveSetting?.('invertQuickTags', this.invertQuickTags)
+    },
+    async toggleQuickTagNegated(tag: LabelActive): Promise<void> {
+      if (this.quickTagsAr === undefined) return
+      const existingTag = this.quickTagsAr.find(t => t.label === tag.label)
+      if (existingTag) {
+        tag.active = false
+        if (existingTag.negated) {
+          delete existingTag.negated
+        } else {
+          existingTag.negated = true
+        }
+        const electron = window.electron
+        await electron?.saveSetting?.(
+          'quickTagsAr',
+          this.quickTagsAr.map(t => toRaw(t))
+        )
+      }
     },
   },
 })
