@@ -32,13 +32,14 @@ interface State {
   ptt_hotkey: string[]
   searchText: string
   quickTagsAr?: LabelActive[]
+  invertQuickTags: boolean
 }
 
 interface SoundWithHotkey extends Sound {
   hotkey: string[]
 }
 
-type BooleanSettings = 'darkMode' | 'allowOverlappingSound'
+type BooleanSettings = 'darkMode' | 'allowOverlappingSound' | 'invertQuickTags'
 type ArraySoundSettings = 'sounds'
 type ArraySettings = 'outputDevices' | 'ptt_hotkey'
 type QuickTagButtonSettings = 'quickTagsAr'
@@ -68,6 +69,7 @@ export const useSettingsStore = defineStore('settings', {
     ptt_hotkey: [],
     searchText: '',
     quickTagsAr: [],
+    invertQuickTags: false,
   }),
   getters: {
     soundsFiltered(): Sound[] {
@@ -626,6 +628,12 @@ export const useSettingsStore = defineStore('settings', {
           this.quickTagsAr.map(t => toRaw(t))
         )
       }
+    },
+    /** toggle the invertQuickTags */
+    async toggleInvertQuickTags(): Promise<void> {
+      this.invertQuickTags = !this.invertQuickTags
+      const electron = window.electron
+      await electron?.saveSetting?.('invertQuickTags', this.invertQuickTags)
     },
   },
 })
