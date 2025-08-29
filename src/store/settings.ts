@@ -74,11 +74,16 @@ export const useSettingsStore = defineStore('settings', {
   getters: {
     soundsFiltered(): Sound[] {
       return this.sounds
-        .filter(
-          sound =>
-            this.quickTagsAr?.filter(tag => tag.active === true).length === 0 ||
-            this.quickTagsAr?.filter(tag => tag.active === true).every(tag => sound.tags?.includes(tag.label) === true)
-        )
+        .filter(sound => {
+          const activeOrNegatedTags = this.quickTagsAr?.filter(tag => tag.active === true || tag.negated === true) ?? []
+          const invertedMatch =
+            activeOrNegatedTags.length === 0 ||
+            activeOrNegatedTags.every(anTag => anTag.active && sound.tags?.includes(anTag.label) === false)
+          const normalMatch =
+            activeOrNegatedTags.length === 0 ||
+            activeOrNegatedTags.every(anTag => anTag.active && sound.tags?.includes(anTag.label) === true)
+          return this.invertQuickTags ? invertedMatch : normalMatch
+        })
         .filter(
           (sound, index) =>
             this.searchText.trim() === '' ||
