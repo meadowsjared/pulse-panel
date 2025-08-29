@@ -104,6 +104,7 @@ window.electron?.onDarkModeToggle((value: boolean) => {
   settingsStore.darkMode = value
 })
 
+settingsStore.fetchBooleanSetting('invertQuickTags', false)
 settingsStore.fetchFilters('quickTagsAr')
 settingsStore.fetchStringArray('ptt_hotkey')
 settingsStore.fetchMute()
