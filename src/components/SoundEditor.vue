@@ -70,6 +70,7 @@
           v-for="(segment, index) in modelValue.soundSegments"
           :key="'input-range-segment' + index"
           class="flex gap-2 w-full items-center">
+          <span>{{ index + 1 }}</span>
           <button
             @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
             :class="['play-sound-button flex items-center', { focusVisible }]"
