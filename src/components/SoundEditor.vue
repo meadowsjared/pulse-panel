@@ -65,7 +65,7 @@
         <span>Total Duration: </span><span>{{ formatSecondsToMMSS(duration) }}</span>
       </div>
       <div class="input-group flex flex-col mb-1 w-full">
-        <label for="">Segments:</label>
+        <span>Segments:</span>
         <div
           v-for="(segment, index) in modelValue.soundSegments"
           :key="'input-range-segment' + index"
@@ -481,7 +481,7 @@ input[type='checkbox']:focus-visible {
   align-items: flex-start;
 }
 
-.input-group > label {
+.input-group > span {
   margin-bottom: 0.25rem;
   text-align: left;
 }
@@ -513,9 +513,5 @@ input {
   color: var(--text-color);
   background: var(--background-color);
   border: none;
-}
-
-label {
-  color: var(--text-color);
 }
 </style>
