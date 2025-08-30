@@ -176,7 +176,8 @@ const lineWidth = computed(() => {
 })
 
 function getPosition(value: number, offset: number, containerWidth2: Ref<number>) {
-  const percentage = (value - minValue.value) / (maxValue.value - minValue.value)
+  const valueClamped = Math.max(minValue.value, Math.min(value, maxValue.value))
+  const percentage = (valueClamped - minValue.value) / (maxValue.value - minValue.value)
   return percentage * (containerWidth2.value + offset)
 }
 
