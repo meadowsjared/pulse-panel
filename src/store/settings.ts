@@ -78,7 +78,11 @@ export const useSettingsStore = defineStore('settings', {
         .filter(sound => {
           if (activeOrNegatedTags.length === 0) {
             if (this.invertQuickTags) {
-              return sound.tags === undefined || sound.tags.length === 0
+              return (
+                sound.tags === undefined ||
+                sound.tags.length === 0 ||
+                !sound.tags.some(tag => this.quickTagsAr?.some(t => t.label === tag))
+              )
             } else {
               return true
             }
