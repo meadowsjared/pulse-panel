@@ -25,6 +25,8 @@ const props = withDefaults(
   {
     step: 1,
     bigStep: 10,
+    min: 0,
+    max: 100,
   }
 )
 
@@ -47,11 +49,12 @@ watch(
  */
 function commitValue() {
   const totalSeconds = parseMMSSToSeconds(displayValue.value)
-  const timeString = formatSecondsToMMSS(totalSeconds)
+  const clampedSeconds = Math.max(props.min, Math.min(totalSeconds, props.max))
+  const timeString = formatSecondsToMMSS(clampedSeconds)
   if (displayValue.value !== timeString) {
     displayValue.value = timeString
   }
-  emit('update:modelValue', totalSeconds)
+  emit('update:modelValue', clampedSeconds)
 }
 
 function adjustValue(event: KeyboardEvent, delta: number) {
