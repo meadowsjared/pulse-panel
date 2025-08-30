@@ -444,7 +444,7 @@ export const useSettingsStore = defineStore('settings', {
         if (keys.length === 1 && (keys[0].startsWith('Digit') || keys[0].startsWith('Numpad'))) {
           const soundNumber = parseInt(keys[0].replace('Digit', '').replace('Numpad', ''), 10)
           if (!Number.isNaN(soundNumber)) {
-            this.playHoveredSoundSegment(soundNumber - 1)
+            this.playHoveredSoundSegment(soundNumber === 0 ? 9 : soundNumber - 1)
           }
         }
       })
