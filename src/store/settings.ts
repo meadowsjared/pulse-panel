@@ -73,9 +73,9 @@ export const useSettingsStore = defineStore('settings', {
   }),
   getters: {
     soundsFiltered(): Sound[] {
+      const activeOrNegatedTags = this.quickTagsAr?.filter(tag => tag.active === true || tag.negated === true) ?? []
       return this.sounds
         .filter(sound => {
-          const activeOrNegatedTags = this.quickTagsAr?.filter(tag => tag.active === true || tag.negated === true) ?? []
           const invertedMatch =
             activeOrNegatedTags.length === 0 ||
             activeOrNegatedTags.every(
