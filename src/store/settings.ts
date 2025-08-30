@@ -76,12 +76,20 @@ export const useSettingsStore = defineStore('settings', {
       const activeOrNegatedTags = this.quickTagsAr?.filter(tag => tag.active === true || tag.negated === true) ?? []
       return this.sounds
         .filter(sound => {
+          if (activeOrNegatedTags.length === 0) {
+            if (this.invertQuickTags) {
+              return sound.tags === undefined || sound.tags.length === 0
+            } else {
+              return true
+            }
+          }
           const invertedMatch =
             activeOrNegatedTags.length === 0 ||
             activeOrNegatedTags.every(
               anTag =>
-                (anTag.active && sound.tags?.includes(anTag.label) === false) ||
-                (anTag.negated && sound.tags?.includes(anTag.label))
+                sound.tags === undefined ||
+                (anTag.active && sound.tags.includes(anTag.label) === false) ||
+                (anTag.negated && sound.tags.includes(anTag.label))
             )
           const normalMatch =
             activeOrNegatedTags.length === 0 ||
