@@ -62,7 +62,7 @@
       <div class="flex justify-center gap-2 flex-wrap flex-col">
         <div v-if="settingsStore.quickTags.length === 0">No tags however,</div>
         <div>{{ allTags.length }} tags are available</div>
-        <div class="flex justify-center">
+        <div class="flex justify-center gap-1">
           <div v-for="(tag, index) in settingsStore.quickTags" class="tag">
             {{ tag.label
             }}<button class="remove-button" @click="removeTag(index)">
@@ -509,7 +509,6 @@ input[type='checkbox']:focus-visible {
   display: inline-flex;
   align-items: center;
   padding: 0 0 0 10px;
-  margin: 4px 0 4px 4px;
   background-color: var(--button-accent-color);
   border-radius: 500rem;
   color: var(--input-bg-color);
