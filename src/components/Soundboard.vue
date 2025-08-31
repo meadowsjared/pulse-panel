@@ -9,12 +9,12 @@
           v-model="settingsStore.soundsFiltered[i]"
           :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
           :displayMode="settingsStore.displayMode"
-          @dragstart="dragStart(sound, i)"
-          @dragover="dragOver(sound)"
-          @drop="drop"
           @update:modelValue="handleSoundsUpdate"
           @file-dropped="fileDropped"
           @editSound="editSound(sound)"
+          @dragstart="dragStart(sound, i)"
+          @dragover="dragOver(sound)"
+          @drop="drop"
           @dragend="dragEnd(sound)" />
       </template>
     </div>
