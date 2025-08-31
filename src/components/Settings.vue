@@ -235,11 +235,8 @@ function dragEnd() {
   }
   if (draggedIndexStart === null || draggedQuickTag === null) return
   delete draggedQuickTag.isPreview
-  // const quickTagsTemp = [...settingsStore.quickTags]
-  // settingsStore.setQuickTags(quickTagsTemp)
   draggedIndexStart = null
   draggedQuickTag = null
-  // no need to save, because we're resetting back to the original order
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
