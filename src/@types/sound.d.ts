@@ -27,4 +27,5 @@ export interface LabelActive {
   label: string
   active: boolean
   negated?: true
+  isPreview?: boolean
 }
