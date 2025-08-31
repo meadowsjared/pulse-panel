@@ -633,12 +633,32 @@ export const useSettingsStore = defineStore('settings', {
       )
     },
     /** set the quickTags */
-    async setQuickTags(tags: string[]): Promise<void> {
-      this.quickTagsAr = tags.map(tag => ({ label: tag, active: false }))
+    async setQuickTags(tags: string[] | LabelActive[]): Promise<void> {
+      function isStringArray(arr: unknown[]): arr is string[] {
+        return arr.length === 0 || typeof arr[0] === 'string'
+      }
+
+      // check if it's an array of strings
+      if (tags.length === 0) {
+        this.quickTagsAr = []
+        const electron = window.electron
+        await electron?.saveSetting?.('quickTagsAr', [])
+        return
+      }
+      if (isStringArray(tags)) {
+        this.quickTagsAr = tags.map(tag => ({ label: tag, active: false }))
+        const electron = window.electron
+        await electron?.saveSetting?.(
+          'quickTagsAr',
+          this.quickTagsAr.map(t => toRaw(t))
+        )
+        return
+      }
+      this.quickTagsAr = tags
       const electron = window.electron
       await electron?.saveSetting?.(
         'quickTagsAr',
-        this.quickTagsAr.map(t => toRaw(t))
+        this.quickTagsAr.map(t => toRaw({ label: t.label, active: t.active }))
       )
     },
     /** toggle the quickTag */
