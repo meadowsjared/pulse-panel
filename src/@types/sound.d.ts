@@ -21,6 +21,7 @@ export interface Sound {
 export interface SoundSegment {
   start: number
   end: number
+  isPreview?: boolean
 }
 
 export interface LabelActive {
