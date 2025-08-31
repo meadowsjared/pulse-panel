@@ -69,7 +69,11 @@
         <div
           v-for="(segment, index) in modelValue.soundSegments"
           :key="'input-range-segment' + index"
-          class="flex gap-2 w-full items-center">
+          :class="['flex gap-2 w-full items-center cursor-grab', { dragging: segment.isPreview }]"
+          draggable="true"
+          @dragstart="dragStart(segment, index)"
+          @dragenter.prevent="dragOver(segment)"
+          @dragend="dragEnd">
           <span>{{ index + 1 }}</span>
           <button
             @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
@@ -166,6 +170,10 @@ const tagInputRef = ref<TagInputRef | null>(null)
 const focusVisible = ref(false)
 /** how many decimal points should we round to */
 const precision = ref(2)
+
+let draggedIndexStart: number | null = null
+let draggedSegment: SoundSegment | null = null
+const cancelDragEnd = ref(false)
 
 /**
  * Displays the volume as a percentage
@@ -329,6 +337,39 @@ function removeImage() {
 function close() {
   // Close the editor
   settingsStore.currentEditingSound = null
+}
+
+function dragStart(pSegment: SoundSegment, index: number) {
+  draggedIndexStart = index
+  pSegment.isPreview = true
+  draggedSegment = pSegment
+}
+
+function dragOver(pSegment: SoundSegment) {
+  if (draggedSegment === null || props.modelValue.soundSegments === undefined) return
+
+  const index = props.modelValue.soundSegments.indexOf(pSegment)
+  const draggedIndex = props.modelValue.soundSegments.indexOf(draggedSegment)
+  if (index === draggedIndex) return
+  const segmentsTemp = [...props.modelValue.soundSegments]
+  segmentsTemp.splice(draggedIndex, 1) // remove the previous tag preview
+  segmentsTemp.splice(index, 0, draggedSegment) // add the tag preview to the new index
+  emit('update:modelValue', { ...props.modelValue, soundSegments: segmentsTemp })
+}
+
+/**
+ * Handles the drag end event, which is when the drag is cancelled
+ */
+function dragEnd() {
+  if (cancelDragEnd.value) {
+    cancelDragEnd.value = false
+    return
+  }
+  if (draggedIndexStart === null || draggedSegment === null) return
+  delete draggedSegment.isPreview
+  draggedIndexStart = null
+  draggedSegment = null
+  // no need to save, because we're resetting back to the original order
 }
 </script>
 
@@ -514,5 +555,9 @@ input {
   color: var(--text-color);
   background: var(--background-color);
   border: none;
+}
+
+.dragging {
+  opacity: 0.5;
 }
 </style>
