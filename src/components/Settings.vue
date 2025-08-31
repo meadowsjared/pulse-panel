@@ -62,8 +62,14 @@
       <div class="flex justify-center gap-2 flex-wrap flex-col">
         <div v-if="settingsStore.quickTags.length === 0">No tags however,</div>
         <div>{{ allTags.length }} tags are available</div>
-        <div class="flex justify-center gap-1">
-          <div v-for="(tag, index) in settingsStore.quickTags" class="tag">
+        <div class="flex justify-center gap-1 cursor-grab" @dragover.prevent>
+          <div
+            v-for="(tag, index) in settingsStore.quickTags"
+            :class="['tag select-none', { dragging: tag.isPreview }]"
+            draggable="true"
+            @dragstart="dragStart(tag, index)"
+            @dragenter.prevent="dragOver(tag)"
+            @dragend="dragEnd">
             {{ tag.label
             }}<button class="remove-button" @click="removeTag(index)">
               <inline-svg :src="PlusIcon" class="rotate-45" />
@@ -92,6 +98,7 @@ import SpeakerIcon from '../assets/images/speaker.svg'
 import Download from '../assets/images/download.svg'
 import { throttle } from 'lodash'
 import PlusIcon from '../assets/images/plus.svg'
+import { LabelActive } from '../@types/sound'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -102,6 +109,10 @@ const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? und
 const showVBCableMessage = ref(false)
 const vbCableMessage = ref('')
 const newTag = ref<string | null>(null)
+
+let draggedIndexStart: number | null = null
+let draggedQuickTag: LabelActive | null = null
+const cancelDragEnd = ref(false)
 
 /**
  * Displays the volume as a percentage
@@ -194,6 +205,41 @@ function selectedHotkeyUpdated(event: string[] | undefined) {
   selectedHotkey.value = event
   // save the value to the IndexedDB store
   settingsStore.saveStringArray('ptt_hotkey', [...(event ?? [])])
+}
+
+function dragStart(pTag: LabelActive, index: number) {
+  draggedIndexStart = index
+  pTag.isPreview = true
+  draggedQuickTag = pTag
+}
+
+function dragOver(pTag: LabelActive) {
+  if (draggedQuickTag === null) return
+  const index = settingsStore.quickTags.indexOf(pTag)
+  const draggedIndex = settingsStore.quickTags.indexOf(draggedQuickTag)
+  if (index === draggedIndex) return
+  const quickTagsTemp = [...settingsStore.quickTags]
+  quickTagsTemp.splice(draggedIndex, 1) // remove the previous tag preview
+  quickTagsTemp.splice(index, 0, draggedQuickTag) // add the tag preview to the new index
+  settingsStore.setQuickTags(quickTagsTemp)
+}
+
+/**
+ * Handles the drag end event, which is when the drag is cancelled
+ * @param pTag The tag that was dragged
+ */
+function dragEnd() {
+  if (cancelDragEnd.value) {
+    cancelDragEnd.value = false
+    return
+  }
+  if (draggedIndexStart === null || draggedQuickTag === null) return
+  delete draggedQuickTag.isPreview
+  // const quickTagsTemp = [...settingsStore.quickTags]
+  // settingsStore.setQuickTags(quickTagsTemp)
+  draggedIndexStart = null
+  draggedQuickTag = null
+  // no need to save, because we're resetting back to the original order
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
@@ -519,5 +565,9 @@ input[type='checkbox']:focus-visible {
   background-color: transparent;
   border: none;
   cursor: pointer;
+}
+
+.tag.dragging {
+  opacity: 0.5;
 }
 </style>
