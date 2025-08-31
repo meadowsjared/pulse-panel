@@ -62,7 +62,7 @@
       <div class="flex justify-center gap-2 flex-wrap flex-col">
         <div v-if="settingsStore.quickTags.length === 0">No tags however,</div>
         <div>{{ allTags.length }} tags are available</div>
-        <div class="flex justify-center gap-1 cursor-grab" @dragover.prevent>
+        <div class="flex justify-center gap-1 cursor-grab">
           <div
             v-for="(tag, index) in settingsStore.quickTags"
             :class="['tag select-none', { dragging: tag.isPreview }]"
