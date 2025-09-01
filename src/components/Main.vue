@@ -113,7 +113,9 @@ settingsStore.fetchBooleanSetting('darkMode', true).then(darkModeValue => {
   darkMode.value = darkModeValue
 })
 settingsStore.fetchBooleanSetting('allowOverlappingSound')
-settingsStore.fetchSoundSetting('sounds')
+settingsStore.fetchSoundSetting('sounds').then(() => {
+  settingsStore.registerHotkeys()
+})
 settingsStore.fetchDefaultVolume()
 settingsStore.fetchAllOutputDevices()
 </script>
