@@ -69,7 +69,6 @@ function sendKey(keys, down) {
     globalHotkeys.stop()
   }
   keys.forEach(key => {
-    console.log('Sending key:', hotkeyToRobotjs(key), down ? 'down' : 'up')
     robot.keyToggle(hotkeyToRobotjs(key), down ? 'down' : 'up')
   })
   if (globalHotkeysRunning) {
