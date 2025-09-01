@@ -12,6 +12,7 @@ const extractZip = require('extract-zip')
 const regedit = require('regedit')
 const globalHotkeys = new qHotkeys()
 const sudo = require('@slosk/sudo-prompt')
+let globalHotkeysRunning = false
 
 function saveSetting(settingKey, settingValue) {
   nconf.set(settingKey, settingValue)
@@ -64,10 +65,16 @@ function hotkeyToRobotjs(hotkey, soundId) {
  * @param {boolean} down
  */
 function sendKey(keys, down) {
+  if (globalHotkeysRunning) {
+    globalHotkeys.stop()
+  }
   keys.forEach(key => {
     console.log('Sending key:', hotkeyToRobotjs(key), down ? 'down' : 'up')
     robot.keyToggle(hotkeyToRobotjs(key), down ? 'down' : 'up')
   })
+  if (globalHotkeysRunning) {
+    globalHotkeys.run()
+  }
 }
 
 /**
@@ -117,6 +124,7 @@ function registerHotkeys(hotkeysArray) {
     })
   })
   globalHotkeys.run()
+  globalHotkeysRunning = true
 }
 
 /**
