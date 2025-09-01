@@ -346,7 +346,6 @@ export const useSettingsStore = defineStore('settings', {
           sounds.push({ id: v4() }) // add a new sound button if there isn't one
         }
         this.sounds = sounds
-        this.registerHotkeys()
         this.registerWindowResize()
         this._getImageUrls(this.sounds)
         return this.sounds
@@ -368,6 +367,7 @@ export const useSettingsStore = defineStore('settings', {
         }
         return duration
       } catch (error) {
+        console.error('Error fetching audio duration:', error)
         return undefined
       }
     },
