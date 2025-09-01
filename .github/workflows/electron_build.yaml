@@ -61,3 +61,5 @@ jobs:
           allowUpdates: true
       - uses: phips28/gh-action-bump-version@v11.0.7
         name: Automated Version Bump
+        with:
+          version-type:  'minor'
