@@ -18,7 +18,7 @@
         "tailwindcss": "^4.1.12",
         "uuid": "11.1.0",
         "vue": "^3.5.20",
-        "vue-color": "^3.3.1",
+        "vue-color": "^3.3.2",
         "vue-inline-svg": "^4.0.1",
       },
       "devDependencies": {
@@ -42,7 +42,7 @@
         "typescript": "^5.9.2",
         "unplugin-auto-import": "^20.1.0",
         "unplugin-vue-components": "^29.0.0",
-        "vite": "^7.1.3",
+        "vite": "^7.1.4",
         "vue-router": "^4.5.1",
       },
     },
@@ -1138,11 +1138,11 @@
 
     "verror": ["verror@1.10.1", "", { "dependencies": { "assert-plus": "^1.0.0", "core-util-is": "1.0.2", "extsprintf": "^1.2.0" } }, "sha512-veufcmxri4e3XSrT0xwfUR7kguIkaxBeosDg00yDWhk49wdwkSUrvvsm7nc75e1PUyvIeZj6nS8VQRYz2/S4Xg=="],
 
-    "vite": ["vite@7.1.3", "", { "dependencies": { "esbuild": "^0.25.0", "fdir": "^6.5.0", "picomatch": "^4.0.3", "postcss": "^8.5.6", "rollup": "^4.43.0", "tinyglobby": "^0.2.14" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "jiti": ">=1.21.0", "less": "^4.0.0", "lightningcss": "^1.21.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-OOUi5zjkDxYrKhTV3V7iKsoS37VUM7v40+HuwEmcrsf11Cdx9y3DIr2Px6liIcZFwt3XSRpQvFpL3WVy7ApkGw=="],
+    "vite": ["vite@7.1.4", "", { "dependencies": { "esbuild": "^0.25.0", "fdir": "^6.5.0", "picomatch": "^4.0.3", "postcss": "^8.5.6", "rollup": "^4.43.0", "tinyglobby": "^0.2.14" }, "optionalDependencies": { "fsevents": "~2.3.3" }, "peerDependencies": { "@types/node": "^20.19.0 || >=22.12.0", "jiti": ">=1.21.0", "less": "^4.0.0", "lightningcss": "^1.21.0", "sass": "^1.70.0", "sass-embedded": "^1.70.0", "stylus": ">=0.54.8", "sugarss": "^5.0.0", "terser": "^5.16.0", "tsx": "^4.8.1", "yaml": "^2.4.2" }, "optionalPeers": ["@types/node", "jiti", "less", "lightningcss", "sass", "sass-embedded", "stylus", "sugarss", "terser", "tsx", "yaml"], "bin": { "vite": "bin/vite.js" } }, "sha512-X5QFK4SGynAeeIt+A7ZWnApdUyHYm+pzv/8/A57LqSGcI88U6R6ipOs3uCesdc6yl7nl+zNO0t8LmqAdXcQihw=="],
 
     "vue": ["vue@3.5.20", "", { "dependencies": { "@vue/compiler-dom": "3.5.20", "@vue/compiler-sfc": "3.5.20", "@vue/runtime-dom": "3.5.20", "@vue/server-renderer": "3.5.20", "@vue/shared": "3.5.20" }, "peerDependencies": { "typescript": "*" }, "optionalPeers": ["typescript"] }, "sha512-2sBz0x/wis5TkF1XZ2vH25zWq3G1bFEPOfkBcx2ikowmphoQsPH6X0V3mmPCXA2K1N/XGTnifVyDQP4GfDDeQw=="],
 
-    "vue-color": ["vue-color@3.3.1", "", { "dependencies": { "material-colors": "^1.2.6", "tinycolor2": "^1.6.0" }, "peerDependencies": { "vue": ">=2.7.0 <4.0.0" } }, "sha512-glLOfCHkcSm1Fo4hTMojshfs62NsYCr7SXVdss0DK/VWEvONcetmkjsP6qrOQc5Hi2heRoAg/ipH+/TFJVfrJw=="],
+    "vue-color": ["vue-color@3.3.2", "", { "dependencies": { "material-colors": "^1.2.6", "tinycolor2": "^1.6.0" }, "peerDependencies": { "vue": ">=2.7.0 <4.0.0" } }, "sha512-cKbm5PI2Y5ESI1thNCfrJtV3eWRnSjwRcmIJJrMtUJ3koY4obTOd9leAD9qik9ZbEXWg3lrdhqH0GV2EhMnzxw=="],
 
     "vue-inline-svg": ["vue-inline-svg@4.0.1", "", { "peerDependencies": { "vue": "^3" } }, "sha512-yh92MOcTpL/yXj0MjI9JqQpI33nj5ewdddt6enunU8pBpy6JqrMXF+O4WI1DbckhLIoXzp6hSxkeqXDqpqtKXw=="],
 
