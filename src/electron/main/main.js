@@ -51,28 +51,11 @@ function createWindow() {
 
   // and load the index.html of the app.
   if (isDev) {
-    loadDevURL(mainWindow)
+    mainWindow.loadURL('http://localhost:3000') // Open the DevTools.
+    mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, '../../../dist/index.html'))
   }
-  // mainWindow.loadURL( //this doesn't work on macOS in build and preview mode
-  //     isDev ?
-  //     'http://localhost:3000' :
-  //     join(__dirname, '../../index.html')
-  // );
-}
-
-async function loadDevURL(window, retries = 10, delay = 1000) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await window.loadURL('http://localhost:3000') // Open the DevTools.
-      window.webContents.openDevTools()
-    } catch (error) {
-      console.error('Error loading dev URL:', error)
-      await new Promise(resolve => setTimeout(resolve, delay))
-    }
-  }
-  throw new Error(`Could not connect to the development server after ${retries} attempts.`)
 }
 
 function resizeTriggered() {
