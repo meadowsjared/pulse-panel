@@ -136,7 +136,7 @@ function addHotkeys(hotkeysArray) {
 }
 
 /**
- * Unregisters an array of hotkeys
+ * Un-registers an array of hotkeys
  * @param {string[][]} hotkeysArray
  */
 function unregisterHotkeys(hotkeysArray) {
