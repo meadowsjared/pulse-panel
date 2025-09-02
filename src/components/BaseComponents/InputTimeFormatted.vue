@@ -3,6 +3,8 @@
     type="text"
     v-model="displayValue"
     v-bind="$attrs"
+    draggable="true"
+    @dragstart.prevent.stop
     @blur="commitValue"
     @keydown.enter="commitValue"
     @keydown.up.prevent="adjustValue($event, step)"
