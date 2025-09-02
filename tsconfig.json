@@ -18,7 +18,14 @@
     },
     "types": ["vite/client", "node"]
   },
-  "include": ["**/*.ts", "@types/**/*.d.ts", "**/*.vue", "electron/**/*", "components.d.ts", "auto-imports.d.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/@types/**/*.d.ts",
+    "src/**/*.vue",
+    "src/electron/**/*",
+    "src/components.d.ts",
+    "src/auto-imports.d.ts"
+  ],
   "exclude": ["node_modules", "dist", "electron"],
   "references": [
     {
