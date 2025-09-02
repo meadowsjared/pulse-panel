@@ -152,7 +152,7 @@ function handleMouseDown(event: MouseEvent) {
 async function playSoundSegment(soundNumber: number) {
   numSoundsPlaying.value++
   const segment = props.modelValue.soundSegments?.[soundNumber - 1] ??
-    props.modelValue.soundSegments?.[0] ?? { start: 0, end: 0 }
+    props.modelValue.soundSegments?.[0] ?? { start: 0, end: 0, id: crypto.randomUUID() }
   soundStore.playSound(props.modelValue, null, null, undefined, true, segment).then(() => {
     numSoundsPlaying.value--
   })
