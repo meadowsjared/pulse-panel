@@ -32,6 +32,8 @@ export function formatSecondsToMMSS(totalSeconds: number): string {
   } else {
     formattedSeconds = seconds.toFixed(1).padStart(4, '0')
   }
+  // remove trailing zeros
+  formattedSeconds = formattedSeconds.replace(/\.0+$/, '')
   return `${minutes}:${formattedSeconds}`
 }
 
