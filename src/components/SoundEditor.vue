@@ -68,7 +68,7 @@
         <span>Segments:</span>
         <div
           v-for="(segment, index) in modelValue.soundSegments"
-          :key="'input-range-segment' + index"
+          :key="`input-range-segment-${segment.id}`"
           :class="['flex gap-2 w-full items-center cursor-grab', { dragging: segment.isPreview }]"
           draggable="true"
           @dragstart="dragStart(segment, index)"
@@ -249,7 +249,7 @@ function handleSegmentChange(segment: SoundSegment, index: number) {
  */
 function addSegment() {
   if (!props.modelValue.soundSegments) props.modelValue.soundSegments = []
-  props.modelValue.soundSegments.push({ start: 0, end: duration.value })
+  props.modelValue.soundSegments.push({ start: 0, end: duration.value, id: crypto.randomUUID() })
   emit('update:modelValue', props.modelValue)
 }
 

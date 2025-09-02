@@ -215,8 +215,8 @@ function handleMouseMove(event: MouseEvent) {
 
 function swapStartEndIfFlipped() {
   if (innerModelValue.value.start > innerModelValue.value.end) {
-    const { start, end } = innerModelValue.value
-    innerModelValue.value = { start: end, end: start } // swap em
+    const { start, end, id } = innerModelValue.value
+    innerModelValue.value = { start: end, end: start, id } // swap em
   }
 }
 
