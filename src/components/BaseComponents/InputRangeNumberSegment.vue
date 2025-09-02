@@ -272,6 +272,7 @@ onUnmounted(() => {
   height: 20px;
   padding: 4px;
   text-align: center;
+  margin-bottom: 0.15rem;
 }
 
 /* remove default styles */
