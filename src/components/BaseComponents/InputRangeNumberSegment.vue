@@ -120,10 +120,12 @@ const endRangeHandleRef = ref<HTMLButtonElement>()
 const startTimeInputRef = ref<HTMLInputElement>()
 const endTimeInputRef = ref<HTMLInputElement>()
 const previousValue = ref<SoundSegment | null>(null)
+const ignoreWatch = ref(false)
 
 watch(
   () => innerModelValue.value,
   newValue => {
+    if (ignoreWatch.value) return
     if (previousValue.value && newValue.start > newValue.end) {
       handleFlippedFocus(previousValue.value, newValue)
     }
@@ -200,6 +202,7 @@ function getPosition(value: number, offset: number, containerWidth2: Ref<number>
 }
 
 function handleMouseDown(event: MouseEvent, type: 'start' | 'end') {
+  ignoreWatch.value = true
   event.preventDefault()
   event.stopPropagation()
   if (event.target instanceof HTMLButtonElement) {
@@ -252,6 +255,7 @@ function handleFlippedFocus(previousValue: SoundSegment, newValue: SoundSegment)
 }
 
 function handleMouseUp() {
+  ignoreWatch.value = false
   swapStartEndIfFlipped()
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
