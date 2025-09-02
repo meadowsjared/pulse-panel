@@ -59,17 +59,22 @@ function commitValue() {
 
 function adjustValue(event: KeyboardEvent, delta: number) {
   event.preventDefault()
+  const totalSeconds = parseMMSSToSeconds(displayValue.value)
   let newValue
   if (delta > 0) {
     if (props.max === undefined) {
-      newValue = props.modelValue + delta
+      newValue = totalSeconds + delta
     } else {
-      newValue = Math.min(props.modelValue + delta, props.max)
+      newValue = Math.min(totalSeconds + delta, props.max)
     }
   } else if (props.min === undefined) {
-    newValue = props.modelValue + delta
+    newValue = totalSeconds + delta
   } else {
-    newValue = Math.max(props.modelValue + delta, props.min)
+    newValue = Math.max(totalSeconds + delta, props.min)
+  }
+  const timeString = formatSecondsToMMSS(newValue)
+  if (displayValue.value !== timeString) {
+    displayValue.value = timeString
   }
   emit('update:modelValue', newValue)
 }
