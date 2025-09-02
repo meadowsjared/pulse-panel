@@ -3,6 +3,7 @@
     <div class="flex w-full flex-col justify-center">
       <div v-if="props.format === 'time'" class="flex gap-1 items-center justify-center">
         <InputTimeFormatted
+          ref="startTimeInputRef"
           class="text-input"
           v-model="innerModelValue.start"
           :min="props.min"
@@ -10,6 +11,7 @@
           :step="props.step"
           :big-step="props.bigStep" />
         <InputTimeFormatted
+          ref="endTimeInputRef"
           class="text-input"
           v-model="innerModelValue.end"
           :min="props.min"
@@ -19,6 +21,7 @@
       </div>
       <div v-else class="flex gap-1 items-center justify-center">
         <input-text-number
+          ref="startTimeInputRef"
           class="text-input"
           v-model="innerModelValue.start"
           :min="props.min"
@@ -26,6 +29,7 @@
           :step="props.step"
           :big-step="props.bigStep" />
         <input-text-number
+          ref="endTimeInputRef"
           class="text-input"
           v-model="innerModelValue.end"
           :min="props.min"
@@ -113,6 +117,20 @@ const containerRef = ref<HTMLElement>()
 const isDragging = ref<'start' | 'end' | null>(null)
 const rangeEndRef = ref<HTMLInputElement>()
 const endRangeHandleRef = ref<HTMLButtonElement>()
+const startTimeInputRef = ref<HTMLInputElement>()
+const endTimeInputRef = ref<HTMLInputElement>()
+const previousValue = ref<SoundSegment | null>(null)
+
+watch(
+  () => innerModelValue.value,
+  newValue => {
+    if (previousValue.value && newValue.start > newValue.end) {
+      handleFlippedFocus(previousValue.value, newValue)
+    }
+    previousValue.value = { ...newValue }
+  },
+  { immediate: true, deep: true }
+)
 
 const handleWidthInPx = computed(() => {
   if (!containerRef.value) return 0
@@ -218,6 +236,19 @@ function swapStartEndIfFlipped() {
     const { start, end, id } = innerModelValue.value
     innerModelValue.value = { start: end, end: start, id } // swap em
   }
+}
+
+function handleFlippedFocus(previousValue: SoundSegment, newValue: SoundSegment) {
+  const isStartChanging = previousValue.start !== newValue.start
+  nextTick(() => {
+    if (isStartChanging) {
+      endTimeInputRef.value?.focus()
+    } else {
+      startTimeInputRef.value?.focus()
+    }
+    const { start, end, id } = newValue
+    innerModelValue.value = { start: end, end: start, id } // swap em
+  })
 }
 
 function handleMouseUp() {
