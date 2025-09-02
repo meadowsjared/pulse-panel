@@ -39,8 +39,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useSettingsStore } from '../store/settings'
-import { Sound } from '../@types/sound'
-import { v4 } from 'uuid'
+import { Sound, SoundSegment } from '../@types/sound'
 import { File } from '../@types/file'
 import { stripFileExtension } from '../utils/utils'
 
@@ -297,7 +296,17 @@ function stripAudioUrls(pSounds: Sound[]) {
       imageKey: sound.imageKey,
       volume: sound.volume,
       color: sound.color,
-      soundSegments: sound.soundSegments,
+      soundSegments: stripSegmentIds(sound.soundSegments),
+    }
+  })
+}
+
+function stripSegmentIds(pSegments: SoundSegment[] | undefined) {
+  if (!pSegments) return undefined
+  return pSegments?.map(segment => {
+    return {
+      start: segment.start,
+      end: segment.end,
     }
   })
 }

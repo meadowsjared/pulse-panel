@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { LabelActive, Sound } from '../@types/sound'
+import { LabelActive, Sound, SoundForSaving } from '../@types/sound'
 import { openDB } from 'idb'
 import { File } from '../@types/file'
 import { useSoundStore } from './sound'
@@ -317,7 +317,7 @@ export const useSettingsStore = defineStore('settings', {
       }
       return this[key]
     },
-    async saveSoundArray(key: ArraySoundSettings, value: Sound[]): Promise<boolean> {
+    async saveSoundArray(key: ArraySoundSettings, value: SoundForSaving[]): Promise<boolean> {
       const electron = window.electron
       await electron?.saveSetting?.(key, JSON.stringify(value))
       return true
@@ -344,6 +344,13 @@ export const useSettingsStore = defineStore('settings', {
         return this[key]
       } else {
         const sounds: Sound[] = JSON.parse(returnedArray)
+        sounds.forEach((sound: Sound) => {
+          if (sound.soundSegments !== undefined) {
+            sound.soundSegments.forEach(segment => {
+              segment.id ??= crypto.randomUUID()
+            })
+          }
+        })
         if (sounds.length < 1 || sounds[sounds.length - 1].title !== undefined) {
           sounds.push({ id: crypto.randomUUID() }) // add a new sound button if there isn't one
         }

@@ -18,10 +18,15 @@ export interface Sound {
   soundSegments?: SoundSegment[]
 }
 
+export interface SoundForSaving extends Sound {
+  soundSegments?: { start: number; end: number }[]
+}
+
 export interface SoundSegment {
   start: number
   end: number
   isPreview?: boolean
+  id: string
 }
 
 export interface LabelActive {
