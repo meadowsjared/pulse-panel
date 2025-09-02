@@ -17,6 +17,11 @@ const textInputElement = ref<HTMLInputElement | null>(null)
 const displayValue = ref('')
 const emit = defineEmits<(event: 'update:modelValue', value: number) => void>()
 
+defineExpose({
+  inputRef: textInputElement,
+  focus: () => textInputElement.value?.focus(),
+})
+
 const props = withDefaults(
   defineProps<{
     modelValue: number

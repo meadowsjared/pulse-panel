@@ -1,5 +1,6 @@
 <template>
   <input
+    ref="inputRef"
     type="text"
     v-model="displayValue"
     v-bind="$attrs"
@@ -35,6 +36,12 @@ const props = withDefaults(
 const emit = defineEmits<(event: 'update:modelValue', value: number) => void>()
 
 const displayValue = ref('')
+const inputRef = ref<HTMLInputElement>()
+
+defineExpose({
+  inputRef,
+  focus: () => inputRef.value?.focus(),
+})
 
 watch(
   () => props.modelValue,
