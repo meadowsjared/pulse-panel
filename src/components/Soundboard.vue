@@ -4,6 +4,7 @@
     <div class="soundboard" @dragover.prevent @drop.prevent="droppedOnBackground">
       <template v-for="(sound, i) in settingsStore.soundsFiltered" :key="sound?.id">
         <sound-button
+          :id="`sound-${sound.id}`"
           :data-sound-index="settingsStore.sounds.indexOf(sound)"
           :class="{ placeholder: sound.isPreview }"
           v-model="settingsStore.soundsFiltered[i]"
@@ -19,7 +20,7 @@
       </template>
     </div>
   </div>
-  <Transition name="slide-right">
+  <Transition name="slide-right" @after-enter="focusEditedSound" @after-leave="focusLastEditedSound">
     <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
       <SoundEditor
         v-model="settingsStore.currentEditingSound"
@@ -61,6 +62,19 @@ let draggedIndexStart: number | null = null
 let draggedSound: Sound | null = null
 const cancelDragEnd = ref(false)
 const skipBgDrop = ref(false)
+const lastFocusedElement = ref<Element | null>(null)
+
+function focusEditedSound() {
+  if (settingsStore.currentEditingSound) {
+    const soundButton = document.getElementById(`sound-${settingsStore.currentEditingSound.id}`)
+    lastFocusedElement.value = soundButton
+    soundButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+}
+
+function focusLastEditedSound() {
+  lastFocusedElement.value?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+}
 
 async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
   event.preventDefault()
