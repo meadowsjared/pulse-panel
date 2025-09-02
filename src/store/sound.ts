@@ -173,7 +173,8 @@ export const useSoundStore = defineStore('sound', {
         setTimeout(() => (this.sendingPttHotkey = false), 100)
       }
       this.currentSound = soundObject
-      const segment = soundSegment ?? soundObject?.soundSegments?.[0] ?? { start: 0, end: soundObject?.duration ?? 100 }
+      const segment = soundSegment ??
+        soundObject?.soundSegments?.[0] ?? { start: 0, end: soundObject?.duration ?? 100, id: crypto.randomUUID() }
       if (this.currentSound) {
         this.currentSound.activeSegment = segment
       }
