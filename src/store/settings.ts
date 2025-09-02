@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { LabelActive, Sound } from '../@types/sound'
 import { openDB } from 'idb'
 import { File } from '../@types/file'
-import { v4 } from 'uuid'
 import { useSoundStore } from './sound'
 import { Settings, Versions } from '../@types/electron-window'
 import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
@@ -326,10 +325,13 @@ export const useSettingsStore = defineStore('settings', {
     /**
      * Fetch an array setting from the store
      * @param key the key it's saved under
-     * @param defaultValue the default value if it's not set, default to [{ id: v4() }]
+     * @param defaultValue the default value if it's not set, default to [{ id: crypto.randomUUID() }]
      * @returns the value of the setting
      */
-    async fetchSoundSetting(key: ArraySoundSettings, defaultValue: Sound[] = [{ id: v4() }]): Promise<Sound[]> {
+    async fetchSoundSetting(
+      key: ArraySoundSettings,
+      defaultValue: Sound[] = [{ id: crypto.randomUUID() }]
+    ): Promise<Sound[]> {
       const electron = window.electron
       const returnedArray = await electron?.readSetting?.(key)
       if (
@@ -341,9 +343,9 @@ export const useSettingsStore = defineStore('settings', {
         this[key] = defaultValue
         return this[key]
       } else {
-        const sounds = JSON.parse(returnedArray)
-        if (sounds.length < 1 || sounds[sounds.length - 1].name !== undefined) {
-          sounds.push({ id: v4() }) // add a new sound button if there isn't one
+        const sounds: Sound[] = JSON.parse(returnedArray)
+        if (sounds.length < 1 || sounds[sounds.length - 1].title !== undefined) {
+          sounds.push({ id: crypto.randomUUID() }) // add a new sound button if there isn't one
         }
         this.sounds = sounds
         this.registerWindowResize()
@@ -497,7 +499,7 @@ export const useSettingsStore = defineStore('settings', {
       })
 
       // Store the file in the database so it can be accessed later
-      const key = v4()
+      const key = crypto.randomUUID()
       await db.put(dbStoreName, file, key)
 
       // Create a blob URL that points to the file data

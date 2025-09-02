@@ -99,7 +99,7 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
     const audioContext = new AudioContext()
     const promAr = combinedFiles.map(async file => {
       const newSound: Sound = {
-        id: v4(),
+        id: crypto.randomUUID(),
         title: stripFileExtension(file.audioFile.name),
       }
       await handleSoundFileDrop(file.audioFile, newSound, audioContext)
@@ -236,7 +236,7 @@ function updateCurrentEditingSound() {
 function updateSound() {
   if (settingsStore.sounds[settingsStore.sounds.length - 1].title !== undefined) {
     settingsStore.sounds.push({
-      id: v4(),
+      id: crypto.randomUUID(),
     })
   }
   settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
@@ -279,7 +279,7 @@ function handleSoundsUpdate(pSound: Sound) {
   // add a new sound if sound is null
   if (settingsStore.sounds[settingsStore.sounds.length - 1].title !== undefined) {
     settingsStore.sounds.push({
-      id: v4(),
+      id: crypto.randomUUID(),
     })
   }
   settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
