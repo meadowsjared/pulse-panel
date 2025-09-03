@@ -2,22 +2,22 @@
   <div class="main">
     <SoundToolbar />
     <div class="soundboard" @dragover.prevent @drop.prevent="droppedOnBackground">
-      <template v-for="(sound, i) in settingsStore.soundsFiltered" :key="sound?.id">
-        <sound-button
-          :id="`sound-${sound.id}`"
-          :data-sound-index="settingsStore.sounds.indexOf(sound)"
-          :class="{ placeholder: sound.isPreview }"
-          v-model="settingsStore.soundsFiltered[i]"
-          :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
-          :displayMode="settingsStore.displayMode"
-          @update:modelValue="handleSoundsUpdate"
-          @file-dropped="fileDropped"
-          @editSound="editSound(sound)"
-          @dragstart="dragStart(sound, i)"
-          @dragover="dragOver(sound)"
-          @drop="drop"
-          @dragend="dragEnd(sound)" />
-      </template>
+      <sound-button
+        v-for="(sound, i) in settingsStore.soundsFiltered"
+        :key="sound?.id"
+        :id="`sound-${sound.id}`"
+        :data-sound-index="settingsStore.sounds.indexOf(sound)"
+        :class="{ placeholder: sound.isPreview }"
+        v-model="settingsStore.soundsFiltered[i]"
+        :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
+        :displayMode="settingsStore.displayMode"
+        @update:modelValue="handleSoundsUpdate"
+        @file-dropped="fileDropped"
+        @editSound="editSound(sound)"
+        @dragstart="dragStart(sound, i)"
+        @dragover="dragOver(sound)"
+        @drop="drop"
+        @dragend="dragEnd(sound)" />
     </div>
   </div>
   <Transition name="slide-right" @after-enter="focusEditedSound" @after-leave="focusLastEditedSound">
