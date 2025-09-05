@@ -6,7 +6,6 @@
         v-for="(sound, i) in settingsStore.soundsFiltered"
         :key="sound?.id"
         :id="`sound-${sound.id}`"
-        :data-sound-index="settingsStore.sounds.indexOf(sound)"
         :class="{ placeholder: sound.isPreview }"
         v-model="settingsStore.soundsFiltered[i]"
         :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
