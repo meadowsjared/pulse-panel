@@ -1,22 +1,51 @@
 <template>
   <div class="main">
     <SoundToolbar />
-    <div class="soundboard" @dragover.prevent @drop.prevent="droppedOnBackground">
-      <sound-button
-        v-for="(sound, i) in settingsStore.soundsFiltered"
-        :key="sound?.id"
-        :id="`sound-${sound.id}`"
-        :class="{ placeholder: sound.isPreview }"
-        v-model="settingsStore.soundsFiltered[i]"
-        :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
-        :displayMode="settingsStore.displayMode"
-        @update:modelValue="handleSoundsUpdate"
-        @file-dropped="fileDropped"
-        @editSound="editSound(sound)"
-        @dragstart="dragStart(sound, i)"
-        @dragover="dragOver(sound)"
-        @drop="drop"
-        @dragend="dragEnd(sound)" />
+    <div class="soundboard-parent" @dragover.prevent @drop.prevent="droppedOnBackground">
+      <Grid
+        :length="settingsStore.soundsFiltered().length"
+        :pageProvider="wrappedPageProvider"
+        :pageSize="30"
+        :pageProviderDebounceTime="500"
+        :scrollTo="scrollToPosition"
+        class="soundboard">
+        <template v-slot:probe>
+          <div class="item">Probe</div>
+        </template>
+        <template v-slot:placeholder="{ index, style }">
+          <sound-button
+            :style="style"
+            v-if="settingsStore.soundsFiltered()[index]"
+            :key="`${settingsStore.soundsFiltered()[index]?.id}`"
+            :id="`sound-${settingsStore.soundsFiltered()[index].id}`"
+            :class="{ placeholder: settingsStore.soundsFiltered()[index].isPreview }"
+            :model-value="getItemWithoutImage(settingsStore.soundsFiltered()[index])"
+            :draggable="
+              settingsStore.displayMode === 'edit' && settingsStore.soundsFiltered()[index].title !== undefined
+            "
+            :displayMode="settingsStore.displayMode" />
+        </template>
+        <template v-slot:default="{ index, style }">
+          <sound-button
+            :style="style"
+            v-if="settingsStore.soundsFiltered()[index]"
+            :key="`${settingsStore.soundsFiltered()[index]?.id}`"
+            :id="`sound-${settingsStore.soundsFiltered()[index].id}`"
+            :class="{ placeholder: settingsStore.soundsFiltered()[index].isPreview }"
+            v-model="settingsStore.soundsFiltered()[index]"
+            :draggable="
+              settingsStore.displayMode === 'edit' && settingsStore.soundsFiltered()[index].title !== undefined
+            "
+            :displayMode="settingsStore.displayMode"
+            @update:modelValue="handleSoundsUpdate"
+            @file-dropped="fileDropped"
+            @editSound="editSound(settingsStore.soundsFiltered()[index])"
+            @dragstart="dragStart(settingsStore.soundsFiltered()[index])"
+            @dragover="dragOver(settingsStore.soundsFiltered()[index])"
+            @drop="drop"
+            @dragend="dragEnd(settingsStore.soundsFiltered()[index])" />
+        </template>
+      </Grid>
     </div>
   </div>
   <Transition name="slide-right" @after-enter="focusEditedSound" @after-leave="focusLastEditedSound">
@@ -42,6 +71,18 @@ import { useSettingsStore } from '../store/settings'
 import { Sound, SoundSegment } from '../@types/sound'
 import { File } from '../@types/file'
 import { stripFileExtension } from '../utils/utils'
+import Grid from 'vue-virtual-scroll-grid'
+
+const dialogOpen = ref(false)
+const soundToDelete = ref<Sound | null>(null)
+
+const settingsStore = useSettingsStore()
+let draggedIndexStart: number | null = null
+let draggedSound: Sound | null = null
+const cancelDragEnd = ref(false)
+const skipBgDrop = ref(false)
+const lastFocusedElement = ref<Sound | null>(null)
+const scrollToPosition = ref<number | undefined>(undefined)
 
 interface CompilingSoundWithImage {
   audioFile?: File
@@ -53,26 +94,46 @@ interface SoundWithImage extends CompilingSoundWithImage {
   audioFile: File
 }
 
-const dialogOpen = ref(false)
-const soundToDelete = ref<Sound | null>(null)
+async function pageProvider(pageNumber: number, pageSize: number): Promise<Sound[]> {
+  console.log('Requesting page')
+  const start = pageNumber * pageSize
+  const end = Math.min(start + pageSize, settingsStore.soundsFiltered().length)
 
-const settingsStore = useSettingsStore()
-let draggedIndexStart: number | null = null
-let draggedSound: Sound | null = null
-const cancelDragEnd = ref(false)
-const skipBgDrop = ref(false)
-const lastFocusedElement = ref<Element | null>(null)
+  // Return the slice of sounds for this page
+  return settingsStore.soundsFiltered({ start, end })
+}
+
+const wrappedPageProvider = computed(() => {
+  return async (pageNumber: number, pageSize: number) => {
+    const sounds = await pageProvider(pageNumber, pageSize)
+    return sounds.map(sound => ({ sound }))
+  }
+})
+
+function getItemWithoutImage(item: Sound) {
+  const itemCopy = { ...item }
+  delete itemCopy.imageUrl
+  delete itemCopy.imageKey
+  return itemCopy
+}
 
 function focusEditedSound() {
   if (settingsStore.currentEditingSound) {
-    const soundButton = document.getElementById(`sound-${settingsStore.currentEditingSound.id}`)
-    lastFocusedElement.value = soundButton
-    soundButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    lastFocusedElement.value = settingsStore.currentEditingSound
+    focusSound(settingsStore.currentEditingSound)
   }
 }
 
 function focusLastEditedSound() {
-  lastFocusedElement.value?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  focusSound(lastFocusedElement.value)
+}
+
+// update scrollToPosition to the index of pSound
+function focusSound(pSound: Sound | null) {
+  const index = settingsStore.soundsFiltered().findIndex(sound => sound.id === pSound?.id)
+  if (index !== -1) {
+    scrollToPosition.value = index
+  }
 }
 
 async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
@@ -206,8 +267,9 @@ function dragEnd(pSound: Sound) {
   // no need to save, because we're resetting back to the original order
 }
 
-function dragStart(pSound: Sound, index: number) {
-  if (settingsStore.displayMode !== 'edit') return
+function dragStart(pSound: Sound) {
+  const index = settingsStore.sounds.indexOf(pSound)
+  if (settingsStore.displayMode !== 'edit' || index === -1) return
   draggedIndexStart = index
   pSound.isPreview = true
   draggedSound = pSound
@@ -333,10 +395,16 @@ function stripSegmentIds(pSegments: SoundSegment[] | undefined) {
   flex-direction: column;
 }
 
+.soundboard-parent {
+  height: 100%;
+  overflow-y: auto;
+  padding-top: 1rem;
+}
+
 .soundboard {
   gap: 0 1rem;
   display: grid;
-  padding: 1rem 1rem 0 1rem;
+  padding: 0 1rem 0 1rem;
   width: 100%;
   height: 100%;
   --grid-min-col-size: 80px;
@@ -347,17 +415,17 @@ function stripSegmentIds(pSegments: SoundSegment[] | undefined) {
   --scrollbar-width: 14px;
 }
 
-.soundboard::-webkit-scrollbar {
+.soundboard-parent::-webkit-scrollbar {
   width: var(--scrollbar-width);
 }
 
-.soundboard::-webkit-scrollbar-thumb {
+.soundboard-parent::-webkit-scrollbar-thumb {
   background: var(--text-color);
   border-radius: calc(var(--scrollbar-width) / 2);
   border: 4px solid var(--input-bg-color);
 }
 
-.soundboard::-webkit-scrollbar-track {
+.soundboard-parent::-webkit-scrollbar-track {
   background: var(--input-bg-color);
 }
 
