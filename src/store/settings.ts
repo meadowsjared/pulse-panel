@@ -42,6 +42,7 @@ type BooleanSettings = 'darkMode' | 'allowOverlappingSound' | 'invertQuickTags'
 type ArraySoundSettings = 'sounds'
 type ArraySettings = 'outputDevices' | 'ptt_hotkey'
 type QuickTagButtonSettings = 'quickTagsAr'
+type SliceParams = { start: number; end: number }
 // type StringSettings = 'ptt_hotkey'
 export type DisplayMode = 'edit' | 'play'
 const isProduction = process.env.NODE_ENV === 'production'
@@ -71,9 +72,14 @@ export const useSettingsStore = defineStore('settings', {
     invertQuickTags: false,
   }),
   getters: {
-    soundsFiltered(): Sound[] {
+    quickTags(): LabelActive[] {
+      return this.quickTagsAr ?? []
+    },
+  },
+  actions: {
+    soundsFiltered(params?: SliceParams): Sound[] {
       const activeOrNegatedTags = this.quickTagsAr?.filter(tag => tag.active === true || tag.negated === true) ?? []
-      return this.sounds
+      const filteredSounds = this.sounds
         .filter(sound => {
           if (activeOrNegatedTags.length === 0) {
             if (this.invertQuickTags) {
@@ -140,12 +146,11 @@ export const useSettingsStore = defineStore('settings', {
             ) ||
             index > this.sounds.length - 2
         )
+      if (params !== undefined) {
+        return filteredSounds.slice(params.start, params.end)
+      }
+      return filteredSounds
     },
-    quickTags(): LabelActive[] {
-      return this.quickTagsAr ?? []
-    },
-  },
-  actions: {
     /**
      * Fetch the default volume from the store
      * @returns the default volume
