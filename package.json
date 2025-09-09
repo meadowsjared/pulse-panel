@@ -83,8 +83,7 @@
     "tailwindcss": "^4.1.13",
     "vue": "^3.5.21",
     "vue-color": "^3.3.2",
-    "vue-inline-svg": "^4.0.1",
-    "vue-virtual-scroll-grid": "^1.11.0"
+    "vue-inline-svg": "^4.0.1"
   },
   "devDependencies": {
     "@evg3/vite-plugin-rewrite-all": "^1.0.3",
