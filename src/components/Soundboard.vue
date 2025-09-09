@@ -87,7 +87,7 @@ watch(
         buttonVisibility.value.clear() // clear previous visibility states
         // handle buffer rows above and below the visible rows
         if (averageRowHeight > 0) {
-          const bufferRows = Math.ceil(rowPositions.length / 2)
+          const bufferRows = Math.ceil(rowPositions.length * 0.75)
           soundButtons.forEach(buttonEl => {
             const soundId = buttonEl.id?.replace('sound-', '')
             const rowTop = buttonEl.getBoundingClientRect().top
