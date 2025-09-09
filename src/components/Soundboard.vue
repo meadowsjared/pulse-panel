@@ -1,51 +1,26 @@
 <template>
   <div class="main">
     <SoundToolbar />
-    <div class="soundboard-parent" @dragover.prevent @drop.prevent="droppedOnBackground">
-      <Grid
-        :length="settingsStore.soundsFiltered().length"
-        :pageProvider="wrappedPageProvider"
-        :pageSize="30"
-        :pageProviderDebounceTime="500"
-        :scrollTo="scrollToPosition"
-        class="soundboard">
-        <template v-slot:probe>
-          <div class="item">Probe</div>
-        </template>
-        <template v-slot:placeholder="{ index, style }">
-          <sound-button
-            :style="style"
-            v-if="settingsStore.soundsFiltered()[index]"
-            :key="`${settingsStore.soundsFiltered()[index]?.id}`"
-            :id="`sound-${settingsStore.soundsFiltered()[index].id}`"
-            :class="{ placeholder: settingsStore.soundsFiltered()[index].isPreview }"
-            :model-value="getItemWithoutImage(settingsStore.soundsFiltered()[index])"
-            :draggable="
-              settingsStore.displayMode === 'edit' && settingsStore.soundsFiltered()[index].title !== undefined
-            "
-            :displayMode="settingsStore.displayMode" />
-        </template>
-        <template v-slot:default="{ index, style }">
-          <sound-button
-            :style="style"
-            v-if="settingsStore.soundsFiltered()[index]"
-            :key="`${settingsStore.soundsFiltered()[index]?.id}`"
-            :id="`sound-${settingsStore.soundsFiltered()[index].id}`"
-            :class="{ placeholder: settingsStore.soundsFiltered()[index].isPreview }"
-            v-model="settingsStore.soundsFiltered()[index]"
-            :draggable="
-              settingsStore.displayMode === 'edit' && settingsStore.soundsFiltered()[index].title !== undefined
-            "
-            :displayMode="settingsStore.displayMode"
-            @update:modelValue="handleSoundsUpdate"
-            @file-dropped="fileDropped"
-            @editSound="editSound(settingsStore.soundsFiltered()[index])"
-            @dragstart="dragStart(settingsStore.soundsFiltered()[index])"
-            @dragover="dragOver(settingsStore.soundsFiltered()[index])"
-            @drop="drop"
-            @dragend="dragEnd(settingsStore.soundsFiltered()[index])" />
-        </template>
-      </Grid>
+    <div class="soundboard" @dragover.prevent @drop.prevent="droppedOnBackground">
+      <template v-for="(sound, index) in settingsStore.soundsFiltered()" :key="sound.id">
+        <sound-button
+          ref="buttons"
+          v-if="sound"
+          :key="`${sound?.id}`"
+          :id="`sound-${sound.id}`"
+          :class="{ placeholder: sound.isPreview }"
+          v-model="settingsStore.soundsFiltered()[index]"
+          :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
+          :displayMode="settingsStore.displayMode"
+          :isVisible="isSoundVisible(sound.id)"
+          @update:modelValue="handleSoundsUpdate"
+          @file-dropped="fileDropped"
+          @editSound="editSound(sound)"
+          @dragstart="dragStart(sound)"
+          @dragover="dragOver(sound)"
+          @drop="drop"
+          @dragend="dragEnd(sound)" />
+      </template>
     </div>
   </div>
   <Transition name="slide-right" @after-enter="focusEditedSound" @after-leave="focusLastEditedSound">
@@ -71,7 +46,6 @@ import { useSettingsStore } from '../store/settings'
 import { Sound, SoundSegment } from '../@types/sound'
 import { File } from '../@types/file'
 import { stripFileExtension } from '../utils/utils'
-import Grid from 'vue-virtual-scroll-grid'
 
 const dialogOpen = ref(false)
 const soundToDelete = ref<Sound | null>(null)
@@ -81,8 +55,102 @@ let draggedIndexStart: number | null = null
 let draggedSound: Sound | null = null
 const cancelDragEnd = ref(false)
 const skipBgDrop = ref(false)
-const lastFocusedElement = ref<Sound | null>(null)
-const scrollToPosition = ref<number | undefined>(undefined)
+const lastFocusedElement = ref<Element | null>(null)
+const buttons = ref<{ ref: HTMLElement }[]>([])
+const observer = ref<IntersectionObserver | null>(null)
+const buttonVisibility = ref<Map<string, boolean>>(new Map())
+const currentlyVisible = ref<Map<string, boolean>>(new Map())
+
+watch(
+  buttons,
+  async newButtons => {
+    if (observer.value) {
+      observer.value.disconnect()
+    }
+    if (newButtons.length > 0) {
+      const callback = (entries: IntersectionObserverEntry[]) => {
+        entries.forEach(entry => {
+          // Get the sound ID from the element's ID attribute
+          const soundId = entry.target.id?.replace('sound-', '')
+          if (soundId) {
+            if (entry.isIntersecting) {
+              currentlyVisible.value.set(soundId, true)
+            } else {
+              currentlyVisible.value.delete(soundId)
+            }
+          }
+        })
+
+        // get all the soundButtons in the DOM
+        const soundButtons = document.querySelectorAll('.sound-button')
+        const { rowPositions, averageRowHeight } = getRowData(soundButtons)
+        buttonVisibility.value.clear() // clear previous visibility states
+        // handle buffer rows above and below the visible rows
+        if (averageRowHeight > 0) {
+          const bufferRows = Math.ceil(rowPositions.length / 2)
+          soundButtons.forEach(buttonEl => {
+            const soundId = buttonEl.id?.replace('sound-', '')
+            const rowTop = buttonEl.getBoundingClientRect().top
+            for (let i = 1; i <= bufferRows; i++) {
+              // flip through all the buffer rows
+              if (
+                rowTop === rowPositions[0] - i * averageRowHeight ||
+                rowTop === rowPositions[rowPositions.length - 1] + i * averageRowHeight
+              ) {
+                // if it matches this buffer row
+                // mark it as visible
+                buttonVisibility.value.set(soundId, true)
+              }
+            }
+          })
+        }
+        // finally, transfer all the currentlyVisible to buttonVisibility
+        currentlyVisible.value.forEach((value, key) => {
+          buttonVisibility.value.set(key, value)
+        })
+      }
+
+      observer.value = new IntersectionObserver(callback)
+      await nextTick() // Ensure DOM is updated
+      newButtons.forEach(button => {
+        button.ref && observer.value?.observe(button.ref)
+      })
+    }
+  },
+  { deep: true, flush: 'post' }
+)
+
+onUnmounted(() => {
+  if (observer.value) {
+    observer.value.disconnect()
+  }
+})
+
+/**
+ * Calculate row positions and average row height
+ * @param soundButtons NodeList of sound button elements
+ * @returns Object containing rowPositions array and averageRowHeight number
+ */
+function getRowData(soundButtons: NodeListOf<Element>) {
+  const rowPositions: number[] = []
+  soundButtons.forEach(button => {
+    const sound = settingsStore.soundsFiltered().find(s => `sound-${s.id}` === button.id)
+    // get if the sound is visible
+    const isVisible = sound && currentlyVisible.value.get(sound.id) === true
+    if (sound && isVisible) {
+      const rowTop = button.getBoundingClientRect().top
+      if (!rowPositions.includes(rowTop)) rowPositions.push(rowTop) // Mark this row as processed
+    }
+  })
+  rowPositions.sort((a, b) => a - b)
+  const averageRowHeight =
+    rowPositions.length > 1 ? (rowPositions[rowPositions.length - 1] - rowPositions[0]) / (rowPositions.length - 1) : 0
+  return { rowPositions, averageRowHeight }
+}
+
+function isSoundVisible(soundId: string): boolean {
+  return buttonVisibility.value.get(soundId) ?? false
+}
 
 interface CompilingSoundWithImage {
   audioFile?: File
@@ -94,46 +162,16 @@ interface SoundWithImage extends CompilingSoundWithImage {
   audioFile: File
 }
 
-async function pageProvider(pageNumber: number, pageSize: number): Promise<Sound[]> {
-  console.log('Requesting page')
-  const start = pageNumber * pageSize
-  const end = Math.min(start + pageSize, settingsStore.soundsFiltered().length)
-
-  // Return the slice of sounds for this page
-  return settingsStore.soundsFiltered({ start, end })
-}
-
-const wrappedPageProvider = computed(() => {
-  return async (pageNumber: number, pageSize: number) => {
-    const sounds = await pageProvider(pageNumber, pageSize)
-    return sounds.map(sound => ({ sound }))
-  }
-})
-
-function getItemWithoutImage(item: Sound) {
-  const itemCopy = { ...item }
-  delete itemCopy.imageUrl
-  delete itemCopy.imageKey
-  return itemCopy
-}
-
 function focusEditedSound() {
   if (settingsStore.currentEditingSound) {
-    lastFocusedElement.value = settingsStore.currentEditingSound
-    focusSound(settingsStore.currentEditingSound)
+    const soundButton = document.getElementById(`sound-${settingsStore.currentEditingSound.id}`)
+    lastFocusedElement.value = soundButton
+    soundButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 }
 
 function focusLastEditedSound() {
-  focusSound(lastFocusedElement.value)
-}
-
-// update scrollToPosition to the index of pSound
-function focusSound(pSound: Sound | null) {
-  const index = settingsStore.soundsFiltered().findIndex(sound => sound.id === pSound?.id)
-  if (index !== -1) {
-    scrollToPosition.value = index
-  }
+  lastFocusedElement.value?.scrollIntoView({ behavior: 'smooth', block: 'end' })
 }
 
 async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
@@ -395,16 +433,10 @@ function stripSegmentIds(pSegments: SoundSegment[] | undefined) {
   flex-direction: column;
 }
 
-.soundboard-parent {
-  height: 100%;
-  overflow-y: auto;
-  padding-top: 1rem;
-}
-
 .soundboard {
   gap: 0 1rem;
   display: grid;
-  padding: 0 1rem 0 1rem;
+  padding: 1rem 1rem 0 1rem;
   width: 100%;
   height: 100%;
   --grid-min-col-size: 80px;
@@ -415,17 +447,17 @@ function stripSegmentIds(pSegments: SoundSegment[] | undefined) {
   --scrollbar-width: 14px;
 }
 
-.soundboard-parent::-webkit-scrollbar {
+.soundboard::-webkit-scrollbar {
   width: var(--scrollbar-width);
 }
 
-.soundboard-parent::-webkit-scrollbar-thumb {
+.soundboard::-webkit-scrollbar-thumb {
   background: var(--text-color);
   border-radius: calc(var(--scrollbar-width) / 2);
   border: 4px solid var(--input-bg-color);
 }
 
-.soundboard-parent::-webkit-scrollbar-track {
+.soundboard::-webkit-scrollbar-track {
   background: var(--input-bg-color);
 }
 
