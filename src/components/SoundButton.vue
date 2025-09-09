@@ -1,10 +1,12 @@
 <template>
   <div
+    ref="containerElement"
     v-if="modelValue?.title !== undefined"
     class="sound-button-container"
     @drop="handleFileDrop(false, $event)"
     @dragover.prevent>
     <button
+      :id="`sound-${modelValue.id}`"
       ref="soundButton"
       @click="playSound"
       @mousedown="handleMouseDown"
@@ -62,11 +64,17 @@ import InlineSvg from 'vue-inline-svg'
 import { DisplayMode, useSettingsStore } from '../store/settings'
 
 // Define the props
-const props = defineProps<{
-  modelValue: Sound
-  displayMode: DisplayMode
-  isPreview?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: Sound
+    displayMode: DisplayMode
+    isPreview?: boolean
+    isVisible?: boolean
+  }>(),
+  {
+    isVisible: true,
+  }
+)
 
 // define the emits
 const emit = defineEmits<{
@@ -85,9 +93,14 @@ const focusVisible = ref(false)
 const lineHeight = ref(0)
 const soundButton = ref<HTMLButtonElement | null>(null)
 const buttonTitle = ref<HTMLElement | null>(null)
+const containerElement = ref<HTMLElement | null>(null)
 
 const soundStore = useSoundStore()
 const settingsStore = useSettingsStore()
+
+defineExpose({
+  ref: containerElement,
+})
 
 onMounted(() => {
   if (buttonTitle.value) {
@@ -97,7 +110,7 @@ onMounted(() => {
 
 const mergedStyle = computed(() => {
   return {
-    ...(props.modelValue.imageUrl ? { backgroundImage: `url(${props.modelValue.imageUrl})` } : {}),
+    ...(props.isVisible && props.modelValue.imageUrl ? { backgroundImage: `url(${props.modelValue.imageUrl})` } : {}),
     ...(props.modelValue.activeSegment
       ? {
           '--sound-duration': `${
