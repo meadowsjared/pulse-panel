@@ -2,6 +2,8 @@
   <div class="title-bar" :class="{ darkMode: settingsStore.darkMode }">
     <div class="title">
       <slot />
+    </div>
+    <div class="quick-tags">
       <quick-tag-buttons />
     </div>
     <div class="buttons">
@@ -59,6 +61,7 @@ const close = () => {
 
 .buttons {
   display: flex;
+  flex-shrink: 0;
 }
 
 .buttons button {
@@ -70,5 +73,11 @@ const close = () => {
 
 .buttons button:hover {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.quick-tags {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 }
 </style>
