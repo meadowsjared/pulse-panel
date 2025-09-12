@@ -12,7 +12,7 @@
           v-model="settingsStore.soundsFiltered()[index]"
           :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
           :displayMode="settingsStore.displayMode"
-          :isVisible="isSoundVisible(sound.id)"
+          :isVisible="sound.isVisible"
           @update:modelValue="handleSoundsUpdate"
           @file-dropped="fileDropped"
           @editSound="editSound(sound)"
@@ -58,7 +58,6 @@ const skipBgDrop = ref(false)
 const lastFocusedElement = ref<Element | null>(null)
 const buttons = ref<{ ref: HTMLElement }[]>([])
 const observer = ref<IntersectionObserver | null>(null)
-const buttonVisibility = ref<Map<string, boolean>>(new Map())
 const currentlyVisible = ref<Map<string, boolean>>(new Map())
 
 watch(
@@ -84,7 +83,7 @@ watch(
         // get all the soundButtons in the DOM
         const soundButtons = document.querySelectorAll('.sound-button')
         const { rowPositions, averageRowHeight } = getRowData(soundButtons)
-        buttonVisibility.value.clear() // clear previous visibility states
+        const buttonVisibilityMap: Map<string, boolean> = new Map()
         // handle buffer rows above and below the visible rows
         if (averageRowHeight > 0) {
           const bufferRows = Math.ceil(rowPositions.length * 0.75)
@@ -99,15 +98,36 @@ watch(
               ) {
                 // if it matches this buffer row
                 // mark it as visible
-                buttonVisibility.value.set(soundId, true)
+                buttonVisibilityMap.set(soundId, true)
               }
             }
           })
         }
         // finally, transfer all the currentlyVisible to buttonVisibility
         currentlyVisible.value.forEach((value, key) => {
-          buttonVisibility.value.set(key, value)
+          buttonVisibilityMap.set(key, value)
         })
+        // now that we have the full list of visible buttons, set the visibility of any button that has changed
+        let numFilteredSounds = 0
+        settingsStore.sounds
+          .filter(
+            sound =>
+              (sound.isVisible && (buttonVisibilityMap.get(sound.id) ?? false) === false) ||
+              (!sound.isVisible && buttonVisibilityMap.get(sound.id) === true)
+          )
+          .forEach(sound => {
+            // transfer buttonVisibilityMap to the sounds
+            const visible = buttonVisibilityMap.get(sound.id) === true
+            if (visible) {
+              sound.isVisible = true
+            } else {
+              delete sound.isVisible
+            }
+            numFilteredSounds++
+          })
+        if (numFilteredSounds > 0) {
+          settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
+        }
       }
 
       observer.value = new IntersectionObserver(callback)
@@ -146,10 +166,6 @@ function getRowData(soundButtons: NodeListOf<Element>) {
   const averageRowHeight =
     rowPositions.length > 1 ? (rowPositions[rowPositions.length - 1] - rowPositions[0]) / (rowPositions.length - 1) : 0
   return { rowPositions, averageRowHeight }
-}
-
-function isSoundVisible(soundId: string): boolean {
-  return buttonVisibility.value.get(soundId) ?? false
 }
 
 interface CompilingSoundWithImage {
@@ -410,6 +426,7 @@ function stripAudioUrls(pSounds: Sound[]) {
       volume: sound.volume,
       color: sound.color,
       soundSegments: stripSegmentIds(sound.soundSegments),
+      isVisible: sound.isVisible,
     }
   })
 }
