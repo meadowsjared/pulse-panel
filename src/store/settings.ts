@@ -381,25 +381,51 @@ export const useSettingsStore = defineStore('settings', {
      */
     async _getImageUrls(sounds: Sound[]) {
       const audioContext = new window.AudioContext()
-      for (const sound of sounds) {
-        if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
-          await this.getFile(sound.imageKey).then((imageUrl: string | null) => {
-            if (imageUrl) {
-              sound.imageUrl = imageUrl
-            }
-          })
-        }
-        if (sound?.audioUrl === undefined && sound?.audioKey !== undefined) {
-          const audioUrl = await this.getFile(sound.audioKey)
-          if (audioUrl) {
-            sound.audioUrl = audioUrl
-            sound.duration = await this.getAudioDuration(audioUrl, audioContext)
-          }
-        } else {
-          sound.duration = await this.getAudioDuration(sound?.audioUrl ?? chordAlert, audioContext)
-        }
-      }
+      await this._getImageUrlsForVisibleSounds(audioContext, sounds)
+      await this._getImageUrlsForHiddenSounds(audioContext, sounds)
       await audioContext.close()
+    },
+    /**
+     * Lazily get the image URLs for the visible sounds first, then the hidden sounds.
+     * @param sounds[] the array of sounds
+     * @param {AudioContext} audioContext - the audio context to use
+     * @returns void
+     */
+    async _getImageUrlsForVisibleSounds(audioContext: AudioContext, sounds: Sound[]) {
+      const soundsFiltered = sounds.filter(sound => sound.isVisible)
+      soundsFiltered.forEach(async sound => {
+        await this._getImageUrl(sound, audioContext)
+      })
+    },
+    /**
+     * Lazily get the image URLs for the hidden sounds.
+     * @param audioContext the audio context to use
+     * @param sounds {Sound[]} the array of sounds
+     * @returns void
+     */
+    async _getImageUrlsForHiddenSounds(audioContext: AudioContext, sounds: Sound[]) {
+      const soundsFiltered = sounds.filter(sound => !sound.isVisible)
+      soundsFiltered.forEach(async sound => {
+        await this._getImageUrl(sound, audioContext)
+      })
+    },
+    async _getImageUrl(sound: Sound, audioContext: AudioContext) {
+      if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
+        await this.getFile(sound.imageKey).then((imageUrl: string | null) => {
+          if (imageUrl) {
+            sound.imageUrl = imageUrl
+          }
+        })
+      }
+      if (sound?.audioUrl === undefined && sound?.audioKey !== undefined) {
+        const audioUrl = await this.getFile(sound.audioKey)
+        if (audioUrl) {
+          sound.audioUrl = audioUrl
+          sound.duration = await this.getAudioDuration(audioUrl, audioContext)
+        }
+      } else {
+        sound.duration = await this.getAudioDuration(sound?.audioUrl ?? chordAlert, audioContext)
+      }
     },
     /**
      * This function listens for windowResize events and sets the windowIsMaximized state
