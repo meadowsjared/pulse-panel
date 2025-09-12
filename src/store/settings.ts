@@ -110,11 +110,10 @@ export const useSettingsStore = defineStore('settings', {
           return this.invertQuickTags ? invertedMatch : normalMatch
         })
         .filter(
-          (sound, index) =>
+          sound =>
             this.searchText.trim() === '' ||
             // compare the words from the title to the words from the search text
-            // if either the (titleWord.length > 1 && titleWord is in the searchWord)
-            // or the searchWord is in the titleWord, return true
+            // if either the (titleWord starts with the searchWord), return true
             sound.title
               ?.toLowerCase()
               .split(/[^a-zA-Z0-9_']/)
@@ -124,27 +123,17 @@ export const useSettingsStore = defineStore('settings', {
                   .toLowerCase()
                   .split(/[^a-zA-Z0-9_']/)
                   .filter(searchWord => searchWord !== '')
-                  .some(
-                    searchWord =>
-                      (titleWord.length > 1 && searchWord.toLowerCase().includes(titleWord.toLowerCase())) ||
-                      titleWord.toLowerCase().includes(searchWord.toLowerCase())
-                  )
+                  .some(searchWord => titleWord.toLowerCase().startsWith(searchWord.toLowerCase()))
               ) ||
             // compare the words from the tags to the words from the search text
-            // if either the (tag.length > 1 && tag is in the searchWord)
-            // or the searchWord is in the tag, return true
+            // if the tag starts with the searchWord, return true
             sound.tags?.some(tag =>
               this.searchText
                 .toLowerCase()
                 .split(/[^a-zA-Z0-9_']/)
                 .filter(searchWord => searchWord !== '')
-                .some(
-                  searchWord =>
-                    (tag.length > 1 && searchWord.toLowerCase().includes(tag.toLowerCase())) ||
-                    tag.toLowerCase().includes(searchWord.toLowerCase())
-                )
-            ) ||
-            index > this.sounds.length - 2
+                .some(searchWord => tag.toLowerCase().startsWith(searchWord.toLowerCase()))
+            )
         )
       if (params !== undefined) {
         return filteredSounds.slice(params.start, params.end)
