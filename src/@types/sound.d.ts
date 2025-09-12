@@ -16,6 +16,8 @@ export interface Sound {
   reset?: boolean
   activeSegment?: SoundSegment
   soundSegments?: SoundSegment[]
+  /** used to control the visibility of the sound */
+  isVisible?: true
 }
 
 export interface SoundForSaving extends Sound {
