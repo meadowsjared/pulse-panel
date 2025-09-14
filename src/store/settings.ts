@@ -14,24 +14,64 @@ declare global {
 }
 
 interface State {
-  /** friendly name of the app */
-  appName: string
   defaultVolume: number
-  windowIsMaximized: boolean
   outputDevices: string[]
-  allOutputDevices: MediaDeviceInfo[]
   darkMode: boolean
   allowOverlappingSound: boolean
   sounds: Sound[]
-  displayMode: DisplayMode
-  currentEditingSound: Sound | null
-  hoveredSound: Sound | null
   muted: boolean
-  recordingHotkey: boolean
   ptt_hotkey: string[]
-  searchText: string
   quickTagsAr?: LabelActive[]
   invertQuickTags: boolean
+  // not saved in the database:
+  /**
+   * friendly name of the app
+   *
+   * **VOLATILE**
+   */
+  appName: string
+  /**
+   * List of all available output devices
+   *
+   * **VOLATILE**
+   */
+  allOutputDevices: MediaDeviceInfo[]
+  /**
+   * Whether the window is currently maximized
+   *
+   * **VOLATILE**
+   */
+  windowIsMaximized: boolean
+  /**
+   * The current text in the search box
+   *
+   * **VOLATILE**
+   */
+  searchText: string
+  /**
+   * Whether the app is currently recording a hotkey
+   *
+   * **VOLATILE**
+   */
+  recordingHotkey: boolean
+  /**
+   * The current display mode, either 'edit' or 'play'
+   *
+   * **VOLATILE**
+   */
+  displayMode: DisplayMode
+  /**
+   * The sound that is currently being hovered over
+   *
+   * **VOLATILE**
+   */
+  hoveredSound: Sound | null
+  /**
+   * The sound that is currently being edited
+   *
+   * **VOLATILE**
+   */
+  currentEditingSound: Sound | null
 }
 
 interface SoundWithHotkey extends Sound {
