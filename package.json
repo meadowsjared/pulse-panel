@@ -73,6 +73,7 @@
     "@tailwindcss/postcss": "^4.1.13",
     "@tanstack/vue-virtual": "^3.13.12",
     "@vueuse/core": "^13.9.0",
+    "better-sqlite3": "^12.2.0",
     "extract-zip": "^2.0.1",
     "idb": "^8.0.3",
     "lodash": "^4.17.21",
@@ -87,6 +88,7 @@
   },
   "devDependencies": {
     "@evg3/vite-plugin-rewrite-all": "^1.0.3",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/lodash": "^4.17.20",
     "@types/nconf": "^0.10.7",
     "@types/node": "^24.3.1",
