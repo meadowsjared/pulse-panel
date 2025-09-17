@@ -28,3 +28,6 @@ pnpm-lock.yaml
 .env.production
 .env
 pulse-panel.json
+sqlite3_rsync.exe
+sqlite3_analyzer.exe
+sqldiff.exe
