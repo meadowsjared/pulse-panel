@@ -4,20 +4,30 @@ export interface Sound {
   hideTitle?: boolean
   tags?: string[]
   hotkey?: string[]
-  audioUrl?: string
   audioKey?: string
-  imageUrl?: string
   imageKey?: string
-  color?: string
   volume?: number
-  isPreview?: boolean
-  duration?: number
-  /** used for resetting the progress bar animation */
-  reset?: boolean
-  activeSegment?: SoundSegment
+  color?: string
   soundSegments?: SoundSegment[]
   /** used to control the visibility of the sound */
   isVisible?: true
+
+  /** **Volatile** - not saved to DB */
+  audioUrl?: string
+  /** **Volatile** - not saved to DB */
+  imageUrl?: string
+  /** **Volatile** - not saved to DB */
+  isPreview?: boolean
+  /** **Volatile** - not saved to DB */
+  duration?: number
+  /**
+   * used for resetting the progress bar animation
+   *
+   * **Volatile** - not saved to DB
+   */
+  reset?: boolean
+  /** **Volatile** - not saved to DB */
+  activeSegment?: SoundSegment
 }
 
 export interface SoundForSaving extends Sound {
