@@ -121,14 +121,14 @@ function readAllDBSounds() {
 
     // Only add properties if they have meaningful values
     if (row.title) sound.title = row.title
-    if (row.hideTitle) sound.hideTitle = true
+    if (row.hideTitle === 'true') sound.hideTitle = true
     if (row.tags) sound.tags = row.tags
     if (row.hotkey) sound.hotkey = row.hotkey
     if (row.audioKey) sound.audioKey = row.audioKey
     if (row.imageKey) sound.imageKey = row.imageKey
     if (row.volume !== null) sound.volume = row.volume
     if (row.color) sound.color = row.color
-    if (row.isVisible) sound.isVisible = true
+    if (row.isVisible === 'true') sound.isVisible = true
     if (row.soundSegments) sound.soundSegments = row.soundSegments
 
     return sound
