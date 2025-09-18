@@ -503,37 +503,30 @@ export const useSettingsStore = defineStore('settings', {
       }
     },
     /**
-     * Lazily get the image URLs for the sounds.
+     * Lazily get the image URLs  for the visible sounds first, then the hidden sounds.
      * @param sounds[] the array of sounds
      * @returns void
      */
     async _getImageUrls(sounds: Sound[]) {
       const audioContext = new window.AudioContext()
-      await this._getImageUrlsForVisibleSounds(audioContext, sounds)
-      await this._getImageUrlsForHiddenSounds(audioContext, sounds)
+      await this._loadMediaForSounds(
+        audioContext,
+        sounds.filter(sound => sound.isVisible)
+      )
+      await this._loadMediaForSounds(
+        audioContext,
+        sounds.filter(sound => !sound.isVisible)
+      )
       await audioContext.close()
     },
     /**
-     * Lazily get the image URLs for the visible sounds first, then the hidden sounds.
+     * Lazily get the image URLs for the given sounds
      * @param sounds[] the array of sounds
      * @param {AudioContext} audioContext - the audio context to use
      * @returns void
      */
-    async _getImageUrlsForVisibleSounds(audioContext: AudioContext, sounds: Sound[]) {
-      const soundsFiltered = sounds.filter(sound => sound.isVisible)
-      soundsFiltered.forEach(async sound => {
-        await this._getImageUrl(sound, audioContext)
-      })
-    },
-    /**
-     * Lazily get the image URLs for the hidden sounds.
-     * @param audioContext the audio context to use
-     * @param sounds {Sound[]} the array of sounds
-     * @returns void
-     */
-    async _getImageUrlsForHiddenSounds(audioContext: AudioContext, sounds: Sound[]) {
-      const soundsFiltered = sounds.filter(sound => !sound.isVisible)
-      soundsFiltered.forEach(async sound => {
+    async _loadMediaForSounds(audioContext: AudioContext, sounds: Sound[]) {
+      sounds.forEach(async sound => {
         await this._getImageUrl(sound, audioContext)
       })
     },
