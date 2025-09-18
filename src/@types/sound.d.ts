@@ -21,7 +21,9 @@ export interface Sound {
 }
 
 export interface SoundForSaving extends Sound {
-  soundSegments?: { start: number; end: number }[]
+  tags?: string
+  hotkey?: string
+  soundSegments?: string
 }
 
 export interface SoundSegment {

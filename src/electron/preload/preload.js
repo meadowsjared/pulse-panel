@@ -16,9 +16,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electron', {
   // note: these are defined in /@types/electron-window.d.ts
-  readSetting: key => ipcRenderer.invoke('read-setting', key),
-  saveSetting: (key, value) => ipcRenderer.invoke('save-setting', key, value),
-  deleteSetting: key => ipcRenderer.invoke('delete-setting', key),
+  _readSetting: key => ipcRenderer.invoke('_read-setting', key),
   sendKey: (keys, down) => ipcRenderer.invoke('send-key', keys, down),
   registerHotkeys: hotkeys => ipcRenderer.invoke('register-hotkeys', hotkeys),
   addHotkeys: hotkeys => ipcRenderer.invoke('add-hotkeys', hotkeys),
@@ -41,6 +39,18 @@ contextBridge.exposeInMainWorld('electron', {
   requestMainWindowSized: () => ipcRenderer.invoke('request-main-window-sized'),
   openExternalLink: url => ipcRenderer.invoke('open-external-link', url),
   downloadVBCable: appName => ipcRenderer.invoke('download-vb-cable', appName),
+  // Database related
+  readAllDBSettings: () => ipcRenderer.invoke('read-all-db-settings'),
+  saveDBSetting: (settingName, settingValue) => ipcRenderer.invoke('save-db-setting', settingName, settingValue),
+  readDBSetting: settingName => ipcRenderer.invoke('read-db-setting', settingName),
+  deleteDBSetting: settingName => ipcRenderer.invoke('delete-db-setting', settingName),
+  readAllDBSounds: () => ipcRenderer.invoke('read-all-db-sounds'),
+  saveSound: sound => ipcRenderer.invoke('save-sound', sound),
+  saveSoundProperty: (sound, propertyName) => ipcRenderer.invoke('save-sound-property', sound, propertyName),
+  reorderSound: (soundId, newIndex) => ipcRenderer.invoke('reorder-sound', soundId, newIndex),
+  deleteSoundProperty: (sound, propertyName) => ipcRenderer.invoke('delete-sound-property', sound, propertyName),
+  deleteSound: sound => ipcRenderer.invoke('delete-sound', sound),
+  saveSoundsArray: sounds => ipcRenderer.invoke('save-sounds-array', sounds),
   versions: {
     app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,

@@ -10,9 +10,7 @@ let mainWindow = null
 
 app.whenReady().then(() => {
   // Expose a method to read and save settings
-  ipcMain.handle('read-setting', (_, settingKey) => settings.readSetting(settingKey))
-  ipcMain.handle('save-setting', (_, settingKey, settingValue) => settings.saveSetting(settingKey, settingValue))
-  ipcMain.handle('delete-setting', (_, settingKey) => settings.deleteSetting(settingKey))
+  ipcMain.handle('_read-setting', (_, settingKey) => settings._readSetting(settingKey))
   ipcMain.handle('send-key', (_, keys, down) => settings.sendKey(keys, down))
   ipcMain.on('toggle-dark-mode', (_, value) => {
     BrowserWindow.getAllWindows().forEach(window => {
@@ -31,11 +29,23 @@ app.whenReady().then(() => {
   ipcMain.handle('request-main-window-sized', resizeTriggered)
   ipcMain.handle('open-external-link', (_, url) => shell.openExternal(url))
   ipcMain.handle('download-vb-cable', (_, appName) => settings.downloadVBCable(appName))
+
+  ipcMain.handle('read-all-db-settings', () => settings.readAllDBSettings())
+  ipcMain.handle('save-db-setting', (_, settingName, settingValue) => settings.saveDBSetting(settingName, settingValue))
+  ipcMain.handle('read-db-setting', (_, settingName) => settings.readDBSetting(settingName))
+  ipcMain.handle('delete-db-setting', (_, settingName) => settings.deleteDBSetting(settingName))
+  ipcMain.handle('read-all-db-sounds', () => settings.readAllDBSounds())
+  ipcMain.handle('save-sound', (_, sound) => settings.saveSound(sound))
+  ipcMain.handle('save-sound-property', (_, sound, propertyName) => settings.saveSoundProperty(sound, propertyName))
+  ipcMain.handle('reorder-sound', (_, soundId, newIndex) => settings.reorderSound(soundId, newIndex))
+  ipcMain.handle('delete-sound-property', (_, sound, propertyName) => settings.deleteSoundProperty(sound, propertyName))
+  ipcMain.handle('delete-sound', (_, sound) => settings.deleteSound(sound))
+  ipcMain.handle('save-sounds-array', (_, sounds) => settings.saveSoundsArray(sounds))
 })
 
 function createWindow() {
   // Create the browser window.
-  const size = settings.readSetting('window-size') || [1100, 900]
+  const size = settings.readDBSetting('window-size') || [1100, 900]
   mainWindow = new BrowserWindow({
     frame: false,
     width: size[0],
@@ -61,7 +71,7 @@ function createWindow() {
 function resizeTriggered() {
   const isMaximized = mainWindow.isMaximized()
   const size = mainWindow.getSize()
-  settings.saveSetting('window-size', size)
+  settings.saveDBSetting('window-size', size)
   BrowserWindow.getAllWindows().forEach(window => {
     window.webContents.send('main-window-resized', isMaximized)
   })

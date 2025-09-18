@@ -1,4 +1,4 @@
-import { LabelActive } from './sound'
+import { Sound, SoundForSaving, LabelActive } from './sound'
 export interface Versions {
   versions: {
     app: string
@@ -18,10 +18,10 @@ interface vbCableResult {
   errors?: Error[]
 }
 
+export type SettingValue = string | boolean | number | string[] | LabelActive[]
+
 export interface Settings {
-  readSetting: (key: string) => Promise<string | boolean | number | string[] | LabelActive[] | undefined>
-  saveSetting: (key: string, value: string | boolean | number | string[] | LabelActive[]) => Promise<boolean>
-  deleteSetting: (key: string) => Promise<boolean>
+  _readSetting: (key: string) => Promise<SettingValue | undefined | Sound[]>
   sendKey: (key: string[], down: boolean) => Promise<void>
   toggleDarkMode: (value: boolean) => void
   onDarkModeToggle: (callback: (value: boolean) => void) => void
@@ -36,6 +36,18 @@ export interface Settings {
   requestMainWindowSized: () => void
   openExternalLink: (url: string) => void
   downloadVBCable: (appName: string) => Promise<vbCableResult>
+  // Database related functions
+  readAllDBSettings: () => Promise<{ [settingName: string]: string }[]>
+  saveDBSetting: (settingName: string, settingValue: SettingValue) => Promise<boolean>
+  readDBSetting: (settingName: string) => Promise<SettingValue | null>
+  deleteDBSetting: (settingName: string) => Promise<void>
+  readAllDBSounds: () => Promise<SoundForSaving[]>
+  saveSound: (sound: Sound) => Promise<void>
+  saveSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
+  reorderSound: (soundId: Sound, newIndex: number) => Promise<void>
+  deleteSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
+  deleteSound: (sound: Sound) => Promise<void>
+  saveSoundsArray: (sounds: SoundForSaving[] | Sound[]) => Promise<void>
 }
 
 declare global {
