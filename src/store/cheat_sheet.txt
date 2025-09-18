@@ -1,0 +1,31 @@
+connect:
+./sqlite3 pulse-panel.db
+
+#show tables:
+.tables
+
+#show schema:
+.schema settings
+
+#Turn on headers and set mode to column for better readability:
+.headers on
+.mode column
+
+#get all settings:
+SELECT * FROM settings;
+
+#get all sounds:
+SELECT * FROM sounds;
+
+#get 1st sound:
+SELECT * FROM sounds LIMIT 1;
+
+#get sound by partial title:
+SELECT * FROM sounds WHERE title LIKE '%seinfeld%';
+
+#get setting by partial name:
+SELECT * FROM settings WHERE key LIKE '%dark%';
+
+#toggle darkMode setting (on/off):
+UPDATE settings SET value = json(CASE WHEN json_extract(value, '$') = true THEN 'false' ELSE 'true' END) WHERE key = 'darkMode';
+
