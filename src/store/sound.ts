@@ -258,6 +258,7 @@ export const useSoundStore = defineStore('sound', {
         })
         outputDeviceData.numSoundsPlaying--
         outputDeviceData.playingAudio = false
+        outputDeviceData.currentAudio = [] // since we stopped them all, empty the array
       }
 
       const newAudio = new Audio(soundObject?.audioUrl ?? chordAlert)
