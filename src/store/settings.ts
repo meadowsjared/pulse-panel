@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
-import { LabelActive, Sound, SoundForSaving } from '../@types/sound'
+import { LabelActive, Sound, SoundForSaving, SoundSegment } from '../@types/sound'
 import { openDB } from 'idb'
 import { File } from '../@types/file'
 import { useSoundStore } from './sound'
-import { Settings, Versions } from '../@types/electron-window'
+import { Settings, SettingValue, Versions } from '../@types/electron-window'
 import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 import { toRaw } from 'vue'
 
@@ -78,12 +78,30 @@ interface SoundWithHotkey extends Sound {
   hotkey: string[]
 }
 
-type BooleanSettings = 'darkMode' | 'allowOverlappingSound' | 'invertQuickTags'
-type ArraySoundSettings = 'sounds'
-type ArraySettings = 'outputDevices' | 'ptt_hotkey'
+const Boolean_Settings_Keys = ['darkMode', 'allowOverlappingSound', 'invertQuickTags', 'muted'] as const
+type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
+
+const Array_String_Settings_Keys = ['outputDevices', 'ptt_hotkey'] as const
+type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number]
+const Array_Sound_Settings_Keys = ['sounds'] as const
+type ArraySoundSettings = (typeof Array_Sound_Settings_Keys)[number]
+const Number_Settings_Keys = ['defaultVolume'] as const
+type NumberSettings = (typeof Number_Settings_Keys)[number]
+const Label_Active_Settings_Keys = ['quickTagsAr'] as const
+type LabelActiveSettings = (typeof Label_Active_Settings_Keys)[number]
+type SettingsOnlyKeys = BooleanSettings | NumberSettings | ArrayStringSettings | LabelActiveSettings
+
+const All_Settings_Keys = [
+  ...Boolean_Settings_Keys,
+  ...Array_String_Settings_Keys,
+  ...Array_Sound_Settings_Keys,
+  ...Number_Settings_Keys,
+  ...Label_Active_Settings_Keys,
+] as const
+type AllSettings = (typeof All_Settings_Keys)[number]
+
 type QuickTagButtonSettings = 'quickTagsAr'
 type SliceParams = { start: number; end: number }
-// type StringSettings = 'ptt_hotkey'
 export type DisplayMode = 'edit' | 'play'
 const isProduction = process.env.NODE_ENV === 'production'
 const dbName = isProduction ? 'pulse-panel' : 'pulse-panel-dev'
@@ -180,20 +198,144 @@ export const useSettingsStore = defineStore('settings', {
       }
       return filteredSounds
     },
+    _assignValidatedSetting(key: SettingsOnlyKeys, value: SettingValue) {
+      if (this._isBooleanSettings(key) && typeof value === 'boolean') return (this[key] = value)
+      else if (this._isNumberSettings(key) && typeof value === 'number') return (this[key] = value)
+      else if (this._isArrayStringSettings(key) && this._isArrayString(value)) return (this[key] = value)
+      else if (this._isArrayLabelActiveSettings(key) && this._isLabelActiveArray(value)) return (this[key] = value)
+      return false
+    },
     /**
-     * Fetch the default volume from the store
-     * @returns the default volume
+     * Fetch all settings from the database
+     * @returns void
      */
-    async fetchDefaultVolume(): Promise<number> {
+    async fetchSettings(): Promise<void> {
+      // fetch all the old settings from the old store
+      // iterate through all SettingsKeys
       const electron = window.electron
-      const volume = await electron?.readSetting?.('defaultVolume')
-      if (volume === undefined) {
-        await electron?.saveSetting?.('defaultVolume', 1)
-        this.defaultVolume = 1
-      } else if (typeof volume === 'number') {
-        this.defaultVolume = volume
+      const AllSettings = [
+        ...Boolean_Settings_Keys,
+        ...Array_String_Settings_Keys,
+        ...Number_Settings_Keys,
+        ...Label_Active_Settings_Keys,
+      ] as const
+      const settings = await electron?.readAllDBSettings()
+      // transfer all the properties from settings to the local state
+      if (settings) Object.assign(this, toRaw(settings))
+      const soundStore = useSoundStore()
+      // if no settings were found, try to migrate from the old store
+      if (settings === undefined || Object.keys(settings).length === 0) {
+        console.log('migrating settings')
+        let oldSettingsExist = false
+        await Promise.all(
+          AllSettings.map(async key => {
+            const value = await electron?._readSetting(key)
+            if (this._isArraySound(value)) return
+            if (value !== undefined) {
+              if (this._assignValidatedSetting(key, value)) {
+                oldSettingsExist = true
+              }
+            }
+          })
+        )
+        // if any old settings were found, migrate them to the new store
+        if (oldSettingsExist) {
+          await Promise.all(
+            AllSettings.map(async key => {
+              // transfer the setting to the new store
+              if (this._isBooleanSettings(key) && typeof this[key] === 'boolean')
+                await this.saveSetting(key, toRaw(this[key]))
+              else if (this._isNumberSettings(key) && typeof this[key] === 'number')
+                await this.saveSetting(key, toRaw(this[key]))
+              else if (this._isArrayStringSettings(key) && this._isArrayString(this[key]))
+                await this.saveSetting(key, toRaw(this[key]))
+              else if (this._isArrayLabelActiveSettings(key) && this._isLabelActiveArray(this[key]))
+                await this.saveSetting(key, toRaw(this[key]))
+            })
+          )
+        }
       }
-      return this.defaultVolume
+      if (this.outputDevices.length === 0) {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')
+        const defaultValue = [audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default']
+        await electron?.saveDBSetting('outputDevices', defaultValue)
+        this.outputDevices = defaultValue
+      }
+      if (this.outputDevices.length > 0) {
+        soundStore.populatePlayingAudio(this.outputDevices.length)
+      }
+    },
+    /**
+     * Save an array setting to the store
+     * @param key the key it's saved under
+     * @param value the value to save
+     * @returns true if saved successfully
+     */
+    async saveSetting(key: AllSettings, value: SettingValue): Promise<boolean> {
+      const electron = window.electron
+      // if the key is a member of BooleanSettings, ensure the value is a boolean
+      await electron?.saveDBSetting(key, value)
+      if (this._isBooleanSettings(key)) {
+        if (typeof value === 'boolean') {
+          this[key] = value
+          return true
+        }
+        return false
+      }
+      if (this._isNumberSettings(key)) {
+        if (typeof value === 'number') {
+          this[key] = value
+          return true
+        }
+        return false
+      }
+      if (this._isArrayStringSettings(key)) {
+        if (this._isArrayString(value)) {
+          this[key] = value
+          return true
+        }
+        return false
+      }
+      if (this._isArrayLabelActiveSettings(key)) {
+        if (this._isLabelActiveArray(value)) {
+          this[key] = value
+          return true
+        }
+        return false
+      }
+      if (this._isArraySoundSettings(key)) {
+        if (this._isArraySound(value)) {
+          this[key] = value
+          return true
+        }
+        return false
+      }
+      return false
+    },
+    _isBooleanSettings(k: string): k is BooleanSettings {
+      return ['muted', 'darkMode', 'allowOverlappingSound', 'invertQuickTags'].includes(k)
+    },
+    _isNumberSettings(k: string): k is NumberSettings {
+      return ['defaultVolume'].includes(k)
+    },
+    _isArrayStringSettings(k: string): k is ArrayStringSettings {
+      return ['outputDevices', 'ptt_hotkey'].includes(k)
+    },
+    _isArrayString(k: unknown): k is string[] {
+      return Array.isArray(k) && (k.length === 0 || typeof k[0] === 'string')
+    },
+    _isArraySoundSettings(k: string): k is ArraySoundSettings {
+      return ['sounds'].includes(k)
+    },
+    _isArraySound(k: unknown): k is Sound[] {
+      return Array.isArray(k) && (k.length === 0 || (typeof k[0] === 'object' && 'id' in k[0]))
+    },
+    _isArrayLabelActiveSettings(k: string): k is LabelActiveSettings {
+      return ['quickTagsAr'].includes(k)
+    },
+    _isLabelActiveArray(k: unknown): k is LabelActive[] {
+      return Array.isArray(k) && (k.length === 0 || (typeof k[0] === 'object' && 'label' in k[0]))
     },
     /**
      * Set the default volume
@@ -203,7 +345,7 @@ export const useSettingsStore = defineStore('settings', {
     async saveDefaultVolume(volume: number): Promise<void> {
       this.defaultVolume = volume
       const electron = window.electron
-      await electron?.saveSetting?.('defaultVolume', volume)
+      await electron?.saveDBSetting('defaultVolume', volume)
     },
     /**
      * Toggle the mute state
@@ -219,23 +361,12 @@ export const useSettingsStore = defineStore('settings', {
       }
       // save the mute setting to the idb store
       const electron = window.electron
-      await electron?.saveSetting?.('muted', this.muted)
+      await electron?.saveDBSetting('muted', this.muted)
     },
     /**
-     * Fetch the mute state from the store
-     * @returns the current mute state
+     * Fetch all available audio output devices
+     * @returns a list of all available audio output devices
      */
-    async fetchMute(): Promise<boolean> {
-      const electron = window.electron
-      const mute = await electron?.readSetting?.('muted')
-      if (mute === undefined) {
-        await electron?.saveSetting?.('muted', false)
-        this.muted = false
-      } else {
-        this.muted = !!mute
-      }
-      return this.muted
-    },
     async fetchAllOutputDevices(): Promise<MediaDeviceInfo[]> {
       const devices = await navigator.mediaDevices.enumerateDevices()
       const devicesFiltered = devices.filter(device => device.kind === 'audiooutput')
@@ -259,101 +390,9 @@ export const useSettingsStore = defineStore('settings', {
         }
       }
     },
-    // /**
-    //  * Save a string setting to the store
-    //  * @param key the key it's saved under
-    //  * @param value the value to save
-    //  */
-    // async saveString(key: StringSettings, value: string | null): Promise<void> {
-    //   const electron: Settings | undefined = window.electron
-    //   if (value === null) {
-    //     await this._deleteSetting(key)
-    //   } else {
-    //     await electron?.saveSetting?.(key, value)
-    //   }
-    //   this[key] = value
-    // },
-    // /**
-    //  * Fetch a string setting from the store
-    //  * @param key the key it's saved under
-    //  * @param defaultValue the default value if it's not set, default to ''
-    //  * @returns the value of the setting
-    //  */
-    // async fetchString(key: StringSettings, defaultValue: string | null = null): Promise<string | null> {
-    //   const electron: Settings | undefined = window.electron
-    //   const returnedString = await electron?.readSetting?.(key)
-    //   if (returnedString === undefined || typeof returnedString !== 'string') {
-    //     if (defaultValue === null) {
-    //       await this._deleteSetting(key)
-    //       this[key] = null
-    //     } else {
-    //       await electron?.saveSetting?.(key, defaultValue)
-    //       this[key] = defaultValue
-    //     }
-    //   } else {
-    //     this[key] = returnedString
-    //   }
-    //   return this[key]
-    // },
-    /**
-     * Delete a string setting from the store
-     * @param key the key it's saved under
-     */
-    async _deleteSetting(key: BooleanSettings): Promise<void> {
+    async saveSoundArray(value: Sound[]): Promise<boolean> {
       const electron = window.electron
-      await electron?.deleteSetting?.(key)
-      // if key is a member of BooleanSettings, set it to false
-      if (isBooleanSettings(key)) {
-        this[key] = false
-      }
-    },
-    /**
-     * Save an array setting to the store
-     * @param key the key it's saved under
-     * @param value the value to save
-     * @returns true if saved successfully
-     */
-    async saveStringArray(key: ArraySettings, value: string[]): Promise<boolean> {
-      const electron = window.electron
-      await electron?.saveSetting?.(key, value)
-      this[key] = value
-      return true
-    },
-    /**
-     * Fetch an array setting from the store
-     * @param key the key it's saved under
-     * @param defaultValue the default value if it's not set, default to []
-     * @returns the value of the setting
-     */
-    async fetchStringArray(key: ArraySettings, defaultValue: string[] = []): Promise<string[]> {
-      function isStringArray(arr: unknown[]): arr is string[] {
-        return arr.length === 0 || typeof arr[0] === 'string'
-      }
-
-      const soundStore = useSoundStore()
-      const electron = window.electron
-      const returnedArray = await electron?.readSetting?.(key)
-      if (returnedArray === undefined || !Array.isArray(returnedArray)) {
-        if (key === 'outputDevices') {
-          const devices = await navigator.mediaDevices.enumerateDevices()
-          const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')
-          defaultValue = [audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default']
-        }
-        await electron?.saveSetting?.(key, defaultValue)
-        this[key] = defaultValue ?? []
-      } else if (isStringArray(returnedArray)) {
-        this[key] = returnedArray
-      } else {
-        console.error('Invalid array format for key:', key)
-      }
-      if (key === 'outputDevices') {
-        soundStore.populatePlayingAudio(this[key].length)
-      }
-      return this[key]
-    },
-    async saveSoundArray(key: ArraySoundSettings, value: SoundForSaving[]): Promise<boolean> {
-      const electron = window.electron
-      await electron?.saveSetting?.(key, JSON.stringify(value))
+      await electron?.saveSoundsArray(_prepareSoundsForStorage(value))
       return true
     },
     /**
@@ -362,22 +401,22 @@ export const useSettingsStore = defineStore('settings', {
      * @param defaultValue the default value if it's not set, default to [{ id: crypto.randomUUID() }]
      * @returns the value of the setting
      */
-    async fetchSoundSetting(
+    async _fetchSoundSetting(
       key: ArraySoundSettings,
       defaultValue: Sound[] = [{ id: crypto.randomUUID() }]
     ): Promise<Sound[]> {
+      function isSoundArray(arr: SettingValue | undefined | Sound[]): arr is Sound[] {
+        return Array.isArray(arr) && (arr.length === 0 || (typeof arr[0] === 'object' && 'id' in arr[0]))
+      }
+
       const electron = window.electron
-      const returnedArray = await electron?.readSetting?.(key)
-      if (
-        returnedArray === undefined ||
-        typeof returnedArray !== 'string' ||
-        (Array.isArray(returnedArray) && returnedArray.length === 0)
-      ) {
-        await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
+      const returnedArray = (await electron?._readSetting?.(key)) ?? null
+      if (returnedArray === null || !Array.isArray(returnedArray) || !isSoundArray(returnedArray)) {
+        await electron?.saveSoundsArray(toRaw(defaultValue))
         this[key] = defaultValue
         return this[key]
       } else {
-        const sounds: Sound[] = JSON.parse(returnedArray)
+        const sounds: Sound[] = returnedArray
         sounds.forEach((sound: Sound) => {
           if (sound.soundSegments !== undefined) {
             sound.soundSegments.forEach(segment => {
@@ -393,6 +432,51 @@ export const useSettingsStore = defineStore('settings', {
         this._getImageUrls(this.sounds)
         return this.sounds
       }
+    },
+    async fetchSounds(): Promise<Sound[]> {
+      const electron = window.electron
+      const returnedArray = (await electron?.readAllDBSounds()) ?? null
+      if (returnedArray === null || returnedArray.length < 1) {
+        // try and migrate using the old _fetchSoundSetting
+        const migratedSounds = await this._fetchSoundSetting('sounds')
+        // if migratedSounds is empty, keep going, otherwise return
+        if (migratedSounds.length > 1 || (migratedSounds.length === 1 && migratedSounds[0].title !== undefined)) {
+          if (migratedSounds[migratedSounds.length - 1].title !== undefined) {
+            migratedSounds.push({ id: crypto.randomUUID() })
+          }
+          console.log('Migrating sounds')
+          await electron?.saveSoundsArray(_prepareSoundsForStorage(migratedSounds))
+          this.sounds = migratedSounds
+        } else {
+          // if there are no sounds, create a new sound button
+          const newSounds = [{ id: crypto.randomUUID() }]
+          await electron?.saveSoundsArray(_prepareSoundsForStorage(newSounds))
+          this.sounds = newSounds
+        }
+      } else {
+        // ensure all segments have an ID
+        const processSounds = returnedArray.map<Sound>(sound => ({
+          ...sound,
+          tags: sound.tags ? JSON.parse(sound.tags as unknown as string) : undefined,
+          soundSegments: sound.soundSegments ? JSON.parse(sound.soundSegments) : undefined,
+          hotkey: sound.hotkey ? JSON.parse(sound.hotkey) : undefined,
+        }))
+        // check if the last element has a title, if so add a new sound button
+        if (processSounds[processSounds.length - 1].title !== undefined) {
+          processSounds.push({ id: crypto.randomUUID() })
+        }
+        this.sounds = processSounds
+      }
+      this.sounds.forEach((sound: Sound) => {
+        if (sound.soundSegments !== undefined) {
+          sound.soundSegments.forEach(segment => {
+            segment.id ??= crypto.randomUUID()
+          })
+        }
+      })
+      this.registerWindowResize()
+      this._getImageUrls(this.sounds)
+      return this.sounds
     },
     /** get the duration of an audio file */
     async getAudioDuration(audioUrl: string, audioContext?: AudioContext): Promise<number | undefined> {
@@ -481,6 +565,8 @@ export const useSettingsStore = defineStore('settings', {
     },
     /**
      * Register the hotkeys for the sounds when the app loads
+     * this requires the sounds to be loaded first
+     * @returns void
      */
     async registerHotkeys(): Promise<void> {
       const soundStore = useSoundStore()
@@ -618,40 +704,6 @@ export const useSettingsStore = defineStore('settings', {
       return this.saveFile(newFile)
     },
     /**
-     * Fetch a boolean setting from the store
-     * @param key the key it's saved under
-     * @param defaultValue the default value if it's not set, default to false
-     * @returns the value of the setting
-     */
-    async fetchBooleanSetting(key: BooleanSettings, defaultValue: boolean = false): Promise<boolean> {
-      const electron = window.electron
-      const returnedBoolean = await electron?.readSetting?.(key)
-      if (returnedBoolean === undefined) {
-        await electron?.saveSetting?.(key, defaultValue)
-        this[key] = defaultValue
-      } else {
-        this[key] = !!returnedBoolean // default to true
-      }
-
-      return this[key]
-    },
-    /**
-     * Save a boolean setting to the store
-     * @param key the key it's saved under
-     * @param value the value to save
-     * @returns true if saved successfully
-     */
-    async saveBoolean(key: BooleanSettings, value: boolean): Promise<boolean> {
-      const electron = window.electron
-      await electron?.saveSetting(key, value)
-      this[key] = value
-      if (key === 'darkMode') {
-        // notify the main process to toggle dark mode
-        window.electron?.toggleDarkMode(value)
-      }
-      return true // saved successfully
-    },
-    /**
      * Fetch the quick tags from the store
      * @param key the key it's saved under
      * @param defaultValue the default value if it's not set
@@ -663,9 +715,9 @@ export const useSettingsStore = defineStore('settings', {
       }
 
       const electron = window.electron
-      const returnedArray = await electron?.readSetting?.(key)
+      const returnedArray = await electron?.readDBSetting(key)
       if (returnedArray === undefined || !Array.isArray(returnedArray)) {
-        await electron?.saveSetting?.(key, JSON.stringify(defaultValue))
+        await electron?.saveDBSetting(key, defaultValue)
         this[key] = defaultValue
         return this[key]
       } else if (isLabelArray(returnedArray)) {
@@ -686,7 +738,7 @@ export const useSettingsStore = defineStore('settings', {
         tagsAr.filter(tag => !this.quickTagsAr?.some(t => t.label === tag.label))
       )
       const electron = window.electron
-      await electron?.saveSetting?.(
+      await electron?.saveDBSetting(
         'quickTagsAr',
         this.quickTagsAr.map(t => toRaw(t))
       )
@@ -696,38 +748,18 @@ export const useSettingsStore = defineStore('settings', {
       if (this.quickTagsAr === undefined) return
       this.quickTagsAr.splice(index, 1)
       const electron = window.electron
-      await electron?.saveSetting?.(
+      await electron?.saveDBSetting(
         'quickTagsAr',
         this.quickTagsAr.map(t => toRaw(t))
       )
     },
     /** set the quickTags */
-    async setQuickTags(tags: string[] | LabelActive[]): Promise<void> {
-      function isStringArray(arr: unknown[]): arr is string[] {
-        return arr.length === 0 || typeof arr[0] === 'string'
-      }
-
-      // check if it's an array of strings
-      if (tags.length === 0) {
-        this.quickTagsAr = []
-        const electron = window.electron
-        await electron?.saveSetting?.('quickTagsAr', [])
-        return
-      }
-      if (isStringArray(tags)) {
-        this.quickTagsAr = tags.map(tag => ({ label: tag, active: false }))
-        const electron = window.electron
-        await electron?.saveSetting?.(
-          'quickTagsAr',
-          this.quickTagsAr.map(t => toRaw(t))
-        )
-        return
-      }
+    async setQuickTags(tags: LabelActive[]): Promise<void> {
       this.quickTagsAr = tags
       const electron = window.electron
-      await electron?.saveSetting?.(
+      await electron?.saveDBSetting(
         'quickTagsAr',
-        this.quickTagsAr.map(t => toRaw({ label: t.label, active: t.active }))
+        this.quickTagsAr.map(t => toRaw(t))
       )
     },
     /** toggle the quickTag */
@@ -740,7 +772,7 @@ export const useSettingsStore = defineStore('settings', {
           delete tag.negated
         }
         const electron = window.electron
-        await electron?.saveSetting?.(
+        await electron?.saveDBSetting(
           'quickTagsAr',
           this.quickTagsAr.map(t => toRaw(t))
         )
@@ -750,7 +782,7 @@ export const useSettingsStore = defineStore('settings', {
     async toggleInvertQuickTags(): Promise<void> {
       this.invertQuickTags = !this.invertQuickTags
       const electron = window.electron
-      await electron?.saveSetting?.('invertQuickTags', this.invertQuickTags)
+      await electron?.saveDBSetting('invertQuickTags', this.invertQuickTags)
     },
     async toggleQuickTagNegated(tag: LabelActive): Promise<void> {
       if (this.quickTagsAr === undefined) return
@@ -763,7 +795,7 @@ export const useSettingsStore = defineStore('settings', {
           existingTag.negated = true
         }
         const electron = window.electron
-        await electron?.saveSetting?.(
+        await electron?.saveDBSetting(
           'quickTagsAr',
           this.quickTagsAr.map(t => toRaw(t))
         )
@@ -771,13 +803,6 @@ export const useSettingsStore = defineStore('settings', {
     },
   },
 })
-
-function isBooleanSettings(key: string): key is BooleanSettings {
-  if (key === 'darkMode' || key === 'allowOverlappingSound') {
-    return true
-  }
-  return false
-}
 
 /**
  * Check if two arrays are equal
@@ -790,4 +815,46 @@ function arraysAreEqual(arr1: string[] | undefined, arr2: string[] | undefined):
   if (arr1 === undefined || arr2 === undefined) return false
   if (arr1.length !== arr2.length) return false
   return arr1.every(value => arr2.includes(value)) && arr2.every(value => arr1.includes(value))
+}
+
+/**
+ * Prepares sound objects for database storage and IPC transmission.
+ *
+ * This function:
+ * - Removes volatile properties (audioUrl, segment IDs)
+ * - Stringifies JSON properties for SQLite storage
+ * - Serializes objects to ensure they can be cloned for IPC transmission
+ *
+ * @param pSounds - Array of sound objects to prepare
+ * @returns Array of serialized sound objects ready for database storage
+ */
+function _prepareSoundsForStorage(pSounds: Sound[]): SoundForSaving[] {
+  return JSON.parse(
+    JSON.stringify(
+      pSounds.map(sound => {
+        return toRaw({
+          id: sound.id,
+          title: sound.title,
+          hideTitle: sound.hideTitle ? JSON.stringify(sound.hideTitle) : undefined,
+          tags: sound.tags ? JSON.stringify(sound.tags) : undefined,
+          hotkey: sound.hotkey ? JSON.stringify(sound.hotkey) : undefined,
+          audioKey: sound.audioKey,
+          imageKey: sound.imageKey,
+          volume: sound.volume,
+          color: sound.color,
+          soundSegments: sound.soundSegments ? JSON.stringify(_stripSegmentIds(sound.soundSegments)) : undefined,
+          isVisible: sound.isVisible ? JSON.stringify(sound.isVisible) : undefined,
+        })
+      })
+    )
+  )
+}
+function _stripSegmentIds(pSegments: SoundSegment[] | undefined) {
+  if (!pSegments) return undefined
+  return pSegments?.map(segment => {
+    return {
+      start: segment.start,
+      end: segment.end,
+    }
+  })
 }

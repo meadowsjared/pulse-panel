@@ -104,20 +104,12 @@ window.electron?.onDarkModeToggle((value: boolean) => {
   settingsStore.darkMode = value
 })
 
-settingsStore.fetchBooleanSetting('invertQuickTags', false)
-settingsStore.fetchFilters('quickTagsAr')
-settingsStore.fetchStringArray('ptt_hotkey')
-settingsStore.fetchMute()
-settingsStore.fetchStringArray('outputDevices')
-settingsStore.fetchBooleanSetting('darkMode', true).then(darkModeValue => {
-  darkMode.value = darkModeValue
+settingsStore.fetchSettings().then(() => {
+  darkMode.value = settingsStore.darkMode
 })
-settingsStore.fetchBooleanSetting('allowOverlappingSound')
-settingsStore.fetchSoundSetting('sounds').then(() => {
+settingsStore.fetchSounds().then(() => {
   settingsStore.registerHotkeys()
 })
-settingsStore.fetchDefaultVolume()
-settingsStore.fetchAllOutputDevices()
 </script>
 
 <style scoped>

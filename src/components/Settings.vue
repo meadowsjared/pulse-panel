@@ -143,10 +143,6 @@ const saveVolumeDebounced = throttle((value: number) => {
   settingsStore.saveDefaultVolume(newValue)
 }, 100)
 
-settingsStore.fetchStringArray('ptt_hotkey').then(hotkey => {
-  selectedHotkey.value = hotkey ?? undefined
-})
-
 function tagSelected(payload: Event) {
   if (!(payload.target instanceof HTMLSelectElement)) {
     console.debug('payload.target', payload.target)
@@ -204,7 +200,7 @@ async function downloadVBCable() {
 function selectedHotkeyUpdated(event: string[] | undefined) {
   selectedHotkey.value = event
   // save the value to the IndexedDB store
-  settingsStore.saveStringArray('ptt_hotkey', [...(event ?? [])])
+  settingsStore.saveSetting('ptt_hotkey', [...(event ?? [])])
 }
 
 function dragStart(pTag: LabelActive, index: number) {
@@ -254,17 +250,13 @@ watch(
   },
   { immediate: true }
 )
-
-settingsStore.fetchStringArray('outputDevices').then(outputDevice => {
-  outputDevices.value = outputDevice
+settingsStore.fetchAllOutputDevices()
+settingsStore.fetchSettings().then(() => {
+  darkMode.value = settingsStore.darkMode
+  allowOverlappingSound.value = settingsStore.allowOverlappingSound
+  outputDevices.value = settingsStore.outputDevices
+  selectedHotkey.value = settingsStore.ptt_hotkey ?? undefined
 })
-settingsStore.fetchAllOutputDevices() // fetch the audio output devices again, just in case it has changed
-settingsStore.fetchBooleanSetting('allowOverlappingSound').then(value => {
-  allowOverlappingSound.value = value
-})
-settingsStore.fetchBooleanSetting('darkMode', true).then(value => {
-  darkMode.value = value
-}) // initialize it to the saved value (default to true)
 
 async function deleteOutputDevice(index: number) {
   if (index === 0) return
@@ -308,7 +300,7 @@ function addOutputDevice(deviceId: string, outputIndex: number = outputDevices.v
 async function saveAndPlaySoundToOutputDevice(device: string | null = null) {
   // remove the null values from the array
   const filteredOutputDevices: string[] = outputDevices.value.filter((device): device is string => device !== null)
-  if ((await settingsStore.saveStringArray('outputDevices', filteredOutputDevices)) && device) {
+  if ((await settingsStore.saveSetting('outputDevices', filteredOutputDevices)) && device) {
     soundStore.populatePlayingAudio(outputDevices.value.filter((device): device is string => device !== null).length)
     soundStore.playSound(
       null,
@@ -324,7 +316,7 @@ function updateDarkMode(event: Event) {
     console.debug('payload.target', event.target)
     throw new Error('Event target is not an input element.')
   }
-  settingsStore.saveBoolean('darkMode', !!event.target.checked)
+  settingsStore.saveSetting('darkMode', !!event.target.checked)
 }
 
 function updateAllowOverlappingSound(event: Event) {
@@ -332,7 +324,7 @@ function updateAllowOverlappingSound(event: Event) {
     console.debug('payload.target', event.target)
     throw new Error('Event target is not an input element.')
   }
-  settingsStore.saveBoolean('allowOverlappingSound', !!event.target.checked)
+  settingsStore.saveSetting('allowOverlappingSound', !!event.target.checked)
 }
 </script>
 

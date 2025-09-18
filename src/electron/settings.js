@@ -12,22 +12,312 @@ const extractZip = require('extract-zip')
 const regedit = require('regedit')
 const globalHotkeys = new qHotkeys()
 const sudo = require('@slosk/sudo-prompt')
+const Database = require('better-sqlite3')
+const db = new Database(getDatabaseFilePath())
 let globalHotkeysRunning = false
 
-function saveSetting(settingKey, settingValue) {
-  nconf.set(settingKey, settingValue)
-  nconf.save()
+initializeDatabase()
+
+function _readSetting(settingKey) {
+  nconf.load()
+  const value = nconf.get(settingKey)
+  try {
+    return JSON.parse(value)
+  } catch (e) {
+    return value
+  }
 }
 
-function readSetting(settingKey) {
-  nconf.load()
-  return nconf.get(settingKey)
+function initializeDatabase() {
+  // Create settings table (for non-sound settings)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value JSON
+    )
+  `)
+
+  // Create sounds table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sounds (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      hideTitle JSON DEFAULT false,
+      tags JSON,
+      hotkey JSON,  
+      audioKey TEXT,
+      imageKey TEXT,
+      volume REAL,
+      color TEXT,
+      soundSegments JSON,
+      isPreview JSON DEFAULT false,
+      order_index INTEGER NOT NULL DEFAULT 0
+    )
+  `)
+
+  // Create indexes for better performance
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_sounds_order ON sounds(order_index);
+  `)
 }
 
-function deleteSetting(settingKey) {
-  nconf.load()
-  nconf.clear(settingKey)
-  nconf.save()
+/**
+ * @param {string} settingName the key of the setting to set
+ * @param {string | number | boolean | object} settingValue the value to set the field to
+ */
+function saveDBSetting(settingName, settingValue) {
+  const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, json(?))')
+  stmt.run(settingName, JSON.stringify(settingValue))
+}
+
+/**
+ * @param {string} settingName the key of the setting to get
+ * @returns {string | null} the value of the setting, or null if not found
+ */
+function readDBSetting(settingName) {
+  const stmt = db.prepare('SELECT value FROM settings WHERE key = ?')
+  const row = stmt.get(settingName)
+  if (!row) return null
+
+  try {
+    return JSON.parse(row.value)
+  } catch (e) {
+    console.error(`Error parsing JSON for setting ${settingName}:`, e)
+    return row.value // Return as-is if not valid JSON
+  }
+}
+
+/**
+ * read all settings from the database
+ * @returns { Object } an object with all settings key/value pairs
+ */
+function readAllDBSettings() {
+  const stmt = db.prepare('SELECT key, value FROM settings')
+  const rows = stmt.all()
+  return rows.reduce((acc, row) => {
+    acc[row.key] = JSON.parse(row.value)
+    return acc
+  }, {})
+}
+
+/**
+ * @param {string} settingName the key of the setting to delete
+ */
+function deleteDBSetting(settingName) {
+  const stmt = db.prepare('DELETE FROM settings WHERE key = ?')
+  stmt.run(settingName)
+}
+
+/**
+ * Get all sounds from the database
+ * @returns {Sound[]} Array of sound objects
+ */
+function readAllDBSounds() {
+  const stmt = db.prepare('SELECT * FROM sounds ORDER BY order_index ASC')
+  const rows = stmt.all()
+
+  return rows.map(({ order_index, ...row }) => {
+    const sound = { id: row.id }
+
+    // Only add properties if they have meaningful values
+    if (row.title) sound.title = row.title
+    if (row.hideTitle) sound.hideTitle = true
+    if (row.tags) sound.tags = row.tags
+    if (row.hotkey) sound.hotkey = row.hotkey
+    if (row.audioKey) sound.audioKey = row.audioKey
+    if (row.imageKey) sound.imageKey = row.imageKey
+    if (row.volume !== null) sound.volume = row.volume
+    if (row.color) sound.color = row.color
+    if (row.isPreview) sound.isPreview = true
+    if (row.soundSegments) sound.soundSegments = row.soundSegments
+
+    return sound
+  })
+}
+
+/**
+ * Save multiple sounds in a transaction (for bulk operations)
+ * @param {Array} sounds - Array of sound objects
+ */
+function saveSoundsArray(sounds) {
+  const columns = [
+    'id',
+    'title',
+    'hideTitle',
+    'tags',
+    'hotkey',
+    'audioKey',
+    'imageKey',
+    'volume',
+    'color',
+    'soundSegments',
+    'isPreview',
+    'order_index',
+  ]
+  const placeholders = new Array(columns.length).fill('?').join(', ')
+
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO sounds (
+      ${columns.join(', ')}
+    ) VALUES (${placeholders})
+  `)
+
+  const transaction = db.transaction(sounds => {
+    // use a for loop, to iterate over sounds, but include the index
+    for (const [index, sound] of sounds.entries()) {
+      stmt.run(
+        sound.id,
+        sound.title || null,
+        sound.hideTitle || null,
+        sound.tags || null,
+        sound.hotkey || null,
+        sound.audioKey || null,
+        sound.imageKey || null,
+        sound.volume || null,
+        sound.color || null,
+        sound.soundSegments || null,
+        sound.isPreview || null,
+        index
+      )
+    }
+  })
+
+  transaction(sounds)
+}
+
+/**
+ * Save a single sound to the database
+ * @param {Sound} sound - The sound object to save
+ */
+function saveSound(sound, order_index = null) {
+  const withOrderIndex = order_index !== null
+  const columns = [
+    'id',
+    'title',
+    'hideTitle',
+    'tags',
+    'hotkey',
+    'audioKey',
+    'imageKey',
+    'volume',
+    'color',
+    'soundSegments',
+    'isPreview',
+    ...(withOrderIndex ? ['order_index'] : []),
+  ]
+
+  // use columns to fill the number of ?'s
+  const placeholders = new Array(columns.length).fill('?').join(', ')
+
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO sounds (${columns.join(', ')}) VALUES (${placeholders})
+  `)
+
+  stmt.run(
+    sound.id,
+    sound.title || null,
+    sound.hideTitle ? 1 : 0,
+    sound.tags || null,
+    sound.hotkey || null,
+    sound.audioKey || null,
+    sound.imageKey || null,
+    sound.volume || null,
+    sound.color || null,
+    sound.soundSegments || null,
+    sound.isPreview ? 1 : 0,
+    ...(withOrderIndex ? [order_index] : [])
+  )
+}
+
+/**
+ * Update a single property of a sound
+ * @param {Sound} sound - The sound object to update
+ * @param {string} propertyName - The name of the property to update
+ */
+function saveSoundProperty(sound, propertyName) {
+  // Handle special cases for JSON fields
+  const stmt = db.prepare(`
+    UPDATE sounds 
+    SET ${propertyName} = ?
+    WHERE id = ?
+  `)
+  stmt.run(sound[propertyName], sound.id)
+}
+
+/**
+ * remove a single property of a sound
+ * @param {Sound} sound - The sound object to update
+ * @param {string} propertyName - The name of the property to remove
+ */
+function deleteSoundProperty(sound, propertyName) {
+  const stmt = db.prepare(`
+    UPDATE sounds 
+    SET ${propertyName} = NULL
+    WHERE id = ?
+  `)
+  stmt.run(sound.id)
+}
+
+/**
+ * Delete a sound from the database
+ * @param {Sound} sound - The sound object to delete
+ */
+function deleteSound(sound) {
+  const stmt = db.prepare('DELETE FROM sounds WHERE id = ?')
+  stmt.run(sound.id)
+}
+
+/**
+ * Reorder given sound to position {newIndex}
+ * @param {Sound} sound - The sound object to reorder
+ * @param {number} newIndex - The new position index
+ */
+function reorderSound(sound, newIndex) {
+  // First, get the current position of the sound
+  const getCurrentPositionStmt = db.prepare('SELECT order_index FROM sounds WHERE id = ?')
+  const currentRow = getCurrentPositionStmt.get(sound.id)
+
+  if (!currentRow) {
+    throw new Error(`Sound with id ${sound.id} not found`)
+  }
+
+  const currentIndex = currentRow.order_index
+  if (newIndex === currentIndex) return
+
+  // If it's already in the right position, do nothing
+  if (currentIndex === newIndex) {
+    return
+  }
+
+  const transaction = db.transaction(() => {
+    if (currentIndex < newIndex) {
+      // Moving down: shift sounds between current and new position up by 1
+      const shiftStmt = db.prepare(`
+        UPDATE sounds
+        SET order_index = order_index - 1
+        WHERE order_index > ? AND order_index <= ? AND id != ?
+      `)
+      shiftStmt.run(currentIndex, newIndex, sound.id)
+    } else {
+      // Moving up: shift sounds between new and current position down by 1
+      const shiftStmt = db.prepare(`
+        UPDATE sounds
+        SET order_index = order_index + 1
+        WHERE order_index >= ? AND order_index < ? AND id != ?
+      `)
+      shiftStmt.run(newIndex, currentIndex, sound.id)
+    }
+
+    // Now set the sound to its new position
+    const updateStmt = db.prepare(`
+      UPDATE sounds
+      SET order_index = ?
+      WHERE id = ?
+    `)
+    updateStmt.run(newIndex, sound.id)
+  })
+
+  transaction()
 }
 
 /**
@@ -174,6 +464,14 @@ function getConfigDirectoryAndAppName() {
   const isDev = process.env.npm_lifecycle_event === 'app:dev'
   const configDirectory = isDev ? join(__dirname, '../../') : join(userHome, appName)
   return { configDirectory, appName }
+}
+
+function getDatabaseFilePath() {
+  const { configDirectory, appName } = getConfigDirectoryAndAppName()
+  ensureDirectoryExistence(configDirectory) // Make sure the directory exists
+  // note: this will store the file here:
+  // %LocalAppData%\Programs\pulse-panel\resources\app\pulse-panel.db
+  return join(configDirectory, `${appName}.db`)
 }
 
 function getConfigurationFilePath() {
@@ -451,13 +749,22 @@ async function vbCableIsInstalled(response) {
 }
 
 module.exports = {
-  saveSetting,
-  readSetting,
-  deleteSetting,
+  _readSetting,
   sendKey,
   registerHotkeys,
   addHotkeys,
   unregisterHotkeys,
   stop,
   downloadVBCable,
+  readAllDBSettings,
+  saveDBSetting,
+  readDBSetting,
+  deleteDBSetting,
+  readAllDBSounds,
+  saveSound,
+  saveSoundProperty,
+  reorderSound,
+  deleteSoundProperty,
+  deleteSound,
+  saveSoundsArray,
 }

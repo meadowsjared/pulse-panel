@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useSettingsStore } from '../store/settings'
-import { Sound, SoundSegment } from '../@types/sound'
+import { Sound } from '../@types/sound'
 import { File } from '../@types/file'
 import { stripFileExtension } from '../utils/utils'
 
@@ -126,7 +126,7 @@ watch(
             numFilteredSounds++
           })
         if (numFilteredSounds > 0) {
-          settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
+          settingsStore.saveSoundArray(settingsStore.sounds)
         }
       }
 
@@ -367,7 +367,7 @@ function updateSound() {
       id: crypto.randomUUID(),
     })
   }
-  settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
+  settingsStore.saveSoundArray(settingsStore.sounds)
 }
 
 function deleteSound(pSound: Sound) {
@@ -385,7 +385,7 @@ function deleteSoundConfirmed() {
   settingsStore.sounds = settingsStore.sounds.filter(sound => sound.id !== pSound.id)
   settingsStore.deleteFile(pSound.audioKey)
   settingsStore.deleteFile(pSound.imageKey)
-  settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
+  settingsStore.saveSoundArray(settingsStore.sounds)
   // check if soundToDelete is the currentEditingSound
   if (settingsStore.currentEditingSound?.id === pSound.id) {
     // since we deleted soundToDelete, if we set it to newEditingIndex, it will be the next sound
@@ -410,35 +410,7 @@ function handleSoundsUpdate(pSound: Sound) {
       id: crypto.randomUUID(),
     })
   }
-  settingsStore.saveSoundArray('sounds', stripAudioUrls(settingsStore.sounds))
-}
-
-function stripAudioUrls(pSounds: Sound[]) {
-  return pSounds.map(sound => {
-    return {
-      id: sound.id,
-      title: sound.title,
-      hideTitle: sound.hideTitle,
-      tags: sound.tags,
-      hotkey: sound.hotkey,
-      audioKey: sound.audioKey,
-      imageKey: sound.imageKey,
-      volume: sound.volume,
-      color: sound.color,
-      soundSegments: stripSegmentIds(sound.soundSegments),
-      isVisible: sound.isVisible,
-    }
-  })
-}
-
-function stripSegmentIds(pSegments: SoundSegment[] | undefined) {
-  if (!pSegments) return undefined
-  return pSegments?.map(segment => {
-    return {
-      start: segment.start,
-      end: segment.end,
-    }
-  })
+  settingsStore.saveSoundArray(settingsStore.sounds)
 }
 </script>
 
