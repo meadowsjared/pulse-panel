@@ -325,7 +325,6 @@ function reorderSound(sound, newIndex) {
  * @param {{ isVisible: boolean; soundId: string }[]} visibilityChanges
  */
 function saveVisibility(visibilityChanges) {
-  console.log('Saving visibility changes:', visibilityChanges)
   const stmt = db.prepare(`
     UPDATE sounds
     SET isVisible = json(?)
