@@ -397,7 +397,6 @@ export const useSettingsStore = defineStore('settings', {
     },
     async saveSound(sound: Sound): Promise<void> {
       const electron = window.electron
-      console.log('Saving sound', _prepareSoundForStorage(sound))
       await electron?.saveSound(_prepareSoundForStorage(sound))
     },
     async updateVisibility(visibilityMap: { isVisible: boolean; soundId: string }[]): Promise<void> {
