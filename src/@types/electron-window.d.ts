@@ -48,6 +48,7 @@ export interface Settings {
   deleteSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
   deleteSound: (sound: Sound) => Promise<void>
   saveSoundsArray: (sounds: SoundForSaving[] | Sound[]) => Promise<void>
+  saveVisibility: (visibilityChanges: { isVisible: boolean; soundId: string }[]) => Promise<void>
 }
 
 declare global {

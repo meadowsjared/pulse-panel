@@ -321,6 +321,27 @@ function reorderSound(sound, newIndex) {
 }
 
 /**
+ * Update the visibility of multiple sounds
+ * @param {{ isVisible: boolean; soundId: string }[]} visibilityChanges
+ */
+function saveVisibility(visibilityChanges) {
+  console.log('Saving visibility changes:', visibilityChanges)
+  const stmt = db.prepare(`
+    UPDATE sounds
+    SET isVisible = json(?)
+    WHERE id = ?
+  `)
+
+  const transaction = db.transaction(changes => {
+    changes.forEach(({ isVisible, soundId }) => {
+      stmt.run(JSON.stringify(isVisible), soundId)
+    })
+  })
+
+  transaction(visibilityChanges)
+}
+
+/**
  * convert a hotkey.code to a robotjs hotkey string
  * @param {string} hotkey
  * @param {string} soundId
@@ -767,4 +788,5 @@ module.exports = {
   deleteSoundProperty,
   deleteSound,
   saveSoundsArray,
+  saveVisibility,
 }

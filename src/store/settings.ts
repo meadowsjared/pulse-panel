@@ -395,6 +395,10 @@ export const useSettingsStore = defineStore('settings', {
       await electron?.saveSoundsArray(_prepareSoundsForStorage(value))
       return true
     },
+    async updateVisibility(visibilityMap: { isVisible: boolean; soundId: string }[]): Promise<void> {
+      const electron = window.electron
+      await electron?.saveVisibility(visibilityMap)
+    },
     /**
      * Fetch an array setting from the store
      * @param key the key it's saved under
