@@ -210,13 +210,15 @@ function saveSound(sound, order_index = null) {
   const placeholders = new Array(columns.length).fill('?').join(', ')
 
   const stmt = db.prepare(`
-    INSERT OR REPLACE INTO sounds (${columns.join(', ')}) VALUES (${placeholders})
+    INSERT OR REPLACE INTO sounds (
+      ${columns.join(', ')}
+    ) VALUES (${placeholders})
   `)
 
   stmt.run(
     sound.id,
     sound.title || null,
-    sound.hideTitle ? 1 : 0,
+    sound.hideTitle || null,
     sound.tags || null,
     sound.hotkey || null,
     sound.audioKey || null,
@@ -224,7 +226,7 @@ function saveSound(sound, order_index = null) {
     sound.volume || null,
     sound.color || null,
     sound.soundSegments || null,
-    sound.isVisible ? 1 : 0,
+    sound.isVisible || null,
     ...(withOrderIndex ? [order_index] : [])
   )
 }

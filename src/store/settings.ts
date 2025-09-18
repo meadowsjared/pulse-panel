@@ -395,6 +395,11 @@ export const useSettingsStore = defineStore('settings', {
       await electron?.saveSoundsArray(_prepareSoundsForStorage(value))
       return true
     },
+    async saveSound(sound: Sound): Promise<void> {
+      const electron = window.electron
+      console.log('Saving sound', _prepareSoundForStorage(sound))
+      await electron?.saveSound(_prepareSoundForStorage(sound))
+    },
     async updateVisibility(visibilityMap: { isVisible: boolean; soundId: string }[]): Promise<void> {
       const electron = window.electron
       await electron?.saveVisibility(visibilityMap)
@@ -826,26 +831,34 @@ function arraysAreEqual(arr1: string[] | undefined, arr2: string[] | undefined):
  * @returns Array of serialized sound objects ready for database storage
  */
 function _prepareSoundsForStorage(pSounds: Sound[]): SoundForSaving[] {
-  return JSON.parse(
-    JSON.stringify(
-      pSounds.map(sound => {
-        return toRaw({
-          id: sound.id,
-          title: sound.title,
-          hideTitle: sound.hideTitle ? JSON.stringify(sound.hideTitle) : undefined,
-          tags: sound.tags ? JSON.stringify(sound.tags) : undefined,
-          hotkey: sound.hotkey ? JSON.stringify(sound.hotkey) : undefined,
-          audioKey: sound.audioKey,
-          imageKey: sound.imageKey,
-          volume: sound.volume,
-          color: sound.color,
-          soundSegments: sound.soundSegments ? JSON.stringify(_stripSegmentIds(sound.soundSegments)) : undefined,
-          isVisible: sound.isVisible ? JSON.stringify(sound.isVisible) : undefined,
-        })
-      })
-    )
-  )
+  return pSounds.map<SoundForSaving>((sound: Sound) => _prepareSoundForStorage(sound))
 }
+
+/**
+ * Prepares a sound object for database storage and IPC transmission.
+ * This function:
+ * - Removes volatile properties (audioUrl, segment IDs)
+ * - Stringifies JSON properties for SQLite storage
+ * - Serializes objects to ensure they can be cloned for IPC transmission
+ * @param sound the sound to prepare
+ * @returns the prepared sound object
+ */
+function _prepareSoundForStorage(sound: Sound): SoundForSaving {
+  return toRaw({
+    id: sound.id,
+    title: sound.title,
+    hideTitle: sound.hideTitle ? JSON.stringify(sound.hideTitle) : undefined,
+    tags: sound.tags ? JSON.stringify(sound.tags) : undefined,
+    hotkey: sound.hotkey ? JSON.stringify(sound.hotkey) : undefined,
+    audioKey: sound.audioKey,
+    imageKey: sound.imageKey,
+    volume: sound.volume,
+    color: sound.color,
+    soundSegments: sound.soundSegments ? JSON.stringify(_stripSegmentIds(sound.soundSegments)) : undefined,
+    isVisible: sound.isVisible ? JSON.stringify(sound.isVisible) : undefined,
+  })
+}
+
 function _stripSegmentIds(pSegments: SoundSegment[] | undefined) {
   if (!pSegments) return undefined
   return pSegments?.map(segment => {

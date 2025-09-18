@@ -1,4 +1,4 @@
-import { Sound, SoundForSaving, LabelActive } from './sound'
+import { Sound, SoundForLoading, SoundForSaving, LabelActive } from './sound'
 export interface Versions {
   versions: {
     app: string
@@ -41,7 +41,7 @@ export interface Settings {
   saveDBSetting: (settingName: string, settingValue: SettingValue) => Promise<boolean>
   readDBSetting: (settingName: string) => Promise<SettingValue | null>
   deleteDBSetting: (settingName: string) => Promise<void>
-  readAllDBSounds: () => Promise<SoundForSaving[]>
+  readAllDBSounds: () => Promise<SoundForLoading[]>
   saveSound: (sound: SoundForSaving, orderIndex?: number) => Promise<void>
   saveSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
   reorderSound: (soundId: Sound, newIndex: number) => Promise<void>
