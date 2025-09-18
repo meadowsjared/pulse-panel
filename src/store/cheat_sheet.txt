@@ -29,3 +29,6 @@ SELECT * FROM settings WHERE key LIKE '%dark%';
 #toggle darkMode setting (on/off):
 UPDATE settings SET value = json(CASE WHEN json_extract(value, '$') = true THEN 'false' ELSE 'true' END) WHERE key = 'darkMode';
 
+#get number of visible sounds:
+SELECT count(title) FROM sounds WHERE isVisible='true';
+
