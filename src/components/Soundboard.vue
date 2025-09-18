@@ -241,7 +241,7 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
     const soundsToAdd = await Promise.all(promAr)
     // insert the new sounds before the new sound button
     settingsStore.sounds.splice(settingsStore.sounds.length - 1, 0, ...soundsToAdd)
-    updateSound()
+    updateSounds()
   } else {
     // we're updating an existing sound button
     // only allow a single file to be dropped for the audio and image at a time
@@ -261,7 +261,7 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
     audioContext.close()
     await Promise.all(promAr)
     if (audioModified || imageModified) {
-      updateSound()
+      updateSounds()
     }
   }
 }
@@ -336,7 +336,7 @@ function drop() {
   if (settingsStore.displayMode !== 'edit') return
   if (draggedSound === null) return
   delete draggedSound.isPreview // remove the preview flag
-  updateSound()
+  updateSounds()
   draggedIndexStart = null
   draggedSound = null
 }
@@ -363,7 +363,7 @@ function updateCurrentEditingSound() {
   }
 }
 
-function updateSound() {
+function updateSounds() {
   if (settingsStore.sounds[settingsStore.sounds.length - 1].title !== undefined) {
     settingsStore.sounds.push({
       id: crypto.randomUUID(),
