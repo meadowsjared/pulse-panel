@@ -41,6 +41,7 @@ app.whenReady().then(() => {
   ipcMain.handle('delete-sound-property', (_, sound, propertyName) => settings.deleteSoundProperty(sound, propertyName))
   ipcMain.handle('delete-sound', (_, sound) => settings.deleteSound(sound))
   ipcMain.handle('save-sounds-array', (_, sounds) => settings.saveSoundsArray(sounds))
+  ipcMain.handle('save-visibility', (_, visibilityChanges) => settings.saveVisibility(visibilityChanges))
 })
 
 function createWindow() {

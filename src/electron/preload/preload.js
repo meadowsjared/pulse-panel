@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('electron', {
   deleteSoundProperty: (sound, propertyName) => ipcRenderer.invoke('delete-sound-property', sound, propertyName),
   deleteSound: sound => ipcRenderer.invoke('delete-sound', sound),
   saveSoundsArray: sounds => ipcRenderer.invoke('save-sounds-array', sounds),
+  saveVisibility: visibilityChanges => ipcRenderer.invoke('save-visibility', visibilityChanges),
   versions: {
     app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,

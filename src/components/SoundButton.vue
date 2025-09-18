@@ -72,7 +72,7 @@ const props = withDefaults(
     isVisible?: boolean
   }>(),
   {
-    isVisible: true,
+    isVisible: false,
   }
 )
 

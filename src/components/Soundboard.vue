@@ -109,6 +109,7 @@ watch(
         })
         // now that we have the full list of visible buttons, set the visibility of any button that has changed
         let numFilteredSounds = 0
+        const visibilityChanges: { isVisible: boolean; soundId: string }[] = []
         settingsStore.sounds
           .filter(
             sound =>
@@ -118,6 +119,7 @@ watch(
           .forEach(sound => {
             // transfer buttonVisibilityMap to the sounds
             const visible = buttonVisibilityMap.get(sound.id) === true
+            visibilityChanges.push({ isVisible: visible, soundId: sound.id })
             if (visible) {
               sound.isVisible = true
             } else {
@@ -126,7 +128,7 @@ watch(
             numFilteredSounds++
           })
         if (numFilteredSounds > 0) {
-          settingsStore.saveSoundArray(settingsStore.sounds)
+          settingsStore.updateVisibility(visibilityChanges)
         }
       }
 
