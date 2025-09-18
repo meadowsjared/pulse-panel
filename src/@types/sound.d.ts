@@ -31,6 +31,14 @@ export interface Sound {
 }
 
 export interface SoundForSaving extends Sound {
+  hideTitle?: string
+  tags?: string
+  hotkey?: string
+  soundSegments?: string
+  isVisible?: string
+}
+
+export interface SoundForLoading extends Sound {
   tags?: string
   hotkey?: string
   soundSegments?: string

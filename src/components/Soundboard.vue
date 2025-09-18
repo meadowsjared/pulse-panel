@@ -358,7 +358,7 @@ function updateCurrentEditingSound() {
     const index = settingsStore.sounds.findIndex(sound => sound.id === currentSound.id)
     if (index !== -1) {
       settingsStore.sounds[index] = settingsStore.currentEditingSound
-      updateSound()
+      settingsStore.saveSound(settingsStore.currentEditingSound)
     }
   }
 }
@@ -411,8 +411,9 @@ function handleSoundsUpdate(pSound: Sound) {
     settingsStore.sounds.push({
       id: crypto.randomUUID(),
     })
+    settingsStore.saveSound(settingsStore.sounds[settingsStore.sounds.length - 1])
   }
-  settingsStore.saveSoundArray(settingsStore.sounds)
+  settingsStore.saveSound(pSound)
 }
 </script>
 
