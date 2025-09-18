@@ -42,7 +42,7 @@ export interface Settings {
   readDBSetting: (settingName: string) => Promise<SettingValue | null>
   deleteDBSetting: (settingName: string) => Promise<void>
   readAllDBSounds: () => Promise<SoundForSaving[]>
-  saveSound: (sound: Sound) => Promise<void>
+  saveSound: (sound: SoundForSaving, orderIndex?: number) => Promise<void>
   saveSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
   reorderSound: (soundId: Sound, newIndex: number) => Promise<void>
   deleteSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
