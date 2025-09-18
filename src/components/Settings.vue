@@ -82,7 +82,7 @@
           v-model="newTag"
           class="flex items-center"
           @change="tagSelected($event)"
-          defaultText="Select an tag from the list of used tags"
+          defaultText="Select a tag from the list of used tags"
           :options="allTags.map((tag, index) => ({ label: tag || '', value: tag || `tag-${index}` }))" />
       </div>
     </div>
