@@ -50,7 +50,7 @@ function initializeDatabase() {
       volume REAL,
       color TEXT,
       soundSegments JSON,
-      isPreview JSON DEFAULT false,
+      isVisible JSON DEFAULT false,
       order_index INTEGER NOT NULL DEFAULT 0
     )
   `)
@@ -128,7 +128,7 @@ function readAllDBSounds() {
     if (row.imageKey) sound.imageKey = row.imageKey
     if (row.volume !== null) sound.volume = row.volume
     if (row.color) sound.color = row.color
-    if (row.isPreview) sound.isPreview = true
+    if (row.isVisible) sound.isVisible = true
     if (row.soundSegments) sound.soundSegments = row.soundSegments
 
     return sound
@@ -151,7 +151,7 @@ function saveSoundsArray(sounds) {
     'volume',
     'color',
     'soundSegments',
-    'isPreview',
+    'isVisible',
     'order_index',
   ]
   const placeholders = new Array(columns.length).fill('?').join(', ')
@@ -176,7 +176,7 @@ function saveSoundsArray(sounds) {
         sound.volume || null,
         sound.color || null,
         sound.soundSegments || null,
-        sound.isPreview || null,
+        sound.isVisible || null,
         index
       )
     }
@@ -202,7 +202,7 @@ function saveSound(sound, order_index = null) {
     'volume',
     'color',
     'soundSegments',
-    'isPreview',
+    'isVisible',
     ...(withOrderIndex ? ['order_index'] : []),
   ]
 
@@ -224,7 +224,7 @@ function saveSound(sound, order_index = null) {
     sound.volume || null,
     sound.color || null,
     sound.soundSegments || null,
-    sound.isPreview ? 1 : 0,
+    sound.isVisible ? 1 : 0,
     ...(withOrderIndex ? [order_index] : [])
   )
 }
