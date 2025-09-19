@@ -379,17 +379,18 @@ function deleteSound(pSound: Sound) {
 
 function deleteSoundConfirmed() {
   if (soundToDelete.value === null) return
-  const pSound = soundToDelete.value
   const newEditingIndex = Math.min(
-    settingsStore.sounds.findIndex(sound => sound.id === pSound.id),
+    settingsStore.sounds.findIndex(sound => sound.id === soundToDelete.value?.id),
+    /**
+     * length - 1 for last element
+     * length - 2 to avoid the last element, which will be blank
+     * length - 3 to allow for the element to be deleted
+     **/
     settingsStore.sounds.length - 3
   )
-  settingsStore.sounds = settingsStore.sounds.filter(sound => sound.id !== pSound.id)
-  settingsStore.deleteFile(pSound.audioKey)
-  settingsStore.deleteFile(pSound.imageKey)
-  settingsStore.saveSoundArray(settingsStore.sounds)
+  settingsStore.deleteSound(soundToDelete.value)
   // check if soundToDelete is the currentEditingSound
-  if (settingsStore.currentEditingSound?.id === pSound.id) {
+  if (settingsStore.currentEditingSound?.id === soundToDelete.value.id) {
     // since we deleted soundToDelete, if we set it to newEditingIndex, it will be the next sound
     settingsStore.currentEditingSound = settingsStore.sounds[newEditingIndex] ?? null
   }

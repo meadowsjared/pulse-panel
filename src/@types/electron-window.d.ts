@@ -46,7 +46,7 @@ export interface Settings {
   saveSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
   reorderSound: (soundId: Sound, newIndex: number) => Promise<void>
   deleteSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
-  deleteSound: (sound: Sound) => Promise<void>
+  deleteSound: (sound: SoundForSaving) => Promise<void>
   saveSoundsArray: (sounds: SoundForSaving[] | Sound[]) => Promise<void>
   saveVisibility: (visibilityChanges: { isVisible: boolean; soundId: string }[]) => Promise<void>
 }
