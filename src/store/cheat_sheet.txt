@@ -20,6 +20,9 @@ SELECT * FROM sounds;
 #get 1st sound:
 SELECT * FROM sounds LIMIT 1;
 
+#get 1st 20 sounds ordered by order_index:
+SELECT * FROM sounds ORDER BY order_index LIMIT 20;
+
 #get sound by partial title:
 SELECT * FROM sounds WHERE title LIKE '%seinfeld%';
 
@@ -31,4 +34,7 @@ UPDATE settings SET value = json(CASE WHEN json_extract(value, '$') = true THEN 
 
 #get number of visible sounds:
 SELECT count(title) FROM sounds WHERE isVisible='true';
+
+#set the order_index of all the sounds:
+WITH NewOrder AS (SELECT id, ROW_NUMBER() OVER (ORDER BY order_index) - 1 AS new_index FROM sounds) UPDATE sounds SET order_index = NewOrder.new_index FROM NewOrder WHERE sounds.id = NewOrder.id;
 
