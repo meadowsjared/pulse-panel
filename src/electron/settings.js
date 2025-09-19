@@ -259,11 +259,32 @@ function deleteSoundProperty(sound, propertyName) {
 
 /**
  * Delete a sound from the database
+ * it also shifts down the order_index of all sounds with a higher order_index
  * @param {Sound} sound - The sound object to delete
  */
 function deleteSound(sound) {
-  const stmt = db.prepare('DELETE FROM sounds WHERE id = ?')
-  stmt.run(sound.id)
+  const transaction = db.transaction(() => {
+    // First get the order_index before deletion
+    const getIdStmt = db.prepare('SELECT order_index FROM sounds WHERE id = ?')
+    const row = getIdStmt.get(sound.id)
+
+    if (!row) {
+      // ✅ Check if the row exists, not the index value
+      throw new Error(`Sound with id ${sound.id} not found`)
+    }
+
+    const deletedOrderIndex = row.order_index
+
+    // Delete the sound
+    const deleteStmt = db.prepare('DELETE FROM sounds WHERE id = ?')
+    deleteStmt.run(sound.id)
+
+    // Shift all sounds with a higher order_index down by 1
+    const shiftStmt = db.prepare('UPDATE sounds SET order_index = order_index - 1 WHERE order_index > ?')
+    shiftStmt.run(deletedOrderIndex)
+  })
+
+  transaction()
 }
 
 /**
