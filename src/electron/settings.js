@@ -186,13 +186,12 @@ function saveSoundsArray(sounds) {
 }
 
 /**
- * Save a single sound to the database
+ * Save an update to a single sound to the database
  * @param {Sound} sound - The sound object to save
  */
 function saveSound(sound, order_index = null) {
   const withOrderIndex = order_index !== null
   const columns = [
-    'id',
     'title',
     'hideTitle',
     'tags',
@@ -203,20 +202,15 @@ function saveSound(sound, order_index = null) {
     'color',
     'soundSegments',
     'isVisible',
-    ...(withOrderIndex ? ['order_index'] : []),
   ]
+  if (withOrderIndex) {
+    columns.push('order_index')
+  }
 
-  // use columns to fill the number of ?'s
-  const placeholders = new Array(columns.length).fill('?').join(', ')
+  const setClause = columns.map(col => `${col} = ?`).join(', ')
+  const stmt = db.prepare(`UPDATE sounds SET ${setClause} WHERE id = ?`)
 
-  const stmt = db.prepare(`
-    INSERT OR REPLACE INTO sounds (
-      ${columns.join(', ')}
-    ) VALUES (${placeholders})
-  `)
-
-  stmt.run(
-    sound.id,
+  const values = [
     sound.title || null,
     sound.hideTitle || null,
     sound.tags || null,
@@ -227,8 +221,11 @@ function saveSound(sound, order_index = null) {
     sound.color || null,
     sound.soundSegments || null,
     sound.isVisible || null,
-    ...(withOrderIndex ? [order_index] : [])
-  )
+  ]
+  if (withOrderIndex) {
+    values.push(order_index)
+  }
+  stmt.run(...values, sound.id)
 }
 
 /**
