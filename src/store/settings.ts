@@ -399,6 +399,17 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.saveSound(_prepareSoundForStorage(sound))
     },
+    /**
+     * Delete a sound from the database and the local state
+     * @param pSound the sound to delete
+     */
+    async deleteSound(pSound: Sound): Promise<void> {
+      this.deleteFile(pSound.audioKey)
+      this.deleteFile(pSound.imageKey)
+      this.sounds = this.sounds.filter(sound => sound.id !== pSound.id)
+      const electron = window.electron
+      await electron?.deleteSound(_prepareSoundForStorage(pSound))
+    },
     async updateVisibility(visibilityMap: { isVisible: boolean; soundId: string }[]): Promise<void> {
       const electron = window.electron
       await electron?.saveVisibility(visibilityMap)
