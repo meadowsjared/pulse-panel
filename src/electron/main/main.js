@@ -37,6 +37,7 @@ app.whenReady().then(() => {
   ipcMain.handle('read-all-db-sounds', () => settings.readAllDBSounds())
   ipcMain.handle('save-sound', (_, sound, orderIndex) => settings.saveSound(sound, orderIndex))
   ipcMain.handle('save-sound-property', (_, sound, propertyName) => settings.saveSoundProperty(sound, propertyName))
+  ipcMain.handle('move-sound', (_, prevIndex, newIndex) => settings.moveSound(prevIndex, newIndex))
   ipcMain.handle('reorder-sound', (_, soundId, newIndex) => settings.reorderSound(soundId, newIndex))
   ipcMain.handle('delete-sound-property', (_, sound, propertyName) => settings.deleteSoundProperty(sound, propertyName))
   ipcMain.handle('delete-sound', (_, sound) => settings.deleteSound(sound))
