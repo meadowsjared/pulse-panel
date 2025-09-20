@@ -38,3 +38,5 @@ SELECT count(title) FROM sounds WHERE isVisible='true';
 #set the order_index of all the sounds:
 WITH NewOrder AS (SELECT id, ROW_NUMBER() OVER (ORDER BY order_index) - 1 AS new_index FROM sounds) UPDATE sounds SET order_index = NewOrder.new_index FROM NewOrder WHERE sounds.id = NewOrder.id;
 
+#get the 5 most recently added sounds from the end:
+SELECT * FROM sounds ORDER BY order_index DESC LIMIT 5;
