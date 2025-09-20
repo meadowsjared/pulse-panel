@@ -258,10 +258,10 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
         imageModified = true
       }
     })
-    audioContext.close()
+    await audioContext.close()
     await Promise.all(promAr)
     if (audioModified || imageModified) {
-      updateSounds()
+      settingsStore.saveSound(sound)
     }
   }
 }
