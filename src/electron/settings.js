@@ -244,6 +244,53 @@ function saveSoundProperty(sound, propertyName) {
 }
 
 /**
+ * Insert new sounds into the sounds array
+ * @param {number} beforeIndex
+ * @param  {...any} newSounds
+ */
+function insertSounds(beforeIndex, ...newSounds) {
+  const transaction = db.transaction(() => {
+    // Shift existing sounds at and after beforeIndex up by the number of new sounds
+    const shiftStmt = db.prepare('UPDATE sounds SET order_index = order_index + ? WHERE order_index >= ?')
+    shiftStmt.run(newSounds.length, beforeIndex)
+    // Insert new sounds
+    const columns = [
+      'id',
+      'title',
+      'hideTitle',
+      'tags',
+      'hotkey',
+      'audioKey',
+      'imageKey',
+      'volume',
+      'color',
+      'soundSegments',
+      'isVisible',
+      'order_index',
+    ]
+    const placeholders = new Array(columns.length).fill('?').join(', ')
+    const insertStmt = db.prepare(`INSERT INTO sounds (${columns.join(', ')}) VALUES (${placeholders})`)
+    newSounds.forEach((sound, insertArrayIndex) => {
+      insertStmt.run(
+        sound.id,
+        sound.title || null,
+        sound.hideTitle || null,
+        sound.tags || null,
+        sound.hotkey || null,
+        sound.audioKey || null,
+        sound.imageKey || null,
+        sound.volume || null,
+        sound.color || null,
+        sound.soundSegments || null,
+        sound.isVisible || null,
+        beforeIndex + insertArrayIndex
+      )
+    })
+  })
+  transaction()
+}
+
+/**
  * Move a sound from one index to another
  * @param {number} prevIndex - The current index of the sound
  * @param {number} newIndex - The new index to move the sound to
@@ -857,6 +904,7 @@ module.exports = {
   readAllDBSounds,
   saveSound,
   saveSoundProperty,
+  insertSounds,
   moveSound,
   reorderSound,
   deleteSoundProperty,

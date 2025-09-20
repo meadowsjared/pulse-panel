@@ -399,6 +399,10 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.saveSound(_prepareSoundForStorage(sound))
     },
+    async insertSounds(beforeIndex: number, ...newSounds: Sound[]): Promise<void> {
+      const electron = window.electron
+      await electron?.insertSounds(beforeIndex, ..._prepareSoundsForStorage(newSounds))
+    },
     /**
      * Move a sound to a new order_index in the database
      * @param pSound the sound to move

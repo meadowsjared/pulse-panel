@@ -240,8 +240,8 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
     audioContext.close()
     const soundsToAdd = await Promise.all(promAr)
     // insert the new sounds before the new sound button
+    settingsStore.insertSounds(settingsStore.sounds.length - 1, ...soundsToAdd)
     settingsStore.sounds.splice(settingsStore.sounds.length - 1, 0, ...soundsToAdd)
-    updateSounds()
   } else {
     // we're updating an existing sound button
     // only allow a single file to be dropped for the audio and image at a time

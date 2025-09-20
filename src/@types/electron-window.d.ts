@@ -44,6 +44,7 @@ export interface Settings {
   readAllDBSounds: () => Promise<SoundForLoading[]>
   saveSound: (sound: SoundForSaving, orderIndex?: number) => Promise<void>
   saveSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
+  insertSounds: (beforeIndex: number, ...newSounds: SoundForSaving[]) => Promise<void>
   moveSound: (prevIndex: number, newIndex: number) => Promise<void>
   reorderSound: (soundId: Sound, newIndex: number) => Promise<void>
   deleteSoundProperty: (sound: Sound, propertyName: string) => Promise<void>
