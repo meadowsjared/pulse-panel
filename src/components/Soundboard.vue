@@ -334,9 +334,9 @@ function dragStart(pSound: Sound) {
 function drop() {
   skipBgDrop.value = true
   if (settingsStore.displayMode !== 'edit') return
-  if (draggedSound === null) return
+  if (draggedSound === null || draggedIndexStart === null) return
   delete draggedSound.isPreview // remove the preview flag
-  updateSounds()
+  settingsStore.moveSound(draggedIndexStart, settingsStore.sounds.indexOf(draggedSound))
   draggedIndexStart = null
   draggedSound = null
 }

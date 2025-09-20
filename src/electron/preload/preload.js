@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld('electron', {
   readAllDBSounds: () => ipcRenderer.invoke('read-all-db-sounds'),
   saveSound: (sound, orderIndex) => ipcRenderer.invoke('save-sound', sound, orderIndex),
   saveSoundProperty: (sound, propertyName) => ipcRenderer.invoke('save-sound-property', sound, propertyName),
+  moveSound: (prevIndex, newIndex) => ipcRenderer.invoke('move-sound', prevIndex, newIndex),
   reorderSound: (soundId, newIndex) => ipcRenderer.invoke('reorder-sound', soundId, newIndex),
   deleteSoundProperty: (sound, propertyName) => ipcRenderer.invoke('delete-sound-property', sound, propertyName),
   deleteSound: sound => ipcRenderer.invoke('delete-sound', sound),

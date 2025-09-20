@@ -400,6 +400,20 @@ export const useSettingsStore = defineStore('settings', {
       await electron?.saveSound(_prepareSoundForStorage(sound))
     },
     /**
+     * Move a sound to a new order_index in the database
+     * @param pSound the sound to move
+     * @param newIndex the index to move it to
+     * note: the highest order_index can be is length - 2, because the last sound is always the "new sound" button
+     */
+    async moveSound(prevIndex: number, newIndex: number): Promise<void> {
+      if (prevIndex === -1 || newIndex < 0 || newIndex > this.sounds.length - 2) {
+        console.log('Invalid moveSound indices', prevIndex, newIndex)
+        return
+      }
+      const electron = window.electron
+      await electron?.moveSound(prevIndex, newIndex)
+    },
+    /**
      * Delete a sound from the database and the local state
      * @param pSound the sound to delete
      */

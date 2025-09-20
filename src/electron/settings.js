@@ -244,6 +244,60 @@ function saveSoundProperty(sound, propertyName) {
 }
 
 /**
+ * Move a sound from one index to another
+ * @param {number} prevIndex - The current index of the sound
+ * @param {number} newIndex - The new index to move the sound to
+ * note: the last sound is the "new sound" button, so it cannot be moved to that position
+ * it can be moved to the position before it
+ */
+function moveSound(prevIndex, newIndex) {
+  if (prevIndex === newIndex) {
+    console.log('No move needed, indices are the same')
+    return
+  }
+  const transaction = db.transaction(() => {
+    const stmt = db.prepare('SELECT order_index FROM sounds ORDER BY order_index DESC LIMIT 1 OFFSET 1')
+    const result = stmt.get()
+    const secondHighestIndex = result ? result.order_index : -1
+
+    // Get the ID of the sound we're moving
+    const getSoundIdStmt = db.prepare('SELECT id FROM sounds WHERE order_index = ?')
+    const soundToMove = getSoundIdStmt.get(prevIndex)
+
+    if (
+      !soundToMove ||
+      secondHighestIndex === -1 ||
+      prevIndex < 0 ||
+      prevIndex > secondHighestIndex ||
+      newIndex < 0 ||
+      newIndex > secondHighestIndex
+    ) {
+      throw new Error('Invalid indices for moving sound')
+    }
+
+    if (prevIndex < newIndex) {
+      // Moving down: shift sounds between prevIndex and newIndex up by 1
+      const shiftStmt = db.prepare(
+        'UPDATE sounds SET order_index = order_index - 1 WHERE order_index > ? AND order_index <= ?'
+      )
+      shiftStmt.run(prevIndex, newIndex)
+    } else {
+      // Moving up: shift sounds between newIndex and prevIndex down by 1
+      const shiftStmt = db.prepare(
+        'UPDATE sounds SET order_index = order_index + 1 WHERE order_index >= ? AND order_index < ?'
+      )
+      shiftStmt.run(newIndex, prevIndex)
+    }
+
+    // Now set the sound to its new position
+    const updateStmt = db.prepare('UPDATE sounds SET order_index = ? WHERE id = ?')
+    updateStmt.run(newIndex, soundToMove.id)
+  })
+
+  transaction()
+}
+
+/**
  * remove a single property of a sound
  * @param {Sound} sound - The sound object to update
  * @param {string} propertyName - The name of the property to remove
@@ -803,6 +857,7 @@ module.exports = {
   readAllDBSounds,
   saveSound,
   saveSoundProperty,
+  moveSound,
   reorderSound,
   deleteSoundProperty,
   deleteSound,
