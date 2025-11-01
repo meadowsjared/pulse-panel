@@ -2,7 +2,7 @@
   <title-bar
     >{{ settingsStore.appName
     }}<img
-      class="pulse-panel-icon"
+      class="pulse-panel-icon flex-shrink-0"
       @click="openLink"
       :src="PulsePanelIcon"
       :title="appVersion"
@@ -220,7 +220,8 @@ settingsStore.fetchSounds().then(() => {
 }
 
 .e-nuxt-container {
-  height: calc(100vh - 38px);
+  flex-grow: 1;
+  overflow-y: auto;
   background: var(--background-color);
   font-family: Helvetica, sans-serif;
   display: flex;
