@@ -441,5 +441,6 @@ onUnmounted(() => {
   padding-left: 0.25rem;
   margin-left: 0.25rem;
   margin-bottom: 0.25rem;
+  text-align: center;
 }
 </style>
