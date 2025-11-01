@@ -1,101 +1,99 @@
 <template>
-  <div class="w-full flex" v-bind="$attrs" ref="componentRef">
-    <div class="flex w-full flex-col justify-center">
-      <div v-if="props.format === 'time'" class="flex gap-1 items-center justify-center">
-        <InputTimeFormatted
-          ref="startTimeInputRef"
-          class="text-input"
-          v-model="innerModelValue.start"
-          @focusin="handleComponentFocusIn"
-          @focusout="handleComponentFocusOut"
-          :min="props.min"
-          :max="props.max"
-          :step="props.step"
-          :big-step="props.bigStep" />
-        <InputTimeFormatted
-          ref="endTimeInputRef"
-          class="text-input"
-          v-model="innerModelValue.end"
-          @focusin="handleComponentFocusIn"
-          @focusout="handleComponentFocusOut"
-          :min="props.min"
-          :max="props.max"
-          :step="props.step"
-          :big-step="props.bigStep" />
-      </div>
-      <div v-else class="flex gap-1 items-center justify-center">
-        <input-text-number
-          ref="startTimeInputRef"
-          class="text-input"
-          v-model="innerModelValue.start"
-          @focusin="handleComponentFocusIn"
-          @focusout="handleComponentFocusOut"
-          :min="props.min"
-          :max="props.max"
-          :step="props.step"
-          :big-step="props.bigStep" />
-        <input-text-number
-          ref="endTimeInputRef"
-          class="text-input"
-          v-model="innerModelValue.end"
-          @focusin="handleComponentFocusIn"
-          @focusout="handleComponentFocusOut"
-          :min="props.min"
-          :max="props.max"
-          :step="props.step"
-          :big-step="props.bigStep" />
-      </div>
-      <div class="segment-line" ref="containerRef">
-        <button
-          title="start"
-          class="range-handle"
-          tabindex="0"
-          :style="{ left: `${startPosition}px` }"
-          @focusin="handleComponentFocusIn"
-          @focusout="handleComponentFocusOut"
-          @mousedown="handleMouseDown($event, 'start')"
-          @keydown.left.prevent="adjustValue($event, 'start', -props.step)"
-          @keydown.right.prevent="adjustValue($event, 'start', props.step)"
-          @keydown.up.prevent="adjustValue($event, 'start', props.step)"
-          @keydown.down.prevent="adjustValue($event, 'start', -props.step)"
-          @keydown.page-up.prevent="adjustValue($event, 'start', props.bigStep)"
-          @keydown.page-down.prevent="adjustValue($event, 'start', -props.bigStep)" />
-        <div
-          class="range-line"
-          :style="{
-            left: lineStartPosition + handleWidthInPx / 2 + 'px',
-            width: lineWidth + 'px',
-          }" />
-        <button
-          class="range-handle"
-          ref="endRangeHandleRef"
-          @focusin="handleComponentFocusIn"
-          @focusout="handleComponentFocusOut"
-          :style="{ left: `${endPosition}px` }"
-          @mousedown="handleMouseDown($event, 'end')"
-          @keydown.left.prevent="adjustValue($event, 'end', -props.step)"
-          @keydown.right.prevent="adjustValue($event, 'end', props.step)"
-          @keydown.up.prevent="adjustValue($event, 'end', props.step)"
-          @keydown.down.prevent="adjustValue($event, 'end', -props.step)"
-          @keydown.page-up.prevent="adjustValue($event, 'end', props.bigStep)"
-          @keydown.page-down.prevent="adjustValue($event, 'end', -props.bigStep)" />
-        <input
-          class="range-input"
-          type="range"
-          title="end"
-          ref="rangeEndRef"
-          tabindex="-1"
-          :value="higherValue"
-          @input="handleInput($event, 'end')"
-          @change="handleInput($event, 'end')"
-          @focus="endRangeHandleRef?.focus()"
-          :min="min"
-          :max="max"
-          :step="step"
-          @keydown.page-up.prevent="adjustValue($event, 'end', props.bigStep)"
-          @keydown.page-down.prevent="adjustValue($event, 'end', -props.bigStep)"
-          v-bind="$attrs" />
-      </div>
+  <div class="flex w-full flex-col justify-center" ref="componentRef" v-bind="$attrs">
+    <div v-if="props.format === 'time'" class="flex gap-1 items-center justify-center">
+      <InputTimeFormatted
+        ref="startTimeInputRef"
+        class="text-input"
+        v-model="innerModelValue.start"
+        @focusin="handleComponentFocusIn"
+        @focusout="handleComponentFocusOut"
+        :min="props.min"
+        :max="props.max"
+        :step="props.step"
+        :big-step="props.bigStep" />
+      <InputTimeFormatted
+        ref="endTimeInputRef"
+        class="text-input"
+        v-model="innerModelValue.end"
+        @focusin="handleComponentFocusIn"
+        @focusout="handleComponentFocusOut"
+        :min="props.min"
+        :max="props.max"
+        :step="props.step"
+        :big-step="props.bigStep" />
+    </div>
+    <div v-else class="flex gap-1 items-center justify-center">
+      <input-text-number
+        ref="startTimeInputRef"
+        class="text-input"
+        v-model="innerModelValue.start"
+        @focusin="handleComponentFocusIn"
+        @focusout="handleComponentFocusOut"
+        :min="props.min"
+        :max="props.max"
+        :step="props.step"
+        :big-step="props.bigStep" />
+      <input-text-number
+        ref="endTimeInputRef"
+        class="text-input"
+        v-model="innerModelValue.end"
+        @focusin="handleComponentFocusIn"
+        @focusout="handleComponentFocusOut"
+        :min="props.min"
+        :max="props.max"
+        :step="props.step"
+        :big-step="props.bigStep" />
+    </div>
+    <div class="segment-line" ref="containerRef">
+      <button
+        title="start"
+        class="range-handle"
+        tabindex="0"
+        :style="{ left: `${startPosition}px` }"
+        @focusin="handleComponentFocusIn"
+        @focusout="handleComponentFocusOut"
+        @mousedown="handleMouseDown($event, 'start')"
+        @keydown.left.prevent="adjustValue($event, 'start', -props.step)"
+        @keydown.right.prevent="adjustValue($event, 'start', props.step)"
+        @keydown.up.prevent="adjustValue($event, 'start', props.step)"
+        @keydown.down.prevent="adjustValue($event, 'start', -props.step)"
+        @keydown.page-up.prevent="adjustValue($event, 'start', props.bigStep)"
+        @keydown.page-down.prevent="adjustValue($event, 'start', -props.bigStep)" />
+      <div
+        class="range-line"
+        :style="{
+          left: lineStartPosition + handleWidthInPx / 2 + 'px',
+          width: lineWidth + 'px',
+        }" />
+      <button
+        class="range-handle"
+        ref="endRangeHandleRef"
+        @focusin="handleComponentFocusIn"
+        @focusout="handleComponentFocusOut"
+        :style="{ left: `${endPosition}px` }"
+        @mousedown="handleMouseDown($event, 'end')"
+        @keydown.left.prevent="adjustValue($event, 'end', -props.step)"
+        @keydown.right.prevent="adjustValue($event, 'end', props.step)"
+        @keydown.up.prevent="adjustValue($event, 'end', props.step)"
+        @keydown.down.prevent="adjustValue($event, 'end', -props.step)"
+        @keydown.page-up.prevent="adjustValue($event, 'end', props.bigStep)"
+        @keydown.page-down.prevent="adjustValue($event, 'end', -props.bigStep)" />
+      <input
+        class="range-input"
+        type="range"
+        title="end"
+        ref="rangeEndRef"
+        tabindex="-1"
+        :value="higherValue"
+        @input="handleInput($event, 'end')"
+        @change="handleInput($event, 'end')"
+        @focus="endRangeHandleRef?.focus()"
+        :min="min"
+        :max="max"
+        :step="step"
+        @keydown.page-up.prevent="adjustValue($event, 'end', props.bigStep)"
+        @keydown.page-down.prevent="adjustValue($event, 'end', -props.bigStep)"
+        v-bind="$attrs" />
     </div>
   </div>
 </template>
