@@ -1,5 +1,20 @@
 <template>
   <div class="flex w-full flex-col justify-center" ref="componentRef" v-bind="$attrs">
+    <input
+      v-if="hasFocus"
+      class="label"
+      ref="labelRef"
+      placeholder="Segment Label"
+      @focus="handleComponentFocusIn"
+      @blur="handleComponentFocusOut"
+      type="text"
+      v-model="innerModelValue.label" />
+    <div
+      v-else-if="innerModelValue.label"
+      class="text-center mb-1 cursor-default"
+      @click="handleComponentFocusIn($event, true)">
+      {{ innerModelValue.label }}
+    </div>
     <div v-if="props.format === 'time'" class="flex gap-1 items-center justify-center">
       <InputTimeFormatted
         ref="startTimeInputRef"
@@ -137,6 +152,7 @@ const endRangeHandleRef = ref<HTMLButtonElement>()
 const startTimeInputRef = ref<HTMLInputElement>()
 const endTimeInputRef = ref<HTMLInputElement>()
 const previousValue = ref<SoundSegment | null>(null)
+const labelRef = ref<HTMLInputElement>()
 const ignoreWatch = ref(false)
 const hasFocus = ref(false)
 
@@ -183,7 +199,14 @@ function isNode(target: EventTarget | null): target is Node {
   return target !== null && target instanceof Node
 }
 
-function handleComponentFocusIn() {
+function handleComponentFocusIn(_event: FocusEvent, focusLabel = false) {
+  if (focusLabel) {
+    hasFocus.value = true
+    nextTick(() => {
+      labelRef.value?.focus()
+    })
+    return
+  }
   if (hasFocus.value || !componentRef.value) return
   emit('focus', componentRef.value)
 
@@ -405,5 +428,13 @@ onUnmounted(() => {
 
 .segment-line > .range-handle:focus {
   outline: 2px solid var(--text-color);
+}
+
+.label {
+  width: calc(100% - 0.5rem);
+  padding: 0;
+  padding-left: 0.25rem;
+  margin-left: 0.25rem;
+  margin-bottom: 0.25rem;
 }
 </style>

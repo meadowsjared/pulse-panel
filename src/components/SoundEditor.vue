@@ -69,7 +69,7 @@
         <div
           v-for="(segment, index) in modelValue.soundSegments"
           :key="`input-range-segment-${segment.id}`"
-          :class="['flex gap-2 w-full items-center cursor-grab', { dragging: segment.isPreview }]"
+          :class="['flex gap-2 w-full items-end cursor-grab', { dragging: segment.isPreview }]"
           draggable="true"
           @dragstart="dragStart(segment, index)"
           @dragenter.prevent="dragOver(segment)"
