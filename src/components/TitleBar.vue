@@ -1,11 +1,9 @@
 <template>
-  <div class="title-bar" :class="{ darkMode: settingsStore.darkMode }">
+  <div class="title-bar" :class="{ darkMode: settingsStore.darkMode }" v-bind="$attrs">
     <div class="title py-[7px]">
       <slot />
     </div>
-    <div class="quick-tags">
-      <quick-tag-buttons />
-    </div>
+    <quick-tag-buttons />
     <div class="buttons">
       <button @click="minimize" tabindex="-1"><inline-svg :src="minimizeIcon" /></button>
       <button @click="maximize" tabindex="-1">
@@ -73,11 +71,5 @@ const close = () => {
 
 .buttons button:hover {
   background-color: rgba(255, 255, 255, 0.1);
-}
-
-.quick-tags {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
 }
 </style>
