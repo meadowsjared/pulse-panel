@@ -163,6 +163,10 @@ watch(
     if (previousValue.value && newValue.start > newValue.end) {
       handleFlippedFocus(previousValue.value, newValue)
     }
+    if (newValue.label === '') {
+      delete newValue.label
+      ignoreWatch.value = true
+    }
     previousValue.value = { ...newValue }
   },
   { immediate: true, deep: true }
@@ -326,8 +330,8 @@ function handleFlippedFocus(previousValue: SoundSegment, newValue: SoundSegment)
     } else {
       startTimeInputRef.value?.focus()
     }
-    const { start, end, id } = newValue
-    innerModelValue.value = { start: end, end: start, id } // swap em
+    const { start, end, id, label } = newValue
+    innerModelValue.value = { start: end, end: start, id, ...(label !== undefined && { label }) } // swap em
   })
 }
 
