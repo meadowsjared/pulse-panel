@@ -460,8 +460,6 @@ function handleSoundsUpdate(pSound: Sound) {
 
 .rightSideBar {
   width: 300px;
-  min-width: 208px;
-  overflow: hidden;
   background: var(--alt-bg-color);
 }
 
