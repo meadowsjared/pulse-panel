@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { LabelActive, Sound, SoundForSaving, SoundSegment } from '../@types/sound'
+import { LabelActive, Sound, SoundForSaving, SoundSegment, SoundSegmentForSaving } from '../@types/sound'
 import { openDB } from 'idb'
 import { File } from '../@types/file'
 import { useSoundStore } from './sound'
@@ -890,9 +890,13 @@ function _prepareSoundForStorage(sound: Sound): SoundForSaving {
 function _stripSegmentIds(pSegments: SoundSegment[] | undefined) {
   if (!pSegments) return undefined
   return pSegments?.map(segment => {
-    return {
+    const result: SoundSegmentForSaving = {
       start: segment.start,
       end: segment.end,
     }
+    if (segment.label !== undefined) {
+      result.label = segment.label
+    }
+    return result
   })
 }

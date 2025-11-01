@@ -38,6 +38,12 @@ export interface SoundForSaving extends Sound {
   isVisible?: string
 }
 
+export interface SoundSegmentForSaving {
+  label?: string
+  start: number
+  end: number
+}
+
 export interface SoundForLoading extends Sound {
   tags?: string
   hotkey?: string
