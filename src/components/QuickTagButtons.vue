@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-wrap ml-4 gap-2 py-[7px]">
+  <div class="flex flex-wrap mr-auto ml-4 gap-2 py-[7px]">
     <div
       :class="['tag flex', { active: settingsStore.invertQuickTags }, { inverted: settingsStore.invertQuickTags }]"
       @click="toggleInvert">
