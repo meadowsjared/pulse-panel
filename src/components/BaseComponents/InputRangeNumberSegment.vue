@@ -1,11 +1,13 @@
 <template>
-  <div class="w-full flex" v-bind="$attrs">
+  <div class="w-full flex" v-bind="$attrs" ref="componentRef">
     <div class="flex w-full flex-col justify-center">
       <div v-if="props.format === 'time'" class="flex gap-1 items-center justify-center">
         <InputTimeFormatted
           ref="startTimeInputRef"
           class="text-input"
           v-model="innerModelValue.start"
+          @focusin="handleComponentFocusIn"
+          @focusout="handleComponentFocusOut"
           :min="props.min"
           :max="props.max"
           :step="props.step"
@@ -14,6 +16,8 @@
           ref="endTimeInputRef"
           class="text-input"
           v-model="innerModelValue.end"
+          @focusin="handleComponentFocusIn"
+          @focusout="handleComponentFocusOut"
           :min="props.min"
           :max="props.max"
           :step="props.step"
@@ -24,6 +28,8 @@
           ref="startTimeInputRef"
           class="text-input"
           v-model="innerModelValue.start"
+          @focusin="handleComponentFocusIn"
+          @focusout="handleComponentFocusOut"
           :min="props.min"
           :max="props.max"
           :step="props.step"
@@ -32,6 +38,8 @@
           ref="endTimeInputRef"
           class="text-input"
           v-model="innerModelValue.end"
+          @focusin="handleComponentFocusIn"
+          @focusout="handleComponentFocusOut"
           :min="props.min"
           :max="props.max"
           :step="props.step"
@@ -43,6 +51,8 @@
           class="range-handle"
           tabindex="0"
           :style="{ left: `${startPosition}px` }"
+          @focusin="handleComponentFocusIn"
+          @focusout="handleComponentFocusOut"
           @mousedown="handleMouseDown($event, 'start')"
           @keydown.left.prevent="adjustValue($event, 'start', -props.step)"
           @keydown.right.prevent="adjustValue($event, 'start', props.step)"
@@ -59,6 +69,8 @@
         <button
           class="range-handle"
           ref="endRangeHandleRef"
+          @focusin="handleComponentFocusIn"
+          @focusout="handleComponentFocusOut"
           :style="{ left: `${endPosition}px` }"
           @mousedown="handleMouseDown($event, 'end')"
           @keydown.left.prevent="adjustValue($event, 'end', -props.step)"
@@ -112,7 +124,14 @@ const props = withDefaults(
   }
 )
 
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: SoundSegment): void
+  (event: 'focus', target: HTMLElement): void
+  (event: 'blur'): void
+}>()
+
 const innerModelValue = useModel(props, 'modelValue')
+const componentRef = ref<HTMLElement>()
 const containerRef = ref<HTMLElement>()
 const isDragging = ref<'start' | 'end' | null>(null)
 const rangeEndRef = ref<HTMLInputElement>()
@@ -121,6 +140,7 @@ const startTimeInputRef = ref<HTMLInputElement>()
 const endTimeInputRef = ref<HTMLInputElement>()
 const previousValue = ref<SoundSegment | null>(null)
 const ignoreWatch = ref(false)
+const hasFocus = ref(false)
 
 watch(
   () => innerModelValue.value,
@@ -160,6 +180,42 @@ onMounted(() => {
     })
   }
 })
+
+function isNode(target: EventTarget | null): target is Node {
+  return target !== null && target instanceof Node
+}
+
+function handleComponentFocusIn() {
+  if (hasFocus.value || !componentRef.value) return
+  emit('focus', componentRef.value)
+
+  hasFocus.value = true
+}
+
+function handleComponentFocusOut(event: FocusEvent) {
+  // For focusout events, check where focus is going (relatedTarget)
+  const relatedTarget = event.relatedTarget
+
+  // If relatedTarget is null, focus is leaving the document entirely
+  if (relatedTarget === null) {
+    hasFocus.value = false
+    emit('blur')
+    return
+  }
+
+  // Check if the element gaining focus is still within this component
+  if (isNode(relatedTarget)) {
+    if (componentRef.value && !componentRef.value.contains(relatedTarget)) {
+      hasFocus.value = false
+      emit('blur')
+    }
+    // If relatedTarget IS within the component, don't emit blur
+  } else {
+    // relatedTarget exists but isn't a Node (shouldn't happen in practice)
+    hasFocus.value = false
+    emit('blur')
+  }
+}
 
 // Calculate the position of the start handle based on the value
 const startPosition = computed(() => {
