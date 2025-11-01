@@ -53,7 +53,7 @@ function createWindow() {
     frame: false,
     width: size[0],
     height: size[1],
-    minWidth: 485,
+    minWidth: 577,
     minHeight: 341,
     webPreferences: {
       preload: join(__dirname, '../preload/preload.js'),
