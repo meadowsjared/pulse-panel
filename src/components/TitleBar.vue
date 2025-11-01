@@ -1,6 +1,6 @@
 <template>
   <div class="title-bar" :class="{ darkMode: settingsStore.darkMode }">
-    <div class="title">
+    <div class="title py-[7px]">
       <slot />
     </div>
     <div class="quick-tags">
@@ -45,7 +45,7 @@ const close = () => {
 .title-bar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: start;
   background-color: var(--title-bar-bg-color);
   color: var(--alt-bright-text-color);
   padding: 0 0 0 1rem;
