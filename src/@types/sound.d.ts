@@ -45,6 +45,7 @@ export interface SoundForLoading extends Sound {
 }
 
 export interface SoundSegment {
+  label?: string
   start: number
   end: number
   isPreview?: boolean
