@@ -7,6 +7,7 @@
       placeholder="Segment Label"
       @focus="handleComponentFocusIn"
       @blur="handleComponentFocusOut"
+      @keypress.enter="handleComponentFocusOut(null)"
       type="text"
       v-model="innerModelValue.label" />
     <div
@@ -217,9 +218,9 @@ function handleComponentFocusIn(_event: FocusEvent, focusLabel = false) {
   hasFocus.value = true
 }
 
-function handleComponentFocusOut(event: FocusEvent) {
+function handleComponentFocusOut(event: FocusEvent | null) {
   // For focusout events, check where focus is going (relatedTarget)
-  const relatedTarget = event.relatedTarget
+  const relatedTarget = event?.relatedTarget || null
 
   // If relatedTarget is null, focus is leaving the document entirely
   if (relatedTarget === null) {
