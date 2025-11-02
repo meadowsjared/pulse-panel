@@ -221,7 +221,7 @@ settingsStore.fetchSounds().then(() => {
 
 .e-nuxt-container {
   flex-grow: 1;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--background-color);
   font-family: Helvetica, sans-serif;
   display: flex;
