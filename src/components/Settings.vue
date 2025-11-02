@@ -148,6 +148,7 @@ const allTags = computed(() => {
   })
   return Array.from(tagCounts.entries())
     .map(([tag, count]) => ({ name: tag, count }))
+    .filter(tagObj => !settingsStore.quickTags.some(tag => tag.label === tagObj.name)) // Filter out existing quick tags
     .sort((a, b) => {
       // Sort by count descending first, then by name ascending for ties
       if (b.count !== a.count) {
