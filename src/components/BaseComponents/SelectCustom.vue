@@ -300,6 +300,7 @@ function getKeypressDown(index: number) {
   outline: 1px solid var(--button-color);
   border-radius: 0.5rem;
   user-select: none;
+  pointer-events: auto;
 }
 
 .dropdown button {
