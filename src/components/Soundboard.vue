@@ -437,7 +437,6 @@ function handleSoundsUpdate(pSound: Sound) {
   --grid-height: 110px;
   grid-auto-rows: max-content;
   overflow: auto;
-  --scrollbar-width: 14px;
 }
 
 .soundboard::-webkit-scrollbar {

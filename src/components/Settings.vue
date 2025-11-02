@@ -462,11 +462,25 @@ input[type='checkbox']:focus-visible {
 
 .main {
   width: 100%;
-  overflow-y: auto;
+  overflow: hidden auto;
   display: flex;
   flex-direction: column;
   background: var(--background-color);
   padding-bottom: 1rem;
+}
+
+.main::-webkit-scrollbar {
+  width: var(--scrollbar-width);
+}
+
+.main::-webkit-scrollbar-thumb {
+  background: var(--text-color);
+  border-radius: calc(var(--scrollbar-width) / 2);
+  border: 4px solid var(--input-bg-color);
+}
+
+.main::-webkit-scrollbar-track {
+  background: var(--input-bg-color);
 }
 
 .push-to-talk-hotkey {

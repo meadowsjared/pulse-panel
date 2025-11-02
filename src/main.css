@@ -68,6 +68,7 @@ html, body, div#app {
 div#app {
   display: flex;
   flex-direction: column;
+  --scrollbar-width: 14px;
 }
 
 button.danger.danger {
