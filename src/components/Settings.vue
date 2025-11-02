@@ -1,34 +1,42 @@
 <template>
-  <div class="main" :class="{ darkMode: settingsStore.darkMode }">
+  <div :class="{ main: true, darkMode: settingsStore.darkMode }">
     <div class="bar">
       <h1 class="mx-auto">Settings</h1>
     </div>
     <h2>Audio Output Devices:</h2>
-    <div class="audio-output-devices">
-      <div v-for="(outputDevice, i) in outputDevices" :key="i" class="select-line">
-        <button
-          class="delete-button light"
-          :class="{
-            'opacity-0 cursor-default': i === outputDevices.length - 1 || i === 0,
-            'cursor-pointer': i !== outputDevices.length - 1,
-          }"
-          :tabindex="i === outputDevices.length - 1 || i === 0 ? -1 : 0"
-          @click="deleteOutputDevice(i)"
-          title="Remove Output Device">
-          <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
-        </button>
-        <select-custom
-          v-model="outputDevices[i]"
-          @change="optionSelected($event, i)"
-          defaultText="Select an output device"
-          :options="settingsStore.allOutputDevices.map(option => ({ label: option.label, value: option.deviceId }))" />
-        <button
-          :class="{ playingAudio: soundStore.outputDeviceData[i]?.playingAudio }"
-          class="play-sound-button light"
-          v-if="outputDevice"
-          @click="soundStore.playSound(null, [outputDevice], outputDevices, true)">
-          <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
-        </button>
+    <div class="mx-auto pb-8">
+      <div class="audio-output-devices">
+        <div v-for="(outputDevice, i) in outputDevices" :key="i" class="select-line">
+          <button
+            :class="{
+              'delete-button': true,
+              light: i !== outputDevices.length - 1,
+              'opacity-0 cursor-default': i === outputDevices.length - 1 || i === 0,
+              'cursor-pointer': i !== outputDevices.length - 1,
+            }"
+            :tabindex="i === outputDevices.length - 1 || i === 0 ? -1 : 0"
+            @click="deleteOutputDevice(i)"
+            title="Remove Output Device">
+            <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
+          </button>
+          <select-custom
+            v-model="outputDevices[i]"
+            @change="optionSelected($event, i)"
+            defaultText="Select an output device"
+            :options="
+              settingsStore.allOutputDevices.map(option => ({ label: option.label, value: option.deviceId }))
+            " />
+          <button
+            :class="{
+              'play-sound-button': true,
+              light: i !== outputDevices.length - 1,
+              playingAudio: soundStore.outputDeviceData[i]?.playingAudio,
+              'opacity-0 cursor-default': i === outputDevices.length - 1,
+            }"
+            @click="outputDevice && soundStore.playSound(null, [outputDevice], outputDevices, true)">
+            <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
+          </button>
+        </div>
       </div>
     </div>
     <div class="default-volume">
@@ -80,7 +88,7 @@
       <div class="flex justify-center mt-2">
         <select-custom
           v-model="newTag"
-          class="flex items-center"
+          class="new-tag-select"
           @change="tagSelected($event)"
           defaultText="Select a tag from the list of used tags"
           :options="allTags.map((tag, index) => ({ label: tag || '', value: tag || `tag-${index}` }))" />
@@ -561,6 +569,14 @@ input[type='checkbox']:focus-visible {
   background-color: var(--button-accent-color);
   border-radius: 500rem;
   color: var(--input-bg-color);
+}
+
+.new-tag-select {
+  display: flex;
+  align-items: center;
+  max-width: max-content;
+  min-width: 0;
+  margin-bottom: 2rem;
 }
 
 .remove-button {
