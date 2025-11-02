@@ -4,7 +4,7 @@
       <h1 class="mx-auto">Settings</h1>
     </div>
     <h2>Audio Output Devices:</h2>
-    <div class="mx-auto pb-8">
+    <div class="mx-auto">
       <div class="audio-output-devices">
         <div v-for="(outputDevice, i) in outputDevices" :key="i" class="select-line">
           <button
@@ -378,7 +378,7 @@ h2 {
 .audio-output-devices {
   display: flex;
   flex-direction: column;
-  width: max-content;
+  width: 100%;
   margin: 0.5rem auto 1rem;
   align-items: start;
   gap: 1rem;
@@ -386,10 +386,7 @@ h2 {
 
 .select-line {
   display: flex;
-  justify-content: center;
-  align-items: center;
   gap: 0.5rem;
-  width: min-content;
 }
 .select-option {
   height: 4rem;
@@ -474,7 +471,6 @@ input[type='checkbox']:focus-visible {
   display: flex;
   flex-direction: column;
   background: var(--background-color);
-  padding-bottom: 1rem;
 }
 
 .main::-webkit-scrollbar {
