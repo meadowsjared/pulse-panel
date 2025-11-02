@@ -14,20 +14,22 @@
     <div class="sizing-div">
       <div v-for="option in options" :key="option.value">{{ option.label }}</div>
     </div>
-    <ul v-if="isOpen" class="dropdown w-full">
-      <button
-        ref="optionRefs"
-        v-for="option in options"
-        :key="option.value"
-        class="option-value"
-        :class="{ selected: option.value === props.modelValue }"
-        @click="selectOption(option)"
-        @keydown.prevent="handleKeypress"
-        @focus="handleFocus"
-        @blur="handleBlur">
-        {{ option.label }}
-      </button>
-    </ul>
+    <div class="dropdown-parent">
+      <ul v-if="isOpen" class="dropdown w-full">
+        <button
+          ref="optionRefs"
+          v-for="option in options"
+          :key="option.value"
+          class="option-value"
+          :class="{ selected: option.value === props.modelValue }"
+          @click="selectOption(option)"
+          @keydown.prevent="handleKeypress"
+          @focus="handleFocus"
+          @blur="handleBlur">
+          {{ option.label }}
+        </button>
+      </ul>
+    </div>
   </div>
 </template>
 
@@ -220,7 +222,7 @@ function getKeypressDown(index: number) {
   display: flex;
   text-align: start;
   flex-direction: column;
-  width: max-content;
+  width: 100%;
 }
 
 .selected-option {
@@ -279,16 +281,23 @@ function getKeypressDown(index: number) {
   overflow: hidden;
 }
 
-.dropdown {
+.dropdown-parent {
   position: absolute;
   top: calc(100% + 0.5rem);
   left: 0;
-  overflow-y: auto;
-  background-color: var(--alt-bg-color);
-  list-style: none;
-  outline: 1px solid var(--button-color);
-  margin: 0;
+  width: 100%;
   z-index: 2;
+  padding-bottom: 2rem;
+  /* ensure if the user clicks inside the dropdown, the click goes through */
+  pointer-events: none;
+}
+
+.dropdown {
+  position: relative;
+  top: 0;
+  left: 0;
+  background-color: var(--alt-bg-color);
+  outline: 1px solid var(--button-color);
   border-radius: 0.5rem;
   user-select: none;
 }
