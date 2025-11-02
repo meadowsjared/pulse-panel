@@ -91,7 +91,9 @@
           class="new-tag-select"
           @change="tagSelected($event)"
           defaultText="Select a tag from the list of used tags"
-          :options="allTags.map((tag, index) => ({ label: tag || '', value: tag || `tag-${index}` }))" />
+          :options="
+            allTags.map((tag, index) => ({ label: `${tag.name} (${tag.count})`, value: tag.name || `tag-${index}` }))
+          " />
       </div>
     </div>
   </div>
@@ -133,16 +135,26 @@ const volumeDisplay = computed({
 })
 
 /**
- * list of unique tags from all sounds
+ * list of unique tags from all sounds with their usage counts
  */
 const allTags = computed(() => {
-  const tagsSet = new Set<string>()
+  const tagCounts = new Map<string, number>()
   settingsStore.sounds.forEach(sound => {
     if (sound.tags) {
-      sound.tags.forEach(tag => tagsSet.add(tag))
+      sound.tags.forEach(tag => {
+        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
+      })
     }
   })
-  return Array.from(tagsSet).sort()
+  return Array.from(tagCounts.entries())
+    .map(([tag, count]) => ({ name: tag, count }))
+    .sort((a, b) => {
+      // Sort by count descending first, then by name ascending for ties
+      if (b.count !== a.count) {
+        return b.count - a.count
+      }
+      return a.name.localeCompare(b.name)
+    })
 })
 
 const saveVolumeDebounced = throttle((value: number) => {
