@@ -454,6 +454,22 @@ input[type='checkbox']:focus-visible {
   width: max-content;
 }
 
+.sound-is-playing {
+  animation: playing-sound-animation 1s infinite;
+}
+
+@keyframes playing-sound-animation {
+  0% {
+    filter: brightness(0.5);
+  }
+  50% {
+    filter: brightness(1.3);
+  }
+  100% {
+    filter: brightness(0.5);
+  }
+}
+
 .close-button:focus-visible {
   outline: 2px solid var(--active-color);
   outline-offset: 2px;
