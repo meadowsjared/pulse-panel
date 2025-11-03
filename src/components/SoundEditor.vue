@@ -53,7 +53,7 @@
           <label class="volume-label" for="volume-display">Volume:</label>
           <button
             @click="soundStore.playSound(modelValue, null, null, undefined, true)"
-            :class="['play-sound-button', { focusVisible }]"
+            :class="['play-sound-button', { focusVisible }, { 'sound-is-playing': playingThisSound }]"
             @blur="focusVisible = false"
             @keyup="handleKeyup">
             <inline-svg :src="PlayIcon" class="w-6 h-6" />
