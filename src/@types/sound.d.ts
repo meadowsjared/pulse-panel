@@ -55,6 +55,7 @@ export interface SoundSegment {
   start: number
   end: number
   isDragPreview?: true
+  isSoundPreview?: true
   id: string
 }
 

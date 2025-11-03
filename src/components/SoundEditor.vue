@@ -80,7 +80,12 @@
             :class="[
               'play-sound-button flex items-center',
               { focusVisible },
-              { 'sound-is-playing': soundStore.currentSound?.activeSegment?.id === segment.id && playingThisSound },
+              {
+                'sound-is-playing':
+                  soundStore.currentSound?.activeSegment?.id === segment.id &&
+                  playingThisSound &&
+                  soundStore.currentSound?.activeSegment?.isSoundPreview !== true,
+              },
             ]"
             @blur="focusVisible = false"
             @keyup="handleKeyup">
@@ -89,7 +94,13 @@
           <button
             @click="soundStore.playSound(modelValue, null, null, true, undefined, segment)"
             title="preview sound"
-            :class="{ 'playing-sound': playingThisSound }"
+            :class="{
+              'playing-sound': playingThisSound,
+              'sound-is-playing':
+                soundStore.currentSound?.activeSegment?.id === segment.id &&
+                playingThisSound &&
+                soundStore.currentSound?.activeSegment?.isSoundPreview === true,
+            }"
             class="light preview-button w-8 h-8 flex items-center justify-center">
             <inline-svg class="w-8 h-8" :src="Listen" />
           </button>

@@ -175,6 +175,9 @@ export const useSoundStore = defineStore('sound', {
       this.currentSound = soundObject
       const segment = soundSegment ??
         soundObject?.soundSegments?.[0] ?? { start: 0, end: soundObject?.duration ?? 100, id: crypto.randomUUID() }
+      if (preview) {
+        segment.isSoundPreview = true
+      }
       if (this.currentSound) {
         this.currentSound.activeSegment = segment
       }
@@ -210,6 +213,9 @@ export const useSoundStore = defineStore('sound', {
           }
           if (preventFalseKeyTrigger) {
             setTimeout(() => (this.sendingPttHotkey = false), 100)
+          }
+          if (this.currentSound?.activeSegment?.isSoundPreview === true) {
+            delete this.currentSound.activeSegment.isSoundPreview
           }
           if (this.currentSound) {
             delete this.currentSound.activeSegment
