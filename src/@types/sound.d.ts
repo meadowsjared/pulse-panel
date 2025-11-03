@@ -17,7 +17,7 @@ export interface Sound {
   /** **Volatile** - not saved to DB */
   imageUrl?: string
   /** **Volatile** - not saved to DB */
-  isPreview?: boolean
+  isDragPreview?: true
   /** **Volatile** - not saved to DB */
   duration?: number
   /**
@@ -54,7 +54,7 @@ export interface SoundSegment {
   label?: string
   start: number
   end: number
-  isPreview?: boolean
+  isDragPreview?: true
   id: string
 }
 
@@ -62,5 +62,5 @@ export interface LabelActive {
   label: string
   active: boolean
   negated?: true
-  isPreview?: boolean
+  isDragPreview?: true
 }

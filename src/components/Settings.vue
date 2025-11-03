@@ -73,7 +73,7 @@
         <div class="flex justify-center flex-wrap gap-1 cursor-grab">
           <div
             v-for="(tag, index) in settingsStore.quickTags"
-            :class="['tag select-none', { dragging: tag.isPreview }]"
+            :class="['tag select-none', { dragging: tag.isDragPreview }]"
             draggable="true"
             @dragstart="dragStart(tag, index)"
             @dragenter.prevent="dragOver(tag)"
@@ -226,7 +226,7 @@ function selectedHotkeyUpdated(event: string[] | undefined) {
 
 function dragStart(pTag: LabelActive, index: number) {
   draggedIndexStart = index
-  pTag.isPreview = true
+  pTag.isDragPreview = true
   draggedQuickTag = pTag
 }
 
@@ -251,7 +251,7 @@ function dragEnd() {
     return
   }
   if (draggedIndexStart === null || draggedQuickTag === null) return
-  delete draggedQuickTag.isPreview
+  delete draggedQuickTag.isDragPreview
   draggedIndexStart = null
   draggedQuickTag = null
 }

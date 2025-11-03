@@ -68,7 +68,7 @@ const props = withDefaults(
   defineProps<{
     modelValue: Sound
     displayMode: DisplayMode
-    isPreview?: boolean
+    isDragPreview?: boolean
     isVisible?: boolean
   }>(),
   {
