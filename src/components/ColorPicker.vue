@@ -32,9 +32,9 @@ const togglePicker = () => {
   showPicker.value = !showPicker.value
 }
 
-const updateColor = (color: any) => {
+const updateColor = (color: { hex: string }) => {
   // ChromePicker might return different formats, adjust as needed
-  const colorValue = color.hex || color
+  const colorValue = color.hex ?? color
   defaultColor.value = colorValue
 }
 

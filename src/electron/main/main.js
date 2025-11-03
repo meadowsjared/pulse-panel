@@ -48,7 +48,7 @@ app.whenReady().then(() => {
 
 function createWindow() {
   // Create the browser window.
-  const size = settings.readDBSetting('window-size') || [1100, 900]
+  const size = settings.readDBSetting('window-size') ?? [1100, 900]
   mainWindow = new BrowserWindow({
     frame: false,
     width: size[0],
