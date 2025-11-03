@@ -92,7 +92,7 @@
           @change="tagSelected($event)"
           defaultText="Select a tag from the list of used tags"
           :options="
-            allTags.map((tag, index) => ({ label: `${tag.name} (${tag.count})`, value: tag.name || `tag-${index}` }))
+            allTags.map((tag, index) => ({ label: `${tag.name} (${tag.count})`, value: tag.name ?? `tag-${index}` }))
           " />
       </div>
     </div>
@@ -142,7 +142,7 @@ const allTags = computed(() => {
   settingsStore.sounds.forEach(sound => {
     if (sound.tags) {
       sound.tags.forEach(tag => {
-        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
+        tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1)
       })
     }
   })

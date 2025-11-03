@@ -167,16 +167,16 @@ function saveSoundsArray(sounds) {
     for (const [index, sound] of sounds.entries()) {
       stmt.run(
         sound.id,
-        sound.title || null,
-        sound.hideTitle || null,
-        sound.tags || null,
-        sound.hotkey || null,
-        sound.audioKey || null,
-        sound.imageKey || null,
-        sound.volume || null,
-        sound.color || null,
-        sound.soundSegments || null,
-        sound.isVisible || null,
+        sound.title ?? null,
+        sound.hideTitle ?? null,
+        sound.tags ?? null,
+        sound.hotkey ?? null,
+        sound.audioKey ?? null,
+        sound.imageKey ?? null,
+        sound.volume ?? null,
+        sound.color ?? null,
+        sound.soundSegments ?? null,
+        sound.isVisible ?? null,
         index
       )
     }
@@ -211,16 +211,16 @@ function saveSound(sound, order_index = null) {
   const stmt = db.prepare(`UPDATE sounds SET ${setClause} WHERE id = ?`)
 
   const values = [
-    sound.title || null,
-    sound.hideTitle || null,
-    sound.tags || null,
-    sound.hotkey || null,
-    sound.audioKey || null,
-    sound.imageKey || null,
-    sound.volume || null,
-    sound.color || null,
-    sound.soundSegments || null,
-    sound.isVisible || null,
+    sound.title ?? null,
+    sound.hideTitle ?? null,
+    sound.tags ?? null,
+    sound.hotkey ?? null,
+    sound.audioKey ?? null,
+    sound.imageKey ?? null,
+    sound.volume ?? null,
+    sound.color ?? null,
+    sound.soundSegments ?? null,
+    sound.isVisible ?? null,
   ]
   if (withOrderIndex) {
     values.push(order_index)
@@ -273,16 +273,16 @@ function insertSounds(beforeIndex, ...newSounds) {
     newSounds.forEach((sound, insertArrayIndex) => {
       insertStmt.run(
         sound.id,
-        sound.title || null,
-        sound.hideTitle || null,
-        sound.tags || null,
-        sound.hotkey || null,
-        sound.audioKey || null,
-        sound.imageKey || null,
-        sound.volume || null,
-        sound.color || null,
-        sound.soundSegments || null,
-        sound.isVisible || null,
+        sound.title ?? null,
+        sound.hideTitle ?? null,
+        sound.tags ?? null,
+        sound.hotkey ?? null,
+        sound.audioKey ?? null,
+        sound.imageKey ?? null,
+        sound.volume ?? null,
+        sound.color ?? null,
+        sound.soundSegments ?? null,
+        sound.isVisible ?? null,
         beforeIndex + insertArrayIndex
       )
     })

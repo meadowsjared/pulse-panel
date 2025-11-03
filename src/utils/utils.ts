@@ -50,15 +50,15 @@ export function parseMMSSToSeconds(timeString: string): number {
   const parts = timeString.split(':')
 
   if (parts.length === 1) {
-    const seconds = Math.abs(parseFloat(parts[0])) || 0
+    const seconds = Math.abs(parseFloat(parts[0])) ?? 0
     return seconds
   }
   // Ensure we have exactly two parts
   if (parts.length !== 2) return 0
 
   // Use Math.abs to ensure parts are not negative, default to 0 if invalid
-  const minutes = Math.abs(parseInt(parts[0], 10)) || 0
-  const seconds = Math.abs(parseFloat(parts[1])) || 0
+  const minutes = Math.abs(parseInt(parts[0], 10)) ?? 0
+  const seconds = Math.abs(parseFloat(parts[1])) ?? 0
 
   if (isNaN(minutes) || isNaN(seconds)) {
     return 0
