@@ -69,7 +69,7 @@
         <div
           v-for="(segment, index) in modelValue.soundSegments"
           :key="`input-range-segment-${segment.id}`"
-          :class="['flex gap-2 w-full items-end cursor-grab', { dragging: segment.isPreview }]"
+          :class="['flex gap-2 w-full items-end cursor-grab', { dragging: segment.isDragPreview }]"
           draggable="true"
           @dragstart="dragStart(segment, index)"
           @dragenter.prevent="dragOver(segment)"
@@ -345,7 +345,7 @@ function close() {
 
 function dragStart(pSegment: SoundSegment, index: number) {
   draggedIndexStart = index
-  pSegment.isPreview = true
+  pSegment.isDragPreview = true
   draggedSegment = pSegment
 }
 
@@ -370,7 +370,7 @@ function dragEnd() {
     return
   }
   if (draggedIndexStart === null || draggedSegment === null) return
-  delete draggedSegment.isPreview
+  delete draggedSegment.isDragPreview
   draggedIndexStart = null
   draggedSegment = null
   // no need to save, because we're resetting back to the original order

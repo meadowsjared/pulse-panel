@@ -8,7 +8,7 @@
           v-if="sound"
           :key="`${sound?.id}`"
           :id="`sound-${sound.id}`"
-          :class="{ placeholder: sound.isPreview }"
+          :class="{ placeholder: sound.isDragPreview }"
           v-model="settingsStore.soundsFiltered()[index]"
           :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
           :displayMode="settingsStore.displayMode"
@@ -366,8 +366,8 @@ function dragEnd(pSound: Sound) {
     return
   }
   if (draggedIndexStart === null || draggedSound === null) return
-  settingsStore.sounds = settingsStore.sounds.filter(sound => !sound.isPreview)
-  delete draggedSound.isPreview
+  settingsStore.sounds = settingsStore.sounds.filter(sound => !sound.isDragPreview)
+  delete draggedSound.isDragPreview
   settingsStore.sounds.splice(draggedIndexStart, 0, pSound)
   draggedIndexStart = null
   draggedSound = null
@@ -378,7 +378,7 @@ function dragStart(pSound: Sound) {
   const index = settingsStore.sounds.indexOf(pSound)
   if (settingsStore.displayMode !== 'edit' || index === -1) return
   draggedIndexStart = index
-  pSound.isPreview = true
+  pSound.isDragPreview = true
   draggedSound = pSound
 }
 
@@ -386,7 +386,7 @@ function drop() {
   skipBgDrop.value = true
   if (settingsStore.displayMode !== 'edit') return
   if (draggedSound === null || draggedIndexStart === null) return
-  delete draggedSound.isPreview // remove the preview flag
+  delete draggedSound.isDragPreview // remove the preview flag
   settingsStore.moveSound(draggedIndexStart, settingsStore.sounds.indexOf(draggedSound))
   draggedIndexStart = null
   draggedSound = null
