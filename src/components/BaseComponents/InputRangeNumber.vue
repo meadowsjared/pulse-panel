@@ -41,7 +41,7 @@ const innerModelValue = useModel(props, 'modelValue')
 <style scoped>
 input[type='range'] {
   /* Define local CSS variables with fallbacks */
-  --local-thumb-color: var(--slider-thumb-color, var(--button-color));
+  --local-thumb-color: var(--slider-thumb-color, color-mix(in srgb, var(--button-color) 85%, black));
   --local-track-empty: var(--slider-track-empty, var(--slider-background));
   --local-track-filled: var(--slider-track-filled, var(--button-color));
   --local-height: var(--slider-height, 8px);
