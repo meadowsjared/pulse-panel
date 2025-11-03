@@ -421,7 +421,7 @@ onUnmounted(() => {
   transform: translateY(-50%);
   width: var(--thumb-size);
   aspect-ratio: 1;
-  background-color: var(--button-color);
+  background-color: color-mix(in srgb, var(--button-color) 85%, black);
   border-radius: 100vw;
   cursor: ew-resize;
   user-select: none;
