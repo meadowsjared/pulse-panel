@@ -77,7 +77,11 @@
           <span>{{ index + 1 }}</span>
           <button
             @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
-            :class="['play-sound-button flex items-center', { focusVisible }]"
+            :class="[
+              'play-sound-button flex items-center',
+              { focusVisible },
+              { 'sound-is-playing': soundStore.currentSound?.activeSegment?.id === segment.id && playingThisSound },
+            ]"
             @blur="focusVisible = false"
             @keyup="handleKeyup">
             <inline-svg :src="PlayIcon" class="w-6 h-6" />
