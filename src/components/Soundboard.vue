@@ -23,7 +23,11 @@
       </template>
     </div>
   </div>
-  <Transition name="slide-right" @after-enter="focusEditedSound" @after-leave="focusLastEditedSound">
+  <Transition
+    name="slide-right"
+    @after-enter="focusEditedSound"
+    @leave="onTransitionLeave"
+    @after-leave="focusLastEditedSound">
     <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
       <SoundEditor
         v-model="settingsStore.currentEditingSound"
@@ -59,6 +63,9 @@ const lastFocusedElement = ref<Element | null>(null)
 const buttons = ref<{ ref: HTMLElement }[]>([])
 const observer = ref<IntersectionObserver | null>(null)
 const currentlyVisible = ref<Map<string, boolean>>(new Map())
+const lastScrollPosition = ref(0)
+const hasNotScrolled = ref(true)
+const scrollNextClose = ref(false)
 
 watch(
   buttons,
@@ -142,7 +149,18 @@ watch(
   { deep: true, flush: 'post' }
 )
 
+onMounted(() => {
+  const soundboardElement = document.querySelector('.soundboard')
+  if (soundboardElement) {
+    soundboardElement.addEventListener('scroll', handleScroll)
+  }
+})
+
 onUnmounted(() => {
+  const soundboardElement = document.querySelector('.soundboard')
+  if (soundboardElement) {
+    soundboardElement.removeEventListener('scroll', handleScroll)
+  }
   if (observer.value) {
     observer.value.disconnect()
   }
@@ -180,16 +198,49 @@ interface SoundWithImage extends CompilingSoundWithImage {
   audioFile: File
 }
 
-function focusEditedSound() {
+function handleScroll(event: Event) {
+  if (!hasNotScrolled.value) return
+  const target = event.target
+  if (!(target instanceof HTMLElement)) return
+  const currentScrollPosition = target.scrollTop
+
+  // If user scrolled up or down, disable auto-scroll to last focused element
+  hasNotScrolled.value = false
+  scrollNextClose.value = false
+
+  lastScrollPosition.value = currentScrollPosition
+}
+
+/**
+ * Starts the scroll listener to monitor user scrolls
+ * This is called when the sidebar is opened
+ */
+async function focusEditedSound() {
   if (settingsStore.currentEditingSound) {
     const soundButton = document.getElementById(`sound-${settingsStore.currentEditingSound.id}`)
+    if (!soundButton) return
     lastFocusedElement.value = soundButton
     soundButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    await new Promise(resolve => setTimeout(resolve, 1000)) // wait for scroll to finish
+    hasNotScrolled.value = true
   }
 }
 
+function onTransitionLeave() {
+  // when the transition starts, we want to disable the scroll listener temporarily
+  if (hasNotScrolled.value) scrollNextClose.value = true
+  hasNotScrolled.value = false
+}
+
+/**
+ * Starts the scroll listener to monitor user scrolls
+ * This is called when the sidebar is closed
+ */
 function focusLastEditedSound() {
+  if (!scrollNextClose.value) return
   lastFocusedElement.value?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  hasNotScrolled.value = false
+  scrollNextClose.value = false
 }
 
 async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
