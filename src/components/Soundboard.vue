@@ -414,15 +414,6 @@ function updateCurrentEditingSound() {
   }
 }
 
-function updateSounds() {
-  if (settingsStore.sounds[settingsStore.sounds.length - 1].title !== undefined) {
-    settingsStore.sounds.push({
-      id: crypto.randomUUID(),
-    })
-  }
-  settingsStore.saveSoundArray(settingsStore.sounds)
-}
-
 function deleteSound(pSound: Sound) {
   dialogOpen.value = true
   soundToDelete.value = pSound
