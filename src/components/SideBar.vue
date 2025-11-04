@@ -13,8 +13,9 @@
         <svg fill="var(--button-color)" class="hamburger" viewBox="10 10 80 80">
           <rect class="line middle" width="80" height="10" x="10" y="45" rx="5"></rect>
           <rect class="line top" width="80" height="10" x="10" y="25" rx="5"></rect>
-          <rect class="line bottom" width="80" height="10" x="10" y="65" rx="5"></rect></svg
-        >Menu
+          <rect class="line bottom" width="80" height="10" x="10" y="65" rx="5"></rect>
+        </svg>
+        Menu
       </button>
     </div>
     <div class="sideBarContent">
@@ -57,9 +58,9 @@ function handleEnterKeyUp() {
 
 .menu {
   display: flex;
-  padding: 0.5rem;
   font-weight: bold;
-  overflow: hidden;
+  width: 100%;
+  padding: var(--padding-width);
 }
 
 .menu > button:active,
@@ -98,13 +99,14 @@ function handleEnterKeyUp() {
   aspect-ratio: 1;
   fill: var(--text-color);
   --animation-time: 400ms;
+  flex-shrink: 0;
 }
 
 .button-four {
   display: flex;
   align-items: center;
   gap: 1rem;
-  width: var(--menu-width);
+  width: 100%;
 }
 
 .button-four:focus-visible {
