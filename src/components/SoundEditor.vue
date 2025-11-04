@@ -366,10 +366,9 @@ function dragOver(pSegment: SoundSegment) {
   const index = props.modelValue.soundSegments.indexOf(pSegment)
   const draggedIndex = props.modelValue.soundSegments.indexOf(draggedSegment)
   if (index === draggedIndex) return
-  const segmentsTemp = [...props.modelValue.soundSegments]
-  segmentsTemp.splice(draggedIndex, 1) // remove the previous tag preview
-  segmentsTemp.splice(index, 0, draggedSegment) // add the tag preview to the new index
-  emit('update:modelValue', { ...props.modelValue, soundSegments: segmentsTemp })
+  // const segmentsTemp = [...props.modelValue.soundSegments]
+  props.modelValue.soundSegments.splice(draggedIndex, 1) // remove the previous tag preview
+  props.modelValue.soundSegments.splice(index, 0, draggedSegment) // add the tag preview to the new index
 }
 
 /**
