@@ -404,8 +404,10 @@ function dragOver(pSound: Sound) {
   index = Math.min(index, settingsStore.sounds.length - 2)
   const draggedIndex = settingsStore.sounds.indexOf(draggedSound)
   if (index === draggedIndex) return
-  settingsStore.sounds.splice(draggedIndex, 1) // remove the previous sound preview
-  settingsStore.sounds.splice(index, 0, draggedSound) // add the sound preview to the new index
+  const sounds = [...settingsStore.sounds]
+  sounds.splice(draggedIndex, 1)
+  sounds.splice(index, 0, draggedSound)
+  settingsStore.sounds = sounds
 }
 
 async function reconnectObserver() {
