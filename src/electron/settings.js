@@ -299,7 +299,7 @@ function insertSounds(beforeIndex, ...newSounds) {
  */
 function moveSound(prevIndex, newIndex) {
   if (prevIndex === newIndex) {
-    console.log('No move needed, indices are the same')
+    // No move needed, indices are the same
     return
   }
   const transaction = db.transaction(() => {
