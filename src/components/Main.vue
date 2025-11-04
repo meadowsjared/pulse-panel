@@ -123,7 +123,7 @@ settingsStore.fetchSounds().then(() => {
 
 .menu {
   display: flex;
-  width: calc(var(--menu-width) - var(--padding-width) * 2);
+  width: 100%;
   align-items: center;
   gap: 1rem;
   color: var(--text-color);
