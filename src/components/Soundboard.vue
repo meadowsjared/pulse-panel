@@ -380,6 +380,10 @@ function dragStart(pSound: Sound) {
   draggedIndexStart = index
   pSound.isDragPreview = true
   draggedSound = pSound
+
+  if (observer.value) {
+    observer.value.disconnect()
+  }
 }
 
 function drop() {
@@ -390,6 +394,7 @@ function drop() {
   settingsStore.moveSound(draggedIndexStart, settingsStore.sounds.indexOf(draggedSound))
   draggedIndexStart = null
   draggedSound = null
+  reconnectObserver()
 }
 
 function dragOver(pSound: Sound) {
@@ -401,6 +406,16 @@ function dragOver(pSound: Sound) {
   if (index === draggedIndex) return
   settingsStore.sounds.splice(draggedIndex, 1) // remove the previous sound preview
   settingsStore.sounds.splice(index, 0, draggedSound) // add the sound preview to the new index
+}
+
+async function reconnectObserver() {
+  if (observer.value) {
+    observer.value.disconnect()
+    await nextTick() // Ensure DOM is updated
+    buttons.value.forEach(button => {
+      button.ref && observer.value?.observe(button.ref)
+    })
+  }
 }
 
 function updateCurrentEditingSound() {
