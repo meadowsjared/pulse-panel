@@ -386,11 +386,6 @@ export const useSettingsStore = defineStore('settings', {
         }
       }
     },
-    async saveSoundArray(value: Sound[]): Promise<boolean> {
-      const electron = window.electron
-      await electron?.saveSoundsArray(_prepareSoundsForStorage(value))
-      return true
-    },
     async saveSound(sound: Sound): Promise<void> {
       const electron = window.electron
       await electron?.saveSound(_prepareSoundForStorage(sound))
