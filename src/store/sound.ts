@@ -77,7 +77,9 @@ export const useSoundStore = defineStore('sound', {
       this.outputDeviceData.forEach((outputDevice: OutputDeviceProperties) => {
         outputDevice.currentAudio.forEach(audio => {
           // find this audio in the sounds array
-          const volume = settingsStore.sounds.find(sound => sound.id === audio.getAttribute('data-id'))?.volume
+          const volume = settingsStore.sounds.find(
+            sound => audio.getAttribute('data-id')?.startsWith(`${sound.id}_`) === true
+          )?.volume
           audio.volume = volume ?? 1
         })
       })
