@@ -439,11 +439,6 @@ function drop() {
     dragOverThrottle.value = null
   }
 
-  if (intersectionThrottle.value) {
-    clearTimeout(intersectionThrottle.value)
-    intersectionThrottle.value = null
-  }
-
   if (settingsStore.displayMode !== 'edit') return
   if (draggedSound === null || draggedIndexStart === null) return
 
@@ -451,7 +446,6 @@ function drop() {
   settingsStore.moveSound(draggedIndexStart, settingsStore.sounds.indexOf(draggedSound))
   draggedIndexStart = null
   draggedSound = null
-  // reconnectObserver()
 }
 
 function dragOver(pSound: Sound) {
