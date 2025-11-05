@@ -45,7 +45,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useSettingsStore } from '../store/settings'
 import { Sound } from '../@types/sound'
 import { File } from '../@types/file'
@@ -57,15 +56,23 @@ const soundToDelete = ref<Sound | null>(null)
 const settingsStore = useSettingsStore()
 let draggedIndexStart: number | null = null
 let draggedSound: Sound | null = null
-const cancelDragEnd = ref(false)
 const skipBgDrop = ref(false)
 const lastFocusedElement = ref<Element | null>(null)
 const buttons = ref<{ ref: HTMLElement }[]>([])
 const observer = ref<IntersectionObserver | null>(null)
 const currentlyVisible = ref<Map<string, boolean>>(new Map())
-const lastScrollPosition = ref(0)
 const hasNotScrolled = ref(true)
 const scrollNextClose = ref(false)
+const dragOverThrottle = ref<number | null>(null)
+const intersectionThrottle = ref<number | null>(null)
+const DRAG_THROTTLE_MS = 50
+const INTERSECTION_THROTTLE_NORMAL = 16
+const INTERSECTION_THROTTLE_DRAGGING = 100
+const isDragging = ref(false)
+/** Pending intersection entries that had their timeout cleared */
+const interruptedEntries: IntersectionObserverEntry[] = []
+/** Currently awaited intersection entries */
+let awaitedEntries: IntersectionObserverEntry[] = []
 
 watch(
   buttons,
@@ -75,70 +82,36 @@ watch(
     }
     if (newButtons.length > 0) {
       const callback = (entries: IntersectionObserverEntry[]) => {
-        entries.forEach(entry => {
-          // Get the sound ID from the element's ID attribute
-          const soundId = entry.target.id?.replace('sound-', '')
-          if (soundId) {
-            if (entry.isIntersecting) {
-              currentlyVisible.value.set(soundId, true)
-            } else {
-              currentlyVisible.value.delete(soundId)
-            }
-          }
-        })
+        try {
+          // Throttle intersection observer based on drag state
+          const throttleDelay = isDragging.value ? INTERSECTION_THROTTLE_DRAGGING : INTERSECTION_THROTTLE_NORMAL
 
-        // get all the soundButtons in the DOM
-        const soundButtons = document.querySelectorAll('.sound-button')
-        const { rowPositions, averageRowHeight } = getRowData(soundButtons)
-        const buttonVisibilityMap: Map<string, boolean> = new Map()
-        // handle buffer rows above and below the visible rows
-        if (averageRowHeight > 0) {
-          const bufferRows = Math.ceil(rowPositions.length * 0.75)
-          soundButtons.forEach(buttonEl => {
-            const soundId = buttonEl.id?.replace('sound-', '')
-            const rowTop = buttonEl.getBoundingClientRect().top
-            for (let i = 1; i <= bufferRows; i++) {
-              // flip through all the buffer rows
-              if (
-                rowTop === rowPositions[0] - i * averageRowHeight ||
-                rowTop === rowPositions[rowPositions.length - 1] + i * averageRowHeight
-              ) {
-                // if it matches this buffer row
-                // mark it as visible
-                buttonVisibilityMap.set(soundId, true)
+          if (intersectionThrottle.value) {
+            // only add entries to interruptedEntries that aren't already in the array
+            awaitedEntries.forEach(entry => {
+              if (!interruptedEntries.includes(entry)) {
+                interruptedEntries.push(entry)
               }
-            }
-          })
-        }
-        // finally, transfer all the currentlyVisible to buttonVisibility
-        currentlyVisible.value.forEach((value, key) => {
-          buttonVisibilityMap.set(key, value)
-        })
-        // now that we have the full list of visible buttons, set the visibility of any button that has changed
-        let numFilteredSounds = 0
-        const visibilityChanges: { isVisible: boolean; soundId: string }[] = []
-        settingsStore.sounds
-          .filter(
-            sound =>
-              (sound.isVisible && (buttonVisibilityMap.get(sound.id) ?? false) === false) ||
-              (!sound.isVisible && buttonVisibilityMap.get(sound.id) === true)
-          )
-          .forEach(sound => {
-            // transfer buttonVisibilityMap to the sounds
-            const visible = buttonVisibilityMap.get(sound.id) === true
-            visibilityChanges.push({ isVisible: visible, soundId: sound.id })
-            if (visible) {
-              sound.isVisible = true
-            } else {
-              delete sound.isVisible
-            }
-            numFilteredSounds++
-          })
-        if (numFilteredSounds > 0) {
-          settingsStore.updateVisibility(visibilityChanges)
+            })
+            clearTimeout(intersectionThrottle.value)
+          }
+
+          const entriesToProcess = [...entries, ...interruptedEntries]
+          awaitedEntries = entriesToProcess
+          intersectionThrottle.value = window.setTimeout(() => {
+            processIntersectionEntries(entriesToProcess)
+            // clear interruptedEntries
+            interruptedEntries.length = 0
+            awaitedEntries = []
+            intersectionThrottle.value = null
+          }, throttleDelay)
+        } catch (error) {
+          console.error('Error in IntersectionObserver callback:', error)
+          console.trace()
         }
       }
 
+      // return
       observer.value = new IntersectionObserver(callback)
       await nextTick() // Ensure DOM is updated
       newButtons.forEach(button => {
@@ -149,6 +122,73 @@ watch(
   { deep: true, flush: 'post' }
 )
 
+function processIntersectionEntries(entries: IntersectionObserverEntry[]) {
+  entries.forEach(entry => {
+    // Get the sound ID from the element's ID attribute
+    const soundId = entry.target.id?.replace('sound-', '')
+    if (soundId) {
+      if (entry.isIntersecting) {
+        currentlyVisible.value.set(soundId, true)
+      } else {
+        currentlyVisible.value.delete(soundId)
+      }
+    }
+  })
+
+  // get all the soundButtons in the DOM
+  const soundButtons = document.querySelectorAll('.sound-button')
+  const { rowPositions, averageRowHeight } = getRowData(soundButtons)
+  const buttonVisibilityMap: Map<string, boolean> = new Map()
+
+  // handle buffer rows above and below the visible rows
+  if (averageRowHeight > 0) {
+    const bufferRows = Math.ceil(rowPositions.length * 0.75)
+    soundButtons.forEach(buttonEl => {
+      const soundId = buttonEl.id?.replace('sound-', '')
+      const rowTop = buttonEl.getBoundingClientRect().top
+      for (let i = 1; i <= bufferRows; i++) {
+        // flip through all the buffer rows
+        if (
+          rowTop === rowPositions[0] - i * averageRowHeight ||
+          rowTop === rowPositions[rowPositions.length - 1] + i * averageRowHeight
+        ) {
+          // if it matches this buffer row
+          // mark it as visible
+          buttonVisibilityMap.set(soundId, true)
+        }
+      }
+    })
+  }
+
+  // finally, transfer all the currentlyVisible to buttonVisibility
+  currentlyVisible.value.forEach((value, key) => {
+    buttonVisibilityMap.set(key, value)
+  })
+
+  // now that we have the full list of visible buttons, set the visibility of any button that has changed
+  let numFilteredSounds = 0
+  const visibilityChanges: { isVisible: boolean; soundId: string }[] = []
+  settingsStore.sounds
+    .filter(
+      sound =>
+        (sound.isVisible && (buttonVisibilityMap.get(sound.id) ?? false) === false) ||
+        (!sound.isVisible && buttonVisibilityMap.get(sound.id) === true)
+    )
+    .forEach(sound => {
+      // transfer buttonVisibilityMap to the sounds
+      const visible = buttonVisibilityMap.get(sound.id) === true
+      visibilityChanges.push({ isVisible: visible, soundId: sound.id })
+      if (visible) {
+        sound.isVisible = true
+      } else {
+        delete sound.isVisible
+      }
+      numFilteredSounds++
+    })
+  if (numFilteredSounds > 0) {
+    settingsStore.updateVisibility(visibilityChanges)
+  }
+}
 onMounted(() => {
   const soundboardElement = document.querySelector('.soundboard')
   if (soundboardElement) {
@@ -163,6 +203,9 @@ onUnmounted(() => {
   }
   if (observer.value) {
     observer.value.disconnect()
+  }
+  if (intersectionThrottle.value) {
+    clearTimeout(intersectionThrottle.value)
   }
 })
 
@@ -202,13 +245,10 @@ function handleScroll(event: Event) {
   if (!hasNotScrolled.value) return
   const target = event.target
   if (!(target instanceof HTMLElement)) return
-  const currentScrollPosition = target.scrollTop
 
   // If user scrolled up or down, disable auto-scroll to last focused element
   hasNotScrolled.value = false
   scrollNextClose.value = false
-
-  lastScrollPosition.value = currentScrollPosition
 }
 
 /**
@@ -361,14 +401,18 @@ function droppedOnBackground(event: DragEvent) {
  * @param pSound The sound that was dragged
  */
 function dragEnd(pSound: Sound) {
-  if (cancelDragEnd.value) {
-    cancelDragEnd.value = false
-    return
+  isDragging.value = false
+
+  if (dragOverThrottle.value) {
+    clearTimeout(dragOverThrottle.value)
+    dragOverThrottle.value = null
   }
+
   if (draggedIndexStart === null || draggedSound === null) return
-  settingsStore.sounds = settingsStore.sounds.filter(sound => !sound.isDragPreview)
+  const sounds = settingsStore.sounds.filter(sound => !sound.isDragPreview)
   delete draggedSound.isDragPreview
-  settingsStore.sounds.splice(draggedIndexStart, 0, pSound)
+  sounds.splice(draggedIndexStart, 0, pSound)
+  settingsStore.sounds = sounds
   draggedIndexStart = null
   draggedSound = null
   // no need to save, because we're resetting back to the original order
@@ -380,24 +424,47 @@ function dragStart(pSound: Sound) {
   draggedIndexStart = index
   pSound.isDragPreview = true
   draggedSound = pSound
-
-  if (observer.value) {
-    observer.value.disconnect()
-  }
+  isDragging.value = true
 }
 
 function drop() {
   skipBgDrop.value = true
+  isDragging.value = false
+
+  if (dragOverThrottle.value) {
+    clearTimeout(dragOverThrottle.value)
+    dragOverThrottle.value = null
+  }
+
+  if (intersectionThrottle.value) {
+    clearTimeout(intersectionThrottle.value)
+    intersectionThrottle.value = null
+  }
+
   if (settingsStore.displayMode !== 'edit') return
   if (draggedSound === null || draggedIndexStart === null) return
+
   delete draggedSound.isDragPreview // remove the preview flag
   settingsStore.moveSound(draggedIndexStart, settingsStore.sounds.indexOf(draggedSound))
   draggedIndexStart = null
   draggedSound = null
-  reconnectObserver()
+  // reconnectObserver()
 }
 
 function dragOver(pSound: Sound) {
+  if (settingsStore.displayMode !== 'edit') return
+
+  if (dragOverThrottle.value) {
+    clearTimeout(dragOverThrottle.value)
+  }
+
+  dragOverThrottle.value = window.setTimeout(() => {
+    performDragOver(pSound)
+    dragOverThrottle.value = null
+  }, DRAG_THROTTLE_MS)
+}
+
+async function performDragOver(pSound: Sound) {
   if (settingsStore.displayMode !== 'edit') return
   if (draggedSound === null) return
   let index = settingsStore.sounds.indexOf(pSound)
@@ -408,16 +475,6 @@ function dragOver(pSound: Sound) {
   sounds.splice(draggedIndex, 1)
   sounds.splice(index, 0, draggedSound)
   settingsStore.sounds = sounds
-}
-
-async function reconnectObserver() {
-  if (observer.value) {
-    observer.value.disconnect()
-    await nextTick() // Ensure DOM is updated
-    buttons.value.forEach(button => {
-      button.ref && observer.value?.observe(button.ref)
-    })
-  }
 }
 
 function updateCurrentEditingSound() {
