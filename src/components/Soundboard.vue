@@ -50,6 +50,12 @@ import { Sound } from '../@types/sound'
 import { File } from '../@types/file'
 import { stripFileExtension } from '../utils/utils'
 
+const DRAG_THROTTLE_MS = 50
+const INTERSECTION_THROTTLE_NORMAL = 16
+const INTERSECTION_THROTTLE_DRAGGING = 100
+const SCROLL_WAIT_TIME = 1000
+const BUFFER_ROWS_MULTIPLIER = 0.75
+
 const dialogOpen = ref(false)
 const soundToDelete = ref<Sound | null>(null)
 
@@ -65,9 +71,6 @@ const hasNotScrolled = ref(true)
 const scrollNextClose = ref(false)
 const dragOverThrottle = ref<number | null>(null)
 const intersectionThrottle = ref<number | null>(null)
-const DRAG_THROTTLE_MS = 50
-const INTERSECTION_THROTTLE_NORMAL = 16
-const INTERSECTION_THROTTLE_DRAGGING = 100
 const isDragging = ref(false)
 /** Pending intersection entries that had their timeout cleared */
 const interruptedEntries: IntersectionObserverEntry[] = []
@@ -142,7 +145,7 @@ function processIntersectionEntries(entries: IntersectionObserverEntry[]) {
 
   // handle buffer rows above and below the visible rows
   if (averageRowHeight > 0) {
-    const bufferRows = Math.ceil(rowPositions.length * 0.75)
+    const bufferRows = Math.ceil(rowPositions.length * BUFFER_ROWS_MULTIPLIER)
     soundButtons.forEach(buttonEl => {
       const soundId = buttonEl.id?.replace('sound-', '')
       const rowTop = buttonEl.getBoundingClientRect().top
@@ -205,6 +208,9 @@ onUnmounted(() => {
   if (intersectionThrottle.value) {
     clearTimeout(intersectionThrottle.value)
   }
+  if (dragOverThrottle.value) {
+    clearTimeout(dragOverThrottle.value)
+  }
 })
 
 /**
@@ -259,7 +265,7 @@ async function focusEditedSound() {
     if (!soundButton) return
     lastFocusedElement.value = soundButton
     soundButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    await new Promise(resolve => setTimeout(resolve, 1000)) // wait for scroll to finish
+    await new Promise(resolve => setTimeout(resolve, SCROLL_WAIT_TIME)) // wait for scroll to finish
     hasNotScrolled.value = true
   }
 }
