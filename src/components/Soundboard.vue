@@ -166,7 +166,6 @@ function processIntersectionEntries(entries: IntersectionObserverEntry[]) {
   })
 
   // now that we have the full list of visible buttons, set the visibility of any button that has changed
-  let numFilteredSounds = 0
   const visibilityChanges: { isVisible: boolean; soundId: string }[] = []
   settingsStore.sounds
     .filter(
@@ -183,9 +182,8 @@ function processIntersectionEntries(entries: IntersectionObserverEntry[]) {
       } else {
         delete sound.isVisible
       }
-      numFilteredSounds++
     })
-  if (numFilteredSounds > 0) {
+  if (visibilityChanges.length > 0) {
     settingsStore.updateVisibility(visibilityChanges)
   }
 }
