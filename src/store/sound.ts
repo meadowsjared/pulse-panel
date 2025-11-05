@@ -98,7 +98,7 @@ export const useSoundStore = defineStore('sound', {
     async setVolume(volume: number, soundId: string): Promise<void> {
       this.outputDeviceData.forEach((outputDevice: OutputDeviceProperties) => {
         outputDevice.currentAudio
-          .filter(audio => audio.getAttribute('data-id') === soundId)
+          .filter(audio => audio.getAttribute('data-id')?.startsWith(`${soundId}_`) === true)
           .forEach(audio => {
             audio.volume = volume
           })
