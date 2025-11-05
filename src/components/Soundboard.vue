@@ -519,13 +519,16 @@ function editSound(pSound: Sound) {
 }
 
 function handleSoundsUpdate(pSound: Sound) {
-  settingsStore.sounds[settingsStore.sounds.findIndex(sound => sound.id === pSound.id)] = pSound
+  const soundIndex = settingsStore.sounds.findIndex(sound => sound.id === pSound.id)
+  if (soundIndex === -1) return
+  settingsStore.sounds[soundIndex] = pSound
+
   // add a new sound if sound is null
-  if (settingsStore.sounds[settingsStore.sounds.length - 1].title !== undefined) {
-    settingsStore.sounds.push({
-      id: crypto.randomUUID(),
-    })
-    settingsStore.saveSound(settingsStore.sounds[settingsStore.sounds.length - 1])
+  const lastSound = settingsStore.sounds[settingsStore.sounds.length - 1]
+  if (lastSound.title !== undefined) {
+    const newSound: Sound = { id: crypto.randomUUID() }
+    settingsStore.sounds.push(newSound)
+    settingsStore.saveSound(newSound)
   }
   settingsStore.saveSound(pSound)
 }
