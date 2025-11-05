@@ -374,7 +374,6 @@ async function handleSoundFileDrop(file: File, newSound: Sound, audioContext: Au
  * @param file The file that was dropped
  */
 async function handleImageFileDrop(file: File, newSound: Sound, oldImageKey?: string) {
-  const settingsStore = useSettingsStore()
   const { fileUrl, fileKey } = await settingsStore.replaceFile(oldImageKey, file)
   newSound.imageUrl = fileUrl
   newSound.imageKey = fileKey
