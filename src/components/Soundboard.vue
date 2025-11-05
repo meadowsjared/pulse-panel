@@ -114,7 +114,6 @@ watch(
         }
       }
 
-      // return
       observer.value = new IntersectionObserver(callback)
       await nextTick() // Ensure DOM is updated
       newButtons.forEach(button => {
@@ -332,11 +331,11 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
       }
       return newSound
     })
-    audioContext.close()
     const soundsToAdd = await Promise.all(promAr)
+    await audioContext.close()
+
     // insert the new sounds before the new sound button
     settingsStore.insertSounds(settingsStore.sounds.length - 1, ...soundsToAdd)
-    settingsStore.sounds.splice(settingsStore.sounds.length - 1, 0, ...soundsToAdd)
   } else {
     // we're updating an existing sound button
     // only allow a single file to be dropped for the audio and image at a time
@@ -353,8 +352,9 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
         imageModified = true
       }
     })
-    await audioContext.close()
     await Promise.all(promAr)
+    await audioContext.close()
+
     if (audioModified || imageModified) {
       settingsStore.saveSound(sound)
     }
