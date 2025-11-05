@@ -72,7 +72,7 @@ const isDragging = ref(false)
 /** Pending intersection entries that had their timeout cleared */
 const interruptedEntries: IntersectionObserverEntry[] = []
 /** Currently awaited intersection entries */
-let awaitedEntries: IntersectionObserverEntry[] = []
+const awaitedEntries: IntersectionObserverEntry[] = []
 
 watch(
   buttons,
@@ -97,12 +97,12 @@ watch(
           }
 
           const entriesToProcess = [...entries, ...interruptedEntries]
-          awaitedEntries = entriesToProcess
+          awaitedEntries.push(...entriesToProcess)
           intersectionThrottle.value = window.setTimeout(() => {
             processIntersectionEntries(entriesToProcess)
             // clear interruptedEntries
             interruptedEntries.length = 0
-            awaitedEntries = []
+            awaitedEntries.length = 0
             intersectionThrottle.value = null
           }, throttleDelay)
         } catch (error) {
