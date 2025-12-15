@@ -5,11 +5,11 @@
       <button
         ref="hotkeyButton"
         class="hotkey"
-        :class="{ dark: props.dark, light: !props.dark, focused: settingsStore.recordingHotkey }"
-        @keydown.prevent="handleKeyDown"
-        @keyup.prevent="handleKeyUp"
-        @click="settingsStore.recordingHotkey = true"
-        @blur="settingsStore.recordingHotkey = false"
+        :class="{ dark: props.dark, light: !props.dark, focused: recordingHotkey }"
+        @keydown="handleKeyDown"
+        @keyup="handleKeyUp"
+        @click="handleFocus"
+        @blur="handleBlur"
         :title="props.title">
         {{ modelValue && modelValue?.length > 0 ? modelValue.join(' + ') : 'No Keybind Set' }}
       </button>
@@ -27,8 +27,6 @@
 <script setup lang="ts">
 import CloseIcon from '../assets/images/close.svg'
 import InlineSvg from 'vue-inline-svg'
-import { ref } from 'vue'
-import { useSettingsStore } from '../store/settings'
 
 const props = defineProps<{
   modelValue?: string[]
@@ -36,44 +34,50 @@ const props = defineProps<{
   title: string
 }>()
 
-const settingsStore = useSettingsStore()
 const hotkeyButton = ref<HTMLButtonElement | null>(null)
+const recordingHotkey = ref(false)
 const buttons = ref<string[]>([])
 
 const emit = defineEmits<{
   (event: 'update:modelValue', newKey: string[] | undefined, oldKey: string[] | undefined): void
-  (event: 'focusNextElement'): void
-  (event: 'focusPrevElement'): void
 }>()
 
 function handleKeyDown(event: KeyboardEvent) {
-  if (!settingsStore.recordingHotkey) {
-    // if we're not recording and the tab key is pressed, focus the next button
-    if (event.code === 'Tab') {
-      // check if the shift key is pressed
-      if (event.shiftKey) {
-        emit('focusPrevElement')
-      } else {
-        emit('focusNextElement')
-      }
-    }
+  if (!recordingHotkey.value) return
+  event.preventDefault()
+  const code = event.code || event.key
+  if (buttons.value.includes(code)) {
     return
   }
-  if (buttons.value.includes(event.code)) {
-    return
-  }
-  buttons.value.push(event.code)
+  buttons.value.push(code)
 }
 
-function handleKeyUp() {
-  if (!settingsStore.recordingHotkey) {
-    return
-  }
+function handleKeyUp(event: KeyboardEvent) {
+  if (!recordingHotkey.value) return
+  /**
+   * if event.code isn't already in buttons, then ignore it
+   * because we want to ignore keyup events for keys that weren't pressed down
+   * (e.g. if the user triggers the ptt_hotkey by hitting the stop_all_hotkeys key, we don't want to record that keyup event)
+   */
+  if (!buttons.value.includes(event.code) && !buttons.value.includes(event.key)) return
+
+  event.preventDefault()
   setTimeout(() => {
     emit('update:modelValue', toRaw(buttons.value), props.modelValue)
+    recordingHotkey.value = false
     buttons.value = [] // reset the buttons
     hotkeyButton.value?.blur()
   }, 100)
+}
+
+function handleFocus() {
+  recordingHotkey.value = true
+  buttons.value = []
+}
+
+function handleBlur() {
+  recordingHotkey.value = false
+  buttons.value = []
 }
 
 function resetHotkey() {
