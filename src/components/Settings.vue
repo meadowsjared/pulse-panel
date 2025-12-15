@@ -59,6 +59,14 @@
       title="this will be the button that pulse-panel with hold down any time sound is playing"
       >Push-to-Talk Key:</hotkey-picker
     >
+    <hotkey-picker
+      class="hotkey-picker"
+      v-model="stopHotkey"
+      :dark="false"
+      @update:modelValue="onStopHotkeyChange"
+      title="this will be the button you can press to stop all sounds immediately"
+      >Stop Sounds Key:</hotkey-picker
+    >
     <div class="downloadVBCableGroup mx-auto mt-2">
       <button @click="downloadVBCable" class="light downloadVBCable">
         Get VB-Cable<inline-svg :src="Download" class="download-icon" />
@@ -116,6 +124,7 @@ const outputDevices = ref<(string | null)[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
+const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined)
 const showVBCableMessage = ref(false)
 const vbCableMessage = ref('')
 const newTag = ref<string | null>(null)
@@ -222,6 +231,12 @@ function onPTTHotkeyChange(event: string[] | undefined) {
   selectedHotkey.value = event
   // save the value to the IndexedDB store
   settingsStore.saveSetting('ptt_hotkey', [...(event ?? [])])
+}
+
+function onStopHotkeyChange(event: string[] | undefined) {
+  stopHotkey.value = event
+  // save the value to the IndexedDB store
+  settingsStore.saveSetting('stop_hotkey', [...(event ?? [])])
 }
 
 function dragStart(pTag: LabelActive, index: number) {
