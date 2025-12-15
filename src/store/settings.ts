@@ -21,6 +21,7 @@ interface State {
   sounds: Sound[]
   muted: boolean
   ptt_hotkey: string[]
+  stop_hotkey: string[]
   quickTagsAr?: LabelActive[]
   invertQuickTags: boolean
   // not saved in the database:
@@ -81,7 +82,7 @@ interface SoundWithHotkey extends Sound {
 const Boolean_Settings_Keys = ['darkMode', 'allowOverlappingSound', 'invertQuickTags', 'muted'] as const
 type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
 
-const Array_String_Settings_Keys = ['outputDevices', 'ptt_hotkey'] as const
+const Array_String_Settings_Keys = ['outputDevices', 'ptt_hotkey', 'stop_hotkey'] as const
 type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number]
 const Array_Sound_Settings_Keys = ['sounds'] as const
 type ArraySoundSettings = (typeof Array_Sound_Settings_Keys)[number]
@@ -125,6 +126,7 @@ export const useSettingsStore = defineStore('settings', {
     muted: false,
     recordingHotkey: false,
     ptt_hotkey: [],
+    stop_hotkey: ['MediaStop'],
     searchText: '',
     quickTagsAr: [],
     invertQuickTags: false,
@@ -617,12 +619,20 @@ export const useSettingsStore = defineStore('settings', {
             hotkeys.push(toRaw(sound.hotkey))
           }
         })
+      // register the stop_hotkey
+      if (this.stop_hotkey.length > 0 && !hotkeys.some(keys => arraysAreEqual(this.stop_hotkey, keys))) {
+        hotkeys.push(toRaw(this.stop_hotkey))
+      }
 
       electron?.registerHotkeys(hotkeys)
       electron?.onKeyPressed(keys => {
         this.sounds
           .filter(sound => arraysAreEqual(sound.hotkey, keys))
           .forEach(sound => soundStore.playSound(sound, null, null, undefined, true))
+        // check if the stop_hotkey was pressed
+        if (arraysAreEqual(this.stop_hotkey, keys)) {
+          soundStore.stopAllSounds()
+        }
         if (keys.length === 1 && (keys[0].startsWith('Digit') || keys[0].startsWith('Numpad'))) {
           const soundNumber = parseInt(keys[0].replace('Digit', '').replace('Numpad', ''), 10)
           if (!Number.isNaN(soundNumber)) {
