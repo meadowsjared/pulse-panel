@@ -43,7 +43,7 @@ export const useSoundStore = defineStore('sound', {
      */
     async stopAllSounds(): Promise<void> {
       const settingsStore = useSettingsStore()
-      this._pttHotkeyPress(settingsStore, false)
+      await this._pttHotkeyPress(settingsStore, false)
       settingsStore.outputDevices.forEach(async (outputDeviceId: string) => {
         const index = settingsStore.outputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
         if (this.outputDeviceData[index]?.currentAudio.length > 0 && this.outputDeviceData[index].playingAudio) {
