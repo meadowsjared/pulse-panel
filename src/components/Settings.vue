@@ -52,10 +52,10 @@
     /></label>
     <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
     <hotkey-picker
-      class="push-to-talk-hotkey"
+      class="hotkey-picker"
       v-model="selectedHotkey"
       :dark="false"
-      @update:modelValue="selectedHotkeyUpdated"
+      @update:modelValue="onPTTHotkeyChange"
       title="this will be the button that pulse-panel with hold down any time sound is playing"
       >Push-to-Talk Key:</hotkey-picker
     >
@@ -218,7 +218,7 @@ async function downloadVBCable() {
   }
 }
 
-function selectedHotkeyUpdated(event: string[] | undefined) {
+function onPTTHotkeyChange(event: string[] | undefined) {
   selectedHotkey.value = event
   // save the value to the IndexedDB store
   settingsStore.saveSetting('ptt_hotkey', [...(event ?? [])])
@@ -500,7 +500,7 @@ input[type='checkbox']:focus-visible {
   background: var(--input-bg-color);
 }
 
-.push-to-talk-hotkey {
+.hotkey-picker {
   display: flex;
   flex-direction: column;
   justify-content: center;
