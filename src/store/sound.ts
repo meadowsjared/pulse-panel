@@ -88,10 +88,17 @@ export const useSoundStore = defineStore('sound', {
      * send the PTT key
      */
     async _pttHotkeyPress(settingsStore: SettingsStore, down: boolean): Promise<void> {
+      this.sendingPttHotkey = true
       if (settingsStore.ptt_hotkey === null) {
         return
       }
       await window.electron?.sendKey([...settingsStore.ptt_hotkey], down)
+      await new Promise(resolve => {
+        setTimeout(() => {
+          this.sendingPttHotkey = false
+          resolve(undefined)
+        }, 100)
+      })
     },
     /**
      * Set the volume for the soundboard
