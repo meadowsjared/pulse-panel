@@ -22,9 +22,13 @@ app.whenReady().then(() => {
   ipcMain.handle('unregister-hotkeys', (_, hotkeys) => settings.unregisterHotkeys(hotkeys))
   ipcMain.handle('close-window', () => mainWindow.close())
   ipcMain.handle('minimize-window', () => mainWindow.minimize())
-  ipcMain.handle('maximize-restore-window', () =>
+  ipcMain.handle('maximize-restore-window', () => {
+    if (mainWindow.isFullScreen()) {
+      mainWindow.setFullScreen(false)
+      return
+    }
     mainWindow.isMaximized() ? mainWindow.restore() : mainWindow.maximize()
-  )
+  })
   ipcMain.handle('restore-window', () => mainWindow.restore())
   ipcMain.handle('request-main-window-sized', resizeTriggered)
   ipcMain.handle('open-external-link', (_, url) => shell.openExternal(url))
@@ -73,10 +77,11 @@ function createWindow() {
 
 function resizeTriggered() {
   const isMaximized = mainWindow.isMaximized()
+  const isFullScreen = mainWindow.isFullScreen()
   const size = mainWindow.getSize()
   settings.saveDBSetting('window-size', size)
   BrowserWindow.getAllWindows().forEach(window => {
-    window.webContents.send('main-window-resized', isMaximized)
+    window.webContents.send('main-window-resized', isMaximized || isFullScreen)
   })
 }
 
