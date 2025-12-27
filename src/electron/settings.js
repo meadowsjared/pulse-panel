@@ -537,6 +537,10 @@ function hotkeyToQHotkeyEnum(hotkey) {
   if (qKeys.hasOwnProperty(hotkey)) {
     return qKeys[hotkey]
   }
+  // list the missing hotkey
+  console.log('hotkey missing from qHotkeys:', hotkey)
+  // list out all the keys in qKeys
+  console.log('Available qKeys:', Object.keys(qKeys).join(', '))
   throw new Error(`Unknown hotkey: ${hotkey}`)
 }
 
