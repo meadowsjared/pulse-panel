@@ -541,26 +541,36 @@ export const useSettingsStore = defineStore('settings', {
      */
     async _getImageUrls(sounds: Sound[]) {
       const audioContext = new window.AudioContext()
-      await this._loadMediaForSounds(
-        audioContext,
-        sounds.filter(sound => sound.isVisible)
-      )
-      await this._loadMediaForSounds(
-        audioContext,
-        sounds.filter(sound => !sound.isVisible)
-      )
-      await audioContext.close()
+      try {
+        await this._loadMediaForSounds(
+          audioContext,
+          sounds.filter(sound => sound.isVisible)
+        )
+        // Load invisible sounds in background mode (slower, keeps UI responsive)
+        await this._loadMediaForSounds(
+          audioContext,
+          sounds.filter(sound => !sound.isVisible),
+          true
+        )
+      } finally {
+        await audioContext.close()
+      }
     },
     /**
-     * Lazily get the image URLs for the given sounds
+     * Lazily get the image URLs for the given sounds (Lazy loading).
      * @param sounds[] the array of sounds
      * @param {AudioContext} audioContext - the audio context to use
+     * @param {boolean} backgroundMode - if true, loads sounds sequentially with delays to unblock UI
      * @returns void
      */
-    async _loadMediaForSounds(audioContext: AudioContext, sounds: Sound[]) {
-      sounds.forEach(async sound => {
-        await this._getImageUrl(sound, audioContext)
-      })
+    async _loadMediaForSounds(audioContext: AudioContext, sounds: Sound[], backgroundMode = false) {
+      if (backgroundMode) {
+        for (const sound of sounds) {
+          await this._getImageUrl(sound, audioContext) // await each sound sequentially, to keep UI responsive
+        }
+      } else {
+        await Promise.all(sounds.map(sound => this._getImageUrl(sound, audioContext)))
+      }
     },
     async _getImageUrl(sound: Sound, audioContext: AudioContext) {
       if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
