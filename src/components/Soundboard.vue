@@ -414,17 +414,14 @@ async function performDragOver(pSound: Sound) {
 
 function editSound(pSound: Sound) {
   if (settingsStore.currentEditingSound === null || settingsStore.currentEditingSound.id !== pSound.id) {
-    settingsStore.currentEditingSound = pSound
     // get the browser window's current size
-    expandWindow()
+    expandWindow(pSound)
   } else {
-    settingsStore.currentEditingSound = null
     collapseWindow()
   }
 }
 
 function closeEditor() {
-  settingsStore.currentEditingSound = null
   collapseWindow()
 }
 
@@ -479,25 +476,16 @@ function deleteSoundConfirmed() {
   soundToDelete.value = null
 }
 
-async function expandWindow() {
-  const currentSize = await window.electron?.getWindowSize()
-  if (!currentSize) return
-  const { width, height } = currentSize
-  // now force the layout to be exactly this size
-
+async function expandWindow(pSound: Sound) {
+  settingsStore.currentEditingSound = pSound
   await window.electron?.expandWindow(300, 0)
 
   console.log('Expanding window')
 }
 
 async function collapseWindow() {
-  const currentSize = await window.electron?.getWindowSize()
-  if (!currentSize) return
-  // now get the new size
-  const newWidth = currentSize.width - 300
-  const newHeight = currentSize.height
-  await window.electron?.setWindowSize(newWidth, newHeight)
-  console.log(`Collapsing window${newWidth}x${newHeight}`)
+  settingsStore.currentEditingSound = null
+  await window.electron?.expandWindow(-300, 0)
 }
 </script>
 
