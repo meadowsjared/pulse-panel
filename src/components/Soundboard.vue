@@ -23,18 +23,13 @@
       </template>
     </div>
   </div>
-  <Transition
-    name="slide-right"
-    @after-enter="focusEditedSound"
-    @leave="onTransitionLeave"
-    @after-leave="focusLastEditedSound">
-    <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
-      <SoundEditor
-        v-model="settingsStore.currentEditingSound"
-        @update:modelValue="updateCurrentEditingSound"
-        @deleteSound="deleteSound($event)" />
-    </div>
-  </Transition>
+  <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
+    <SoundEditor
+      v-model="settingsStore.currentEditingSound"
+      @update:modelValue="updateCurrentEditingSound"
+      @close="closeEditor"
+      @deleteSound="deleteSound($event)" />
+  </div>
   <confirm-dialog
     v-model:showDialog="dialogOpen"
     title="Are you sure?"
@@ -472,6 +467,11 @@ async function performDragOver(pSound: Sound) {
   sounds.splice(draggedIndex, 1)
   sounds.splice(index, 0, draggedSound)
   settingsStore.sounds = sounds
+}
+
+function closeEditor() {
+  settingsStore.currentEditingSound = null
+  collapseWindow()
 }
 
 function updateCurrentEditingSound() {

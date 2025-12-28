@@ -170,6 +170,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'update:modelValue', value: Sound): void
   (event: 'deleteSound', sound: Sound): void
+  (event: 'close'): void
 }>()
 const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id))
 
@@ -337,7 +338,7 @@ function removeImage() {
 
 function close() {
   // Close the editor
-  settingsStore.currentEditingSound = null
+  emit('close')
 }
 
 function dragStart(pSegment: SoundSegment, index: number) {
