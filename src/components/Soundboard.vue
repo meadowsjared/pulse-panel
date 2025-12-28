@@ -48,22 +48,15 @@ import { stripFileExtension } from '../utils/utils'
 const DRAG_THROTTLE_MS = 50
 const INTERSECTION_THROTTLE_NORMAL = 16
 const INTERSECTION_THROTTLE_DRAGGING = 100
-const SCROLL_WAIT_TIME = 1000
 const BUFFER_ROWS_MULTIPLIER = 0.75
-
-const dialogOpen = ref(false)
-const soundToDelete = ref<Sound | null>(null)
 
 const settingsStore = useSettingsStore()
 let draggedIndexStart: number | null = null
 let draggedSound: Sound | null = null
 const skipBgDrop = ref(false)
-const lastFocusedElement = ref<Element | null>(null)
 const buttons = ref<{ ref: HTMLElement }[]>([])
 const observer = ref<IntersectionObserver | null>(null)
 const currentlyVisible = ref<Map<string, boolean>>(new Map())
-const hasNotScrolled = ref(true)
-const scrollNextClose = ref(false)
 const dragOverThrottle = ref<number | null>(null)
 const intersectionThrottle = ref<number | null>(null)
 const isDragging = ref(false)
@@ -71,6 +64,8 @@ const isDragging = ref(false)
 const interruptedEntries: IntersectionObserverEntry[] = []
 /** Currently awaited intersection entries */
 const awaitedEntries: IntersectionObserverEntry[] = []
+const dialogOpen = ref(false)
+const soundToDelete = ref<Sound | null>(null)
 
 watch(
   buttons,
@@ -184,18 +179,8 @@ function processIntersectionEntries(entries: IntersectionObserverEntry[]) {
     settingsStore.updateVisibility(visibilityChanges)
   }
 }
-onMounted(() => {
-  const soundboardElement = document.querySelector('.soundboard')
-  if (soundboardElement) {
-    soundboardElement.addEventListener('scroll', handleScroll)
-  }
-})
 
 onUnmounted(() => {
-  const soundboardElement = document.querySelector('.soundboard')
-  if (soundboardElement) {
-    soundboardElement.removeEventListener('scroll', handleScroll)
-  }
   if (observer.value) {
     observer.value.disconnect()
   }
@@ -237,48 +222,6 @@ interface CompilingSoundWithImage {
 interface SoundWithImage extends CompilingSoundWithImage {
   // audioFile is required
   audioFile: File
-}
-
-function handleScroll(event: Event) {
-  if (!hasNotScrolled.value) return
-  const target = event.target
-  if (!(target instanceof HTMLElement)) return
-
-  // If user scrolled up or down, disable auto-scroll to last focused element
-  hasNotScrolled.value = false
-  scrollNextClose.value = false
-}
-
-/**
- * Starts the scroll listener to monitor user scrolls
- * This is called when the sidebar is opened
- */
-async function focusEditedSound() {
-  if (settingsStore.currentEditingSound) {
-    const soundButton = document.getElementById(`sound-${settingsStore.currentEditingSound.id}`)
-    if (!soundButton) return
-    lastFocusedElement.value = soundButton
-    soundButton?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    await new Promise(resolve => setTimeout(resolve, SCROLL_WAIT_TIME)) // wait for scroll to finish
-    hasNotScrolled.value = true
-  }
-}
-
-function onTransitionLeave() {
-  // when the transition starts, we want to disable the scroll listener temporarily
-  if (hasNotScrolled.value) scrollNextClose.value = true
-  hasNotScrolled.value = false
-}
-
-/**
- * Starts the scroll listener to monitor user scrolls
- * This is called when the sidebar is closed
- */
-function focusLastEditedSound() {
-  if (!scrollNextClose.value) return
-  lastFocusedElement.value?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  hasNotScrolled.value = false
-  scrollNextClose.value = false
 }
 
 async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
@@ -469,9 +412,35 @@ async function performDragOver(pSound: Sound) {
   settingsStore.sounds = sounds
 }
 
+function editSound(pSound: Sound) {
+  if (settingsStore.currentEditingSound === null || settingsStore.currentEditingSound.id !== pSound.id) {
+    settingsStore.currentEditingSound = pSound
+    // get the browser window's current size
+    expandWindow()
+  } else {
+    settingsStore.currentEditingSound = null
+    collapseWindow()
+  }
+}
+
 function closeEditor() {
   settingsStore.currentEditingSound = null
   collapseWindow()
+}
+
+function handleSoundsUpdate(pSound: Sound) {
+  const soundIndex = settingsStore.sounds.findIndex(sound => sound.id === pSound.id)
+  if (soundIndex === -1) return
+  settingsStore.sounds[soundIndex] = pSound
+
+  // add a new sound if sound is null
+  const lastSound = settingsStore.sounds[settingsStore.sounds.length - 1]
+  if (lastSound.title !== undefined) {
+    const newSound: Sound = { id: crypto.randomUUID() }
+    settingsStore.sounds.push(newSound)
+    settingsStore.saveSound(newSound)
+  }
+  settingsStore.saveSound(pSound)
 }
 
 function updateCurrentEditingSound() {
@@ -510,27 +479,25 @@ function deleteSoundConfirmed() {
   soundToDelete.value = null
 }
 
-function editSound(pSound: Sound) {
-  if (settingsStore.currentEditingSound === null || settingsStore.currentEditingSound.id !== pSound.id) {
-    settingsStore.currentEditingSound = pSound
-  } else {
-    settingsStore.currentEditingSound = null
-  }
+async function expandWindow() {
+  const currentSize = await window.electron?.getWindowSize()
+  if (!currentSize) return
+  const { width, height } = currentSize
+  // now force the layout to be exactly this size
+
+  await window.electron?.expandWindow(300, 0)
+
+  console.log('Expanding window')
 }
 
-function handleSoundsUpdate(pSound: Sound) {
-  const soundIndex = settingsStore.sounds.findIndex(sound => sound.id === pSound.id)
-  if (soundIndex === -1) return
-  settingsStore.sounds[soundIndex] = pSound
-
-  // add a new sound if sound is null
-  const lastSound = settingsStore.sounds[settingsStore.sounds.length - 1]
-  if (lastSound.title !== undefined) {
-    const newSound: Sound = { id: crypto.randomUUID() }
-    settingsStore.sounds.push(newSound)
-    settingsStore.saveSound(newSound)
-  }
-  settingsStore.saveSound(pSound)
+async function collapseWindow() {
+  const currentSize = await window.electron?.getWindowSize()
+  if (!currentSize) return
+  // now get the new size
+  const newWidth = currentSize.width - 300
+  const newHeight = currentSize.height
+  await window.electron?.setWindowSize(newWidth, newHeight)
+  console.log(`Collapsing window${newWidth}x${newHeight}`)
 }
 </script>
 
