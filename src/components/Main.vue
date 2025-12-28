@@ -2,7 +2,7 @@
   <title-bar
     >{{ settingsStore.appName
     }}<img
-      class="pulse-panel-icon flex-shrink-0"
+      class="pulse-panel-icon shrink-0"
       @click="openLink"
       :src="PulsePanelIcon"
       :title="appVersion"
@@ -12,7 +12,6 @@
     <side-bar>
       <div class="top-buttons">
         <router-link
-          ref="routerLinks"
           @keydown.space.enter="activateRouterLink(0, true)"
           @keyup.space.enter="activateRouterLink(0, false)"
           @keypress.space.prevent="navigateTo('/soundboard')"
@@ -22,7 +21,6 @@
           <inline-svg :src="Speaker" />Soundbar
         </router-link>
         <router-link
-          ref="routerLinks"
           @keydown.space.enter="activateRouterLink(1, true)"
           @keyup.space.enter="activateRouterLink(1, false)"
           @keypress.space.prevent="navigateTo('/settings')"
@@ -77,7 +75,6 @@ const darkMode = ref(true)
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
 const appVersion = `v${window.electron?.versions.app}`
-const routerLinks = ref<HTMLElement[]>([])
 const routerLinkActive = ref([false, false])
 const stopAllSoundsActive = ref(false)
 const muteButtonActive = ref(false)
