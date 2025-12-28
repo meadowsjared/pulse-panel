@@ -1,7 +1,7 @@
 <template>
   <div class="sideBar" :class="{ opened: sideBarOpen }">
     <button
-      class="menu-button"
+      class="menu-button select-none"
       :class="{ active: hamburgerActive }"
       aria-controls="primary-navigation"
       title="Show main menu"

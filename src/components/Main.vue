@@ -1,5 +1,5 @@
 <template>
-  <title-bar
+  <title-bar class="select-none"
     >{{ settingsStore.appName
     }}<img
       class="pulse-panel-icon shrink-0"
@@ -162,6 +162,7 @@ settingsStore.fetchSounds().then(() => {
 
 .top-buttons,
 .bottom-buttons {
+  user-select: none;
   display: flex;
   flex-direction: column;
   gap: 1rem;

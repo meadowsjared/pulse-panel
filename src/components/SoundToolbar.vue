@@ -1,5 +1,5 @@
 <template>
-  <div class="toolbar">
+  <div class="toolbar select-none">
     <div class="left-buttons">
       <input type="text" v-model="settingsStore.searchText" placeholder="Search..." />
       <button class="light" :class="{ hidden: settingsStore.searchText.length === 0 }" @click="clearSearch">
