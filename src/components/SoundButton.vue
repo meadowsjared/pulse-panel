@@ -7,7 +7,6 @@
     @dragover.prevent>
     <button
       :id="`sound-${modelValue.id}`"
-      ref="soundButton"
       @click="playSound"
       @mousedown="handleMouseDown"
       @mouseenter="handleMouseEnter"
@@ -91,7 +90,6 @@ const numSoundsPlaying = ref(0)
  */
 const focusVisible = ref(false)
 const lineHeight = ref(0)
-const soundButton = ref<HTMLButtonElement | null>(null)
 const buttonTitle = ref<HTMLElement | null>(null)
 const containerElement = ref<HTMLElement | null>(null)
 
