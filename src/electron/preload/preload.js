@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('main-window-resized', (_, isMaximized) => callback(isMaximized))
   },
   requestMainWindowSized: () => ipcRenderer.invoke('request-main-window-sized'),
+  expandWindow: (widthChange, heightChange) => ipcRenderer.invoke('expand-window', widthChange, heightChange),
+  getWindowSize: () => ipcRenderer.invoke('get-window-size'),
+  setWindowSize: (width, height) => ipcRenderer.invoke('set-window-size', width, height),
   openExternalLink: url => ipcRenderer.invoke('open-external-link', url),
   downloadVBCable: appName => ipcRenderer.invoke('download-vb-cable', appName),
   // Database related
