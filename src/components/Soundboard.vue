@@ -416,7 +416,7 @@ async function performDragOver(pSound: Sound) {
 }
 
 function editSound(pSound: Sound) {
-  if (soundEditorOpen.value === false) {
+  if (soundEditorOpen.value === false || settingsStore.currentEditingSound?.id !== pSound.id) {
     // get the browser window's current size
     expandWindow(pSound)
   } else {
