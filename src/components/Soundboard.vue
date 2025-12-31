@@ -69,6 +69,7 @@ const soundToDelete = ref<Sound | null>(null)
 const main = ref<HTMLDivElement | null>(null)
 const forcedWidth = ref<number | null>(null)
 const soundEditorOpen = ref(false)
+const isTransitioning = ref(false)
 
 watch(
   buttons,
@@ -416,7 +417,7 @@ async function performDragOver(pSound: Sound) {
 }
 
 function editSound(pSound: Sound) {
-  if (soundEditorOpen.value === false || settingsStore.currentEditingSound?.id !== pSound.id) {
+  if (settingsStore.currentEditingSound?.id !== pSound.id) {
     // get the browser window's current size
     expandWindow(pSound)
   } else {
@@ -480,8 +481,10 @@ function deleteSoundConfirmed() {
 }
 
 async function expandWindow(pSound: Sound) {
-  soundEditorOpen.value = true
-  if (settingsStore.currentEditingSound === null) {
+  if (isTransitioning.value) return
+  if (settingsStore.currentEditingSound === null && soundEditorOpen.value === false) {
+    soundEditorOpen.value = true
+    isTransitioning.value = true
     // get the current width of the soundboard
     const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0
     if (soundboardWidth === 0) return
@@ -489,6 +492,9 @@ async function expandWindow(pSound: Sound) {
     // expand the window by 300px, to allow for the SoundEditor
     await window.electron?.expandWindow(300, 0)
     await new Promise(resolve => setTimeout(resolve, 0))
+    isTransitioning.value = false
+  } else {
+    soundEditorOpen.value = true
   }
   settingsStore.currentEditingSound = pSound
   // reset the size to the original size to allow for window resizing
@@ -497,14 +503,21 @@ async function expandWindow(pSound: Sound) {
 
 async function collapseWindow() {
   if (settingsStore.currentEditingSound === null) return
-  const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0
-  if (soundboardWidth === 0) return
-  forcedWidth.value = soundboardWidth
-  settingsStore.currentEditingSound = null
-  await window.electron?.expandWindow(-300, 0)
-  // reset the size to the original size to allow for window resizing
-  forcedWidth.value = null
-  soundEditorOpen.value = false
+  if (isTransitioning.value) return
+  if (soundEditorOpen.value === true) {
+    soundEditorOpen.value = false
+    isTransitioning.value = true
+    const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0
+    if (soundboardWidth === 0) return
+    forcedWidth.value = soundboardWidth
+    settingsStore.currentEditingSound = null
+    await window.electron?.expandWindow(-300, 0)
+    // reset the size to the original size to allow for window resizing
+    forcedWidth.value = null
+    isTransitioning.value = false
+  } else {
+    settingsStore.currentEditingSound = null
+  }
 }
 </script>
 
