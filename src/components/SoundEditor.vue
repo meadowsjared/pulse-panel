@@ -294,11 +294,11 @@ function handleKeyup(event: KeyboardEvent) {
 
 function updateHotkey(newKey: string[] | undefined, oldKey: string[] | undefined) {
   if (oldKey) {
-    settingsStore.removeHotkey(props.modelValue, oldKey)
+    settingsStore.removeSoundHotkey(props.modelValue, oldKey)
   }
   setTimeout(() => {
     // we must delay this, otherwise it will play the sound when the hotkey is set
-    settingsStore.addHotkey(props.modelValue, newKey)
+    settingsStore.addSoundHotkey(props.modelValue, newKey)
   }, 0)
 }
 

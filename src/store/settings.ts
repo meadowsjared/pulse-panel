@@ -655,7 +655,7 @@ export const useSettingsStore = defineStore('settings', {
      * Remove a hotkey from the store
      * @param soundId the key to remove
      */
-    removeHotkey(pSound: Sound, keys: string[]) {
+    removeSoundHotkey(pSound: Sound, keys: string[]) {
       const electron = window.electron
       // get a the previous array of hotkeys that were registered
       const prevHotkeys = this.sounds.filter((sound): sound is SoundWithHotkey => sound.hotkey !== undefined)
@@ -673,7 +673,7 @@ export const useSettingsStore = defineStore('settings', {
      * @param keys the key to add
      * @param sound the sound to play
      */
-    addHotkey(sound: Sound, keys: string[] | undefined) {
+    addSoundHotkey(sound: Sound, keys: string[] | undefined) {
       const electron = window.electron
       if (keys === undefined) return
       // get a the previous array of hotkeys that were registered
