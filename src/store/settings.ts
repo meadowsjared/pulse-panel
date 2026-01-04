@@ -289,6 +289,14 @@ export const useSettingsStore = defineStore('settings', {
         return false
       }
       if (this._isArrayStringSettings(key)) {
+        if ((key === 'stop_hotkey' || key === 'ptt_hotkey') && this._isArrayString(value)) {
+          if (value.length === 0) {
+            const prevHotkey = toRaw(this[key])
+            electron?.unregisterHotkeys([prevHotkey])
+          } else {
+            electron?.addHotkeys([value])
+          }
+        }
         if (this._isArrayString(value)) {
           this[key] = value
           return true
@@ -318,7 +326,7 @@ export const useSettingsStore = defineStore('settings', {
       return ['defaultVolume'].includes(k)
     },
     _isArrayStringSettings(k: string): k is ArrayStringSettings {
-      return ['outputDevices', 'ptt_hotkey'].includes(k)
+      return ['outputDevices', 'ptt_hotkey', 'stop_hotkey'].includes(k)
     },
     _isArrayString(k: unknown): k is string[] {
       return Array.isArray(k) && (k.length === 0 || typeof k[0] === 'string')
