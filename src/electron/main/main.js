@@ -28,23 +28,6 @@ app.whenReady().then(() => {
       if (tray === null) {
         // Create tray
         createTray()
-        mainWindow.on('close', function (event) {
-          if (app.isQuitting) {
-            return
-          }
-          event.preventDefault()
-          // Hide the window instead
-          mainWindow.hide()
-          closedToTray = true
-          updateTrayMenu()
-        })
-        mainWindow.on('minimize', function () {
-          updateTrayMenu()
-        })
-        mainWindow.on('restore', function () {
-          closedToTray = false
-          updateTrayMenu()
-        })
       }
     } else {
       // Remove tray
@@ -146,6 +129,24 @@ function createWindow() {
 }
 
 function createTray() {
+  mainWindow.on('close', function (event) {
+    if (app.isQuitting) {
+      return
+    }
+    event.preventDefault()
+    // Hide the window instead
+    mainWindow.hide()
+    closedToTray = true
+    updateTrayMenu()
+  })
+  mainWindow.on('minimize', function () {
+    updateTrayMenu()
+  })
+  mainWindow.on('restore', function () {
+    closedToTray = false
+    updateTrayMenu()
+  })
+
   const iconPath = join(__dirname, '../../assets/pulse-panel_icon.ico') // Use .ico for Windows, .png/.icns for Mac/Linux
   tray = new Tray(iconPath)
 
