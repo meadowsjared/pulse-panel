@@ -17,6 +17,7 @@ interface State {
   defaultVolume: number
   outputDevices: string[]
   darkMode: boolean
+  closeToTray: boolean
   allowOverlappingSound: boolean
   sounds: Sound[]
   muted: boolean
@@ -79,7 +80,7 @@ interface SoundWithHotkey extends Sound {
   hotkey: string[]
 }
 
-const Boolean_Settings_Keys = ['darkMode', 'allowOverlappingSound', 'invertQuickTags', 'muted'] as const
+const Boolean_Settings_Keys = ['darkMode', 'closeToTray', 'allowOverlappingSound', 'invertQuickTags', 'muted'] as const
 type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
 
 const Array_String_Settings_Keys = ['outputDevices', 'ptt_hotkey', 'stop_hotkey'] as const
@@ -118,6 +119,7 @@ export const useSettingsStore = defineStore('settings', {
     outputDevices: [],
     allOutputDevices: [],
     darkMode: true,
+    closeToTray: false,
     allowOverlappingSound: false,
     sounds: [],
     displayMode: 'play',
@@ -253,6 +255,7 @@ export const useSettingsStore = defineStore('settings', {
           )
         }
       }
+      electron?.setCloseToTray(this.closeToTray)
       if (this.outputDevices.length === 0) {
         const devices = await navigator.mediaDevices.enumerateDevices()
         const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')
