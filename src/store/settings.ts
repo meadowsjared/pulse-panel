@@ -256,6 +256,9 @@ export const useSettingsStore = defineStore('settings', {
         }
       }
       electron?.setCloseToTray(this.closeToTray)
+      electron?.onCloseToTrayChanged(value => {
+        this.saveSetting('closeToTray', value)
+      })
       if (this.outputDevices.length === 0) {
         const devices = await navigator.mediaDevices.enumerateDevices()
         const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')

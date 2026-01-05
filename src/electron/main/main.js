@@ -10,12 +10,20 @@ let mainWindow = null
 let tray = null
 let closedToTray = false
 let enableTray = false
+let ignoreFirstTrayToggle = false
 
 app.whenReady().then(() => {
   // Expose a method to read and save settings
   ipcMain.handle('_read-setting', (_, settingKey) => settings._readSetting(settingKey))
   ipcMain.handle('send-key', (_, keys, down) => settings.sendKey(keys, down))
   ipcMain.handle('set-close-to-tray', (_, /** @type {boolean} */ value) => {
+    if (ignoreFirstTrayToggle === true) {
+      // we know the app has started, since it is trying to set this value
+      ignoreFirstTrayToggle = false
+      // so we can safely tell it to set closeToTray to true
+      mainWindow.webContents.send('close-to-tray-changed', true)
+      return
+    }
     if (value === true) {
       if (tray === null) {
         // Create tray
@@ -40,6 +48,7 @@ app.whenReady().then(() => {
       }
     } else {
       // Remove tray
+      mainWindow.show() // Ensure window is shown again
       tray?.destroy()
       tray = null
       mainWindow.removeAllListeners('close')
@@ -101,6 +110,11 @@ app.whenReady().then(() => {
 
 function createWindow() {
   // Create the browser window.
+  const startHidden = process.argv.includes('--hidden')
+  if (startHidden) {
+    enableTray = true
+    ignoreFirstTrayToggle = true
+  }
   const size = settings.readDBSetting('window-size') ?? [1100, 900]
   const iconPath = join(__dirname, '../../assets/pulse-panel_icon.ico')
   mainWindow = new BrowserWindow({
@@ -115,6 +129,11 @@ function createWindow() {
     },
     icon: iconPath,
   })
+  if (startHidden) {
+    createTray()
+    mainWindow.hide()
+    closedToTray = true
+  }
   mainWindow.on('resize', resizeTriggered)
 
   // and load the index.html of the app.

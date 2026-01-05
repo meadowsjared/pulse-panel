@@ -30,6 +30,7 @@ export interface Settings {
   unregisterHotkeys: (hotkeys: string[][]) => void
   onKeyPressed: (callback: (key: string[]) => void) => void
   setCloseToTray: (value: boolean) => void
+  onCloseToTrayChanged: (callback: (value: boolean) => void) => void
   closeWindow: () => void
   minimizeWindow: () => void
   maximizeRestoreWindow: () => void
