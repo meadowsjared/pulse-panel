@@ -1,5 +1,5 @@
 const { join } = require('path')
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu } = require('electron')
 const settings = require('../settings')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
@@ -7,11 +7,46 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 /** this is the main window of the app
  * @type {BrowserWindow} */
 let mainWindow = null
+let tray = null
+let closedToTray = false
+let enableTray = false
 
 app.whenReady().then(() => {
   // Expose a method to read and save settings
   ipcMain.handle('_read-setting', (_, settingKey) => settings._readSetting(settingKey))
   ipcMain.handle('send-key', (_, keys, down) => settings.sendKey(keys, down))
+  ipcMain.handle('set-close-to-tray', (_, /** @type {boolean} */ value) => {
+    if (value === true) {
+      if (tray === null) {
+        // Create tray
+        createTray()
+        mainWindow.on('close', function (event) {
+          event.preventDefault()
+          // Hide the window instead
+          mainWindow.hide()
+          closedToTray = true
+          updateTrayMenu()
+        })
+        mainWindow.on('minimize', function () {
+          updateTrayMenu()
+        })
+        mainWindow.on('restore', function () {
+          closedToTray = false
+          updateTrayMenu()
+        })
+      }
+    } else {
+      // Remove tray
+      tray?.destroy()
+      tray = null
+      mainWindow.removeAllListeners('close')
+      mainWindow.removeAllListeners('minimize')
+      mainWindow.removeAllListeners('restore')
+      closedToTray = false
+    }
+
+    enableTray = value
+  })
   ipcMain.on('toggle-dark-mode', (_, value) => {
     BrowserWindow.getAllWindows().forEach(window => {
       window.webContents.send('dark-mode-updated', value)
@@ -74,6 +109,7 @@ function createWindow() {
       preload: join(__dirname, '../preload/preload.js'),
       nodeIntegration: true,
     },
+    icon: join(__dirname, '../../assets/pulse-panel_icon.ico'),
   })
   mainWindow.on('resize', resizeTriggered)
 
@@ -84,6 +120,56 @@ function createWindow() {
   } else {
     mainWindow.loadFile(join(__dirname, '../../../dist/index.html'))
   }
+}
+
+function createTray() {
+  const iconPath = join(__dirname, '../../assets/pulse-panel_icon.ico') // Use .ico for Windows, .png/.icns for Mac/Linux
+  tray = new Tray(iconPath)
+
+  tray.setToolTip('Pulse Panel')
+
+  // Create a context menu so the user can actually quit the app
+  updateTrayMenu()
+
+  // Restore application when clicking the tray icon
+  tray.on('click', () => {
+    mainWindow.show()
+    closedToTray = false
+    updateTrayMenu()
+  })
+}
+
+function updateTrayMenu() {
+  const contextMenu = Menu.buildFromTemplate([
+    closedToTray
+      ? {
+          label: 'Restore App',
+          click: function () {
+            mainWindow.show()
+            closedToTray = false
+            updateTrayMenu()
+          },
+        }
+      : {
+          label: 'Minimize App',
+          click: function () {
+            mainWindow.hide()
+            closedToTray = true
+            updateTrayMenu()
+          },
+        },
+    {
+      label: 'Quit',
+      click: function () {
+        // We need a flag to let the app know it's okay to actually quit now
+        // (Only relevant if you are catching the 'close' event too)
+        app.isQuitting = true
+        app.quit()
+      },
+    },
+  ])
+
+  tray.setContextMenu(contextMenu)
 }
 
 function resizeTriggered() {

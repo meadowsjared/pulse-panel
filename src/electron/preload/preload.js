@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electron', {
   onKeyPressed: callback => {
     ipcRenderer.on('on-key-pressed', (_, key) => callback(key))
   },
+  setCloseToTray: value => ipcRenderer.invoke('set-close-to-tray', value),
   toggleDarkMode: value => {
     ipcRenderer.send('toggle-dark-mode', value)
   },
