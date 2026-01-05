@@ -21,6 +21,9 @@ app.whenReady().then(() => {
         // Create tray
         createTray()
         mainWindow.on('close', function (event) {
+          if (app.isQuitting) {
+            return
+          }
           event.preventDefault()
           // Hide the window instead
           mainWindow.hide()
