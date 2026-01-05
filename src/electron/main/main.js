@@ -102,10 +102,7 @@ app.whenReady().then(() => {
 function createWindow() {
   // Create the browser window.
   const size = settings.readDBSetting('window-size') ?? [1100, 900]
-  const iconPath = join(
-    __dirname,
-    isDev ? '../../assets/pulse-panel_icon.ico' : '../../../dist/assets/pulse-panel_icon.ico'
-  )
+  const iconPath = join(__dirname, '../../assets/pulse-panel_icon.ico')
   mainWindow = new BrowserWindow({
     frame: false,
     width: size[0],
@@ -130,10 +127,7 @@ function createWindow() {
 }
 
 function createTray() {
-  const iconPath = join(
-    __dirname,
-    isDev ? '../../assets/pulse-panel_icon.ico' : '../../../dist/assets/pulse-panel_icon.ico'
-  ) // Use .ico for Windows, .png/.icns for Mac/Linux
+  const iconPath = join(__dirname, '../../assets/pulse-panel_icon.ico') // Use .ico for Windows, .png/.icns for Mac/Linux
   tray = new Tray(iconPath)
 
   tray.setToolTip('Pulse Panel')
