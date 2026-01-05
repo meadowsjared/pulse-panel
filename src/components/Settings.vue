@@ -51,6 +51,7 @@
         @input="updateAllowOverlappingSound"
     /></label>
     <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
+    <label>Close to tray<input type="checkbox" v-model="closeToTray" @input="updateCloseToTray" /></label>
     <hotkey-picker
       class="hotkey-picker"
       v-model="selectedHotkey"
@@ -123,6 +124,7 @@ const soundStore = useSoundStore()
 const outputDevices = ref<(string | null)[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
+const closeToTray = ref(false)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
 const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined)
 const showVBCableMessage = ref(false)
@@ -289,6 +291,7 @@ watch(
 settingsStore.fetchAllOutputDevices()
 settingsStore.fetchSettings().then(() => {
   darkMode.value = settingsStore.darkMode
+  closeToTray.value = settingsStore.closeToTray
   allowOverlappingSound.value = settingsStore.allowOverlappingSound
   outputDevices.value = settingsStore.outputDevices
   selectedHotkey.value = settingsStore.ptt_hotkey ?? undefined
@@ -353,6 +356,15 @@ function updateDarkMode(event: Event) {
     throw new Error('Event target is not an input element.')
   }
   settingsStore.saveSetting('darkMode', !!event.target.checked)
+}
+
+function updateCloseToTray(event: Event) {
+  if (!(event.target instanceof HTMLInputElement)) {
+    console.debug('payload.target', event.target)
+    throw new Error('Event target is not an input element.')
+  }
+  window.electron?.setCloseToTray(!!event.target.checked)
+  settingsStore.saveSetting('closeToTray', !!event.target.checked)
 }
 
 function updateAllowOverlappingSound(event: Event) {
