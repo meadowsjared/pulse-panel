@@ -177,7 +177,7 @@ function saveSoundsArray(sounds) {
         sound.color ?? null,
         sound.soundSegments ?? null,
         sound.isVisible ?? null,
-        index
+        index,
       )
     }
   })
@@ -283,7 +283,7 @@ function insertSounds(beforeIndex, ...newSounds) {
         sound.color ?? null,
         sound.soundSegments ?? null,
         sound.isVisible ?? null,
-        beforeIndex + insertArrayIndex
+        beforeIndex + insertArrayIndex,
       )
     })
   })
@@ -325,13 +325,13 @@ function moveSound(prevIndex, newIndex) {
     if (prevIndex < newIndex) {
       // Moving down: shift sounds between prevIndex and newIndex up by 1
       const shiftStmt = db.prepare(
-        'UPDATE sounds SET order_index = order_index - 1 WHERE order_index > ? AND order_index <= ?'
+        'UPDATE sounds SET order_index = order_index - 1 WHERE order_index > ? AND order_index <= ?',
       )
       shiftStmt.run(prevIndex, newIndex)
     } else {
       // Moving up: shift sounds between newIndex and prevIndex down by 1
       const shiftStmt = db.prepare(
-        'UPDATE sounds SET order_index = order_index + 1 WHERE order_index >= ? AND order_index < ?'
+        'UPDATE sounds SET order_index = order_index + 1 WHERE order_index >= ? AND order_index < ?',
       )
       shiftStmt.run(newIndex, prevIndex)
     }
