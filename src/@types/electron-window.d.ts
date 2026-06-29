@@ -37,8 +37,6 @@ export interface Settings {
   onWindowResized: (callback: (windowIsMaximized: boolean) => void) => void
   requestMainWindowSized: () => void
   expandWindow: (widthChange: number, heightChange: number) => Promise<void>
-  getWindowSize: () => Promise<{ width: number; height: number }>
-  setWindowSize: (width: number, height: number) => Promise<void>
   openExternalLink: (url: string) => void
   downloadVBCable: (appName: string) => Promise<vbCableResult>
   // Database related functions
