@@ -115,7 +115,7 @@ watch(
       })
     }
   },
-  { deep: true, flush: 'post' }
+  { deep: true, flush: 'post' },
 )
 
 function processIntersectionEntries(entries: IntersectionObserverEntry[]) {
@@ -167,7 +167,7 @@ function processIntersectionEntries(entries: IntersectionObserverEntry[]) {
     .filter(
       sound =>
         (sound.isVisible && (buttonVisibilityMap.get(sound.id) ?? false) === false) ||
-        (!sound.isVisible && buttonVisibilityMap.get(sound.id) === true)
+        (!sound.isVisible && buttonVisibilityMap.get(sound.id) === true),
     )
     .forEach(sound => {
       // transfer buttonVisibilityMap to the sounds
@@ -259,7 +259,7 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
           }
         }
         return prevVal
-      }, {})
+      }, {}),
     ).filter((file): file is SoundWithImage => file.audioFile !== undefined)
     const audioContext = new AudioContext()
     const promAr = combinedFiles.map(async file => {
@@ -469,7 +469,7 @@ function deleteSoundConfirmed() {
      * length - 2 to avoid the last element, which will be blank
      * length - 3 to allow for the element to be deleted
      **/
-    settingsStore.sounds.length - 3
+    settingsStore.sounds.length - 3,
   )
   settingsStore.deleteSound(soundToDelete.value)
   // check if soundToDelete is the currentEditingSound
