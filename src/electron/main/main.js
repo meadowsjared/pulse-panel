@@ -65,13 +65,6 @@ app.whenReady().then(() => {
     const [currentWidth, currentHeight] = mainWindow.getSize()
     mainWindow.setSize(currentWidth + widthChange, currentHeight + heightChange)
   })
-  ipcMain.handle('get-window-size', () => {
-    const [width, height] = mainWindow.getSize()
-    return { width, height }
-  })
-  ipcMain.handle('set-window-size', (_, width, height) => {
-    mainWindow.setSize(width, height)
-  })
   ipcMain.handle('open-external-link', (_, url) => shell.openExternal(url))
   ipcMain.handle('download-vb-cable', (_, appName) => settings.downloadVBCable(appName))
 
