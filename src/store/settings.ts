@@ -74,6 +74,11 @@ interface State {
    * **VOLATILE**
    */
   currentEditingSound: Sound | null
+  /**
+   * The saved window size [width, height]
+   * **VOLATILE**
+   */
+  windowSize: number[]
 }
 
 interface SoundWithHotkey extends Sound {
@@ -84,6 +89,8 @@ const Boolean_Settings_Keys = ['darkMode', 'closeToTray', 'allowOverlappingSound
 type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
 
 const Array_String_Settings_Keys = ['outputDevices', 'ptt_hotkey', 'stop_hotkey'] as const
+const Array_Number_Settings_Keys = ['windowSize'] as const
+type ArrayNumberSettings = (typeof Array_Number_Settings_Keys)[number]
 type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number]
 const Array_Sound_Settings_Keys = ['sounds'] as const
 type ArraySoundSettings = (typeof Array_Sound_Settings_Keys)[number]
@@ -96,6 +103,7 @@ type SettingsOnlyKeys = BooleanSettings | NumberSettings | ArrayStringSettings |
 const All_Settings_Keys = [
   ...Boolean_Settings_Keys,
   ...Array_String_Settings_Keys,
+  ...Array_Number_Settings_Keys,
   ...Array_Sound_Settings_Keys,
   ...Number_Settings_Keys,
   ...Label_Active_Settings_Keys,
@@ -132,6 +140,7 @@ export const useSettingsStore = defineStore('settings', {
     searchText: '',
     quickTagsAr: [],
     invertQuickTags: false,
+    windowSize: [],
   }),
   getters: {
     quickTags(): LabelActive[] {
@@ -294,6 +303,13 @@ export const useSettingsStore = defineStore('settings', {
         }
         return false
       }
+      if (this._isArrayNumberSettings(key)) {
+        if (this._isArrayNumber(value)) {
+          this[key] = value
+          return true
+        }
+        return false
+      }
       if (this._isArrayStringSettings(key)) {
         if ((key === 'stop_hotkey' || key === 'ptt_hotkey') && this._isArrayString(value)) {
           if (value.length === 0) {
@@ -334,6 +350,9 @@ export const useSettingsStore = defineStore('settings', {
     _isArrayStringSettings(k: string): k is ArrayStringSettings {
       return ['outputDevices', 'ptt_hotkey', 'stop_hotkey'].includes(k)
     },
+    _isArrayNumberSettings(k: string): k is ArrayNumberSettings {
+      return ['windowSize'].includes(k)
+    },
     _isArrayString(k: unknown): k is string[] {
       return Array.isArray(k) && (k.length === 0 || typeof k[0] === 'string')
     },
@@ -348,6 +367,9 @@ export const useSettingsStore = defineStore('settings', {
     },
     _isLabelActiveArray(k: unknown): k is LabelActive[] {
       return Array.isArray(k) && (k.length === 0 || (typeof k[0] === 'object' && 'label' in k[0]))
+    },
+    _isArrayNumber(k: unknown): k is number[] {
+      return Array.isArray(k) && (k.length === 0 || typeof k[0] === 'number')
     },
     /**
      * Set the default volume
@@ -611,10 +633,25 @@ export const useSettingsStore = defineStore('settings', {
      */
     registerWindowResize(): void {
       const electron = window.electron
-      electron?.onWindowResized(isMaximized => {
+      electron?.onWindowResized((isMaximized, width, height) => {
         this.windowIsMaximized = isMaximized
+        this._saveWindowSize(width, height)
       })
       electron?.requestMainWindowSized() // request the current to initialize the windowIsMaximized state
+    },
+    /**
+     * Save the window size to the database, adjusting width if sound editor is open
+     * @param width the current window width
+     * @param height the current window height
+     */
+    _saveWindowSize(width: number, height: number): void {
+      if (this.currentEditingSound !== null) {
+        width = width - 300 // adjust width to account for sound editor
+      }
+      if (this.windowSize[0] === width && this.windowSize[1] === height) {
+        return // no change
+      }
+      this.saveSetting('windowSize', [width, height])
     },
     /**
      * Register the hotkeys for the sounds when the app loads

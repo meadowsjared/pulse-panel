@@ -489,9 +489,26 @@ async function expandWindow(pSound: Sound) {
     const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0
     if (soundboardWidth === 0) return
     forcedWidth.value = soundboardWidth
+    let resizeTimeout: NodeJS.Timeout | null = null
+    // Wait for the actual DOM element to resize
+
+    const resizePromise = new Promise<void>(resolve => {
+      const observer = new ResizeObserver(() => {
+        // Debounce: only resolve after no resize events for 10ms
+        if (resizeTimeout) clearTimeout(resizeTimeout)
+        resizeTimeout = setTimeout(() => {
+          observer.disconnect()
+          resolve()
+        }, 10)
+      })
+      if (main.value) {
+        observer.observe(main.value)
+      }
+    })
     // expand the window by 300px, to allow for the SoundEditor
     await window.electron?.expandWindow(300, 0)
-    await new Promise(resolve => setTimeout(resolve, 0))
+    await resizePromise
+    window.electron?.requestMainWindowSized()
     isTransitioning.value = false
   } else {
     soundEditorOpen.value = true
