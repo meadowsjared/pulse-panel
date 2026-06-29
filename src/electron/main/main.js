@@ -91,7 +91,7 @@ function createWindow() {
     enableTray = true
     ignoreFirstTrayToggle = true
   }
-  const size = settings.readDBSetting('window-size') ?? [1100, 900]
+  const size = settings.readDBSetting('windowSize') ?? [1100, 900]
   const iconPath = join(__dirname, '../../assets/pulse-panel_icon.ico')
   mainWindow = new BrowserWindow({
     frame: false,
@@ -110,7 +110,7 @@ function createWindow() {
     mainWindow.hide()
     closedToTray = true
   }
-  mainWindow.on('resize', resizeTriggered)
+  mainWindow.on('resized', resizeTriggered)
 
   // and load the index.html of the app.
   if (isDev) {
@@ -192,10 +192,9 @@ function updateTrayMenu() {
 function resizeTriggered() {
   const isMaximized = mainWindow.isMaximized()
   const isFullScreen = mainWindow.isFullScreen()
-  const size = mainWindow.getSize()
-  settings.saveDBSetting('window-size', size)
+  const [width, height] = mainWindow.getSize()
   BrowserWindow.getAllWindows().forEach(window => {
-    window.webContents.send('main-window-resized', isMaximized || isFullScreen)
+    window.webContents.send('main-window-resized', isMaximized || isFullScreen, width, height)
   })
 }
 

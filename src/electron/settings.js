@@ -66,6 +66,7 @@ function initializeDatabase() {
  * @param {string | number | boolean | object} settingValue the value to set the field to
  */
 function saveDBSetting(settingName, settingValue) {
+  // console.log('Saving setting', settingName, settingValue)
   const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, json(?))')
   stmt.run(settingName, JSON.stringify(settingValue))
 }
@@ -75,6 +76,18 @@ function saveDBSetting(settingName, settingValue) {
  * @returns {string | null} the value of the setting, or null if not found
  */
 function readDBSetting(settingName) {
+  if (settingName === 'windowSize') {
+    // migrate old setting if it exists
+    const oldStmt = db.prepare('SELECT value FROM settings WHERE key = ?')
+    const oldRow = oldStmt.get('window-size')
+    if (oldRow) {
+      const parsedValue = JSON.parse(oldRow.value)
+      saveDBSetting('windowSize', parsedValue)
+      const deleteOldStmt = db.prepare('DELETE FROM settings WHERE key = ?')
+      deleteOldStmt.run('window-size')
+      return parsedValue
+    }
+  }
   const stmt = db.prepare('SELECT value FROM settings WHERE key = ?')
   const row = stmt.get(settingName)
   if (!row) return null
@@ -95,6 +108,9 @@ function readAllDBSettings() {
   const stmt = db.prepare('SELECT key, value FROM settings')
   const rows = stmt.all()
   return rows.reduce((acc, row) => {
+    if (row.key === 'window-size') {
+      row.key = 'windowSize'
+    }
     acc[row.key] = JSON.parse(row.value)
     return acc
   }, {})

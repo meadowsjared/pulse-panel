@@ -18,7 +18,7 @@ interface vbCableResult {
   errors?: Error[]
 }
 
-export type SettingValue = string | boolean | number | string[] | LabelActive[]
+export type SettingValue = string | boolean | number | string[] | number[] | LabelActive[]
 
 export interface Settings {
   _readSetting: (key: string) => Promise<SettingValue | undefined | Sound[]>
@@ -34,7 +34,7 @@ export interface Settings {
   closeWindow: () => void
   minimizeWindow: () => void
   maximizeRestoreWindow: () => void
-  onWindowResized: (callback: (windowIsMaximized: boolean) => void) => void
+  onWindowResized: (callback: (windowIsMaximized: boolean, width: number, height: number) => void) => void
   requestMainWindowSized: () => void
   expandWindow: (widthChange: number, heightChange: number) => Promise<void>
   openExternalLink: (url: string) => void

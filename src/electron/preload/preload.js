@@ -38,7 +38,7 @@ contextBridge.exposeInMainWorld('electron', {
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   maximizeRestoreWindow: () => ipcRenderer.invoke('maximize-restore-window'),
   onWindowResized: callback => {
-    ipcRenderer.on('main-window-resized', (_, isMaximized) => callback(isMaximized))
+    ipcRenderer.on('main-window-resized', (_, isMaximized, width, height) => callback(isMaximized, width, height))
   },
   requestMainWindowSized: () => ipcRenderer.invoke('request-main-window-sized'),
   expandWindow: (widthChange, heightChange) => ipcRenderer.invoke('expand-window', widthChange, heightChange),
