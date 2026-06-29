@@ -156,14 +156,14 @@ export const useSettingsStore = defineStore('settings', {
               anTag =>
                 sound.tags === undefined ||
                 (anTag.active && sound.tags.includes(anTag.label) === false) ||
-                (anTag.negated && sound.tags.includes(anTag.label))
+                (anTag.negated && sound.tags.includes(anTag.label)),
             )
           const normalMatch =
             activeOrNegatedTags.length === 0 ||
             activeOrNegatedTags.every(
               anTag =>
                 (anTag.active && sound.tags?.includes(anTag.label) === true) ||
-                (anTag.negated && !sound.tags?.includes(anTag.label))
+                (anTag.negated && !sound.tags?.includes(anTag.label)),
             )
           return this.invertQuickTags ? invertedMatch : normalMatch
         })
@@ -181,7 +181,7 @@ export const useSettingsStore = defineStore('settings', {
                   .toLowerCase()
                   .split(/[^a-zA-Z0-9_']/)
                   .filter(searchWord => searchWord !== '')
-                  .some(searchWord => titleWord.toLowerCase().startsWith(searchWord.toLowerCase()))
+                  .some(searchWord => titleWord.toLowerCase().startsWith(searchWord.toLowerCase())),
               ) ||
             // compare the words from the tags to the words from the search text
             // if the tag starts with the searchWord, return true
@@ -190,8 +190,8 @@ export const useSettingsStore = defineStore('settings', {
                 .toLowerCase()
                 .split(/[^a-zA-Z0-9_']/)
                 .filter(searchWord => searchWord !== '')
-                .some(searchWord => tag.toLowerCase().startsWith(searchWord.toLowerCase()))
-            )
+                .some(searchWord => tag.toLowerCase().startsWith(searchWord.toLowerCase())),
+            ),
         )
       if (params !== undefined) {
         return filteredSounds.slice(params.start, params.end)
@@ -236,7 +236,7 @@ export const useSettingsStore = defineStore('settings', {
                 oldSettingsExist = true
               }
             }
-          })
+          }),
         )
         // if any old settings were found, migrate them to the new store
         if (oldSettingsExist) {
@@ -251,7 +251,7 @@ export const useSettingsStore = defineStore('settings', {
                 await this.saveSetting(key, toRaw(this[key]))
               else if (this._isArrayLabelActiveSettings(key) && this._isLabelActiveArray(this[key]))
                 await this.saveSetting(key, toRaw(this[key]))
-            })
+            }),
           )
         }
       }
@@ -453,7 +453,7 @@ export const useSettingsStore = defineStore('settings', {
      */
     async _fetchSoundSetting(
       key: ArraySoundSettings,
-      defaultValue: Sound[] = [{ id: crypto.randomUUID() }]
+      defaultValue: Sound[] = [{ id: crypto.randomUUID() }],
     ): Promise<Sound[]> {
       function isSoundArray(arr: SettingValue | undefined | Sound[]): arr is Sound[] {
         return Array.isArray(arr) && (arr.length === 0 || (typeof arr[0] === 'object' && 'id' in arr[0]))
@@ -558,13 +558,13 @@ export const useSettingsStore = defineStore('settings', {
       try {
         await this._loadMediaForSounds(
           audioContext,
-          sounds.filter(sound => sound.isVisible)
+          sounds.filter(sound => sound.isVisible),
         )
         // Load invisible sounds in background mode (slower, keeps UI responsive)
         await this._loadMediaForSounds(
           audioContext,
           sounds.filter(sound => !sound.isVisible),
-          true
+          true,
         )
       } finally {
         await audioContext.close()
@@ -796,12 +796,12 @@ export const useSettingsStore = defineStore('settings', {
       this.quickTagsAr ??= []
       // add all the elements from tags that aren't already in quickTagsAr
       this.quickTagsAr = this.quickTagsAr.concat(
-        tagsAr.filter(tag => !this.quickTagsAr?.some(t => t.label === tag.label))
+        tagsAr.filter(tag => !this.quickTagsAr?.some(t => t.label === tag.label)),
       )
       const electron = window.electron
       await electron?.saveDBSetting(
         'quickTagsAr',
-        this.quickTagsAr.map(t => toRaw(t))
+        this.quickTagsAr.map(t => toRaw(t)),
       )
     },
     /** remove a quickTag */
@@ -811,7 +811,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.saveDBSetting(
         'quickTagsAr',
-        this.quickTagsAr.map(t => toRaw(t))
+        this.quickTagsAr.map(t => toRaw(t)),
       )
     },
     /** set the quickTags */
@@ -820,7 +820,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.saveDBSetting(
         'quickTagsAr',
-        this.quickTagsAr.map(t => toRaw(t))
+        this.quickTagsAr.map(t => toRaw(t)),
       )
     },
     /** toggle the quickTag */
@@ -835,7 +835,7 @@ export const useSettingsStore = defineStore('settings', {
         const electron = window.electron
         await electron?.saveDBSetting(
           'quickTagsAr',
-          this.quickTagsAr.map(t => toRaw(t))
+          this.quickTagsAr.map(t => toRaw(t)),
         )
       }
     },
@@ -858,7 +858,7 @@ export const useSettingsStore = defineStore('settings', {
         const electron = window.electron
         await electron?.saveDBSetting(
           'quickTagsAr',
-          this.quickTagsAr.map(t => toRaw(t))
+          this.quickTagsAr.map(t => toRaw(t)),
         )
       }
     },
