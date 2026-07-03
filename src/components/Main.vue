@@ -209,7 +209,9 @@ settingsStore.fetchSounds().then(() => {
   height: 0.25rem;
   transform: translate(2.2rem, -2.2rem) rotate(135deg);
   background: var(--text-color);
-  transition: transform 300ms ease-in-out, background 300ms ease-in-out 300ms;
+  transition:
+    transform 300ms ease-in-out,
+    background 300ms ease-in-out 300ms;
 }
 
 .mute-button.muted::after {
