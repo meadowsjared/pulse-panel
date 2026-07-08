@@ -4,8 +4,8 @@
       <h2>{{ title }}</h2>
       <p class="message">{{ message }}</p>
       <div class="button-group">
-        <button class="light danger" @click="confirm">{{ confirmText }}</button>
-        <button class="light" @click="cancel">{{ cancelText }}</button>
+        <button v-if="confirmText" class="light danger" @click="confirm">{{ confirmText }}</button>
+        <button v-if="cancelText" class="light" @click="cancel">{{ cancelText }}</button>
       </div>
     </div>
   </div>
@@ -32,7 +32,7 @@ withDefaults(
     message: 'Are you sure?',
     confirmText: 'Confirm',
     cancelText: 'Cancel',
-  }
+  },
 )
 
 const confirm = () => {
@@ -52,8 +52,9 @@ const cancel = () => {
 
 .dialog {
   opacity: 2;
-  background-color: var(--background-color);
+  background-color: var(--text-color);
   border: 1px solid #ccc;
+  color: var(--background-color);
   padding: 20px;
   max-width: 20rem;
   margin: 0 auto;
