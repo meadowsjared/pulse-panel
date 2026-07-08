@@ -1,4 +1,12 @@
 <template>
+  <ConfirmDialog
+    v-if="loadingErrorMessage"
+    :show-dialog="!!loadingErrorMessage"
+    :title="'Error'"
+    :message="loadingErrorMessage"
+    :confirm-text="'Ok'"
+    :cancel-text="''"
+    @update:show-dialog="loadingErrorMessage = null" />
   <title-bar class="select-none"
     >{{ settingsStore.appName
     }}<img
@@ -78,6 +86,7 @@ const appVersion = `v${window.electron?.versions.app}`
 const routerLinkActive = ref([false, false])
 const stopAllSoundsActive = ref(false)
 const muteButtonActive = ref(false)
+const loadingErrorMessage = ref<string | null>(null)
 
 function activateRouterLink(index: number, activate: boolean) {
   routerLinkActive.value[index] = activate
@@ -100,16 +109,38 @@ window.electron?.onDarkModeToggle((value: boolean) => {
   darkMode.value = value
   settingsStore.darkMode = value
 })
+async function initializeSettings() {
+  const [settingsResult, soundsResult] = await Promise.allSettled([
+    settingsStore.fetchSounds().then(() => {
+      settingsStore.registerHotkeys()
+    }),
+    settingsStore.fetchSettings().then(() => {
+      darkMode.value = settingsStore.darkMode
+    }),
+  ])
+  if (settingsResult.status !== 'fulfilled' || soundsResult.status !== 'fulfilled') {
+    if (settingsResult.status === 'rejected' && soundsResult.status === 'rejected') {
+      loadingErrorMessage.value = `Failed to fetch settings and sounds: ${settingsResult.reason}, ${soundsResult.reason}`
+      console.error(settingsResult.reason)
+      console.trace(soundsResult.reason)
+    } else if (settingsResult.status === 'rejected') {
+      loadingErrorMessage.value = `Failed to fetch settings: ${settingsResult.reason}`
+      console.trace(settingsResult.reason)
+    } else if (soundsResult.status === 'rejected') {
+      loadingErrorMessage.value = `Failed to fetch sounds: ${soundsResult.reason}`
+      console.trace(soundsResult.reason)
+    }
+  }
+}
 
-settingsStore.fetchSettings().then(() => {
-  darkMode.value = settingsStore.darkMode
-})
-settingsStore.fetchSounds().then(() => {
-  settingsStore.registerHotkeys()
-})
+initializeSettings()
 </script>
 
 <style scoped>
+.e-nuxt-container {
+  isolation: isolate;
+}
+
 .pulse-panel-icon {
   width: 20px;
   aspect-ratio: 1;
