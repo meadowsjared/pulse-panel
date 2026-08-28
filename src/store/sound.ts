@@ -150,6 +150,9 @@ export const useSoundStore = defineStore('sound', {
         })
       }
       const settingsStore = useSettingsStore()
+      if (soundObject) {
+        await settingsStore.ensureSoundLoaded(soundObject)
+      }
       if (settingsStore.recordingHotkey) return Promise.resolve() // if muted, don't play the sound //  || this.sendingKey
       // console.debug('1 this.disabled = ', this.disabled)
       activeOutputDevices ??= settingsStore.outputDevices

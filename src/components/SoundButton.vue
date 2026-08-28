@@ -108,7 +108,7 @@ onMounted(() => {
 
 const mergedStyle = computed(() => {
   return {
-    ...(props.isVisible && props.modelValue.imageUrl ? { backgroundImage: `url(${props.modelValue.imageUrl})` } : {}),
+    ...(props.modelValue.imageUrl ? { backgroundImage: `url(${props.modelValue.imageUrl})` } : {}),
     ...(props.modelValue.activeSegment
       ? {
           '--sound-duration': `${

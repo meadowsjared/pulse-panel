@@ -155,7 +155,7 @@ import Plus from '../assets/images/plus.svg'
 import Listen from '../assets/images/listen.svg'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import PlayIcon from '../assets/images/play.svg'
 import { useSoundStore } from '../store/sound'
 import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils'
@@ -176,6 +176,21 @@ const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => 
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
+
+onMounted(() => {
+  if (props.modelValue) {
+    settingsStore.ensureSoundLoaded(props.modelValue)
+  }
+})
+
+watch(
+  () => props.modelValue?.id,
+  () => {
+    if (props.modelValue) {
+      settingsStore.ensureSoundLoaded(props.modelValue)
+    }
+  }
+)
 const imageFileInput = ref<HTMLInputElement | null>(null)
 const audioFileInput = ref<HTMLInputElement | null>(null)
 const tagInputRef = ref<TagInputRef | null>(null)

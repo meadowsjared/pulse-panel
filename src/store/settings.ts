@@ -1,10 +1,9 @@
 import { defineStore } from 'pinia'
 import { LabelActive, Sound, SoundForSaving, SoundSegment, SoundSegmentForSaving } from '../@types/sound'
-import { openDB } from 'idb'
+import { openDB, IDBPDatabase } from 'idb'
 import { File } from '../@types/file'
 import { useSoundStore } from './sound'
 import { Settings, SettingValue, Versions } from '../@types/electron-window'
-import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 import { toRaw } from 'vue'
 
 declare global {
@@ -116,6 +115,23 @@ export type DisplayMode = 'edit' | 'play'
 const isProduction = process.env.NODE_ENV === 'production'
 const dbName = isProduction ? 'pulse-panel' : 'pulse-panel-dev'
 const dbStoreName = isProduction ? 'sounds' : 'sounds-dev'
+
+let dbPromise: Promise<IDBPDatabase> | null = null
+
+function getDB(): Promise<IDBPDatabase> {
+  if (!dbPromise) {
+    dbPromise = openDB(dbName, 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(dbStoreName)) {
+          db.createObjectStore(dbStoreName)
+        }
+      },
+    })
+  }
+  return dbPromise
+}
+
+const blobUrlCache = new Map<string, string>()
 
 export interface SettingsStore extends ReturnType<typeof useSettingsStore> {}
 
@@ -571,60 +587,40 @@ export const useSettingsStore = defineStore('settings', {
       }
     },
     /**
-     * Lazily get the image URLs  for the visible sounds first, then the hidden sounds.
+     * Ensure a single sound's image and audio URLs are loaded on demand.
+     */
+    async ensureSoundLoaded(sound: Sound) {
+      if (sound.imageKey && !sound.imageUrl) {
+        const imageUrl = await this.getFile(sound.imageKey)
+        if (imageUrl) sound.imageUrl = imageUrl
+      }
+      if (sound.audioKey && !sound.audioUrl) {
+        const audioUrl = await this.getFile(sound.audioKey)
+        if (audioUrl) {
+          sound.audioUrl = audioUrl
+          if (sound.duration === undefined) {
+            sound.duration = await this.getAudioDuration(audioUrl)
+          }
+        }
+      }
+    },
+    /**
+     * Lazily get the image URLs for all sounds with an imageKey.
      * @param sounds[] the array of sounds
      * @returns void
      */
     async _getImageUrls(sounds: Sound[]) {
-      const audioContext = new window.AudioContext()
-      try {
-        await this._loadMediaForSounds(
-          audioContext,
-          sounds.filter(sound => sound.isVisible),
-        )
-        // Load invisible sounds in background mode (slower, keeps UI responsive)
-        await this._loadMediaForSounds(
-          audioContext,
-          sounds.filter(sound => !sound.isVisible),
-          true,
-        )
-      } finally {
-        await audioContext.close()
-      }
-    },
-    /**
-     * Lazily get the image URLs for the given sounds (Lazy loading).
-     * @param sounds[] the array of sounds
-     * @param {AudioContext} audioContext - the audio context to use
-     * @param {boolean} backgroundMode - if true, loads sounds sequentially with delays to unblock UI
-     * @returns void
-     */
-    async _loadMediaForSounds(audioContext: AudioContext, sounds: Sound[], backgroundMode = false) {
-      if (backgroundMode) {
-        for (const sound of sounds) {
-          await this._getImageUrl(sound, audioContext) // await each sound sequentially, to keep UI responsive
-        }
-      } else {
-        await Promise.all(sounds.map(sound => this._getImageUrl(sound, audioContext)))
-      }
-    },
-    async _getImageUrl(sound: Sound, audioContext: AudioContext) {
-      if (sound.imageUrl === undefined && sound.imageKey !== undefined) {
-        await this.getFile(sound.imageKey).then((imageUrl: string | null) => {
-          if (imageUrl) {
-            sound.imageUrl = imageUrl
+      const soundsWithImages = sounds.filter(sound => sound.imageKey && sound.imageUrl === undefined)
+      await Promise.all(
+        soundsWithImages.map(async sound => {
+          if (sound.imageKey) {
+            const imageUrl = await this.getFile(sound.imageKey)
+            if (imageUrl) {
+              sound.imageUrl = imageUrl
+            }
           }
-        })
-      }
-      if (sound?.audioUrl === undefined && sound?.audioKey !== undefined) {
-        const audioUrl = await this.getFile(sound.audioKey)
-        if (audioUrl) {
-          sound.audioUrl = audioUrl
-          sound.duration = await this.getAudioDuration(audioUrl, audioContext)
-        }
-      } else {
-        sound.duration = await this.getAudioDuration(sound?.audioUrl ?? chordAlert, audioContext)
-      }
+        }),
+      )
     },
     /**
      * This function listens for windowResize events and sets the windowIsMaximized state
@@ -742,44 +738,33 @@ export const useSettingsStore = defineStore('settings', {
      * @param file the sound to save
      */
     async saveFile(file: File) {
-      // Open (or create) the database
-      const db = await openDB(dbName, 1, {
-        upgrade(db) {
-          db.createObjectStore(dbStoreName)
-        },
-      })
-
-      // Store the file in the database so it can be accessed later
+      const db = await getDB()
       const key = crypto.randomUUID()
       await db.put(dbStoreName, file, key)
-
-      // Create a blob URL that points to the file data
-      return { fileUrl: URL.createObjectURL(file), fileKey: key }
+      const fileUrl = URL.createObjectURL(file)
+      blobUrlCache.set(key, fileUrl)
+      return { fileUrl, fileKey: key }
     },
     /**
      * Fetch a sound from the store
-     * @param path the key it's saved under
+     * @param key the key it's saved under
      * @returns the value of the URL to the file
      */
     async getFile(key: string): Promise<string | null> {
-      // open the database
-      const db = await openDB(dbName, 1, {
-        upgrade(db) {
-          db.createObjectStore(dbStoreName)
-        },
-      })
-
-      // get the file from the database
+      if (!key) return null
+      if (blobUrlCache.has(key)) {
+        return blobUrlCache.get(key)!
+      }
       try {
+        const db = await getDB()
         const file = await db.get(dbStoreName, key)
-
         if (file) {
-          // Create a blob URL that points to the file data
-          return URL.createObjectURL(file)
+          const fileUrl = URL.createObjectURL(file)
+          blobUrlCache.set(key, fileUrl)
+          return fileUrl
         }
       } catch (error) {
-        console.warn(error)
-        // do nothing, we return null if the file doesn't exist
+        console.warn('Error fetching file from IndexedDB:', error)
       }
       return null
     },
@@ -789,11 +774,13 @@ export const useSettingsStore = defineStore('settings', {
      */
     async deleteFile(path: string | undefined): Promise<void> {
       if (path === undefined) return
-      // open the database
-      const db = await openDB(dbName, 1)
-
-      // delete the file from the database
-      await db.delete(dbStoreName, path)
+      blobUrlCache.delete(path)
+      try {
+        const db = await getDB()
+        await db.delete(dbStoreName, path)
+      } catch (error) {
+        console.warn('Error deleting file from IndexedDB:', error)
+      }
     },
     async replaceFile(oldPath: string | undefined, newFile: File): Promise<{ fileUrl: string; fileKey: string }> {
       if (oldPath) {
