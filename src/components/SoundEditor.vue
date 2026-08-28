@@ -8,7 +8,7 @@
         class="light preview-button">
         <inline-svg class="w-8 h-8" :src="Listen" />
       </button>
-      <h1>Edit Sound</h1>
+      <h1 @click="scrollToSound" class="cursor-pointer select-none" title="Scroll sound into view">Edit Sound</h1>
       <button @click="close" class="close-button">
         <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
       </button>
@@ -176,6 +176,14 @@ const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => 
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
+
+const scrollToSound = () => {
+  if (!props.modelValue?.id) return
+  const soundButton = document.getElementById(`sound-${props.modelValue.id}`)
+  if (soundButton) {
+    soundButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+}
 
 onMounted(() => {
   if (props.modelValue) {
@@ -428,6 +436,10 @@ function dragEnd() {
   padding: 0.75rem 1rem;
   z-index: 1;
   gap: 0.5rem;
+}
+
+.title-bar h1:hover {
+  opacity: 0.8;
 }
 
 .hide-title-checkbox-group {
