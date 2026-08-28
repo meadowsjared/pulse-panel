@@ -107,11 +107,13 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
         return prevVal
       }, {}),
     ).filter((file): file is SoundWithImage => file.audioFile !== undefined)
+    const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label)
     const audioContext = new AudioContext()
     const promAr = combinedFiles.map(async file => {
       const newSound: Sound = {
         id: crypto.randomUUID(),
         title: stripFileExtension(file.audioFile.name),
+        ...(activeTags.length > 0 ? { tags: [...activeTags] } : {}),
       }
       await handleSoundFileDrop(file.audioFile, newSound, audioContext)
       if (file.imageFile) {

@@ -199,9 +199,11 @@ function handleMouseLeave() {
 }
 
 function addSound() {
+  const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label)
   const newSound: Sound = {
     title: '',
     id: props.modelValue?.id,
+    ...(activeTags.length > 0 ? { tags: [...activeTags] } : {}),
   }
   emit('update:modelValue', newSound)
 }
