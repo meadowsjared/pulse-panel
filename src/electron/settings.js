@@ -319,9 +319,9 @@ function moveSound(prevIndex, newIndex) {
     return
   }
   const transaction = db.transaction(() => {
-    const stmt = db.prepare('SELECT order_index FROM sounds ORDER BY order_index DESC LIMIT 1 OFFSET 1')
+    const stmt = db.prepare('SELECT MAX(order_index) as maxIndex FROM sounds')
     const result = stmt.get()
-    const secondHighestIndex = result ? result.order_index : -1
+    const maxIndex = result && result.maxIndex !== null ? result.maxIndex : -1
 
     // Get the ID of the sound we're moving
     const getSoundIdStmt = db.prepare('SELECT id FROM sounds WHERE order_index = ?')
@@ -329,11 +329,11 @@ function moveSound(prevIndex, newIndex) {
 
     if (
       !soundToMove ||
-      secondHighestIndex === -1 ||
+      maxIndex === -1 ||
       prevIndex < 0 ||
-      prevIndex > secondHighestIndex ||
+      prevIndex > maxIndex ||
       newIndex < 0 ||
-      newIndex > secondHighestIndex
+      newIndex > maxIndex
     ) {
       throw new Error('Invalid indices for moving sound')
     }
