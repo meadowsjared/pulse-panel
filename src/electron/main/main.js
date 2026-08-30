@@ -140,7 +140,8 @@ function createTray() {
     updateTrayMenu()
   })
 
-  const iconPath = join(__dirname, '../../assets/pulse-panel_icon.ico') // Use .ico for Windows, .png/.icns for Mac/Linux
+  // Use .ico for Windows, .png/.icns for Mac/Linux
+  const iconPath = join(__dirname, '../../assets/pulse-panel_icon.ico')
   tray = new Tray(iconPath)
 
   tray.setToolTip('Pulse Panel')
