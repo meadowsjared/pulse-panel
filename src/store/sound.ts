@@ -3,8 +3,12 @@ import { SettingsStore, useSettingsStore } from './settings'
 import type { Sound, SoundSegment } from '../@types/sound'
 import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 
+export type ManagedAudioElement = HTMLAudioElement & {
+  _cleanup?: () => void
+}
+
 interface OutputDeviceProperties {
-  currentAudio: HTMLAudioElement[]
+  currentAudio: ManagedAudioElement[]
   /** true if this device is playing audio */
   playingAudio: boolean
   /** number of sounds that are currently playing to this device */
@@ -44,15 +48,20 @@ export const useSoundStore = defineStore('sound', {
     async stopAllSounds(): Promise<void> {
       const settingsStore = useSettingsStore()
       await this._pttHotkeyPress(settingsStore, false)
-      settingsStore.outputDevices.forEach(async (outputDeviceId: string) => {
-        const index = settingsStore.outputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
-        if (this.outputDeviceData[index]?.currentAudio.length > 0 && this.outputDeviceData[index].playingAudio) {
-          this.outputDeviceData[index].currentAudio.forEach(audio => {
-            audio.pause()
-            audio.currentTime = 0
+      this.outputDeviceData.forEach(deviceData => {
+        if (deviceData?.currentAudio?.length > 0) {
+          const list = [...deviceData.currentAudio]
+          list.forEach(audio => {
+            if (audio._cleanup) {
+              audio._cleanup()
+            } else {
+              audio.pause()
+              audio.currentTime = 0
+            }
           })
-          this.outputDeviceData[index].numSoundsPlaying--
-          this.outputDeviceData[index].playingAudio = false
+          deviceData.currentAudio = []
+          deviceData.numSoundsPlaying = 0
+          deviceData.playingAudio = false
         }
       })
       this.currentSound = null
@@ -270,18 +279,23 @@ export const useSoundStore = defineStore('sound', {
         outputDeviceData.currentAudio.length > 0 &&
         outputDeviceData.playingAudio
       ) {
-        outputDeviceData.currentAudio.forEach(audio => {
-          audio.pause()
-          audio.currentTime = 0
+        ;[...outputDeviceData.currentAudio].forEach(audio => {
+          if (audio._cleanup) {
+            audio._cleanup()
+          } else {
+            audio.pause()
+            audio.currentTime = 0
+          }
         })
-        outputDeviceData.numSoundsPlaying--
+        outputDeviceData.numSoundsPlaying = 0
         outputDeviceData.playingAudio = false
         outputDeviceData.currentAudio = [] // since we stopped them all, empty the array
       }
 
-      const newAudio = new Audio(soundObject?.audioUrl ?? chordAlert)
+      const newAudio: ManagedAudioElement = new Audio(soundObject?.audioUrl ?? chordAlert)
+      const fullId = `${soundId}_${instanceId}`
       // add the id of the audio to the newAudio object so we can keep track of that later
-      newAudio.setAttribute('data-id', `${soundId}_${instanceId}`)
+      newAudio.setAttribute('data-id', fullId)
       outputDeviceData.currentAudio.push(newAudio)
       await newAudio.setSinkId(outputDeviceId).catch((error: any) => {
         let errorMessage = error
@@ -291,35 +305,75 @@ export const useSoundStore = defineStore('sound', {
         console.error(errorMessage)
       })
       const done = new Promise<void>(resolve => {
-        const onEnded = () => {
+        let timerId: ReturnType<typeof setTimeout> | null = null
+        let finished = false
+
+        const cleanup = () => {
+          if (finished) return
+          finished = true
+
+          if (timerId !== null) {
+            clearTimeout(timerId)
+            timerId = null
+          }
+
+          newAudio.ontimeupdate = null
+          newAudio.onended = null
+          newAudio.onplaying = null
+
+          newAudio.pause()
+          newAudio.remove()
+
           outputDeviceData.currentAudio = outputDeviceData.currentAudio.filter(
-            audio => audio.getAttribute('data-id') !== `${soundId}_${instanceId}`
+            audio => audio.getAttribute('data-id') !== fullId
           )
-          newAudio?.remove()
-          outputDeviceData.numSoundsPlaying--
+          outputDeviceData.numSoundsPlaying = Math.max(0, outputDeviceData.numSoundsPlaying - 1)
           if (outputDeviceData.numSoundsPlaying < 1) {
             outputDeviceData.playingAudio = false
           }
           resolve()
         }
-        if (!outputDeviceData.currentAudio) return
+
+        // attach cleanup function directly to HTMLAudioElement so stopSound / stopAllSounds can trigger it
+        newAudio._cleanup = cleanup
+
+        if (!outputDeviceData.currentAudio) return cleanup()
+
         if (soundSegment) {
           newAudio.currentTime = soundSegment.start
-          // set the stop time
+
+          // 1. Safety check via ontimeupdate
           newAudio.ontimeupdate = () => {
             if (newAudio.currentTime >= soundSegment.end) {
-              newAudio.pause()
-              onEnded()
+              cleanup()
             }
           }
+
+          // 2. High-precision stop timer scheduled when audio starts playing
+          newAudio.onplaying = () => {
+            outputDeviceData.playingAudio = true
+            const remainingMs = Math.max(
+              0,
+              ((soundSegment.end - newAudio.currentTime) * 1000) / (newAudio.playbackRate || 1)
+            )
+            if (timerId === null) {
+              timerId = setTimeout(cleanup, remainingMs)
+            }
+          }
+        } else {
+          newAudio.onplaying = () => {
+            outputDeviceData.playingAudio = true
+          }
         }
+
         newAudio.volume = settingsStore.muted ? 0 : volume
-        newAudio.onplaying = () => {
-          outputDeviceData.playingAudio = true
-        }
         outputDeviceData.numSoundsPlaying++
-        newAudio.play()
-        newAudio.onended = onEnded
+        newAudio.onended = cleanup
+
+        newAudio.play().catch(err => {
+          console.error('Playback failed:', err)
+          cleanup()
+        })
       })
 
       return done
@@ -332,29 +386,27 @@ export const useSoundStore = defineStore('sound', {
      * @param instanceId the instance id of the sound to stop
      * @returns void
      */
-    stopSound(soundObject: Sound | null, settingsStore: SettingsStore, soundId: string, instanceId: string): void {
-      settingsStore.outputDevices.forEach((outputDeviceId: string) => {
-        const index = settingsStore.outputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
-        if (this.outputDeviceData[index]?.currentAudio.length > 0 && this.outputDeviceData[index].playingAudio) {
-          this.outputDeviceData[index].currentAudio
-            .filter(audio => audio.getAttribute('data-id') === `${soundId}_${instanceId}`)
-            .forEach(audio => {
+    stopSound(soundObject: Sound | null, _settingsStore: SettingsStore, soundId: string, instanceId: string): void {
+      const targetId = `${soundId}_${instanceId}`
+      this.outputDeviceData.forEach(deviceData => {
+        if (deviceData?.currentAudio?.length > 0) {
+          const toStop = deviceData.currentAudio.filter(audio => audio.getAttribute('data-id') === targetId)
+          toStop.forEach(audio => {
+            if (audio._cleanup) {
+              audio._cleanup()
+            } else {
               audio.pause()
               audio.currentTime = 0
-            })
-          this.outputDeviceData[index].currentAudio = this.outputDeviceData[index].currentAudio.filter(
-            audio => audio.getAttribute('data-id') !== `${soundId}_${instanceId}`
-          )
-          this.outputDeviceData[index].numSoundsPlaying--
-          this.outputDeviceData[index].playingAudio = false
-          const indexToRemove = this.playingSoundIds.findIndex(
-            item => `${item.fileId}_${item.instanceId}` === `${soundId}_${instanceId}`
-          )
-          if (indexToRemove !== -1) {
-            this.playingSoundIds.splice(indexToRemove, 1)
-          }
+            }
+          })
         }
       })
+      const indexToRemove = this.playingSoundIds.findIndex(
+        item => `${item.fileId}_${item.instanceId}` === targetId
+      )
+      if (indexToRemove !== -1) {
+        this.playingSoundIds.splice(indexToRemove, 1)
+      }
       if (soundObject) {
         // Reset the animation by toggling the resetAnimation ref
         soundObject.reset = true
