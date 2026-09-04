@@ -81,6 +81,11 @@ interface State {
    */
   currentEditingSound: Sound | null
   /**
+   * Whether the sound editor is currently opened
+   * **VOLATILE**
+   */
+  soundEditorOpen: boolean
+  /**
    * The saved window size [width, height]
    * **VOLATILE**
    */
@@ -164,6 +169,7 @@ export const useSettingsStore = defineStore('settings', {
     sounds: [],
     displayMode: 'play',
     currentEditingSound: null,
+    soundEditorOpen: false,
     hoveredSound: null,
     muted: false,
     recordingHotkey: false,
@@ -732,7 +738,7 @@ export const useSettingsStore = defineStore('settings', {
      * @param height the current window height
      */
     _saveWindowSize(width: number, height: number): void {
-      if (this.currentEditingSound !== null) {
+      if (this.soundEditorOpen) {
         width = width - 300 // adjust width to account for sound editor
       }
       if (this.windowSize[0] === width && this.windowSize[1] === height) {

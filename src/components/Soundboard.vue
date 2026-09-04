@@ -57,7 +57,6 @@ const dialogOpen = ref(false)
 const soundToDelete = ref<Sound | null>(null)
 const main = ref<HTMLDivElement | null>(null)
 const forcedWidth = ref<number | null>(null)
-const soundEditorOpen = ref(false)
 const isTransitioning = ref(false)
 
 function onWindowResize() {
@@ -323,28 +322,26 @@ function deleteSound(pSound: Sound) {
 
 function deleteSoundConfirmed() {
   if (soundToDelete.value === null) return
-  const newEditingIndex = Math.min(
-    settingsStore.sounds.findIndex(sound => sound.id === soundToDelete.value?.id),
-    /**
-     * length - 1 for last element
-     * length - 2 to avoid the last element, which will be blank
-     * length - 3 to allow for the element to be deleted
-     **/
-    settingsStore.sounds.length - 3,
-  )
+  const deletedId = soundToDelete.value.id
+  const deletedIndex = settingsStore.sounds.findIndex(sound => sound.id === deletedId)
   settingsStore.deleteSound(soundToDelete.value)
-  // check if soundToDelete is the currentEditingSound
-  if (settingsStore.currentEditingSound?.id === soundToDelete.value.id) {
-    // since we deleted soundToDelete, if we set it to newEditingIndex, it will be the next sound
-    settingsStore.currentEditingSound = settingsStore.sounds[newEditingIndex] ?? null
-  }
   soundToDelete.value = null
+
+  if (settingsStore.currentEditingSound?.id === deletedId) {
+    const validSounds = settingsStore.sounds.filter(sound => sound.title !== undefined)
+    if (validSounds.length > 0) {
+      const nextIndex = Math.min(Math.max(0, deletedIndex), validSounds.length - 1)
+      settingsStore.currentEditingSound = validSounds[nextIndex]
+    } else {
+      collapseWindow()
+    }
+  }
 }
 
 async function expandWindow(pSound: Sound) {
   if (isTransitioning.value) return
-  if (settingsStore.currentEditingSound === null && soundEditorOpen.value === false) {
-    soundEditorOpen.value = true
+  if (settingsStore.currentEditingSound === null && !settingsStore.soundEditorOpen) {
+    settingsStore.soundEditorOpen = true
     isTransitioning.value = true
     // get the current width of the soundboard
     const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0
@@ -374,7 +371,7 @@ async function expandWindow(pSound: Sound) {
     window.electron?.requestMainWindowSized()
     isTransitioning.value = false
   } else {
-    soundEditorOpen.value = true
+    settingsStore.soundEditorOpen = true
   }
   settingsStore.currentEditingSound = pSound
 }
@@ -382,8 +379,8 @@ async function expandWindow(pSound: Sound) {
 async function collapseWindow() {
   if (settingsStore.currentEditingSound === null) return
   if (isTransitioning.value) return
-  if (soundEditorOpen.value === true) {
-    soundEditorOpen.value = false
+  if (settingsStore.soundEditorOpen) {
+    settingsStore.soundEditorOpen = false
     isTransitioning.value = true
     const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0
     if (soundboardWidth === 0) return
