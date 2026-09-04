@@ -226,7 +226,7 @@ function getKeypressDown(index: number) {
 }
 
 .selected-option {
-  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
   background: var(--input-bg-color);
   cursor: pointer;
   display: flex;
