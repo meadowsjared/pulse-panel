@@ -2,13 +2,13 @@
   <div class="main" ref="main" :style="forcedWidth ? { width: `${forcedWidth}px`, flexGrow: 0 } : {}">
     <SoundToolbar />
     <div class="soundboard" @dragover.prevent @drop.prevent="droppedOnBackground">
-      <template v-for="(sound, index) in settingsStore.soundsFiltered()" :key="sound.id">
+      <template v-for="sound in filteredSounds" :key="sound.id">
         <sound-button
           v-if="sound"
           :key="`${sound?.id}`"
           :id="`sound-${sound.id}`"
           :class="{ placeholder: sound.isDragPreview }"
-          v-model="settingsStore.soundsFiltered()[index]"
+          :modelValue="sound"
           :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
           :displayMode="settingsStore.displayMode"
           @update:modelValue="handleSoundsUpdate"
@@ -38,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useSettingsStore } from '../store/settings'
 import { Sound } from '../@types/sound'
 import { File } from '../@types/file'
@@ -46,6 +47,7 @@ import { stripFileExtension } from '../utils/utils'
 const DRAG_THROTTLE_MS = 50
 
 const settingsStore = useSettingsStore()
+const filteredSounds = computed(() => settingsStore.soundsFiltered())
 let draggedIndexStart: number | null = null
 let draggedSound: Sound | null = null
 const skipBgDrop = ref(false)
