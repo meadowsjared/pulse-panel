@@ -1,5 +1,12 @@
 import { defineStore } from 'pinia'
-import { LabelActive, Sound, SoundForSaving, SoundSegment, SoundSegmentForSaving } from '../@types/sound'
+import {
+  LabelActive,
+  OutputDeviceSetting,
+  Sound,
+  SoundForSaving,
+  SoundSegment,
+  SoundSegmentForSaving,
+} from '../@types/sound'
 import { openDB, IDBPDatabase } from 'idb'
 import { File } from '../@types/file'
 import { useSoundStore } from './sound'
@@ -14,7 +21,7 @@ declare global {
 
 interface State {
   defaultVolume: number
-  outputDevices: string[]
+  outputDevices: OutputDeviceSetting[]
   darkMode: boolean
   closeToTray: boolean
   allowOverlappingSound: boolean
@@ -87,8 +94,10 @@ interface SoundWithHotkey extends Sound {
 const Boolean_Settings_Keys = ['darkMode', 'closeToTray', 'allowOverlappingSound', 'invertQuickTags', 'muted'] as const
 type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
 
-const Array_String_Settings_Keys = ['outputDevices', 'ptt_hotkey', 'stop_hotkey'] as const
+const Array_String_Settings_Keys = ['ptt_hotkey', 'stop_hotkey'] as const
 const Array_Number_Settings_Keys = ['windowSize'] as const
+const Array_OutputDevice_Settings_Keys = ['outputDevices'] as const
+type ArrayOutputDeviceSettings = (typeof Array_OutputDevice_Settings_Keys)[number]
 type ArrayNumberSettings = (typeof Array_Number_Settings_Keys)[number]
 type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number]
 const Array_Sound_Settings_Keys = ['sounds'] as const
@@ -97,12 +106,19 @@ const Number_Settings_Keys = ['defaultVolume'] as const
 type NumberSettings = (typeof Number_Settings_Keys)[number]
 const Label_Active_Settings_Keys = ['quickTagsAr'] as const
 type LabelActiveSettings = (typeof Label_Active_Settings_Keys)[number]
-type SettingsOnlyKeys = BooleanSettings | NumberSettings | ArrayStringSettings | LabelActiveSettings
+type SettingsOnlyKeys =
+  | BooleanSettings
+  | NumberSettings
+  | ArrayNumberSettings
+  | ArrayStringSettings
+  | ArrayOutputDeviceSettings
+  | LabelActiveSettings
 
 const All_Settings_Keys = [
   ...Boolean_Settings_Keys,
   ...Array_String_Settings_Keys,
   ...Array_Number_Settings_Keys,
+  ...Array_OutputDevice_Settings_Keys,
   ...Array_Sound_Settings_Keys,
   ...Number_Settings_Keys,
   ...Label_Active_Settings_Keys,
@@ -226,6 +242,14 @@ export const useSettingsStore = defineStore('settings', {
     _assignValidatedSetting(key: SettingsOnlyKeys, value: SettingValue) {
       if (this._isBooleanSettings(key) && typeof value === 'boolean') return (this[key] = value)
       else if (this._isNumberSettings(key) && typeof value === 'number') return (this[key] = value)
+      else if (this._isArrayNumberSettings(key) && this._isArrayNumber(value)) return (this[key] = value)
+      else if (this._isArrayOutputDeviceSettings(key) && this._isArrayOutputDevice(value)) {
+        return (this[key] = value.map(item =>
+          typeof item === 'string'
+            ? { deviceId: item, volume: 1 }
+            : { deviceId: item.deviceId, volume: typeof item.volume === 'number' ? item.volume : 1 }
+        ))
+      }
       else if (this._isArrayStringSettings(key) && this._isArrayString(value)) return (this[key] = value)
       else if (this._isArrayLabelActiveSettings(key) && this._isLabelActiveArray(value)) return (this[key] = value)
       return false
@@ -241,6 +265,8 @@ export const useSettingsStore = defineStore('settings', {
       const AllSettings = [
         ...Boolean_Settings_Keys,
         ...Array_String_Settings_Keys,
+        ...Array_Number_Settings_Keys,
+        ...Array_OutputDevice_Settings_Keys,
         ...Number_Settings_Keys,
         ...Label_Active_Settings_Keys,
       ] as const
@@ -272,6 +298,10 @@ export const useSettingsStore = defineStore('settings', {
                 await this.saveSetting(key, toRaw(this[key]))
               else if (this._isNumberSettings(key) && typeof this[key] === 'number')
                 await this.saveSetting(key, toRaw(this[key]))
+              else if (this._isArrayNumberSettings(key) && this._isArrayNumber(this[key]))
+                await this.saveSetting(key, toRaw(this[key]))
+              else if (this._isArrayOutputDeviceSettings(key) && this._isArrayOutputDevice(this[key]))
+                await this.saveSetting(key, toRaw(this[key]))
               else if (this._isArrayStringSettings(key) && this._isArrayString(this[key]))
                 await this.saveSetting(key, toRaw(this[key]))
               else if (this._isArrayLabelActiveSettings(key) && this._isLabelActiveArray(this[key]))
@@ -287,9 +317,17 @@ export const useSettingsStore = defineStore('settings', {
       if (this.outputDevices.length === 0) {
         const devices = await navigator.mediaDevices.enumerateDevices()
         const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')
-        const defaultValue = [audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default']
+        const defaultValue: OutputDeviceSetting[] = [
+          { deviceId: audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default', volume: 1 }
+        ]
         await electron?.saveDBSetting('outputDevices', defaultValue)
         this.outputDevices = defaultValue
+      } else {
+        this.outputDevices = this.outputDevices.map(item =>
+          typeof item === 'string'
+            ? { deviceId: item, volume: 1 }
+            : { deviceId: item.deviceId, volume: typeof item.volume === 'number' ? item.volume : 1 }
+        )
       }
       if (this.outputDevices.length > 0) {
         soundStore.populatePlayingAudio(this.outputDevices.length)
@@ -303,8 +341,9 @@ export const useSettingsStore = defineStore('settings', {
      */
     async saveSetting(key: AllSettings, value: SettingValue): Promise<boolean> {
       const electron = window.electron
+      const cloneableValue = toCloneable(value)
       // if the key is a member of BooleanSettings, ensure the value is a boolean
-      await electron?.saveDBSetting(key, value)
+      await electron?.saveDBSetting(key, cloneableValue)
       if (this._isBooleanSettings(key)) {
         if (typeof value === 'boolean') {
           this[key] = value
@@ -326,13 +365,24 @@ export const useSettingsStore = defineStore('settings', {
         }
         return false
       }
+      if (this._isArrayOutputDeviceSettings(key)) {
+        if (this._isArrayOutputDevice(value)) {
+          this[key] = value.map(item =>
+            typeof item === 'string'
+              ? { deviceId: item, volume: 1 }
+              : { deviceId: item.deviceId, volume: typeof item.volume === 'number' ? item.volume : 1 }
+          )
+          return true
+        }
+        return false
+      }
       if (this._isArrayStringSettings(key)) {
         if ((key === 'stop_hotkey' || key === 'ptt_hotkey') && this._isArrayString(value)) {
           if (value.length === 0) {
             const prevHotkey = toRaw(this[key])
             electron?.unregisterHotkeys([prevHotkey])
           } else {
-            electron?.addHotkeys([value])
+            electron?.addHotkeys([toCloneable(value)])
           }
         }
         if (this._isArrayString(value)) {
@@ -364,10 +414,21 @@ export const useSettingsStore = defineStore('settings', {
       return ['defaultVolume'].includes(k)
     },
     _isArrayStringSettings(k: string): k is ArrayStringSettings {
-      return ['outputDevices', 'ptt_hotkey', 'stop_hotkey'].includes(k)
+      return ['ptt_hotkey', 'stop_hotkey'].includes(k)
     },
     _isArrayNumberSettings(k: string): k is ArrayNumberSettings {
       return ['windowSize'].includes(k)
+    },
+    _isArrayOutputDeviceSettings(k: string): k is ArrayOutputDeviceSettings {
+      return ['outputDevices'].includes(k)
+    },
+    _isArrayOutputDevice(k: unknown): k is (OutputDeviceSetting | string)[] {
+      return (
+        Array.isArray(k) &&
+        (k.length === 0 ||
+          typeof k[0] === 'string' ||
+          (typeof k[0] === 'object' && k[0] !== null && 'deviceId' in k[0]))
+      )
     },
     _isArrayString(k: unknown): k is string[] {
       return Array.isArray(k) && (k.length === 0 || typeof k[0] === 'string')
@@ -396,6 +457,36 @@ export const useSettingsStore = defineStore('settings', {
       this.defaultVolume = volume
       const electron = window.electron
       await electron?.saveDBSetting('defaultVolume', volume)
+    },
+    /**
+     * Get the volume for a specific output device (defaults to 1)
+     */
+    getDeviceVolume(index: number): number {
+      const vol = this.outputDevices[index]?.volume
+      if (typeof vol === 'number' && !Number.isNaN(vol)) {
+        return vol
+      }
+      return 1
+    },
+    /**
+     * Update volume live in state and notify sound store
+     */
+    setDeviceVolumeLive(index: number, volume: number): void {
+      if (this.outputDevices[index]) {
+        this.outputDevices[index].volume = volume
+        const soundStore = useSoundStore()
+        soundStore.updateDeviceVolume(index)
+      }
+    },
+    /**
+     * Persist outputDevices to the database
+     */
+    async saveOutputDevices(): Promise<void> {
+      const electron = window.electron
+      await electron?.saveDBSetting(
+        'outputDevices',
+        toCloneable(this.outputDevices)
+      )
     },
     /**
      * Toggle the mute state
@@ -481,7 +572,7 @@ export const useSettingsStore = defineStore('settings', {
     },
     async updateVisibility(visibilityMap: { isVisible: boolean; soundId: string }[]): Promise<void> {
       const electron = window.electron
-      await electron?.saveVisibility(visibilityMap)
+      await electron?.saveVisibility(toCloneable(visibilityMap))
     },
     /**
      * Fetch an array setting from the store
@@ -802,7 +893,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       const returnedArray = await electron?.readDBSetting(key)
       if (returnedArray === undefined || !Array.isArray(returnedArray)) {
-        await electron?.saveDBSetting(key, defaultValue)
+        await electron?.saveDBSetting(key, toCloneable(defaultValue))
         this[key] = defaultValue
         return this[key]
       } else if (isLabelArray(returnedArray)) {
@@ -954,4 +1045,14 @@ function _stripSegmentIds(pSegments: SoundSegment[] | undefined) {
     }
     return result
   })
+}
+
+/**
+ * Unwraps Vue reactive proxies and clones objects/arrays to plain JS values for IPC serialization.
+ */
+function toCloneable<T>(val: T): T {
+  if (typeof val === 'object' && val !== null) {
+    return JSON.parse(JSON.stringify(toRaw(val)))
+  }
+  return val
 }

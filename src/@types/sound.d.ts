@@ -65,3 +65,8 @@ export interface LabelActive {
   negated?: true
   isDragPreview?: true
 }
+
+export interface OutputDeviceSetting {
+  deviceId: string
+  volume: number
+}

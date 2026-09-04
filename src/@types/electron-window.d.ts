@@ -1,4 +1,4 @@
-import { Sound, SoundForLoading, SoundForSaving, LabelActive } from './sound'
+import { Sound, SoundForLoading, SoundForSaving, LabelActive, OutputDeviceSetting } from './sound'
 export interface Versions {
   versions: {
     app: string
@@ -18,7 +18,14 @@ interface vbCableResult {
   errors?: Error[]
 }
 
-export type SettingValue = string | boolean | number | string[] | number[] | LabelActive[]
+export type SettingValue =
+  | string
+  | boolean
+  | number
+  | string[]
+  | number[]
+  | LabelActive[]
+  | OutputDeviceSetting[]
 
 export interface Settings {
   _readSetting: (key: string) => Promise<SettingValue | undefined | Sound[]>

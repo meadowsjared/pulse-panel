@@ -20,7 +20,7 @@
             <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
           </button>
           <select-custom
-            v-model="outputDevices[i]"
+            :modelValue="outputDevice ? outputDevice.deviceId : null"
             @change="optionSelected($event, i)"
             defaultText="Select an output device"
             :options="
@@ -33,9 +33,36 @@
               playingAudio: soundStore.outputDeviceData[i]?.playingAudio,
               'opacity-0 cursor-default': i === outputDevices.length - 1,
             }"
-            @click="outputDevice && soundStore.playSound(null, [outputDevice], outputDevices, true)">
+            :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+            title="Test Audio Output"
+            @click="outputDevice && soundStore.playSound(null, [outputDevice.deviceId], outputDevices.map(d => d?.deviceId ?? null), true, false, undefined, [i])">
             <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
           </button>
+          <div
+            :class="{
+              'device-volume-container': true,
+              'opacity-0 pointer-events-none': i === outputDevices.length - 1,
+            }"
+            :title="`Device Volume: ${getDeviceVolumePercent(i)}%`">
+            <input-text-number
+              class="device-volume-input"
+              :min="0"
+              :max="100"
+              :bigStep="5"
+              :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+              :modelValue="getDeviceVolumePercent(i)"
+              @update:modelValue="updateDeviceVolume(i, $event)"
+              :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
+              aria-label="Device Volume" />
+            <input-range-number
+              class="device-volume-slider"
+              :bigStep="5"
+              :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+              :modelValue="getDeviceVolumePercent(i)"
+              @update:modelValue="updateDeviceVolume(i, $event)"
+              :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
+              aria-label="Device Volume Slider" />
+          </div>
         </div>
       </div>
     </div>
@@ -117,11 +144,11 @@ import SpeakerIcon from '../assets/images/speaker.svg'
 import Download from '../assets/images/download.svg'
 import { throttle } from 'lodash'
 import PlusIcon from '../assets/images/plus.svg'
-import { LabelActive } from '../@types/sound'
+import { LabelActive, OutputDeviceSetting } from '../@types/sound'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
-const outputDevices = ref<(string | null)[]>([])
+const outputDevices = ref<(OutputDeviceSetting | null)[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
 const closeToTray = ref(false)
@@ -144,6 +171,23 @@ const volumeDisplay = computed({
     saveVolumeDebounced(value)
   },
 })
+
+function getDeviceVolumePercent(index: number): number {
+  return Math.round(settingsStore.getDeviceVolume(index) * 100)
+}
+
+const saveDeviceVolumesDebounced = throttle(() => {
+  settingsStore.saveOutputDevices()
+}, 100)
+
+function updateDeviceVolume(index: number, percent: number) {
+  const vol = Math.max(0, Math.min(100, percent)) / 100
+  if (outputDevices.value[index]) {
+    outputDevices.value[index]!.volume = vol
+  }
+  settingsStore.setDeviceVolumeLive(index, vol)
+  saveDeviceVolumesDebounced()
+}
 
 /**
  * list of unique tags from all sounds with their usage counts
@@ -293,7 +337,7 @@ settingsStore.fetchSettings().then(() => {
   darkMode.value = settingsStore.darkMode
   closeToTray.value = settingsStore.closeToTray
   allowOverlappingSound.value = settingsStore.allowOverlappingSound
-  outputDevices.value = settingsStore.outputDevices
+  outputDevices.value = settingsStore.outputDevices.map(d => ({ ...d }))
   selectedHotkey.value = settingsStore.ptt_hotkey ?? undefined
 })
 
@@ -324,9 +368,14 @@ async function optionSelected(payload: Event, outputIndex: number) {
  * @param outputIndex - the index to add the device to
  */
 function addOutputDevice(deviceId: string, outputIndex: number = outputDevices.value.length - 1) {
+  const existing = outputDevices.value[outputIndex]
+  const newSetting: OutputDeviceSetting = {
+    deviceId,
+    volume: existing?.volume ?? 1,
+  }
   outputDevices.value = [
     ...outputDevices.value.slice(0, outputIndex),
-    deviceId,
+    newSetting,
     ...outputDevices.value.slice(outputIndex + 1),
   ]
   saveAndPlaySoundToOutputDevice(deviceId)
@@ -338,13 +387,15 @@ function addOutputDevice(deviceId: string, outputIndex: number = outputDevices.v
  */
 async function saveAndPlaySoundToOutputDevice(device: string | null = null) {
   // remove the null values from the array
-  const filteredOutputDevices: string[] = outputDevices.value.filter((device): device is string => device !== null)
+  const filteredOutputDevices: OutputDeviceSetting[] = outputDevices.value.filter(
+    (device): device is OutputDeviceSetting => device !== null
+  )
   if ((await settingsStore.saveSetting('outputDevices', filteredOutputDevices)) && device) {
-    soundStore.populatePlayingAudio(outputDevices.value.filter((device): device is string => device !== null).length)
+    soundStore.populatePlayingAudio(filteredOutputDevices.length)
     soundStore.playSound(
       null,
       [device],
-      outputDevices.value.map(device => device ?? null),
+      outputDevices.value.map(d => d?.deviceId ?? null),
       true
     ) // play only to the selected device
   }
@@ -427,6 +478,34 @@ h2 {
 .select-line {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+}
+
+.device-volume-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.25rem;
+  gap: 0.25rem;
+}
+
+.device-volume-input {
+  width: 2.75rem;
+  text-align: center;
+  padding: 0;
+  font-size: 0.85rem;
+  outline: 1px solid var(--text-color);
+  outline-offset: 1px;
+  margin-bottom: 0.25rem;
+}
+
+.device-volume-input:focus-visible {
+  outline-color: var(--active-color);
+}
+
+.device-volume-slider {
+  width: 5.5rem;
 }
 .select-option {
   height: 4rem;

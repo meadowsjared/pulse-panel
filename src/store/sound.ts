@@ -82,14 +82,53 @@ export const useSoundStore = defineStore('sound', {
      * Unmute all sounds by setting their volume to their original volume
      */
     async unmuteAllSounds(): Promise<void> {
+      await this.updateAllAudioVolumes()
+    },
+    /**
+     * Update the volume of audio playing on a specific device
+     */
+    async updateDeviceVolume(deviceIndex: number): Promise<void> {
       const settingsStore = useSettingsStore()
-      this.outputDeviceData.forEach((outputDevice: OutputDeviceProperties) => {
+      if (settingsStore.muted) {
+        this.muteAllSounds()
+        return
+      }
+      const deviceData = this.outputDeviceData[deviceIndex]
+      if (!deviceData) return
+      const deviceVol = settingsStore.getDeviceVolume(deviceIndex)
+      const defaultVol =
+        Number.isNaN(settingsStore.defaultVolume) || typeof settingsStore.defaultVolume !== 'number'
+          ? 1
+          : settingsStore.defaultVolume
+      deviceData.currentAudio.forEach(audio => {
+        const sound = settingsStore.sounds.find(
+          s => audio.getAttribute('data-id')?.startsWith(`${s.id}_`) === true
+        )
+        const baseVolume = sound?.volume ?? defaultVol
+        audio.volume = Math.min(1, Math.max(0, baseVolume * deviceVol))
+      })
+    },
+    /**
+     * Update the volume of all currently playing audio elements
+     */
+    async updateAllAudioVolumes(): Promise<void> {
+      const settingsStore = useSettingsStore()
+      if (settingsStore.muted) {
+        this.muteAllSounds()
+        return
+      }
+      this.outputDeviceData.forEach((outputDevice: OutputDeviceProperties, deviceIndex: number) => {
+        const deviceVol = settingsStore.getDeviceVolume(deviceIndex)
+        const defaultVol =
+          Number.isNaN(settingsStore.defaultVolume) || typeof settingsStore.defaultVolume !== 'number'
+            ? 1
+            : settingsStore.defaultVolume
         outputDevice.currentAudio.forEach(audio => {
-          // find this audio in the sounds array
-          const volume = settingsStore.sounds.find(
-            sound => audio.getAttribute('data-id')?.startsWith(`${sound.id}_`) === true
-          )?.volume
-          audio.volume = volume ?? 1
+          const sound = settingsStore.sounds.find(
+            s => audio.getAttribute('data-id')?.startsWith(`${s.id}_`) === true
+          )
+          const baseVolume = sound?.volume ?? defaultVol
+          audio.volume = Math.min(1, Math.max(0, baseVolume * deviceVol))
         })
       })
     },
@@ -114,11 +153,14 @@ export const useSoundStore = defineStore('sound', {
      * @param volume the volume to set it to
      */
     async setVolume(volume: number, soundId: string): Promise<void> {
-      this.outputDeviceData.forEach((outputDevice: OutputDeviceProperties) => {
+      const settingsStore = useSettingsStore()
+      this.outputDeviceData.forEach((outputDevice: OutputDeviceProperties, deviceIndex: number) => {
+        const deviceVol = settingsStore.getDeviceVolume(deviceIndex)
+        const effectiveVolume = settingsStore.muted ? 0 : Math.min(1, Math.max(0, volume * deviceVol))
         outputDevice.currentAudio
           .filter(audio => audio.getAttribute('data-id')?.startsWith(`${soundId}_`) === true)
           .forEach(audio => {
-            audio.volume = volume
+            audio.volume = effectiveVolume
           })
       })
     },
@@ -149,7 +191,8 @@ export const useSoundStore = defineStore('sound', {
       selectedOutputDevices: (string | null)[] | null = null,
       preview: boolean = false,
       preventFalseKeyTrigger = false,
-      soundSegment?: SoundSegment
+      soundSegment?: SoundSegment,
+      deviceIndices?: number[]
     ): Promise<void> {
       if (soundObject) {
         soundObject.reset = true
@@ -164,7 +207,7 @@ export const useSoundStore = defineStore('sound', {
       }
       if (settingsStore.recordingHotkey) return Promise.resolve() // if muted, don't play the sound //  || this.sendingKey
       // console.debug('1 this.disabled = ', this.disabled)
-      activeOutputDevices ??= settingsStore.outputDevices
+      activeOutputDevices ??= settingsStore.outputDevices.map(d => d.deviceId)
       // filter out null values
       activeOutputDevices = activeOutputDevices.filter((deviceId): deviceId is string => deviceId !== null)
       if (!activeOutputDevices) return Promise.resolve()
@@ -205,15 +248,20 @@ export const useSoundStore = defineStore('sound', {
       const promiseAr: Promise<void>[] = activeOutputDevices?.map<Promise<void>>(
         async (outputDeviceId: string, index: number) => {
           if (preview && index !== 0) return // only play the sound on the first device if previewing
+          const targetDeviceIndex = deviceIndices?.[index]
           await this._playSoundToDevice(
             outputDeviceId,
             audioFileId,
             instanceId,
-            soundObject?.volume ?? settingsStore.defaultVolume,
+            soundObject?.volume ??
+              (Number.isNaN(settingsStore.defaultVolume) || typeof settingsStore.defaultVolume !== 'number'
+                ? 1
+                : settingsStore.defaultVolume),
             filteredSelectedOutputDevices,
             settingsStore,
             soundObject,
-            segment
+            segment,
+            targetDeviceIndex
           )
         }
       )
@@ -257,6 +305,7 @@ export const useSoundStore = defineStore('sound', {
      * @param settingsStore the settings store
      * @param soundObject the file to play, defaults to `chordAlert`
      * @param soundSegment optional segment of the sound to play (otherwise it defaults to the first segment defined, otherwise it defaults to the whole sound)
+     * @param targetDeviceIndex optional explicit device index
      */
     async _playSoundToDevice(
       outputDeviceId: string,
@@ -266,9 +315,13 @@ export const useSoundStore = defineStore('sound', {
       selectedOutputDevices: string[],
       settingsStore: SettingsStore,
       soundObject: Sound | null,
-      soundSegment?: SoundSegment
+      soundSegment?: SoundSegment,
+      targetDeviceIndex?: number
     ): Promise<void> {
-      const index = selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
+      const index =
+        targetDeviceIndex !== undefined && targetDeviceIndex >= 0
+          ? targetDeviceIndex
+          : selectedOutputDevices.findIndex((deviceId: string | null) => deviceId === outputDeviceId)
       if (index === -1) {
         console.error('Output device not found', { outputDeviceId, selectedOutputDevices })
         return Promise.resolve()
@@ -366,7 +419,8 @@ export const useSoundStore = defineStore('sound', {
           }
         }
 
-        newAudio.volume = settingsStore.muted ? 0 : volume
+        const deviceVol = settingsStore.getDeviceVolume(index)
+        newAudio.volume = settingsStore.muted ? 0 : Math.min(1, Math.max(0, volume * deviceVol))
         outputDeviceData.numSoundsPlaying++
         newAudio.onended = cleanup
 
