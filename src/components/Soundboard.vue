@@ -60,7 +60,18 @@ const forcedWidth = ref<number | null>(null)
 const soundEditorOpen = ref(false)
 const isTransitioning = ref(false)
 
+function onWindowResize() {
+  if (!isTransitioning.value) {
+    forcedWidth.value = null
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', onWindowResize)
+})
+
 onUnmounted(() => {
+  window.removeEventListener('resize', onWindowResize)
   if (dragOverThrottle.value) {
     clearTimeout(dragOverThrottle.value)
   }
@@ -351,7 +362,9 @@ async function expandWindow(pSound: Sound) {
           resolve()
         }, 10)
       })
-      if (main.value) {
+      if (main.value?.parentElement) {
+        observer.observe(main.value.parentElement)
+      } else if (main.value) {
         observer.observe(main.value)
       }
     })
@@ -364,8 +377,6 @@ async function expandWindow(pSound: Sound) {
     soundEditorOpen.value = true
   }
   settingsStore.currentEditingSound = pSound
-  // reset the size to the original size to allow for window resizing
-  forcedWidth.value = null
 }
 
 async function collapseWindow() {
@@ -384,6 +395,7 @@ async function collapseWindow() {
     isTransitioning.value = false
   } else {
     settingsStore.currentEditingSound = null
+    forcedWidth.value = null
   }
 }
 </script>
@@ -429,6 +441,8 @@ async function collapseWindow() {
 
 .rightSideBar {
   width: 300px;
+  flex-shrink: 0;
+  flex-grow: 0;
   background: var(--alt-bg-color);
 }
 

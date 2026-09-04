@@ -199,10 +199,7 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   right: 0;
   font-weight: bold;
   text-wrap: pretty;
-  line-height: 1.15;
-  max-height: 100%;
-  overflow: hidden;
-  word-break: break-word;
+  line-height: 1.1;
 }
 
 .button-group {
@@ -251,8 +248,6 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   display: flex;
   flex-direction: column;
   border-radius: 0.25rem;
-  content-visibility: auto;
-  contain-intrinsic-size: 80px 110px;
 }
 
 .sound-button:has(+ .button-group:hover),
