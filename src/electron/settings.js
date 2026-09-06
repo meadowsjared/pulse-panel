@@ -760,12 +760,12 @@ async function runSetupAndCleanup(response, appName, extractPath) {
        * @type { sudoExecResult }
        */
       if (fs.existsSync(setupPath)) {
-        await sudoExec(response, appName, setupPath)
+        await sudoExec(response, appName, `"${setupPath}" -i -h`)
         await removeVBCableInstallDirectory(response, extractPath)
         // add removeDirResult messages and errors to sudoExecResult
         resolve(response)
       } else if (fs.existsSync(setupPath32)) {
-        await sudoExec(response, appName, setupPath32)
+        await sudoExec(response, appName, `"${setupPath32}" -i -h`)
         await removeVBCableInstallDirectory(response, extractPath)
         resolve(response)
       } else {
@@ -909,6 +909,11 @@ async function vbCableIsInstalled(response) {
   }
 }
 
+async function checkVirtualCableInstalled() {
+  const dummyResponse = { messages: [], errors: [] }
+  return await vbCableIsInstalled(dummyResponse)
+}
+
 module.exports = {
   _readSetting,
   sendKey,
@@ -917,6 +922,7 @@ module.exports = {
   unregisterHotkeys,
   stop,
   downloadVBCable,
+  checkVirtualCableInstalled,
   readAllDBSettings,
   saveDBSetting,
   readDBSetting,

@@ -52,6 +52,7 @@ export interface Settings {
   expandWindow: (widthChange: number, heightChange: number) => Promise<void>
   openExternalLink: (url: string) => void
   downloadVBCable: (appName: string) => Promise<vbCableResult>
+  checkVirtualCableInstalled: () => Promise<boolean>
   downloadAndInstallUpdate: (downloadUrl: string) => Promise<void>
   onUpdateDownloadProgress: (callback: (progress: UpdateDownloadProgress) => void) => void
   // Database related functions

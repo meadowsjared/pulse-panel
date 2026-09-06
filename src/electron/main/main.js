@@ -68,6 +68,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('open-external-link', (_, url) => shell.openExternal(url))
   ipcMain.handle('download-vb-cable', (_, appName) => settings.downloadVBCable(appName))
+  ipcMain.handle('check-virtual-cable-installed', () => settings.checkVirtualCableInstalled())
 
   ipcMain.handle('read-all-db-settings', () => settings.readAllDBSettings())
   ipcMain.handle('save-db-setting', (_, settingName, settingValue) => settings.saveDBSetting(settingName, settingValue))

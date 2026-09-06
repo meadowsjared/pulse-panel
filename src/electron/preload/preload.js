@@ -44,6 +44,7 @@ contextBridge.exposeInMainWorld('electron', {
   expandWindow: (widthChange, heightChange) => ipcRenderer.invoke('expand-window', widthChange, heightChange),
   openExternalLink: url => ipcRenderer.invoke('open-external-link', url),
   downloadVBCable: appName => ipcRenderer.invoke('download-vb-cable', appName),
+  checkVirtualCableInstalled: () => ipcRenderer.invoke('check-virtual-cable-installed'),
   downloadAndInstallUpdate: downloadUrl => ipcRenderer.invoke('download-and-install-update', downloadUrl),
   onUpdateDownloadProgress: callback => {
     ipcRenderer.on('update-download-progress', (_, progress) => callback(progress))

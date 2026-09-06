@@ -13,6 +13,7 @@ import { useSoundStore } from './sound'
 import { Settings, SettingValue, Versions } from '../@types/electron-window'
 import { toRaw } from 'vue'
 import { searchSounds } from '../utils/soundSearch'
+import { audioMixer } from '../services/audioMixer'
 
 declare global {
   interface Window {
@@ -32,6 +33,9 @@ interface State {
   stop_hotkey: string[]
   quickTagsAr?: LabelActive[]
   invertQuickTags: boolean
+  selectedMicrophoneId: string | null
+  microphoneVolume: number
+  microphoneMuted: boolean
   // not saved in the database:
   /**
    * friendly name of the app
@@ -45,6 +49,24 @@ interface State {
    * **VOLATILE**
    */
   allOutputDevices: MediaDeviceInfo[]
+  /**
+   * List of all available input devices (microphones)
+   *
+   * **VOLATILE**
+   */
+  allInputDevices: MediaDeviceInfo[]
+  /**
+   * Device ID of the detected virtual cable output
+   *
+   * **VOLATILE**
+   */
+  virtualCableDeviceId: string | null
+  /**
+   * Whether the virtual audio cable driver is installed on the system
+   *
+   * **VOLATILE**
+   */
+  virtualCableInstalled: boolean
   /**
    * Whether the window is currently maximized
    *
@@ -97,8 +119,18 @@ interface SoundWithHotkey extends Sound {
   hotkey: string[]
 }
 
-const Boolean_Settings_Keys = ['darkMode', 'closeToTray', 'allowOverlappingSound', 'invertQuickTags', 'muted'] as const
+const Boolean_Settings_Keys = [
+  'darkMode',
+  'closeToTray',
+  'allowOverlappingSound',
+  'invertQuickTags',
+  'muted',
+  'microphoneMuted',
+] as const
 type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
+
+const String_Settings_Keys = ['selectedMicrophoneId'] as const
+type StringSettings = (typeof String_Settings_Keys)[number]
 
 const Array_String_Settings_Keys = ['ptt_hotkey', 'stop_hotkey'] as const
 const Array_Number_Settings_Keys = ['windowSize'] as const
@@ -108,12 +140,13 @@ type ArrayNumberSettings = (typeof Array_Number_Settings_Keys)[number]
 type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number]
 const Array_Sound_Settings_Keys = ['sounds'] as const
 type ArraySoundSettings = (typeof Array_Sound_Settings_Keys)[number]
-const Number_Settings_Keys = ['defaultVolume'] as const
+const Number_Settings_Keys = ['defaultVolume', 'microphoneVolume'] as const
 type NumberSettings = (typeof Number_Settings_Keys)[number]
 const Label_Active_Settings_Keys = ['quickTagsAr'] as const
 type LabelActiveSettings = (typeof Label_Active_Settings_Keys)[number]
 type SettingsOnlyKeys =
   | BooleanSettings
+  | StringSettings
   | NumberSettings
   | ArrayNumberSettings
   | ArrayStringSettings
@@ -122,6 +155,7 @@ type SettingsOnlyKeys =
 
 const All_Settings_Keys = [
   ...Boolean_Settings_Keys,
+  ...String_Settings_Keys,
   ...Array_String_Settings_Keys,
   ...Array_Number_Settings_Keys,
   ...Array_OutputDevice_Settings_Keys,
@@ -157,6 +191,22 @@ const blobUrlCache = new Map<string, string>()
 
 export interface SettingsStore extends ReturnType<typeof useSettingsStore> {}
 
+function isVirtualCableOutput(label: string): boolean {
+  const l = label.toLowerCase()
+  if (l.includes('voicemeeter')) return false
+  if (l.includes('cable output')) return false
+  if (l.includes('16ch')) return false
+  return l.includes('cable input') || (l.includes('cable') && l.includes('input'))
+}
+
+function isVirtualCableInput(label: string): boolean {
+  const l = label.toLowerCase()
+  if (l.includes('voicemeeter')) return false
+  if (l.includes('cable input')) return false
+  if (l.includes('16ch')) return false
+  return l.includes('cable output') || (l.includes('cable') && l.includes('output'))
+}
+
 export const useSettingsStore = defineStore('settings', {
   state: (): State => ({
     appName: 'Pulse Panel',
@@ -180,6 +230,12 @@ export const useSettingsStore = defineStore('settings', {
     quickTagsAr: [],
     invertQuickTags: false,
     windowSize: [],
+    selectedMicrophoneId: null,
+    microphoneVolume: 1,
+    microphoneMuted: false,
+    allInputDevices: [],
+    virtualCableDeviceId: null,
+    virtualCableInstalled: false,
   }),
   getters: {
     quickTags(): LabelActive[] {
@@ -247,6 +303,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       const AllSettings = [
         ...Boolean_Settings_Keys,
+        ...String_Settings_Keys,
         ...Array_String_Settings_Keys,
         ...Array_Number_Settings_Keys,
         ...Array_OutputDevice_Settings_Keys,
@@ -256,6 +313,10 @@ export const useSettingsStore = defineStore('settings', {
       const settings = await electron?.readAllDBSettings()
       // transfer all the properties from settings to the local state
       if (settings) Object.assign(this, toRaw(settings))
+      if (typeof this.microphoneVolume !== 'number' || Number.isNaN(this.microphoneVolume)) {
+        this.microphoneVolume = 1
+      }
+      this.microphoneMuted = !!this.microphoneMuted
       const soundStore = useSoundStore()
       // if no settings were found, try to migrate from the old store
       if (settings === undefined || Object.keys(settings).length === 0) {
@@ -278,6 +339,8 @@ export const useSettingsStore = defineStore('settings', {
             AllSettings.map(async key => {
               // transfer the setting to the new store
               if (this._isBooleanSettings(key) && typeof this[key] === 'boolean')
+                await this.saveSetting(key, toRaw(this[key]))
+              else if (this._isStringSettings(key) && typeof this[key] === 'string')
                 await this.saveSetting(key, toRaw(this[key]))
               else if (this._isNumberSettings(key) && typeof this[key] === 'number')
                 await this.saveSetting(key, toRaw(this[key]))
@@ -315,6 +378,21 @@ export const useSettingsStore = defineStore('settings', {
       if (this.outputDevices.length > 0) {
         soundStore.populatePlayingAudio(this.outputDevices.length)
       }
+      await this.fetchAllOutputDevices()
+      await this.fetchAllInputDevices()
+      await audioMixer.setup(
+        this.selectedMicrophoneId,
+        typeof this.microphoneVolume === 'number' ? this.microphoneVolume : 1,
+        !!this.microphoneMuted,
+        this.virtualCableDeviceId
+      )
+      if (!this.virtualCableDeviceId) {
+        await this.fetchAllOutputDevices()
+        await this.fetchAllInputDevices()
+        if (this.virtualCableDeviceId) {
+          await audioMixer.setCableOutput(this.virtualCableDeviceId)
+        }
+      }
     },
     /**
      * Save an array setting to the store
@@ -330,6 +408,19 @@ export const useSettingsStore = defineStore('settings', {
       if (this._isBooleanSettings(key)) {
         if (typeof value === 'boolean') {
           this[key] = value
+          if (key === 'microphoneMuted') {
+            audioMixer.setMicrophoneMuted(this.microphoneMuted)
+          }
+          return true
+        }
+        return false
+      }
+      if (this._isStringSettings(key)) {
+        if (typeof value === 'string' || value === null) {
+          (this as any)[key] = value
+          if (key === 'selectedMicrophoneId') {
+            audioMixer.setMicrophone(this.selectedMicrophoneId)
+          }
           return true
         }
         return false
@@ -337,6 +428,9 @@ export const useSettingsStore = defineStore('settings', {
       if (this._isNumberSettings(key)) {
         if (typeof value === 'number') {
           this[key] = value
+          if (key === 'microphoneVolume') {
+            audioMixer.setMicrophoneVolume(this.microphoneVolume)
+          }
           return true
         }
         return false
@@ -391,10 +485,13 @@ export const useSettingsStore = defineStore('settings', {
       return false
     },
     _isBooleanSettings(k: string): k is BooleanSettings {
-      return ['muted', 'darkMode', 'allowOverlappingSound', 'invertQuickTags'].includes(k)
+      return (Boolean_Settings_Keys as readonly string[]).includes(k)
+    },
+    _isStringSettings(k: string): k is StringSettings {
+      return (String_Settings_Keys as readonly string[]).includes(k)
     },
     _isNumberSettings(k: string): k is NumberSettings {
-      return ['defaultVolume'].includes(k)
+      return (Number_Settings_Keys as readonly string[]).includes(k)
     },
     _isArrayStringSettings(k: string): k is ArrayStringSettings {
       return ['ptt_hotkey', 'stop_hotkey'].includes(k)
@@ -488,14 +585,73 @@ export const useSettingsStore = defineStore('settings', {
       await electron?.saveDBSetting('muted', this.muted)
     },
     /**
-     * Fetch all available audio output devices
-     * @returns a list of all available audio output devices
+     * Fetch all available audio output devices and detect the virtual audio cable
+     * @returns a list of available physical audio output devices
      */
     async fetchAllOutputDevices(): Promise<MediaDeviceInfo[]> {
       const devices = await navigator.mediaDevices.enumerateDevices()
-      const devicesFiltered = devices.filter(device => device.kind === 'audiooutput')
-      this.allOutputDevices = devicesFiltered
-      return devicesFiltered
+      const allOutputs = devices.filter(device => device.kind === 'audiooutput')
+
+      // Detect virtual cable output endpoint (strictly CABLE Input, excluding Voicemeeter)
+      const cableDevice = allOutputs.find(d => isVirtualCableOutput(d.label))
+      if (cableDevice) {
+        this.virtualCableDeviceId = cableDevice.deviceId
+        this.virtualCableInstalled = true
+        audioMixer.setCableOutput(this.virtualCableDeviceId)
+      } else {
+        this.virtualCableDeviceId = null
+        const installedViaIPC = await window.electron?.checkVirtualCableInstalled().catch(() => false)
+        this.virtualCableInstalled = !!installedViaIPC
+      }
+
+      // Filter out only the virtual cable from user-visible playback device list
+      // Voicemeeter outputs (e.g. "VoiceMeeter Input") remain visible and usable for monitoring
+      const physicalOutputs = allOutputs.filter(device => !isVirtualCableOutput(device.label))
+      this.allOutputDevices = physicalOutputs
+      return physicalOutputs
+    },
+    /**
+     * Fetch all available microphone input devices
+     * @returns a list of available microphone input devices
+     */
+    async fetchAllInputDevices(): Promise<MediaDeviceInfo[]> {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const allInputs = devices.filter(device => device.kind === 'audioinput')
+
+      // Filter out only the virtual cable output endpoint, preserving Voicemeeter mics
+      const physicalInputs = allInputs.filter(device => !isVirtualCableInput(device.label))
+      this.allInputDevices = physicalInputs.length > 0 ? physicalInputs : allInputs
+      if (!this.selectedMicrophoneId && this.allInputDevices.length > 0) {
+        this.selectedMicrophoneId = this.allInputDevices[0].deviceId
+        await this.saveSetting('selectedMicrophoneId', this.selectedMicrophoneId)
+      }
+      return this.allInputDevices
+    },
+    /**
+     * Check if the virtual audio cable driver is installed on the system
+     */
+    async checkVirtualCableStatus(): Promise<boolean> {
+      const installed = await window.electron?.checkVirtualCableInstalled().catch(() => false)
+      this.virtualCableInstalled = !!installed
+      return this.virtualCableInstalled
+    },
+    /**
+     * Save the selected microphone device ID
+     */
+    async saveMicrophoneDevice(deviceId: string): Promise<boolean> {
+      return this.saveSetting('selectedMicrophoneId', deviceId)
+    },
+    /**
+     * Save the microphone volume (0 to 1)
+     */
+    async saveMicrophoneVolume(volume: number): Promise<boolean> {
+      return this.saveSetting('microphoneVolume', volume)
+    },
+    /**
+     * Toggle the microphone muted state
+     */
+    async toggleMicrophoneMute(): Promise<boolean> {
+      return this.saveSetting('microphoneMuted', !this.microphoneMuted)
     },
     async toggleDisplayMode(): Promise<void> {
       this.displayMode = this.displayMode === 'play' ? 'edit' : 'play'

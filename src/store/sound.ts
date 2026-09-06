@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { SettingsStore, useSettingsStore } from './settings'
 import type { Sound, SoundSegment } from '../@types/sound'
 import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
+import { audioMixer } from '../services/audioMixer'
 
 export type ManagedAudioElement = HTMLAudioElement & {
   _cleanup?: () => void
@@ -48,6 +49,7 @@ export const useSoundStore = defineStore('sound', {
     async stopAllSounds(): Promise<void> {
       const settingsStore = useSettingsStore()
       await this._pttHotkeyPress(settingsStore, false)
+      audioMixer.stopAllSounds()
       this.outputDeviceData.forEach(deviceData => {
         if (deviceData?.currentAudio?.length > 0) {
           const list = [...deviceData.currentAudio]
@@ -266,6 +268,22 @@ export const useSoundStore = defineStore('sound', {
         }
       )
 
+      if (!preview && settingsStore.virtualCableDeviceId) {
+        const mixerVol =
+          soundObject?.volume ??
+          (Number.isNaN(settingsStore.defaultVolume) || typeof settingsStore.defaultVolume !== 'number'
+            ? 1
+            : settingsStore.defaultVolume)
+        audioMixer
+          .playSoundToMixer(
+            soundObject?.audioUrl ?? chordAlert,
+            settingsStore.muted ? 0 : mixerVol,
+            segment,
+            `${audioFileId}_${instanceId}`
+          )
+          .catch(console.error)
+      }
+
       // convert the array of promises to a single promise that resolves when all promises are done
       const done = new Promise<void>(resolve => {
         ;(promiseAr === null ? Promise.resolve() : Promise.all(promiseAr)).then(() => {
@@ -442,6 +460,7 @@ export const useSoundStore = defineStore('sound', {
      */
     stopSound(soundObject: Sound | null, _settingsStore: SettingsStore, soundId: string, instanceId: string): void {
       const targetId = `${soundId}_${instanceId}`
+      audioMixer.stopSound(targetId)
       this.outputDeviceData.forEach(deviceData => {
         if (deviceData?.currentAudio?.length > 0) {
           const toStop = deviceData.currentAudio.filter(audio => audio.getAttribute('data-id') === targetId)

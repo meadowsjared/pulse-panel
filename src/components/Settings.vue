@@ -3,7 +3,83 @@
     <div class="bar">
       <h1 class="mx-auto">Settings</h1>
     </div>
-    <h2>Audio Output Devices:</h2>
+    <div class="virtual-cable-status-card" :class="{ active: !!settingsStore.virtualCableDeviceId }">
+      <div class="virtual-cable-header">
+        <div class="virtual-status-indicator" :class="{ online: !!settingsStore.virtualCableDeviceId }"></div>
+        <span class="virtual-status-title">
+          {{ settingsStore.virtualCableDeviceId ? 'Virtual Microphone: Connected & Ready' : 'Virtual Microphone: Driver Needed' }}
+        </span>
+      </div>
+      <p class="virtual-status-desc" v-if="settingsStore.virtualCableDeviceId">
+        Your voice and soundboard audio are combined automatically and routed into this device. In Discord, Zoom, or games, select <strong>CABLE Output (VB-Audio Virtual Cable)</strong> as your input device.
+      </p>
+      <div v-else class="virtual-status-install">
+        <p class="virtual-status-desc">
+          To broadcast both your microphone and soundboard clips into voice chats (Discord, Zoom, games) without echo, Pulse-Panel uses a virtual audio driver.
+        </p>
+        <button
+          class="install-cable-btn"
+          :disabled="isInstallingCable"
+          @click="installVirtualCable">
+          <inline-svg :src="Download" class="w-4 h-4" />
+          {{ isInstallingCable ? 'Installing Driver...' : 'Install Virtual Audio Driver (One-Click)' }}
+        </button>
+        <div v-if="cableInstallMessage" class="cable-install-msg">{{ cableInstallMessage }}</div>
+      </div>
+    </div>
+
+    <h2>Microphone Input:</h2>
+    <p class="section-subtitle">Select your physical microphone. It will be mixed with soundboard clips and sent to Discord/games.</p>
+    <div class="mx-auto mb-2">
+      <div class="mic-controls-container">
+        <div class="mic-select-line">
+          <select-custom
+            :modelValue="settingsStore.selectedMicrophoneId"
+            @change="onMicSelected($event)"
+            defaultText="Select your microphone"
+            :options="
+              settingsStore.allInputDevices.map(option => ({ label: option.label, value: option.deviceId }))
+            " />
+          <button
+            :class="{
+              'mic-mute-btn': true,
+              muted: settingsStore.microphoneMuted,
+            }"
+            :title="settingsStore.microphoneMuted ? 'Unmute Microphone' : 'Mute Microphone'"
+            @click="toggleMicMute">
+            <inline-svg :src="settingsStore.microphoneMuted ? MicrophoneSlashIcon : MicrophoneIcon" class="w-5 h-5" />
+          </button>
+          <div class="device-volume-container" :title="`Microphone Volume: ${micVolumeDisplay}%`">
+            <input-text-number
+              class="device-volume-input"
+              :min="0"
+              :max="100"
+              :bigStep="5"
+              v-model="micVolumeDisplay"
+              :title="`Microphone Volume: ${micVolumeDisplay}%`"
+              aria-label="Microphone Volume" />
+            <input-range-number
+              class="device-volume-slider"
+              :bigStep="5"
+              v-model="micVolumeDisplay"
+              :title="`Microphone Volume: ${micVolumeDisplay}%`"
+              aria-label="Microphone Volume Slider" />
+          </div>
+        </div>
+        <div class="mic-level-container" title="Live Microphone Input Level">
+          <span class="mic-level-label">Mic Level:</span>
+          <div class="mic-level-track">
+            <div
+              class="mic-level-fill"
+              :class="{ muted: settingsStore.microphoneMuted }"
+              :style="{ clipPath: `inset(0 ${100 - (settingsStore.microphoneMuted ? 0 : micLevel)}% 0 0)` }"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Headphones / Audio Monitoring:</h2>
+    <p class="section-subtitle">Where you hear soundboard clips. Your physical voice is never echoed back to your headphones.</p>
     <div class="mx-auto">
       <div class="audio-output-devices">
         <div v-for="(outputDevice, i) in outputDevices" :key="i" class="select-line">
@@ -95,12 +171,6 @@
       title="this will be the button you can press to stop all sounds immediately"
       >Stop Sounds Key:</hotkey-picker
     >
-    <div class="downloadVBCableGroup mx-auto mt-2">
-      <button @click="downloadVBCable" class="light downloadVBCable">
-        Get VB-Cable<inline-svg :src="Download" class="download-icon" />
-      </button>
-      <div class="vb-cable-status-message" :class="{ showVBCableMessage }">{{ vbCableMessage }}</div>
-    </div>
     <div class="flex justify-center mt-4 flex-col">
       <h2>Quick Tags:</h2>
       <div class="flex justify-center gap-2 flex-wrap flex-col">
@@ -174,12 +244,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import { useUpdateStore } from '../store/update'
+import { audioMixer } from '../services/audioMixer'
 import SpeakerIcon from '../assets/images/speaker.svg'
+import MicrophoneIcon from '../assets/images/microphone.svg'
+import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg'
 import Download from '../assets/images/download.svg'
 import { throttle } from 'lodash'
 import PlusIcon from '../assets/images/plus.svg'
@@ -194,9 +267,89 @@ const darkMode = ref(true)
 const closeToTray = ref(false)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
 const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined)
-const showVBCableMessage = ref(false)
-const vbCableMessage = ref('')
 const newTag = ref<string | null>(null)
+
+const isInstallingCable = ref(false)
+const cableInstallMessage = ref('')
+const micLevel = ref(0)
+let rafId: number | null = null
+
+function updateMicLevelLoop() {
+  micLevel.value = Math.min(100, Math.round(audioMixer.getMicLevel() * 100))
+  rafId = requestAnimationFrame(updateMicLevelLoop)
+}
+
+onMounted(() => {
+  audioMixer.resume().catch(() => {})
+  rafId = requestAnimationFrame(updateMicLevelLoop)
+})
+
+onUnmounted(() => {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+  }
+})
+
+const saveMicVolumeDebounced = throttle((value: number) => {
+  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100
+  settingsStore.saveMicrophoneVolume(newValue)
+}, 100)
+
+const micVolumeDisplay = computed({
+  get: () => Math.round(settingsStore.microphoneVolume * 100),
+  set: (value: number) => {
+    saveMicVolumeDebounced(value)
+  },
+})
+
+async function onMicSelected(payload: Event | string) {
+  let deviceId: string | null = null
+  if (typeof payload === 'string') {
+    deviceId = payload
+  } else if (payload && (payload as any).target) {
+    deviceId = (payload as any).target.value
+  }
+  if (deviceId) {
+    await settingsStore.saveMicrophoneDevice(deviceId)
+  }
+}
+
+async function toggleMicMute() {
+  await settingsStore.toggleMicrophoneMute()
+}
+
+async function installVirtualCable() {
+  isInstallingCable.value = true
+  cableInstallMessage.value = 'Installing driver in background...'
+  try {
+    const res = await window.electron?.downloadVBCable(settingsStore.appName)
+    if (res?.vbCableInstallerRan) {
+      cableInstallMessage.value = 'Driver installed! Detecting device...'
+      setTimeout(async () => {
+        await settingsStore.fetchAllOutputDevices()
+        await settingsStore.fetchAllInputDevices()
+        await settingsStore.checkVirtualCableStatus()
+        isInstallingCable.value = false
+        cableInstallMessage.value = ''
+      }, 3000)
+    } else if (res?.vbCableAlreadyInstalled) {
+      cableInstallMessage.value = 'Driver already installed. Refreshing...'
+      await settingsStore.fetchAllOutputDevices()
+      await settingsStore.fetchAllInputDevices()
+      await settingsStore.checkVirtualCableStatus()
+      isInstallingCable.value = false
+      setTimeout(() => {
+        cableInstallMessage.value = ''
+      }, 2500)
+    } else {
+      cableInstallMessage.value = 'Installation completed.'
+      isInstallingCable.value = false
+    }
+  } catch {
+    cableInstallMessage.value = 'Failed to run installer.'
+    isInstallingCable.value = false
+  }
+}
 
 const currentAppVersion = computed(() => window.electron?.versions?.app || 'Unknown')
 
@@ -283,44 +436,6 @@ function removeTag(index: number) {
   settingsStore.removeQuickTag(index)
 }
 
-async function downloadVBCable() {
-  // before we run the installer, make a backup copy of settingsStore.allOutputDevices
-  // so we can know which device was added by the installer
-  const originalOutputDeviceIds = settingsStore.allOutputDevices.map(device => device.deviceId)
-
-  // set it to false to reset the animation
-  showVBCableMessage.value = false
-  const vbCableResult = await window.electron?.downloadVBCable(settingsStore.appName)
-
-  if (vbCableResult?.vbCableInstallerRan) {
-    // update the output devices, since they installed VB-Cable will be the default
-    settingsStore.fetchAllOutputDevices().then(() => {
-      // check originalOutputDeviceIds against settingsStore.allOutputDevices
-      // and add the new device to the outputDevices array
-      const newDevice = settingsStore.allOutputDevices.find(
-        device => !originalOutputDeviceIds.includes(device.deviceId)
-      )
-      if (newDevice) {
-        // we add the new device to the end of the array, since we know it was added by VB-Cable
-        addOutputDevice(newDevice.deviceId)
-      }
-    })
-  }
-
-  if (vbCableResult?.errors?.some(errorObj => errorObj.message === 'User did not grant permission.')) {
-    vbCableMessage.value = 'Download Permission Denied'
-    showVBCableMessage.value = true
-    return
-    // console.error('Error downloading VB-Cable:', vbCableResult.error)
-  }
-
-  if (vbCableResult?.vbCableAlreadyInstalled) {
-    // set it to true to trigger the animation
-    showVBCableMessage.value = true
-    vbCableMessage.value = 'VB-Cable Already Installed'
-  }
-}
-
 function onPTTHotkeyChange(event: string[] | undefined) {
   selectedHotkey.value = event
   // save the value to the IndexedDB store
@@ -381,6 +496,8 @@ watch(
   { immediate: true }
 )
 settingsStore.fetchAllOutputDevices()
+settingsStore.fetchAllInputDevices()
+settingsStore.checkVirtualCableStatus()
 settingsStore.fetchSettings().then(() => {
   darkMode.value = settingsStore.darkMode
   closeToTray.value = settingsStore.closeToTray
@@ -662,67 +779,178 @@ input[type='checkbox']:focus-visible {
   margin-top: 1rem;
 }
 
-.downloadVBCableGroup {
+.section-subtitle {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin: -0.25rem 0 0.75rem 0;
+  text-align: center;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.virtual-cable-status-card {
+  margin: 1rem auto;
+  max-width: 540px;
+  width: 90%;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  background-color: var(--input-bg-color, rgba(0, 0, 0, 0.05));
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.virtual-cable-status-card.active {
+  border-color: rgba(46, 204, 113, 0.4);
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.1);
+}
+
+.virtual-cable-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.virtual-status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #f39c12;
+  box-shadow: 0 0 6px #f39c12;
+  flex-shrink: 0;
+}
+
+.virtual-status-indicator.online {
+  background-color: #2ecc71;
+  box-shadow: 0 0 6px #2ecc71;
+}
+
+.virtual-status-title {
+  color: var(--text-color);
+}
+
+.virtual-status-desc {
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+.virtual-status-install {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  isolation: isolate;
+  gap: 0.5rem;
+  align-items: flex-start;
 }
 
-.downloadVBCable {
+.install-cable-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--active-color);
+  color: white;
+  border: none;
+  border-radius: 0.4rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+.install-cable-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.install-cable-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.cable-install-msg {
+  font-size: 0.85rem;
+  color: var(--active-color);
+  font-weight: 500;
+}
+
+.mic-controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.mic-select-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.mic-mute-btn {
+  fill: var(--text-color);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  width: 3rem;
+  height: 2.625rem;
   display: flex;
   justify-content: center;
-  gap: 2rem;
-  padding: 0.5rem 3rem;
   align-items: center;
-  margin-top: 1rem;
-  width: 100%;
-}
-.download-icon {
-  width: 1.5rem;
-}
-
-@keyframes showMessage {
-  0% {
-    height: 0;
-    transform: translateY(-100%);
-  }
-  10% {
-    /* Start and hold the message for a bit after transitioning */
-    transform: translateY(0%);
-    height: 3.5rem;
-  }
-  90% {
-    height: 3.5rem;
-    transform: translateY(0%);
-  }
-  100% {
-    height: 0;
-    /* Start hiding the message after 3 seconds */
-    transform: translateY(-100%);
-  }
+  background: var(--input-bg-color);
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-.vb-cable-status-message {
-  --top-overlap: 1rem;
-  --transition-length: 0.4s;
-  --duration: 3s;
-  width: 100%;
-  margin-top: calc(var(--top-overlap) * -1);
-  padding-top: calc(var(--top-overlap) + 0.5rem);
-  height: 0;
-  border-radius: 0.5rem;
+.mic-mute-btn:hover {
+  background-color: var(--link-color);
   color: var(--background-color);
-  background: var(--button-accent-color);
-  z-index: -1;
-  transform: translateY(-100%);
-  font-weight: bold;
-  overflow: hidden;
 }
 
-.showVBCableMessage {
-  animation: showMessage calc(2 * var(--transition-length) + var(--duration)) ease forwards;
+.mic-mute-btn.muted {
+  background-color: #e74c3c;
+  color: white;
+  border-color: #e74c3c;
+}
+
+.mic-level-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  padding: 0 0.25rem;
+}
+
+.mic-level-label {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  width: 4.5rem;
+  text-align: right;
+}
+
+.mic-level-track {
+  flex: 1;
+  height: 8px;
+  background: var(--input-bg-color, rgba(128, 128, 128, 0.2));
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(128, 128, 128, 0.15);
+  position: relative;
+}
+
+.mic-level-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #2ecc71 0%, #2ecc71 15%, #f1c40f 50%, #e74c3c 85%, #e74c3c 100%);
+  border-radius: 4px;
+  transition: clip-path 0.05s ease-out;
+}
+
+.mic-level-fill.muted {
+  background: #7f8c8d;
 }
 
 .tag {
