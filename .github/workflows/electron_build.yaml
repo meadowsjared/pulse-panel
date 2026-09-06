@@ -6,46 +6,50 @@ on:
       - main  # Set this to the branch you want to build from
 
 jobs:
-  build:
-    runs-on: windows-latest  # Specifies that the job should run on the latest Ubuntu runner
+  build-and-release:
+    runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v3  # Checks out your repository under $GITHUB_WORKSPACE
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@v2
         with:
           bun-version: 'latest'
 
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: node-modules-cache
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-bun-modules-${{ hashFiles('bun.lock') }}
+
+      - name: Cache Electron & electron-builder
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: ${{ runner.os }}-electron-cache-${{ hashFiles('package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-cache-
+
       - name: Install dependencies with Bun
-        run: bun install
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: bun install --frozen-lockfile
 
       - name: Build Electron app with Bun
         run: |
           bun run build -p never
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: release
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v4
-        name: Download build artifacts
-        with:
-          name: build-artifacts
-          path: release
       - name: Read json
         id: read-json
         shell: pwsh
         run: |
           $json = Get-Content package.json | ConvertFrom-Json
           echo "VERSION=$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Create Release
         id: create_release
         uses: ncipollo/release-action@v1.14.0
@@ -59,13 +63,17 @@ jobs:
           generateReleaseNotes: true
           tag: v${{ env.VERSION }}
           allowUpdates: true
+
       - name: Submit to WinGet
         uses: vedantmgoyal9/winget-releaser@v2
         continue-on-error: true
         with:
           identifier: JaredMeadows.pulse-panel
           token: ${{ secrets.WINGET_TOKEN }}
+
       - uses: phips28/gh-action-bump-version@v11.0.7
         name: Automated Version Bump
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          version-type:  'patch'
+          version-type: 'patch'
