@@ -1,12 +1,12 @@
 <template>
   <ConfirmDialog
-    v-if="loadingErrorMessage"
-    :show-dialog="!!loadingErrorMessage"
+    v-if="loadingErrorMessage || updateStore.errorMessage"
+    :show-dialog="!!loadingErrorMessage || !!updateStore.errorMessage"
     :title="'Error'"
-    :message="loadingErrorMessage"
+    :message="loadingErrorMessage || updateStore.errorMessage || ''"
     :confirm-text="'Ok'"
     :cancel-text="''"
-    @update:show-dialog="loadingErrorMessage = null" />
+    @update:show-dialog="clearErrorMessages" />
   <title-bar class="select-none"
     >{{ settingsStore.appName
     }}<img
@@ -37,6 +37,23 @@
           :class="['menu', { keyActive: routerLinkActive[1] }]">
           <inline-svg :src="SettingsGear" />Settings
         </router-link>
+        <button
+          v-if="updateStore.updateAvailable"
+          @keydown.space.enter.prevent="updateButtonActive = true"
+          @keyup.space.enter="triggerUpdate"
+          @click="triggerUpdate"
+          :title="updateTooltip"
+          :disabled="updateStore.isDownloading"
+          :class="[
+            'menu',
+            'update-button',
+            { keyActive: updateButtonActive, downloading: updateStore.isDownloading },
+          ]">
+          <inline-svg :src="DownloadIcon" />
+          <span class="update-label">
+            {{ updateButtonText }}
+          </span>
+        </button>
       </div>
       <div class="bottom-buttons">
         <button
@@ -72,25 +89,59 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSettingsStore } from '../store/settings'
+import { useSoundStore } from '../store/sound'
+import { useUpdateStore } from '../store/update'
 import InlineSvg from 'vue-inline-svg'
 import SettingsGear from '../assets/images/settings-gear.svg'
 import Speaker from '../assets/images/speaker.svg'
 import StopIcon from '../assets/images/stop.svg'
 import Headphones from '../assets/images/headphones.svg'
-import { useSoundStore } from '../store/sound'
+import DownloadIcon from '../assets/images/download.svg'
 import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp'
 import Router from '../router'
 
 const darkMode = ref(true)
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
+const updateStore = useUpdateStore()
 const appVersion = `v${window.electron?.versions.app}`
 const routerLinkActive = ref([false, false])
 const stopAllSoundsActive = ref(false)
 const muteButtonActive = ref(false)
+const updateButtonActive = ref(false)
 const loadingErrorMessage = ref<string | null>(null)
+
+const updateButtonText = computed(() => {
+  if (updateStore.isDownloading) {
+    return updateStore.statusText || 'Downloading...'
+  }
+  return `Update to ${updateStore.latestVersion}`
+})
+
+const updateTooltip = computed(() => {
+  if (updateStore.isDownloading) {
+    return `Downloading update: ${updateStore.downloadProgress}%`
+  }
+  return `Update to ${updateStore.latestVersion}`
+})
+
+onMounted(() => {
+  setTimeout(() => {
+    updateStore.checkForUpdates()
+  }, 1500)
+})
+
+function clearErrorMessages() {
+  loadingErrorMessage.value = null
+  updateStore.errorMessage = null
+}
+
+function triggerUpdate() {
+  updateButtonActive.value = false
+  updateStore.startUpdate()
+}
 
 function activateRouterLink(index: number, activate: boolean) {
   routerLinkActive.value[index] = activate
@@ -220,6 +271,36 @@ initializeSettings()
 .stop-button.active > svg {
   fill: var(--active-color);
   color: var(--active-color);
+}
+
+.update-button {
+  color: var(--active-color);
+  text-align: left;
+}
+
+.update-button > svg {
+  fill: var(--active-color);
+  transition: transform 0.2s ease;
+}
+
+.update-button:hover:not(:disabled) > svg {
+  transform: translateY(2px);
+}
+
+.update-button.downloading {
+  cursor: wait;
+  opacity: 0.85;
+}
+
+.update-button:disabled {
+  cursor: wait;
+}
+
+.update-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.95rem;
 }
 
 .mute-button {

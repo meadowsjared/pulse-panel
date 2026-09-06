@@ -1,6 +1,7 @@
 const { join } = require('path')
 const { app, BrowserWindow, ipcMain, shell, Tray, Menu } = require('electron')
 const settings = require('../settings')
+const updater = require('./updater')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
@@ -82,6 +83,13 @@ app.whenReady().then(() => {
   ipcMain.handle('delete-sound', (_, sound) => settings.deleteSound(sound))
   ipcMain.handle('save-sounds-array', (_, sounds) => settings.saveSoundsArray(sounds))
   ipcMain.handle('save-visibility', (_, visibilityChanges) => settings.saveVisibility(visibilityChanges))
+  ipcMain.handle('download-and-install-update', async (_, downloadUrl) => {
+    return updater.downloadAndInstallUpdate(downloadUrl, progress => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('update-download-progress', progress)
+      }
+    })
+  })
 })
 
 function createWindow() {

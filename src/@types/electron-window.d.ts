@@ -27,6 +27,12 @@ export type SettingValue =
   | LabelActive[]
   | OutputDeviceSetting[]
 
+export interface UpdateDownloadProgress {
+  receivedBytes: number
+  totalBytes: number
+  percent: number
+}
+
 export interface Settings {
   _readSetting: (key: string) => Promise<SettingValue | undefined | Sound[]>
   sendKey: (key: string[], down: boolean) => Promise<void>
@@ -46,6 +52,8 @@ export interface Settings {
   expandWindow: (widthChange: number, heightChange: number) => Promise<void>
   openExternalLink: (url: string) => void
   downloadVBCable: (appName: string) => Promise<vbCableResult>
+  downloadAndInstallUpdate: (downloadUrl: string) => Promise<void>
+  onUpdateDownloadProgress: (callback: (progress: UpdateDownloadProgress) => void) => void
   // Database related functions
   readAllDBSettings: () => Promise<{ [settingName: string]: string }[]>
   saveDBSetting: (settingName: string, settingValue: SettingValue) => Promise<boolean>

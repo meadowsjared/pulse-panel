@@ -44,6 +44,10 @@ contextBridge.exposeInMainWorld('electron', {
   expandWindow: (widthChange, heightChange) => ipcRenderer.invoke('expand-window', widthChange, heightChange),
   openExternalLink: url => ipcRenderer.invoke('open-external-link', url),
   downloadVBCable: appName => ipcRenderer.invoke('download-vb-cable', appName),
+  downloadAndInstallUpdate: downloadUrl => ipcRenderer.invoke('download-and-install-update', downloadUrl),
+  onUpdateDownloadProgress: callback => {
+    ipcRenderer.on('update-download-progress', (_, progress) => callback(progress))
+  },
   // Database related
   readAllDBSettings: () => ipcRenderer.invoke('read-all-db-settings'),
   saveDBSetting: (settingName, settingValue) => ipcRenderer.invoke('save-db-setting', settingName, settingValue),
