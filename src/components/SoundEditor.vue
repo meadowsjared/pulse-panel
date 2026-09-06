@@ -433,7 +433,7 @@ function dragEnd() {
   position: sticky;
   top: 0;
   background: var(--top-toolbar-color);
-  padding: 0.75rem 1rem;
+  padding: 0.61rem 1rem;
   z-index: 1;
   gap: 0.5rem;
 }
