@@ -12,6 +12,7 @@ import { File } from '../@types/file'
 import { useSoundStore } from './sound'
 import { Settings, SettingValue, Versions } from '../@types/electron-window'
 import { toRaw } from 'vue'
+import { searchSounds } from '../utils/soundSearch'
 
 declare global {
   interface Window {
@@ -188,62 +189,38 @@ export const useSettingsStore = defineStore('settings', {
   actions: {
     soundsFiltered(params?: SliceParams): Sound[] {
       const activeOrNegatedTags = this.quickTagsAr?.filter(tag => tag.active === true || tag.negated === true) ?? []
-      const filteredSounds = this.sounds
-        .filter(sound => {
-          if (activeOrNegatedTags.length === 0) {
-            if (this.invertQuickTags) {
-              return sound.tags === undefined || sound.tags.length === 0
-            } else {
-              return true
-            }
+      const tagFilteredSounds = this.sounds.filter(sound => {
+        if (activeOrNegatedTags.length === 0) {
+          if (this.invertQuickTags) {
+            return sound.tags === undefined || sound.tags.length === 0
+          } else {
+            return true
           }
-          const invertedMatch =
-            activeOrNegatedTags.length === 0 ||
-            activeOrNegatedTags.every(
-              anTag =>
-                sound.tags === undefined ||
-                (anTag.active && sound.tags.includes(anTag.label) === false) ||
-                (anTag.negated && sound.tags.includes(anTag.label)),
-            )
-          const normalMatch =
-            activeOrNegatedTags.length === 0 ||
-            activeOrNegatedTags.every(
-              anTag =>
-                (anTag.active && sound.tags?.includes(anTag.label) === true) ||
-                (anTag.negated && !sound.tags?.includes(anTag.label)),
-            )
-          return this.invertQuickTags ? invertedMatch : normalMatch
-        })
-        .filter(
-          sound =>
-            this.searchText.trim() === '' ||
-            // compare the words from the title to the words from the search text
-            // if either the (titleWord starts with the searchWord), return true
-            sound.title
-              ?.toLowerCase()
-              .split(/[^a-zA-Z0-9_']/)
-              .filter(titleWord => titleWord !== '')
-              .some(titleWord =>
-                this.searchText
-                  .toLowerCase()
-                  .split(/[^a-zA-Z0-9_']/)
-                  .filter(searchWord => searchWord !== '')
-                  .some(searchWord => titleWord.toLowerCase().startsWith(searchWord.toLowerCase())),
-              ) ||
-            // compare the words from the tags to the words from the search text
-            // if the tag starts with the searchWord, return true
-            sound.tags?.some(tag =>
-              this.searchText
-                .toLowerCase()
-                .split(/[^a-zA-Z0-9_']/)
-                .filter(searchWord => searchWord !== '')
-                .some(searchWord => tag.toLowerCase().startsWith(searchWord.toLowerCase())),
-            ),
-        )
+        }
+        const invertedMatch =
+          activeOrNegatedTags.length === 0 ||
+          activeOrNegatedTags.every(
+            anTag =>
+              sound.tags === undefined ||
+              (anTag.active && sound.tags.includes(anTag.label) === false) ||
+              (anTag.negated && sound.tags.includes(anTag.label)),
+          )
+        const normalMatch =
+          activeOrNegatedTags.length === 0 ||
+          activeOrNegatedTags.every(
+            anTag =>
+              (anTag.active && sound.tags?.includes(anTag.label) === true) ||
+              (anTag.negated && !sound.tags?.includes(anTag.label)),
+          )
+        return this.invertQuickTags ? invertedMatch : normalMatch
+      })
+
+      const finalFiltered = searchSounds(tagFilteredSounds, this.searchText)
+
       if (params !== undefined) {
-        return filteredSounds.slice(params.start, params.end)
+        return finalFiltered.slice(params.start, params.end)
       }
-      return filteredSounds
+      return finalFiltered
     },
     _assignValidatedSetting(key: SettingsOnlyKeys, value: SettingValue) {
       if (this._isBooleanSettings(key) && typeof value === 'boolean') return (this[key] = value)

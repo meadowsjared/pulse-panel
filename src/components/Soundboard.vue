@@ -19,6 +19,11 @@
           @drop="drop"
           @dragend="dragEnd(sound)" />
       </template>
+      <div v-if="filteredSounds.length === 0 && settingsStore.searchText.trim() !== ''" class="empty-search-state">
+        <p class="empty-title">No sounds found</p>
+        <p class="empty-subtitle">No sounds match "<strong>{{ settingsStore.searchText }}</strong>"</p>
+        <button class="clear-search-btn light" @click="settingsStore.searchText = ''">Clear Search</button>
+      </div>
     </div>
   </div>
   <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
@@ -452,5 +457,34 @@ async function collapseWindow() {
 .slide-right-enter-from,
 .slide-right-leave-to {
   width: 0;
+}
+
+.empty-search-state {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-color);
+}
+
+.empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-color);
+}
+
+.empty-subtitle {
+  font-size: 0.95rem;
+  opacity: 0.8;
+  margin-bottom: 1.25rem;
+}
+
+.clear-search-btn {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
 }
 </style>
