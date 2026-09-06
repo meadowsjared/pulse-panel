@@ -61,6 +61,7 @@ jobs:
           allowUpdates: true
       - name: Submit to WinGet
         uses: vedantmgoyal9/winget-releaser@v2
+        continue-on-error: true
         with:
           identifier: JaredMeadows.pulse-panel
           token: ${{ secrets.WINGET_TOKEN }}
