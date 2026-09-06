@@ -52,7 +52,8 @@ export const useUpdateStore = defineStore('update', () => {
   const downloadProgress = ref(0)
   const statusText = ref<string>('')
   const errorMessage = ref<string | null>(null)
-  let lastCheckedTime = 0
+  const hasChecked = ref(false)
+  const lastCheckedTime = ref<number | null>(null)
   let progressListenerInitialized = false
 
   function initProgressListener() {
@@ -67,11 +68,11 @@ export const useUpdateStore = defineStore('update', () => {
   }
 
   /**
-   * Lazily checks GitHub for the latest release
+   * Checks GitHub for the latest release
    */
   async function checkForUpdates(force = false): Promise<void> {
     const now = Date.now()
-    if (!force && now - lastCheckedTime < CHECK_INTERVAL_MS) {
+    if (!force && lastCheckedTime.value && now - lastCheckedTime.value < CHECK_INTERVAL_MS) {
       return
     }
 
@@ -81,6 +82,9 @@ export const useUpdateStore = defineStore('update', () => {
     }
 
     isChecking.value = true
+    errorMessage.value = null
+    statusText.value = 'Checking for updates...'
+
     try {
       const response = await fetch('https://api.github.com/repos/meadowsjared/pulse-panel/releases/latest', {
         headers: {
@@ -89,20 +93,27 @@ export const useUpdateStore = defineStore('update', () => {
       })
 
       if (!response.ok) {
-        // Rate limit or server error - silently exit
-        return
+        if (response.status === 403) {
+          throw new Error('GitHub API rate limit reached. Please try again later.')
+        } else {
+          throw new Error(`GitHub returned status code ${response.status}`)
+        }
       }
 
       const data: GitHubRelease = await response.json()
-      if (!data.tag_name) return
+      if (!data.tag_name) {
+        throw new Error('Release information missing tag name.')
+      }
 
-      lastCheckedTime = now
+      lastCheckedTime.value = now
+      hasChecked.value = true
       const latestTag = data.tag_name
 
       if (isNewerVersion(currentVersion, latestTag)) {
         updateAvailable.value = true
         latestVersion.value = latestTag
         releaseUrl.value = data.html_url
+        statusText.value = `Update available: ${latestTag}`
 
         // Find installer asset
         const platform = window.electron?.versions?.platform || 'win32'
@@ -122,9 +133,16 @@ export const useUpdateStore = defineStore('update', () => {
         } else {
           downloadUrl.value = null
         }
+      } else {
+        updateAvailable.value = false
+        statusText.value = 'Pulse Panel is up to date.'
       }
-    } catch {
-      // Gracefully ignore network or offline errors
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      if (force) {
+        errorMessage.value = msg
+        statusText.value = `Check failed: ${msg}`
+      }
     } finally {
       isChecking.value = false
     }
@@ -175,6 +193,8 @@ export const useUpdateStore = defineStore('update', () => {
     downloadProgress,
     statusText,
     errorMessage,
+    hasChecked,
+    lastCheckedTime,
     checkForUpdates,
     startUpdate,
   }

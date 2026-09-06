@@ -132,6 +132,44 @@
           " />
       </div>
     </div>
+    <div class="software-update-section">
+      <h2>Software Update:</h2>
+      <div class="update-card">
+        <div class="version-row">
+          <span>Current Version:</span>
+          <span class="version-badge">v{{ currentAppVersion }}</span>
+        </div>
+
+        <div v-if="lastCheckedFormatted" class="last-checked-text">
+          Last checked: {{ lastCheckedFormatted }}
+        </div>
+
+        <div v-if="updateStore.statusText" :class="['update-status-msg', { error: updateStore.errorMessage, available: updateStore.updateAvailable }]">
+          {{ updateStore.statusText }}
+        </div>
+
+        <div v-if="updateStore.isDownloading" class="download-progress-container">
+          <div class="download-progress-bar" :style="{ width: `${updateStore.downloadProgress}%` }"></div>
+        </div>
+
+        <div class="update-buttons-row">
+          <button
+            class="check-update-btn"
+            :disabled="updateStore.isChecking || updateStore.isDownloading"
+            @click="updateStore.checkForUpdates(true)">
+            {{ updateStore.isChecking ? 'Checking...' : 'Check for Updates' }}
+          </button>
+          <button
+            v-if="updateStore.updateAvailable"
+            class="install-update-btn"
+            :disabled="updateStore.isDownloading"
+            @click="updateStore.startUpdate">
+            <inline-svg :src="Download" class="w-5 h-5" />
+            {{ updateStore.isDownloading ? updateStore.statusText || 'Downloading...' : `Update to ${updateStore.latestVersion}` }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -140,6 +178,7 @@ import { computed, ref, watch } from 'vue'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
+import { useUpdateStore } from '../store/update'
 import SpeakerIcon from '../assets/images/speaker.svg'
 import Download from '../assets/images/download.svg'
 import { throttle } from 'lodash'
@@ -148,6 +187,7 @@ import { LabelActive, OutputDeviceSetting } from '../@types/sound'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
+const updateStore = useUpdateStore()
 const outputDevices = ref<(OutputDeviceSetting | null)[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
@@ -157,6 +197,14 @@ const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefi
 const showVBCableMessage = ref(false)
 const vbCableMessage = ref('')
 const newTag = ref<string | null>(null)
+
+const currentAppVersion = computed(() => window.electron?.versions?.app || 'Unknown')
+
+const lastCheckedFormatted = computed(() => {
+  if (!updateStore.lastCheckedTime) return null
+  const date = new Date(updateStore.lastCheckedTime)
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+})
 
 let draggedIndexStart: number | null = null
 let draggedQuickTag: LabelActive | null = null
@@ -703,5 +751,128 @@ input[type='checkbox']:focus-visible {
 
 .tag.dragging {
   opacity: 0.5;
+}
+
+.software-update-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.update-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 1.25rem 1.75rem;
+  border-radius: 0.5rem;
+  background-color: var(--input-bg-color, rgba(0, 0, 0, 0.05));
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  min-width: 320px;
+  max-width: 460px;
+  width: 100%;
+}
+
+.version-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+}
+
+.version-badge {
+  font-weight: bold;
+  color: var(--active-color);
+}
+
+.last-checked-text {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.update-status-msg {
+  font-size: 0.95rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0.35rem;
+  background-color: rgba(128, 128, 128, 0.1);
+  color: var(--text-color);
+  text-align: center;
+}
+
+.update-status-msg.available {
+  color: var(--active-color);
+  font-weight: bold;
+}
+
+.update-status-msg.error {
+  color: #ff6b6b;
+}
+
+.download-progress-container {
+  width: 100%;
+  height: 8px;
+  background-color: rgba(128, 128, 128, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.download-progress-bar {
+  height: 100%;
+  background-color: var(--active-color);
+  transition: width 0.2s ease-in-out;
+}
+
+.update-buttons-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.25rem;
+}
+
+.check-update-btn,
+.install-update-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.25rem;
+  border-radius: 0.4rem;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s, filter 0.2s;
+  border: none;
+}
+
+.check-update-btn {
+  background-color: var(--button-accent-color);
+  color: var(--background-color, #fff);
+}
+
+.check-update-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.check-update-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.install-update-btn {
+  background-color: var(--active-color);
+  color: white;
+}
+
+.install-update-btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.install-update-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 </style>
