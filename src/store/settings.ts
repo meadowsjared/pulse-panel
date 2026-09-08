@@ -36,6 +36,7 @@ interface State {
   selectedMicrophoneId: string | null
   microphoneVolume: number
   microphoneMuted: boolean
+  cableOutputVolume: number
   // not saved in the database:
   /**
    * friendly name of the app
@@ -140,7 +141,7 @@ type ArrayNumberSettings = (typeof Array_Number_Settings_Keys)[number]
 type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number]
 const Array_Sound_Settings_Keys = ['sounds'] as const
 type ArraySoundSettings = (typeof Array_Sound_Settings_Keys)[number]
-const Number_Settings_Keys = ['defaultVolume', 'microphoneVolume'] as const
+const Number_Settings_Keys = ['defaultVolume', 'microphoneVolume', 'cableOutputVolume'] as const
 type NumberSettings = (typeof Number_Settings_Keys)[number]
 const Label_Active_Settings_Keys = ['quickTagsAr'] as const
 type LabelActiveSettings = (typeof Label_Active_Settings_Keys)[number]
@@ -233,6 +234,7 @@ export const useSettingsStore = defineStore('settings', {
     selectedMicrophoneId: null,
     microphoneVolume: 1,
     microphoneMuted: false,
+    cableOutputVolume: 1,
     allInputDevices: [],
     virtualCableDeviceId: null,
     virtualCableInstalled: false,
@@ -316,6 +318,9 @@ export const useSettingsStore = defineStore('settings', {
       if (typeof this.microphoneVolume !== 'number' || Number.isNaN(this.microphoneVolume)) {
         this.microphoneVolume = 1
       }
+      if (typeof this.cableOutputVolume !== 'number' || Number.isNaN(this.cableOutputVolume)) {
+        this.cableOutputVolume = 1
+      }
       this.microphoneMuted = !!this.microphoneMuted
       const soundStore = useSoundStore()
       // if no settings were found, try to migrate from the old store
@@ -360,7 +365,13 @@ export const useSettingsStore = defineStore('settings', {
       electron?.onCloseToTrayChanged(value => {
         this.saveSetting('closeToTray', value)
       })
-      if (this.outputDevices.length === 0) {
+      const outputDevicesConfigured =
+        settings !== undefined &&
+        typeof settings === 'object' &&
+        'outputDevices' in settings &&
+        (settings as Record<string, unknown>).outputDevices !== undefined
+
+      if (!outputDevicesConfigured && this.outputDevices.length === 0) {
         const devices = await navigator.mediaDevices.enumerateDevices()
         const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput')
         const defaultValue: OutputDeviceSetting[] = [
@@ -384,7 +395,8 @@ export const useSettingsStore = defineStore('settings', {
         this.selectedMicrophoneId,
         typeof this.microphoneVolume === 'number' ? this.microphoneVolume : 1,
         !!this.microphoneMuted,
-        this.virtualCableDeviceId
+        this.virtualCableDeviceId,
+        this.muted ? 0 : this.cableOutputVolume
       )
       if (!this.virtualCableDeviceId) {
         await this.fetchAllOutputDevices()
@@ -430,6 +442,8 @@ export const useSettingsStore = defineStore('settings', {
           this[key] = value
           if (key === 'microphoneVolume') {
             audioMixer.setMicrophoneVolume(this.microphoneVolume)
+          } else if (key === 'cableOutputVolume') {
+            audioMixer.setSoundboardVolume(this.muted ? 0 : this.cableOutputVolume)
           }
           return true
         }
@@ -574,6 +588,7 @@ export const useSettingsStore = defineStore('settings', {
      */
     async toggleMute(): Promise<void> {
       this.muted = !this.muted
+      audioMixer.setSoundboardVolume(this.muted ? 0 : this.cableOutputVolume)
       const soundStore = useSoundStore()
       if (this.muted) {
         soundStore.muteAllSounds()
@@ -646,6 +661,12 @@ export const useSettingsStore = defineStore('settings', {
      */
     async saveMicrophoneVolume(volume: number): Promise<boolean> {
       return this.saveSetting('microphoneVolume', volume)
+    },
+    /**
+     * Save the cable output volume (0 to 1)
+     */
+    async saveCableOutputVolume(volume: number): Promise<boolean> {
+      return this.saveSetting('cableOutputVolume', volume)
     },
     /**
      * Toggle the microphone muted state

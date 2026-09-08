@@ -67,30 +67,114 @@
           </div>
         </div>
         <div class="mic-level-container" title="Live Microphone Input Level">
-          <span class="mic-level-label">Mic Level:</span>
-          <div class="mic-level-track">
-            <div
-              class="mic-level-fill"
-              :class="{ muted: settingsStore.microphoneMuted }"
-              :style="{ clipPath: `inset(0 ${100 - (settingsStore.microphoneMuted ? 0 : micLevel)}% 0 0)` }"></div>
+          <button
+            :class="{
+              'mic-test-btn': true,
+              active: isTestingMic,
+            }"
+            :title="isTestingMic ? 'Stop Mic Test' : 'Test Microphone (Echo to headphones)'"
+            @click="toggleMicTest">
+            <span>{{ isTestingMic ? 'Stop Testing' : 'Mic Test' }}</span>
+          </button>
+          <div ref="trackRef" class="mic-level-track">
+            <svg class="mic-level-svg" :viewBox="`0 0 ${barCount * 10} 20`" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="mic-meter-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#2ecc71" />
+                  <stop offset="20%" stop-color="#2ecc71" />
+                  <stop offset="55%" stop-color="#f1c40f" />
+                  <stop offset="85%" stop-color="#e74c3c" />
+                  <stop offset="100%" stop-color="#e74c3c" />
+                </linearGradient>
+                <mask id="mic-meter-mask">
+                  <rect
+                    v-for="i in barCount"
+                    :key="i"
+                    :x="(i - 1) * 10 + 2.5"
+                    y="2"
+                    width="5"
+                    height="16"
+                    rx="2.5"
+                    ry="2.5"
+                    fill="white" />
+                </mask>
+              </defs>
+              <!-- Background ghost scale: faint unlit bars -->
+              <rect
+                x="0"
+                y="0"
+                :width="barCount * 10"
+                height="20"
+                fill="url(#mic-meter-grad)"
+                opacity="0.22"
+                mask="url(#mic-meter-mask)" />
+              <!-- Active illuminated bars -->
+              <rect
+                x="0"
+                y="0"
+                :width="activeBarCount * 10"
+                height="20"
+                :fill="settingsStore.microphoneMuted ? '#7f8c8d' : 'url(#mic-meter-grad)'"
+                mask="url(#mic-meter-mask)"
+                class="mic-level-fill-rect" />
+            </svg>
           </div>
         </div>
       </div>
     </div>
 
-    <h2>Headphones / Audio Monitoring:</h2>
-    <p class="section-subtitle">Where you hear soundboard clips. Your physical voice is never echoed back to your headphones.</p>
+    <h2>Soundboard Output:</h2>
+    <p class="section-subtitle">Adjust the volume sent to your virtual cable, and choose where you hear soundboard clips in your headphones.</p>
     <div class="mx-auto">
       <div class="audio-output-devices">
+        <div class="select-line cable-output-line">
+          <button
+            class="delete-button opacity-0 cursor-default"
+            tabindex="-1"
+            aria-hidden="true">
+            <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
+          </button>
+          <div class="hardcoded-select-option">
+            <span>CABLE Output</span>
+          </div>
+          <button
+            :class="{
+              'play-sound-button': true,
+              light: true,
+              playingAudio: isPlayingCableTest,
+            }"
+            title="Test Audio Output"
+            @click="testCableOutput">
+            <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
+          </button>
+          <div
+            class="device-volume-container"
+            :title="`Device Volume: ${cableVolumeDisplay}%`">
+            <input-text-number
+              class="device-volume-input"
+              :min="0"
+              :max="100"
+              :bigStep="5"
+              v-model="cableVolumeDisplay"
+              :title="`Device Volume: ${cableVolumeDisplay}%`"
+              aria-label="Device Volume" />
+            <input-range-number
+              class="device-volume-slider"
+              :bigStep="5"
+              v-model="cableVolumeDisplay"
+              :title="`Device Volume: ${cableVolumeDisplay}%`"
+              aria-label="Device Volume Slider" />
+          </div>
+        </div>
         <div v-for="(outputDevice, i) in outputDevices" :key="i" class="select-line">
           <button
             :class="{
               'delete-button': true,
               light: i !== outputDevices.length - 1,
-              'opacity-0 cursor-default': i === outputDevices.length - 1 || i === 0,
+              'opacity-0 cursor-default': i === outputDevices.length - 1,
               'cursor-pointer': i !== outputDevices.length - 1,
             }"
-            :tabindex="i === outputDevices.length - 1 || i === 0 ? -1 : 0"
+            :tabindex="i === outputDevices.length - 1 ? -1 : 0"
             @click="deleteOutputDevice(i)"
             title="Remove Output Device">
             <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
@@ -244,19 +328,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import { useUpdateStore } from '../store/update'
 import { audioMixer } from '../services/audioMixer'
 import SpeakerIcon from '../assets/images/speaker.svg'
+import HeadphonesIcon from '../assets/images/headphones.svg'
 import MicrophoneIcon from '../assets/images/microphone.svg'
 import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg'
 import Download from '../assets/images/download.svg'
 import { throttle } from 'lodash'
 import PlusIcon from '../assets/images/plus.svg'
 import { LabelActive, OutputDeviceSetting } from '../@types/sound'
+import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
@@ -269,10 +356,81 @@ const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? und
 const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined)
 const newTag = ref<string | null>(null)
 
+const isPlayingCableTest = ref(false)
+
+const saveCableVolumeDebounced = throttle((value: number) => {
+  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100
+  settingsStore.saveCableOutputVolume(newValue)
+}, 100)
+
+const cableVolumeDisplay = computed({
+  get: () => Math.round((settingsStore.cableOutputVolume ?? 1) * 100),
+  set: (value: number) => {
+    const vol = Math.max(0, Math.min(100, Math.round(value))) / 100
+    settingsStore.cableOutputVolume = vol
+    audioMixer.setSoundboardVolume(settingsStore.muted ? 0 : vol)
+    saveCableVolumeDebounced(value)
+  },
+})
+
+async function testCableOutput() {
+  isPlayingCableTest.value = true
+  try {
+    const vol = settingsStore.muted ? 0 : Math.max(0, Math.min(1, settingsStore.cableOutputVolume ?? 1))
+    audioMixer.setSoundboardVolume(vol)
+    if (audioMixer.getCurrentCableId()) {
+      await audioMixer.playSoundToMixer(chordAlert, 1)
+      isPlayingCableTest.value = false
+    } else {
+      const cableDeviceId = settingsStore.virtualCableDeviceId
+      const audio = new Audio(chordAlert)
+      if (cableDeviceId && typeof (audio as any).setSinkId === 'function') {
+        await (audio as any).setSinkId(cableDeviceId).catch(console.error)
+      }
+      audio.volume = vol
+      audio.onended = () => {
+        isPlayingCableTest.value = false
+      }
+      audio.onerror = () => {
+        isPlayingCableTest.value = false
+      }
+      await audio.play().catch(() => {
+        isPlayingCableTest.value = false
+      })
+    }
+  } catch {
+    isPlayingCableTest.value = false
+  }
+}
+
 const isInstallingCable = ref(false)
 const cableInstallMessage = ref('')
 const micLevel = ref(0)
+const isTestingMic = ref(false)
 let rafId: number | null = null
+
+const trackRef = ref<HTMLElement | null>(null)
+const trackWidth = ref(360)
+let resizeObserver: ResizeObserver | null = null
+
+const barCount = computed(() => Math.max(1, Math.floor(trackWidth.value / 10)))
+const activeBarCount = computed(() => {
+  if (micLevel.value <= 0) return 0
+  return Math.min(barCount.value, Math.ceil((micLevel.value / 100) * barCount.value))
+})
+
+async function toggleMicTest() {
+  if (!settingsStore.selectedMicrophoneId) {
+    if (settingsStore.allInputDevices.length > 0) {
+      await settingsStore.saveMicrophoneDevice(settingsStore.allInputDevices[0].deviceId)
+    } else {
+      return
+    }
+  }
+  isTestingMic.value = !isTestingMic.value
+  const primaryOutput = settingsStore.outputDevices[0]?.deviceId ?? null
+  await audioMixer.setMicTest(isTestingMic.value, primaryOutput)
+}
 
 function updateMicLevelLoop() {
   micLevel.value = Math.min(100, Math.round(audioMixer.getMicLevel() * 100))
@@ -282,12 +440,56 @@ function updateMicLevelLoop() {
 onMounted(() => {
   audioMixer.resume().catch(() => {})
   rafId = requestAnimationFrame(updateMicLevelLoop)
+
+  if (trackRef.value) {
+    trackWidth.value = trackRef.value.clientWidth || 360
+    resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          trackWidth.value = Math.round(entry.contentRect.width)
+        }
+      }
+    })
+    resizeObserver.observe(trackRef.value)
+  }
+})
+
+function stopTestingMic() {
+  if (isTestingMic.value) {
+    audioMixer.setMicTest(false)
+    isTestingMic.value = false
+  }
+}
+
+onActivated(() => {
+  audioMixer.resume().catch(() => {})
+  if (rafId === null) {
+    rafId = requestAnimationFrame(updateMicLevelLoop)
+  }
+})
+
+onDeactivated(() => {
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  stopTestingMic()
+})
+
+onBeforeRouteLeave(() => {
+  stopTestingMic()
 })
 
 onUnmounted(() => {
   if (rafId !== null) {
     cancelAnimationFrame(rafId)
+    rafId = null
   }
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
+  stopTestingMic()
 })
 
 const saveMicVolumeDebounced = throttle((value: number) => {
@@ -495,8 +697,6 @@ watch(
   },
   { immediate: true }
 )
-settingsStore.fetchAllOutputDevices()
-settingsStore.fetchAllInputDevices()
 settingsStore.checkVirtualCableStatus()
 settingsStore.fetchSettings().then(() => {
   darkMode.value = settingsStore.darkMode
@@ -507,7 +707,6 @@ settingsStore.fetchSettings().then(() => {
 })
 
 async function deleteOutputDevice(index: number) {
-  if (index === 0) return
   if (index < outputDevices.value.length - 1) {
     outputDevices.value.splice(index, 1) // remove the device from the array
   } else {
@@ -632,18 +831,37 @@ h2 {
 }
 
 .audio-output-devices {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+  display: grid;
+  grid-template-columns: auto auto auto auto;
+  gap: 1rem 0.5rem;
+  width: max-content;
   margin: 0.5rem auto 1rem;
-  align-items: start;
-  gap: 1rem;
 }
 
 .select-line {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
+}
+
+.hardcoded-select-option {
+  padding: 0.5rem 0.75rem;
+  background: var(--input-bg-color);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  height: 2.625rem;
+  box-sizing: border-box;
+  color: var(--text-color);
+  user-select: none;
+  cursor: default;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .device-volume-container {
@@ -708,6 +926,11 @@ h2 {
   background-color: lightgreen;
   color: var(--background-color);
   fill: var(--background-color);
+}
+.play-sound-button.testing-mic {
+  background-color: #2ecc71;
+  color: white;
+  fill: white;
 }
 
 label:has(input[type='checkbox']) {
@@ -881,13 +1104,21 @@ input[type='checkbox']:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  width: 100%;
+  max-width: 540px;
+  width: 90%;
+  margin: 0 auto;
 }
 
 .mic-select-line {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+  width: 100%;
+}
+
+.mic-select-line > :first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .mic-mute-btn {
@@ -903,6 +1134,7 @@ input[type='checkbox']:focus-visible {
   border: 1px solid rgba(128, 128, 128, 0.2);
   cursor: pointer;
   transition: background-color 0.2s;
+  flex-shrink: 0;
 }
 
 .mic-mute-btn:hover {
@@ -921,36 +1153,61 @@ input[type='checkbox']:focus-visible {
   align-items: center;
   gap: 0.5rem;
   margin-top: 0.25rem;
-  padding: 0 0.25rem;
+  width: 100%;
 }
 
-.mic-level-label {
-  font-size: 0.8rem;
-  opacity: 0.7;
-  width: 4.5rem;
-  text-align: right;
+.mic-test-btn {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--input-bg-color, hsl(0, 0%, 13%));
+  border: 1px solid rgba(128, 128, 128, 0.25);
+  border-radius: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  flex-shrink: 0;
+  justify-content: center;
+  min-width: 6.25rem;
+  /* padding: 0 1.25rem; */
+  height: 2.625rem;
+}
+
+.mic-test-btn:hover {
+  background-color: var(--link-color);
+  color: var(--background-color);
+  border-color: var(--link-color);
+}
+
+.mic-test-btn.active {
+  background-color: #2ecc71;
+  color: white;
+  border-color: #2ecc71;
+  font-weight: 600;
 }
 
 .mic-level-track {
   flex: 1;
-  height: 8px;
-  background: var(--input-bg-color, rgba(128, 128, 128, 0.2));
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid rgba(128, 128, 128, 0.15);
+  min-width: 0;
+  height: 2.625rem;
   position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  background: transparent;
+  padding: 0;
 }
 
-.mic-level-fill {
+.mic-level-svg {
   width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, #2ecc71 0%, #2ecc71 15%, #f1c40f 50%, #e74c3c 85%, #e74c3c 100%);
-  border-radius: 4px;
-  transition: clip-path 0.05s ease-out;
+  height: 20px;
+  display: block;
 }
 
-.mic-level-fill.muted {
-  background: #7f8c8d;
+.mic-level-fill-rect {
+  transition: width 0.05s ease-out;
 }
 
 .tag {

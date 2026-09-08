@@ -15,10 +15,14 @@ class AudioMixer {
   private cableMicGain: GainNode | null = null
   private cableSoundGain: GainNode | null = null
 
+  private micTestGain: GainNode | null = null
+  private isTestingMic: boolean = false
+
   private currentMicId: string | null = null
   private currentCableId: string | null = null
   private micVolume: number = 1
   private micMuted: boolean = false
+  private soundboardVolume: number = 1
   private smoothedLevel: number = 0
 
   private activeSounds: Map<
@@ -50,10 +54,12 @@ class AudioMixer {
     micDeviceId: string | null,
     micVolume: number,
     micMuted: boolean,
-    cableDeviceId: string | null
+    cableDeviceId: string | null,
+    soundboardVolume: number = 1
   ): Promise<void> {
     this.micVolume = micVolume
     this.micMuted = micMuted
+    this.soundboardVolume = soundboardVolume
 
     const resumeListener = () => {
       this.resume().catch(() => {})
@@ -68,6 +74,10 @@ class AudioMixer {
     }
 
     await this.setCableOutput(cableDeviceId)
+
+    this.setMicrophoneMuted(this.micMuted)
+    this.setMicrophoneVolume(this.micVolume)
+    this.setSoundboardVolume(this.soundboardVolume)
   }
 
   public async setMicrophone(deviceId: string | null): Promise<void> {
@@ -127,6 +137,12 @@ class AudioMixer {
       }
       this.micSource.connect(this.micAnalyser)
 
+      if (this.isTestingMic && this.micTestGain) {
+        try {
+          this.micSource.connect(this.micTestGain)
+        } catch {}
+      }
+
       // Connect mic to virtual cable output context if it exists
       this.attachMicToCableContext()
     } catch (err) {
@@ -136,16 +152,49 @@ class AudioMixer {
 
   public setMicrophoneVolume(volume: number): void {
     this.micVolume = volume
-    if (this.cableMicGain && this.cableCtx) {
-      this.cableMicGain.gain.setValueAtTime(this.micMuted ? 0 : volume, this.cableCtx.currentTime)
+    this.updateMicTestGain()
+    if (this.cableMicGain) {
+      const effectiveGain = this.micMuted ? 0 : volume
+      this.cableMicGain.gain.value = effectiveGain
+      if (this.cableCtx) {
+        try {
+          this.cableMicGain.gain.cancelScheduledValues(this.cableCtx.currentTime)
+          this.cableMicGain.gain.setValueAtTime(effectiveGain, this.cableCtx.currentTime)
+        } catch {}
+      }
     }
   }
 
   public setMicrophoneMuted(muted: boolean): void {
     this.micMuted = muted
-    if (this.cableMicGain && this.cableCtx) {
-      this.cableMicGain.gain.setValueAtTime(muted ? 0 : this.micVolume, this.cableCtx.currentTime)
+    this.updateMicTestGain()
+    if (this.cableMicGain) {
+      const effectiveGain = muted ? 0 : this.micVolume
+      this.cableMicGain.gain.value = effectiveGain
+      if (this.cableCtx) {
+        try {
+          this.cableMicGain.gain.cancelScheduledValues(this.cableCtx.currentTime)
+          this.cableMicGain.gain.setValueAtTime(effectiveGain, this.cableCtx.currentTime)
+        } catch {}
+      }
     }
+  }
+
+  public setSoundboardVolume(volume: number): void {
+    this.soundboardVolume = volume
+    if (this.cableSoundGain) {
+      this.cableSoundGain.gain.value = volume
+      if (this.cableCtx) {
+        try {
+          this.cableSoundGain.gain.cancelScheduledValues(this.cableCtx.currentTime)
+          this.cableSoundGain.gain.setValueAtTime(volume, this.cableCtx.currentTime)
+        } catch {}
+      }
+    }
+  }
+
+  public getSoundboardVolume(): number {
+    return this.soundboardVolume
   }
 
   public async setCableOutput(cableDeviceId: string | null): Promise<void> {
@@ -158,6 +207,9 @@ class AudioMixer {
       this.cableCtx.state !== 'closed'
     ) {
       this.attachMicToCableContext()
+      this.setMicrophoneMuted(this.micMuted)
+      this.setMicrophoneVolume(this.micVolume)
+      this.setSoundboardVolume(this.soundboardVolume)
       return
     }
 
@@ -205,6 +257,7 @@ class AudioMixer {
 
       // Soundboard gain node -> destination (CABLE Input)
       this.cableSoundGain = ctx.createGain()
+      this.cableSoundGain.gain.value = this.soundboardVolume
       this.cableSoundGain.connect(ctx.destination)
 
       // Microphone gain node -> destination (CABLE Input)
@@ -270,8 +323,63 @@ class AudioMixer {
     return this.currentMicId
   }
 
+  public async setMicTest(enabled: boolean, targetDeviceId?: string | null): Promise<void> {
+    this.isTestingMic = enabled
+    const inCtx = this.getInputContext()
+    if (inCtx.state === 'suspended') {
+      await inCtx.resume().catch(() => {})
+    }
+
+    if (enabled && typeof (inCtx as any).setSinkId === 'function') {
+      try {
+        if (targetDeviceId && targetDeviceId !== 'default') {
+          await (inCtx as any).setSinkId(targetDeviceId)
+        } else {
+          await (inCtx as any).setSinkId('')
+        }
+      } catch (err) {
+        console.warn('[AudioMixer] Could not set sinkId on inputCtx for mic test:', err)
+      }
+    }
+
+    if (enabled) {
+      if (!this.micTestGain) {
+        this.micTestGain = inCtx.createGain()
+        this.micTestGain.connect(inCtx.destination)
+      }
+      this.updateMicTestGain()
+      if (this.micSource) {
+        try {
+          this.micSource.connect(this.micTestGain)
+        } catch {}
+      }
+    } else {
+      if (this.micTestGain) {
+        try {
+          this.micTestGain.disconnect()
+        } catch {}
+        this.micTestGain = null
+      }
+    }
+  }
+
+  public getIsTestingMic(): boolean {
+    return this.isTestingMic
+  }
+
+  private updateMicTestGain(): void {
+    if (this.micTestGain && this.inputCtx) {
+      const effectiveGain = this.micMuted ? 0 : this.micVolume
+      this.micTestGain.gain.value = effectiveGain
+      try {
+        this.micTestGain.gain.cancelScheduledValues(this.inputCtx.currentTime)
+        this.micTestGain.gain.setValueAtTime(effectiveGain, this.inputCtx.currentTime)
+      } catch {}
+    }
+  }
+
   public getMicLevel(): number {
-    if (!this.micAnalyser || this.micMuted) {
+    if (!this.micAnalyser) {
       this.smoothedLevel = 0
       return 0
     }
