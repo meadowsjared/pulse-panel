@@ -1106,7 +1106,6 @@ input[type='checkbox']:focus-visible {
   gap: 0.5rem;
   max-width: 540px;
   width: 90%;
-  margin: 0 auto;
 }
 
 .mic-select-line {
@@ -1114,6 +1113,8 @@ input[type='checkbox']:focus-visible {
   gap: 0.5rem;
   align-items: center;
   width: 100%;
+  text-wrap: nowrap;
+  min-width: fit-content;
 }
 
 .mic-select-line > :first-child {
@@ -1152,7 +1153,6 @@ input[type='checkbox']:focus-visible {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.25rem;
   width: 100%;
 }
 
