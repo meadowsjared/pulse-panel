@@ -239,6 +239,7 @@
     /></label>
     <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
     <label>Close to tray<input type="checkbox" v-model="closeToTray" @input="updateCloseToTray" /></label>
+    <label>Start with Windows<input type="checkbox" v-model="startWithWindows" @input="updateStartWithWindows" /></label>
     <hotkey-picker
       class="hotkey-picker"
       v-model="selectedHotkey"
@@ -351,6 +352,7 @@ const outputDevices = ref<(OutputDeviceSetting | null)[]>([])
 const allowOverlappingSound = ref(false)
 const darkMode = ref(true)
 const closeToTray = ref(false)
+const startWithWindows = ref(false)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
 const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined)
 const newTag = ref<string | null>(null)
@@ -700,6 +702,7 @@ settingsStore.checkVirtualCableStatus()
 settingsStore.fetchSettings().then(() => {
   darkMode.value = settingsStore.darkMode
   closeToTray.value = settingsStore.closeToTray
+  startWithWindows.value = settingsStore.startWithWindows
   allowOverlappingSound.value = settingsStore.allowOverlappingSound
   outputDevices.value = settingsStore.outputDevices.map(d => ({ ...d }))
   selectedHotkey.value = settingsStore.ptt_hotkey ?? undefined
@@ -779,6 +782,16 @@ function updateCloseToTray(event: Event) {
   }
   window.electron?.setCloseToTray(!!event.target.checked)
   settingsStore.saveSetting('closeToTray', !!event.target.checked)
+}
+
+function updateStartWithWindows(event: Event) {
+  if (!(event.target instanceof HTMLInputElement)) {
+    console.debug('payload.target', event.target)
+    throw new Error('Event target is not an input element.')
+  }
+  const checked = !!event.target.checked
+  startWithWindows.value = checked
+  settingsStore.saveSetting('startWithWindows', checked)
 }
 
 function updateAllowOverlappingSound(event: Event) {

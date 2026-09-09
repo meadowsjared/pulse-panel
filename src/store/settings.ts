@@ -26,6 +26,7 @@ interface State {
   outputDevices: OutputDeviceSetting[]
   darkMode: boolean
   closeToTray: boolean
+  startWithWindows: boolean
   allowOverlappingSound: boolean
   sounds: Sound[]
   muted: boolean
@@ -127,6 +128,7 @@ const Boolean_Settings_Keys = [
   'invertQuickTags',
   'muted',
   'microphoneMuted',
+  'startWithWindows',
 ] as const
 type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
 
@@ -217,6 +219,7 @@ export const useSettingsStore = defineStore('settings', {
     allOutputDevices: [],
     darkMode: true,
     closeToTray: false,
+    startWithWindows: false,
     allowOverlappingSound: false,
     sounds: [],
     displayMode: 'play',
@@ -365,6 +368,11 @@ export const useSettingsStore = defineStore('settings', {
       electron?.onCloseToTrayChanged(value => {
         this.saveSetting('closeToTray', value)
       })
+      if (typeof this.startWithWindows === 'boolean') {
+        electron?.setOpenAtLogin(this.startWithWindows)?.catch(err => {
+          console.warn('Failed to set login item settings:', err)
+        })
+      }
       const outputDevicesConfigured =
         settings !== undefined &&
         typeof settings === 'object' &&
@@ -422,6 +430,11 @@ export const useSettingsStore = defineStore('settings', {
           this[key] = value
           if (key === 'microphoneMuted') {
             audioMixer.setMicrophoneMuted(this.microphoneMuted)
+          }
+          if (key === 'startWithWindows') {
+            electron?.setOpenAtLogin(this.startWithWindows)?.catch(err => {
+              console.warn('Failed to set login item settings:', err)
+            })
           }
           return true
         }

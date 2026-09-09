@@ -44,6 +44,8 @@ export interface Settings {
   onKeyPressed: (callback: (key: string[]) => void) => void
   setCloseToTray: (value: boolean) => void
   onCloseToTrayChanged: (callback: (value: boolean) => void) => void
+  setOpenAtLogin: (openAtLogin: boolean) => Promise<void>
+  getOpenAtLogin: () => Promise<boolean>
   closeWindow: () => void
   minimizeWindow: () => void
   maximizeRestoreWindow: () => void

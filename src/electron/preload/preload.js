@@ -28,6 +28,8 @@ contextBridge.exposeInMainWorld('electron', {
   onCloseToTrayChanged: callback => {
     ipcRenderer.on('close-to-tray-changed', (_, value) => callback(value))
   },
+  setOpenAtLogin: openAtLogin => ipcRenderer.invoke('set-open-at-login', openAtLogin),
+  getOpenAtLogin: () => ipcRenderer.invoke('get-open-at-login'),
   toggleDarkMode: value => {
     ipcRenderer.send('toggle-dark-mode', value)
   },

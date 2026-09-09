@@ -43,6 +43,26 @@ app.whenReady().then(() => {
 
     enableTray = value
   })
+  ipcMain.handle('set-open-at-login', (_, openAtLogin) => {
+    const args = []
+    if (!app.isPackaged) {
+      args.push(app.getAppPath())
+    }
+    if (openAtLogin) {
+      args.push('--hidden')
+    }
+    app.setLoginItemSettings({
+      openAtLogin: !!openAtLogin,
+      path: process.execPath,
+      args,
+    })
+  })
+  ipcMain.handle('get-open-at-login', () => {
+    const loginSettings = app.getLoginItemSettings(
+      app.isPackaged ? undefined : { path: process.execPath, args: [app.getAppPath()] }
+    )
+    return !!(loginSettings.openAtLogin || loginSettings.executableWillLaunchAtLogin)
+  })
   ipcMain.on('toggle-dark-mode', (_, value) => {
     BrowserWindow.getAllWindows().forEach(window => {
       window.webContents.send('dark-mode-updated', value)
