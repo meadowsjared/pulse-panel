@@ -87,30 +87,6 @@
               placeholder="Give your sound a name..."
               class="clip-title-input" />
           </div>
-
-          <div class="playback-controls">
-            <button
-              class="play-btn"
-              :class="{ playing: isPlaying }"
-              @click="togglePlayPreview"
-              title="Preview trimmed region">
-              <svg v-if="!isPlaying" class="w-5 h-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-              <svg v-else class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="4" width="4" height="16"></rect>
-                <rect x="14" y="4" width="4" height="16"></rect>
-              </svg>
-            </button>
-            <button class="stop-btn" @click="onStopBtnClick" title="Stop">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                <rect x="6" y="6" width="12" height="12"></rect>
-              </svg>
-            </button>
-            <span class="time-readout">
-              {{ formatSeconds(currentTime) }} / {{ formatSeconds(trimmedDuration) }}
-            </span>
-          </div>
         </div>
 
         <!-- Audio Tracks Selector (Mic & Input Device Mute/Unmute) -->
@@ -207,6 +183,30 @@
           preload="auto"
           style="display: none"
           @ended="onAudioEnded"></audio>
+
+        <div class="playback-controls">
+          <button
+            class="play-btn"
+            :class="{ playing: isPlaying }"
+            @click="togglePlayPreview"
+            title="Preview trimmed region">
+            <svg v-if="!isPlaying" class="w-5 h-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg v-else class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+          </button>
+          <button class="stop-btn" @click="onStopBtnClick" title="Stop">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12"></rect>
+            </svg>
+          </button>
+          <span class="time-readout">
+            {{ formatSeconds(currentTime) }} / {{ formatSeconds(trimmedDuration) }}
+          </span>
+        </div>
 
         <!-- Trim Range Summary Bar -->
         <div class="trim-summary-bar">
@@ -1073,6 +1073,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  width: 100%;
+  background: #18181b;
+  padding: 1rem;
+  border-radius: 10px;
 }
 
 .play-btn {
