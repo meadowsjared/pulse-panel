@@ -14,6 +14,7 @@ import { Settings, SettingValue, Versions } from '../@types/electron-window'
 import { toRaw } from 'vue'
 import { searchSounds } from '../utils/soundSearch'
 import { audioMixer } from '../services/audioMixer'
+import { pulseBackBuffer } from '../services/pulseBackBuffer'
 
 declare global {
   interface Window {
@@ -38,6 +39,14 @@ interface State {
   microphoneVolume: number
   microphoneMuted: boolean
   cableOutputVolume: number
+  pulse_back_enabled: boolean
+  pulse_back_hotkey: string[]
+  pulse_back_default_duration: number
+  pulse_back_buffer_length: number
+  pulse_back_input_device: string | null
+  pulse_back_volume: number
+  pulse_back_muted: boolean
+  pulse_back_sync_offset_ms: number
   // not saved in the database:
   /**
    * friendly name of the app
@@ -129,13 +138,15 @@ const Boolean_Settings_Keys = [
   'muted',
   'microphoneMuted',
   'startWithWindows',
+  'pulse_back_enabled',
+  'pulse_back_muted',
 ] as const
 type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
 
-const String_Settings_Keys = ['selectedMicrophoneId'] as const
+const String_Settings_Keys = ['selectedMicrophoneId', 'pulse_back_input_device'] as const
 type StringSettings = (typeof String_Settings_Keys)[number]
 
-const Array_String_Settings_Keys = ['ptt_hotkey', 'stop_hotkey'] as const
+const Array_String_Settings_Keys = ['ptt_hotkey', 'stop_hotkey', 'pulse_back_hotkey'] as const
 const Array_Number_Settings_Keys = ['windowSize'] as const
 const Array_OutputDevice_Settings_Keys = ['outputDevices'] as const
 type ArrayOutputDeviceSettings = (typeof Array_OutputDevice_Settings_Keys)[number]
@@ -143,7 +154,15 @@ type ArrayNumberSettings = (typeof Array_Number_Settings_Keys)[number]
 type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number]
 const Array_Sound_Settings_Keys = ['sounds'] as const
 type ArraySoundSettings = (typeof Array_Sound_Settings_Keys)[number]
-const Number_Settings_Keys = ['defaultVolume', 'microphoneVolume', 'cableOutputVolume'] as const
+const Number_Settings_Keys = [
+  'defaultVolume',
+  'microphoneVolume',
+  'cableOutputVolume',
+  'pulse_back_default_duration',
+  'pulse_back_buffer_length',
+  'pulse_back_volume',
+  'pulse_back_sync_offset_ms',
+] as const
 type NumberSettings = (typeof Number_Settings_Keys)[number]
 const Label_Active_Settings_Keys = ['quickTagsAr'] as const
 type LabelActiveSettings = (typeof Label_Active_Settings_Keys)[number]
@@ -238,6 +257,14 @@ export const useSettingsStore = defineStore('settings', {
     microphoneVolume: 1,
     microphoneMuted: false,
     cableOutputVolume: 1,
+    pulse_back_enabled: false,
+    pulse_back_hotkey: ['F12'],
+    pulse_back_default_duration: 30,
+    pulse_back_buffer_length: 120,
+    pulse_back_input_device: null,
+    pulse_back_volume: 1,
+    pulse_back_muted: false,
+    pulse_back_sync_offset_ms: 100,
     allInputDevices: [],
     virtualCableDeviceId: null,
     virtualCableInstalled: false,
@@ -431,6 +458,9 @@ export const useSettingsStore = defineStore('settings', {
           if (key === 'microphoneMuted') {
             audioMixer.setMicrophoneMuted(this.microphoneMuted)
           }
+          if (key === 'pulse_back_muted') {
+            pulseBackBuffer.setVolume(this.pulse_back_muted ? 0 : (this.pulse_back_volume ?? 1))
+          }
           if (key === 'startWithWindows') {
             electron?.setOpenAtLogin(this.startWithWindows)?.catch(err => {
               console.warn('Failed to set login item settings:', err)
@@ -457,6 +487,8 @@ export const useSettingsStore = defineStore('settings', {
             audioMixer.setMicrophoneVolume(this.microphoneVolume)
           } else if (key === 'cableOutputVolume') {
             audioMixer.setSoundboardVolume(this.muted ? 0 : this.cableOutputVolume)
+          } else if (key === 'pulse_back_volume') {
+            pulseBackBuffer.setVolume(this.pulse_back_muted ? 0 : (this.pulse_back_volume ?? 1))
           }
           return true
         }
@@ -481,7 +513,7 @@ export const useSettingsStore = defineStore('settings', {
         return false
       }
       if (this._isArrayStringSettings(key)) {
-        if ((key === 'stop_hotkey' || key === 'ptt_hotkey') && this._isArrayString(value)) {
+        if ((key === 'stop_hotkey' || key === 'ptt_hotkey' || key === 'pulse_back_hotkey') && this._isArrayString(value)) {
           if (value.length === 0) {
             const prevHotkey = toRaw(this[key])
             electron?.unregisterHotkeys([prevHotkey])
@@ -521,7 +553,7 @@ export const useSettingsStore = defineStore('settings', {
       return (Number_Settings_Keys as readonly string[]).includes(k)
     },
     _isArrayStringSettings(k: string): k is ArrayStringSettings {
-      return ['ptt_hotkey', 'stop_hotkey'].includes(k)
+      return ['ptt_hotkey', 'stop_hotkey', 'pulse_back_hotkey'].includes(k)
     },
     _isArrayNumberSettings(k: string): k is ArrayNumberSettings {
       return ['windowSize'].includes(k)
@@ -686,6 +718,34 @@ export const useSettingsStore = defineStore('settings', {
      */
     async toggleMicrophoneMute(): Promise<boolean> {
       return this.saveSetting('microphoneMuted', !this.microphoneMuted)
+    },
+    /**
+     * Toggle the Pulse Back muted state
+     */
+    async togglePulseBackMute(): Promise<boolean> {
+      return this.saveSetting('pulse_back_muted', !this.pulse_back_muted)
+    },
+    /**
+     * Save the Pulse Back input device ID
+     */
+    async savePulseBackInputDevice(deviceId: string | null): Promise<boolean> {
+      this.pulse_back_input_device = deviceId
+      return this.saveSetting('pulse_back_input_device', deviceId ?? '')
+    },
+    /**
+     * Save the Pulse Back volume (0 to 1)
+     */
+    async savePulseBackVolume(volume: number): Promise<boolean> {
+      this.pulse_back_volume = volume
+      return this.saveSetting('pulse_back_volume', volume)
+    },
+    /**
+     * Save the Pulse Back playhead audio sync offset in milliseconds (0 to 500ms)
+     */
+    async savePulseBackSyncOffset(offsetMs: number): Promise<boolean> {
+      const clamped = Math.max(0, Math.min(2500, Math.round(offsetMs)))
+      this.pulse_back_sync_offset_ms = clamped
+      return this.saveSetting('pulse_back_sync_offset_ms', clamped)
     },
     async toggleDisplayMode(): Promise<void> {
       this.displayMode = this.displayMode === 'play' ? 'edit' : 'play'
@@ -944,6 +1004,10 @@ export const useSettingsStore = defineStore('settings', {
       if (this.stop_hotkey.length > 0 && !hotkeys.some(keys => arraysAreEqual(this.stop_hotkey, keys))) {
         hotkeys.push(toRaw(this.stop_hotkey))
       }
+      // register the pulse_back_hotkey
+      if (this.pulse_back_hotkey && this.pulse_back_hotkey.length > 0 && !hotkeys.some(keys => arraysAreEqual(this.pulse_back_hotkey, keys))) {
+        hotkeys.push(toRaw(this.pulse_back_hotkey))
+      }
 
       electron?.registerHotkeys(hotkeys)
       electron?.onKeyPressed(keys => {
@@ -953,6 +1017,13 @@ export const useSettingsStore = defineStore('settings', {
         // check if the stop_hotkey was pressed
         if (arraysAreEqual(this.stop_hotkey, keys)) {
           soundStore.stopAllSounds()
+        }
+        // check if the pulse_back_hotkey was pressed
+        if (this.pulse_back_hotkey && arraysAreEqual(this.pulse_back_hotkey, keys)) {
+          import('./pulseBack').then(({ usePulseBackStore }) => {
+            const pulseBackStore = usePulseBackStore()
+            pulseBackStore.triggerQuickClip(this.pulse_back_default_duration)
+          })
         }
         if (keys.length === 1 && (keys[0].startsWith('Digit') || keys[0].startsWith('Numpad'))) {
           const soundNumber = parseInt(keys[0].replace('Digit', '').replace('Numpad', ''), 10)

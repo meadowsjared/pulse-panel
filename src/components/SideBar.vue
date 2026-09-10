@@ -36,7 +36,7 @@ function toggleSidebar() {
 
 <style scoped>
 .sideBar {
-  --menu-width: 9rem;
+  --menu-width: 11rem;
   --menu-closed-width: 50px;
   --padding-width: 0.5rem;
   width: var(--menu-closed-width);

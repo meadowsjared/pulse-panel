@@ -101,6 +101,77 @@
       </transition>
     </div>
     <div class="right-buttons">
+      <!-- Quick Clip Button & Popover -->
+      <div class="quick-clip-wrapper" ref="clipMenuRef">
+        <button
+          v-if="pulseBackStore.isLiveRecording"
+          class="live-rec-btn"
+          @click="pulseBackStore.stopLiveCapture()"
+          title="Click to stop live recording">
+          <span class="live-dot"></span>
+          <span>Stop ({{ pulseBackStore.liveRecordSeconds }}s)</span>
+        </button>
+
+        <button
+          v-else
+          :class="['quick-clip-btn', { active: showClipMenu, disabled: !pulseBackStore.isBufferRunning }]"
+          :disabled="!pulseBackStore.isBufferRunning"
+          @click="toggleClipMenu"
+          :title="pulseBackStore.isBufferRunning ? 'Pulse Back (Quick Clip)' : 'Turn on Pulse Back buffer to clip'">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+            <path d="M3 3v5h5" />
+            <path d="M12 7v5l3 3" />
+          </svg>
+          <span class="btn-text">Clip</span>
+        </button>
+
+        <!-- Dropdown Menu -->
+        <transition name="tips-fade">
+          <div v-if="showClipMenu && pulseBackStore.isBufferRunning" class="clip-menu-dropdown" @mousedown.stop>
+            <div class="clip-menu-header">
+              <span class="font-semibold text-white">Pulse Back</span>
+              <span class="text-xs text-zinc-400">Capture replay</span>
+            </div>
+
+            <div class="clip-presets">
+              <button
+                v-for="s in [15, 30, 60]"
+                :key="s"
+                :class="['preset-btn', { selected: selectedPresetSeconds === s }]"
+                @click="selectDuration(s)">
+                -{{ s }}s
+              </button>
+            </div>
+
+            <label class="continue-checkbox">
+              <input type="checkbox" v-model="continueRecordingLive" />
+              <span>Continue recording live</span>
+            </label>
+
+            <button class="execute-clip-btn" @click="executeQuickClip">
+              {{ continueRecordingLive ? 'Start Live Punch-In' : `Capture Last ${selectedPresetSeconds}s` }}
+            </button>
+
+            <div class="clip-menu-footer">
+              <span>Hotkey: <kbd class="tip-kbd">F12</kbd></span>
+            </div>
+          </div>
+        </transition>
+      </div>
+
+      <!-- Pulse Back Buffer Toggle -->
+      <toggle
+        class="pulseBackToggle"
+        :modelValue="pulseBackStore.isBufferEnabled"
+        @update:modelValue="pulseBackStore.toggleBuffer">
+        <span class="flex items-center gap-1.5">
+          <span :class="['status-dot', { online: pulseBackStore.isBufferRunning }]"></span>
+          Pulse Back
+        </span>
+      </toggle>
+
+      <!-- Play / Edit Mode Toggle -->
       <toggle class="displayMode" v-model="editMode" @update:modelValue="handleDisplayModeChange">{{
         editMode ? 'Play Mode' : 'Edit Mode'
       }}</toggle>
@@ -115,11 +186,18 @@ import SearchIcon from '../assets/images/search.svg'
 import CloseIcon from '../assets/images/close.svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
+import { usePulseBackStore } from '../store/pulseBack'
 
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
+const pulseBackStore = usePulseBackStore()
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const searchContainerRef = ref<HTMLDivElement | null>(null)
+
+const showClipMenu = ref(false)
+const clipMenuRef = ref<HTMLDivElement | null>(null)
+const selectedPresetSeconds = ref(settingsStore.pulse_back_default_duration || 30)
+const continueRecordingLive = ref(false)
 
 const isFocused = ref(false)
 const manualTipsOpen = ref(false)
@@ -158,8 +236,26 @@ function handleFocus() {
 function toggleTips() {
   manualTipsOpen.value = !manualTipsOpen.value
   if (manualTipsOpen.value) {
-    searchInputRef.value?.focus()
+    nextTick(() => {
+      searchInputRef.value?.focus()
+    })
   }
+}
+
+function toggleClipMenu() {
+  if (!pulseBackStore.isBufferRunning) return
+  showClipMenu.value = !showClipMenu.value
+}
+
+function selectDuration(s: number) {
+  selectedPresetSeconds.value = s
+  settingsStore.saveSetting('pulse_back_default_duration', s)
+}
+
+async function executeQuickClip() {
+  showClipMenu.value = false
+  settingsStore.saveSetting('pulse_back_default_duration', selectedPresetSeconds.value)
+  await pulseBackStore.triggerQuickClip(selectedPresetSeconds.value, continueRecordingLive.value)
 }
 
 function insertFilter(prefix: string) {
@@ -226,6 +322,9 @@ function handleClickOutside(event: MouseEvent) {
   if (searchContainerRef.value && !searchContainerRef.value.contains(event.target as Node)) {
     isFocused.value = false
     manualTipsOpen.value = false
+  }
+  if (clipMenuRef.value && !clipMenuRef.value.contains(event.target as Node)) {
+    showClipMenu.value = false
   }
 }
 
@@ -490,4 +589,187 @@ onUnmounted(() => {
 .toggle-group.displayMode {
   width: 15.5ch;
 }
+
+.right-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.quick-clip-wrapper {
+  position: relative;
+}
+
+.quick-clip-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.65rem;
+  background: var(--input-bg-color, #27272a);
+  border: 1px solid var(--border-color, #3f3f46);
+  border-radius: 8px;
+  color: #e4e4e7;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-clip-btn:hover:not(:disabled) {
+  background: #3f3f46;
+  border-color: #71717a;
+  transform: translateY(-1px);
+}
+
+.quick-clip-btn.active {
+  background: #3b82f6;
+  border-color: #60a5fa;
+  color: white;
+}
+
+.quick-clip-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.live-rec-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.75rem;
+  background: #dc2626;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  animation: pulse-border 1.5s infinite;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background-color: white;
+  border-radius: 50%;
+  display: inline-block;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+  50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #71717a;
+  transition: background-color 0.3s;
+}
+
+.status-dot.online {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+
+.clip-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 10px;
+  padding: 0.85rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  display: flex;
+  flex-col: column;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.clip-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid #27272a;
+  padding-bottom: 0.4rem;
+}
+
+.clip-presets {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.preset-btn {
+  flex: 1;
+  padding: 0.35rem 0.2rem;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  color: #d4d4d8;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-btn:hover {
+  background: #3f3f46;
+  color: white;
+}
+
+.preset-btn.selected {
+  background: #2563eb;
+  border-color: #3b82f6;
+  color: white;
+  font-weight: 600;
+}
+
+.continue-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: #a1a1aa;
+  cursor: pointer;
+  user-select: none;
+}
+
+.continue-checkbox input {
+  cursor: pointer;
+}
+
+.execute-clip-btn {
+  width: 100%;
+  padding: 0.5rem;
+  background: #10b981;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.execute-clip-btn:hover {
+  background: #059669;
+}
+
+.clip-menu-footer {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 0.7rem;
+  color: #71717a;
+}
+
 </style>

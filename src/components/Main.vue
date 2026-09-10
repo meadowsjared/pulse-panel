@@ -31,10 +31,19 @@
         <router-link
           @keydown.space.enter="activateRouterLink(1, true)"
           @keyup.space.enter="activateRouterLink(1, false)"
+          @keypress.space.prevent="navigateTo('/pulse-back')"
+          to="/pulse-back"
+          title="Pulse Back"
+          :class="['menu', { keyActive: routerLinkActive[1] }]">
+          <inline-svg :src="PulseBackIcon" />Pulse Back
+        </router-link>
+        <router-link
+          @keydown.space.enter="activateRouterLink(2, true)"
+          @keyup.space.enter="activateRouterLink(2, false)"
           @keypress.space.prevent="navigateTo('/settings')"
           to="/settings"
           title="Settings"
-          :class="['menu', { keyActive: routerLinkActive[1] }]">
+          :class="['menu', { keyActive: routerLinkActive[2] }]">
           <inline-svg :src="SettingsGear" />Settings
         </router-link>
       </div>
@@ -68,6 +77,11 @@
         <component :is="Component" />
       </keep-alive>
     </router-view>
+    <transition name="toast-fade">
+      <div v-if="pulseBackStore.toastMessage" class="pulse-back-toast">
+        {{ pulseBackStore.toastMessage }}
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -76,9 +90,11 @@ import { ref, onMounted } from 'vue'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import { useUpdateStore } from '../store/update'
+import { usePulseBackStore } from '../store/pulseBack'
 import InlineSvg from 'vue-inline-svg'
 import SettingsGear from '../assets/images/settings-gear.svg'
 import Speaker from '../assets/images/speaker.svg'
+import PulseBackIcon from '../assets/images/pulse-back.svg'
 import StopIcon from '../assets/images/stop.svg'
 import Headphones from '../assets/images/headphones.svg'
 import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp'
@@ -88,13 +104,15 @@ const darkMode = ref(true)
 const settingsStore = useSettingsStore()
 const soundStore = useSoundStore()
 const updateStore = useUpdateStore()
+const pulseBackStore = usePulseBackStore()
 const appVersion = `v${window.electron?.versions.app}`
-const routerLinkActive = ref([false, false])
+const routerLinkActive = ref([false, false, false])
 const stopAllSoundsActive = ref(false)
 const muteButtonActive = ref(false)
 const loadingErrorMessage = ref<string | null>(null)
 
 onMounted(() => {
+  pulseBackStore.init()
   setTimeout(() => {
     updateStore.checkForUpdates()
   }, 1500)
@@ -173,6 +191,7 @@ initializeSettings()
   gap: 1rem;
   color: var(--text-color);
   font-weight: bold;
+  white-space: nowrap;
 }
 .menu:focus-visible {
   outline: 2px solid var(--active-color);
@@ -313,5 +332,32 @@ initializeSettings()
   cursor: pointer;
   color: white;
   background-color: #397c6d;
+}
+
+.pulse-back-toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: #1e3a8a;
+  color: white;
+  border: 1px solid #3b82f6;
+  padding: 0.65rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: all 0.25s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 </style>

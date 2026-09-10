@@ -256,6 +256,110 @@
       title="this will be the button you can press to stop all sounds immediately"
       >Stop Sounds Key:</hotkey-picker
     >
+    <hotkey-picker
+      class="hotkey-picker"
+      v-model="pulseBackHotkey"
+      :dark="false"
+      @update:modelValue="onPulseBackHotkeyChange"
+      title="Global hotkey to capture the recent audio replay buffer"
+      >Pulse Back Key:</hotkey-picker
+    >
+
+    <h2 class="mt-4">Pulse Back Input:</h2>
+    <p class="section-subtitle">Select the audio input for Pulse Back replay clips. Adjust volume and test input levels.</p>
+    <div class="mx-auto mb-2">
+      <div class="mic-controls-container">
+        <div class="mic-select-line">
+          <select-custom
+            :modelValue="settingsStore.pulse_back_input_device || ''"
+            @change="onPulseBackDeviceSelected($event)"
+            defaultText="Use Selected Microphone"
+            :options="[
+              { label: 'Use Selected Microphone', value: '' },
+              ...settingsStore.allInputDevices.map(option => ({ label: option.label, value: option.deviceId })),
+            ]" />
+          <button
+            :class="{
+              'mic-mute-btn': true,
+              muted: settingsStore.pulse_back_muted,
+            }"
+            :title="settingsStore.pulse_back_muted ? 'Unmute Pulse Back Input' : 'Mute Pulse Back Input'"
+            @click="togglePulseBackMute">
+            <inline-svg :src="settingsStore.pulse_back_muted ? MicrophoneSlashIcon : MicrophoneIcon" class="w-5 h-5" />
+          </button>
+          <div class="device-volume-container" :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`">
+            <input-text-number
+              class="device-volume-input"
+              :min="0"
+              :max="100"
+              :bigStep="5"
+              v-model="pulseBackVolumeDisplay"
+              :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
+              aria-label="Pulse Back Volume" />
+            <input-range-number
+              class="device-volume-slider"
+              :bigStep="5"
+              v-model="pulseBackVolumeDisplay"
+              :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
+              aria-label="Pulse Back Volume Slider" />
+          </div>
+        </div>
+        <div class="mic-level-container" title="Live Pulse Back Input Level">
+          <button
+            :class="{
+              'mic-test-btn': true,
+              active: isTestingPulseBack,
+            }"
+            :title="isTestingPulseBack ? 'Stop Testing' : 'Test Input (Echo to headphones)'"
+            @click="togglePulseBackTest">
+            <span>{{ isTestingPulseBack ? 'Stop Testing' : 'Input Test' }}</span>
+          </button>
+          <div ref="pulseBackTrackRef" class="mic-level-track">
+            <svg class="mic-level-svg" :viewBox="`0 0 ${pulseBackBarCount * 10} 20`" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="pb-meter-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#2ecc71" />
+                  <stop offset="20%" stop-color="#2ecc71" />
+                  <stop offset="55%" stop-color="#f1c40f" />
+                  <stop offset="85%" stop-color="#e74c3c" />
+                  <stop offset="100%" stop-color="#e74c3c" />
+                </linearGradient>
+                <mask id="pb-meter-mask">
+                  <rect
+                    v-for="i in pulseBackBarCount"
+                    :key="i"
+                    :x="(i - 1) * 10 + 2.5"
+                    y="2"
+                    width="5"
+                    height="16"
+                    rx="2.5"
+                    ry="2.5"
+                    fill="white" />
+                </mask>
+              </defs>
+              <!-- Background ghost scale -->
+              <rect
+                x="0"
+                y="0"
+                :width="pulseBackBarCount * 10"
+                height="20"
+                fill="url(#pb-meter-grad)"
+                opacity="0.22"
+                mask="url(#pb-meter-mask)" />
+              <!-- Active illuminated bars -->
+              <rect
+                x="0"
+                y="0"
+                :width="pulseBackActiveBarCount * 10"
+                height="20"
+                :fill="settingsStore.pulse_back_muted ? '#7f8c8d' : 'url(#pb-meter-grad)'"
+                mask="url(#pb-meter-mask)"
+                class="mic-level-fill-rect" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="flex justify-center mt-4 flex-col">
       <h2>Quick Tags:</h2>
       <div class="flex justify-center gap-2 flex-wrap flex-col">
@@ -335,7 +439,9 @@ import InlineSvg from 'vue-inline-svg'
 import { useSettingsStore } from '../store/settings'
 import { useSoundStore } from '../store/sound'
 import { useUpdateStore } from '../store/update'
+import { usePulseBackStore } from '../store/pulseBack'
 import { audioMixer } from '../services/audioMixer'
+import { pulseBackBuffer } from '../services/pulseBackBuffer'
 import SpeakerIcon from '../assets/images/speaker.svg'
 import MicrophoneIcon from '../assets/images/microphone.svg'
 import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg'
@@ -355,6 +461,7 @@ const closeToTray = ref(false)
 const startWithWindows = ref(false)
 const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
 const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined)
+const pulseBackHotkey = ref<string[] | undefined>(settingsStore.pulse_back_hotkey ?? ['F12'])
 const newTag = ref<string | null>(null)
 
 const isPlayingCableTest = ref(false)
@@ -420,6 +527,53 @@ const activeBarCount = computed(() => {
   return Math.min(barCount.value, Math.ceil((micLevel.value / 100) * barCount.value))
 })
 
+const pulseBackTrackRef = ref<HTMLElement | null>(null)
+const pulseBackTrackWidth = ref(360)
+let pulseBackResizeObserver: ResizeObserver | null = null
+const pulseBackLevel = ref(0)
+const isTestingPulseBack = ref(false)
+
+const pulseBackBarCount = computed(() => Math.max(1, Math.floor(pulseBackTrackWidth.value / 10)))
+const pulseBackActiveBarCount = computed(() => {
+  if (pulseBackLevel.value <= 0) return 0
+  return Math.min(pulseBackBarCount.value, Math.ceil((pulseBackLevel.value / 100) * pulseBackBarCount.value))
+})
+
+const savePulseBackVolumeDebounced = throttle((value: number) => {
+  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100
+  settingsStore.savePulseBackVolume(newValue)
+}, 100)
+
+const pulseBackVolumeDisplay = computed({
+  get: () => Math.round((settingsStore.pulse_back_volume ?? 1) * 100),
+  set: (value: number) => {
+    const vol = Math.max(0, Math.min(100, Math.round(value))) / 100
+    settingsStore.pulse_back_volume = vol
+    const effectiveVol = settingsStore.pulse_back_muted ? 0 : vol
+    pulseBackBuffer.setInputVolume(effectiveVol)
+    savePulseBackVolumeDebounced(value)
+  },
+})
+
+async function togglePulseBackMute() {
+  await settingsStore.togglePulseBackMute()
+  const effectiveVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
+  pulseBackBuffer.setInputVolume(effectiveVol)
+}
+
+async function togglePulseBackTest() {
+  isTestingPulseBack.value = !isTestingPulseBack.value
+  const primaryOutput = settingsStore.outputDevices[0]?.deviceId ?? null
+  await pulseBackBuffer.setInputTest(isTestingPulseBack.value, primaryOutput)
+}
+
+function stopTestingPulseBack() {
+  if (isTestingPulseBack.value) {
+    pulseBackBuffer.setInputTest(false).catch(() => {})
+    isTestingPulseBack.value = false
+  }
+}
+
 async function toggleMicTest() {
   if (!settingsStore.selectedMicrophoneId) {
     if (settingsStore.allInputDevices.length > 0) {
@@ -435,6 +589,9 @@ async function toggleMicTest() {
 
 function updateMicLevelLoop() {
   micLevel.value = Math.min(100, Math.round(audioMixer.getMicLevel() * 100))
+  pulseBackLevel.value = settingsStore.pulse_back_muted
+    ? 0
+    : Math.min(100, Math.round(pulseBackBuffer.getInputLevel() * 100))
   rafId = requestAnimationFrame(updateMicLevelLoop)
 }
 
@@ -452,6 +609,26 @@ onMounted(() => {
       }
     })
     resizeObserver.observe(trackRef.value)
+  }
+
+  if (pulseBackTrackRef.value) {
+    pulseBackTrackWidth.value = pulseBackTrackRef.value.clientWidth || 360
+    pulseBackResizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          pulseBackTrackWidth.value = Math.round(entry.contentRect.width)
+        }
+      }
+    })
+    pulseBackResizeObserver.observe(pulseBackTrackRef.value)
+  }
+
+  if (!pulseBackBuffer.active) {
+    const micDevice = settingsStore.selectedMicrophoneId
+    const inputDevice = settingsStore.pulse_back_input_device
+    const effectiveMicVol = settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1)
+    const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
+    pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
   }
 })
 
@@ -475,10 +652,12 @@ onDeactivated(() => {
     rafId = null
   }
   stopTestingMic()
+  stopTestingPulseBack()
 })
 
 onBeforeRouteLeave(() => {
   stopTestingMic()
+  stopTestingPulseBack()
 })
 
 onUnmounted(() => {
@@ -490,12 +669,22 @@ onUnmounted(() => {
     resizeObserver.disconnect()
     resizeObserver = null
   }
+  if (pulseBackResizeObserver) {
+    pulseBackResizeObserver.disconnect()
+    pulseBackResizeObserver = null
+  }
   stopTestingMic()
+  stopTestingPulseBack()
+  const pulseBackStore = usePulseBackStore()
+  if (!pulseBackStore.isBufferEnabled) {
+    pulseBackBuffer.stop()
+  }
 })
 
 const saveMicVolumeDebounced = throttle((value: number) => {
   const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100
   settingsStore.saveMicrophoneVolume(newValue)
+  pulseBackBuffer.setMicVolume(settingsStore.microphoneMuted ? 0 : newValue)
 }, 100)
 
 const micVolumeDisplay = computed({
@@ -514,11 +703,18 @@ async function onMicSelected(payload: Event | string) {
   }
   if (deviceId) {
     await settingsStore.saveMicrophoneDevice(deviceId)
+    if (pulseBackBuffer.active) {
+      const inputDevice = settingsStore.pulse_back_input_device
+      const effectiveMicVol = settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1)
+      const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
+      await pulseBackBuffer.start(deviceId, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
+    }
   }
 }
 
 async function toggleMicMute() {
   await settingsStore.toggleMicrophoneMute()
+  pulseBackBuffer.setMicVolume(settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1))
 }
 
 async function installVirtualCable() {
@@ -649,6 +845,29 @@ function onStopHotkeyChange(event: string[] | undefined) {
   stopHotkey.value = event
   // save the value to the IndexedDB store
   settingsStore.saveSetting('stop_hotkey', [...(event ?? [])])
+}
+
+function onPulseBackHotkeyChange(event: string[] | undefined) {
+  pulseBackHotkey.value = event
+  settingsStore.saveSetting('pulse_back_hotkey', [...(event ?? [])])
+}
+
+async function onPulseBackDeviceSelected(payload: any) {
+  let deviceId: string | null = null
+  if (typeof payload === 'string') {
+    deviceId = payload.length > 0 ? payload : null
+  } else if (payload && (payload as any).detail) {
+    const d = (payload as any).detail
+    deviceId = typeof d === 'string' && d.length > 0 ? d : null
+  } else if (payload && payload.target) {
+    const val = payload.target.value
+    deviceId = typeof val === 'string' && val.length > 0 ? val : null
+  }
+  await settingsStore.savePulseBackInputDevice(deviceId)
+  const micDevice = settingsStore.selectedMicrophoneId
+  const effectiveMicVol = settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1)
+  const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
+  await pulseBackBuffer.start(micDevice, deviceId, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
 }
 
 function dragStart(pTag: LabelActive, index: number) {

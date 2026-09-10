@@ -3,6 +3,7 @@ import About from '../components/About.vue'
 import Main from '../components/Main.vue'
 import Settings from '../components/Settings.vue'
 import Soundboard from '../components/Soundboard.vue'
+import PulseBackView from '../components/PulseBackView.vue'
 
 const routes = [
   {
@@ -15,6 +16,11 @@ const routes = [
         path: '/soundboard',
         name: 'Soundboard',
         component: Soundboard,
+      },
+      {
+        path: '/pulse-back',
+        name: 'PulseBack',
+        component: PulseBackView,
       },
       {
         path: '/settings',
