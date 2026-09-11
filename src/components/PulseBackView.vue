@@ -238,7 +238,7 @@
 
         <!-- Native Audio Element for 1:1 hardware clock playback -->
         <audio ref="audioElementRef"
-               :src="selectedClip?.audioUrl"
+               :src="previewAudioUrl"
                preload="auto"
                style="display: none"
                @ended="onAudioEnded"></audio>
@@ -374,23 +374,9 @@ const trimEnd = ref(0);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const waveformWrapperRef = ref<HTMLDivElement | null>(null);
 const audioElementRef = ref<HTMLAudioElement | null>(null);
+const previewAudioUrl = ref<string>('');
 let audioBuffer: AudioBuffer | null = null;
 let audioContext: AudioContext | null = null;
-let mediaSourceNode: MediaElementAudioSourceNode | null = null;
-let splitterNode: ChannelSplitterNode | null = null;
-let mergerNode: ChannelMergerNode | null = null;
-let micGainNode: GainNode | null = null;
-let inputGainNode: GainNode | null = null;
-let masterGainNode: GainNode | null = null;
-
-function updateTrackGains() {
-  if (!audioContext || !micGainNode || !inputGainNode) return;
-  const bothActive = includeMic.value && includeInput.value;
-  const scale = bothActive ? 0.8 : 1.0;
-  const now = audioContext.currentTime;
-  micGainNode.gain.setValueAtTime(includeMic.value ? scale : 0, now);
-  inputGainNode.gain.setValueAtTime(includeInput.value ? scale : 0, now);
-}
 
 // Dual-Track State
 const includeMic = ref(true);
@@ -455,11 +441,6 @@ watch(
     includeMic.value = clip.includeMic ?? true;
     includeInput.value = clip.includeInput ?? true;
 
-    updateTrackGains();
-    if (masterGainNode && audioContext) {
-      masterGainNode.gain.setValueAtTime(clipVolume.value / 100, audioContext.currentTime);
-    }
-
     if (audioElementRef.value) {
       audioElementRef.value.currentTime = currentTime.value;
       audioElementRef.value.volume = clipVolume.value / 100;
@@ -470,41 +451,48 @@ watch(
   { immediate: true }
 );
 
-function setupAudioGraph() {
-  const audioEl = audioElementRef.value;
-  if (!audioEl || mediaSourceNode) return;
+function updatePreviewAudio() {
+  if (!audioBuffer) return;
+  const numChannels = audioBuffer.numberOfChannels;
+  const length = audioBuffer.length;
+  const sampleRate = audioBuffer.sampleRate;
 
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!audioContext) {
-      audioContext = new AudioContextClass();
+  const micData = audioBuffer.getChannelData(0);
+  const inputData = numChannels >= 2 ? audioBuffer.getChannelData(1) : null;
+
+  // Mix to a 1-channel (centered mono) Float32Array so audio is heard equally in both ears
+  const mixed = new Float32Array(length);
+  const useMic = includeMic.value;
+  const useInput = includeInput.value && inputData !== null;
+
+  if (useMic && useInput) {
+    for (let i = 0; i < length; i++) {
+      mixed[i] = Math.max(-1, Math.min(1, (micData[i] + inputData[i]) * 0.75));
     }
-    mediaSourceNode = audioContext.createMediaElementSource(audioEl);
-    splitterNode = audioContext.createChannelSplitter(2);
-    mergerNode = audioContext.createChannelMerger(2);
-    micGainNode = audioContext.createGain();
-    inputGainNode = audioContext.createGain();
-    masterGainNode = audioContext.createGain();
+  } else if (useMic) {
+    mixed.set(micData);
+  } else if (useInput) {
+    mixed.set(inputData);
+  }
 
-    masterGainNode.gain.value = clipVolume.value / 100;
-    updateTrackGains();
+  const previewBlob = encodeWAV(mixed, sampleRate);
+  if (previewAudioUrl.value) {
+    try {
+      URL.revokeObjectURL(previewAudioUrl.value);
+    } catch {}
+  }
+  previewAudioUrl.value = URL.createObjectURL(previewBlob);
 
-    mediaSourceNode.connect(splitterNode);
-
-    // Route Left (Mic track / Ch 0) to both Left & Right of stereo merger
-    splitterNode.connect(micGainNode, 0);
-    micGainNode.connect(mergerNode, 0, 0);
-    micGainNode.connect(mergerNode, 0, 1);
-
-    // Route Right (Input track / Ch 1) to both Left & Right of stereo merger
-    splitterNode.connect(inputGainNode, 1);
-    inputGainNode.connect(mergerNode, 0, 0);
-    inputGainNode.connect(mergerNode, 0, 1);
-
-    mergerNode.connect(masterGainNode);
-    masterGainNode.connect(audioContext.destination);
-  } catch (err) {
-    console.warn('AudioGraph setup warning (audio will play directly):', err);
+  const audioEl = audioElementRef.value;
+  if (audioEl) {
+    const wasPlaying = isPlaying.value;
+    const currentPos = currentTime.value;
+    audioEl.src = previewAudioUrl.value;
+    audioEl.currentTime = currentPos;
+    audioEl.volume = clipVolume.value / 100;
+    if (wasPlaying) {
+      audioEl.play().catch(err => console.error('Audio resume error:', err));
+    }
   }
 }
 
@@ -531,6 +519,9 @@ async function loadAudioData(blob: Blob) {
         audioElementRef.value.currentTime = currentTime.value;
       }
     }
+
+    updatePreviewAudio();
+
     await nextTick();
     requestAnimationFrame(() => {
       drawWaveform();
@@ -557,16 +548,14 @@ function saveCurrentClipState() {
 
 function toggleMicTrack() {
   includeMic.value = !includeMic.value;
-  setupAudioGraph();
-  updateTrackGains();
+  updatePreviewAudio();
   drawWaveform();
   saveCurrentClipState();
 }
 
 function toggleInputTrack() {
   includeInput.value = !includeInput.value;
-  setupAudioGraph();
-  updateTrackGains();
+  updatePreviewAudio();
   drawWaveform();
   saveCurrentClipState();
 }
@@ -736,9 +725,6 @@ async function onTagsChange() {
 }
 
 function onVolumeChange() {
-  if (masterGainNode && audioContext) {
-    masterGainNode.gain.setValueAtTime(clipVolume.value / 100, audioContext.currentTime);
-  }
   if (audioElementRef.value) {
     audioElementRef.value.volume = clipVolume.value / 100;
   }
@@ -751,6 +737,12 @@ function onColorChange() {
 
 async function deleteClip(id: string) {
   stopPreview();
+  if (previewAudioUrl.value) {
+    try {
+      URL.revokeObjectURL(previewAudioUrl.value);
+    } catch {}
+    previewAudioUrl.value = '';
+  }
   await pulseBackStore.deleteClip(id);
 }
 
@@ -796,16 +788,9 @@ async function startPlayback(offsetSec: number, endSec: number) {
   const audioEl = audioElementRef.value;
   if (!audioEl || !selectedClip.value) return;
 
-  setupAudioGraph();
-
-  if (audioContext && audioContext.state === 'suspended') {
-    await audioContext.resume().catch(() => { });
+  if (!previewAudioUrl.value && audioBuffer) {
+    updatePreviewAudio();
   }
-
-  if (masterGainNode && audioContext) {
-    masterGainNode.gain.setValueAtTime(clipVolume.value / 100, audioContext.currentTime);
-  }
-  updateTrackGains();
 
   playbackEndSec = endSec;
   audioEl.currentTime = offsetSec;
@@ -1064,33 +1049,15 @@ onMounted(() => {
 onUnmounted(() => {
   stopPreview();
   saveCurrentClipState();
+  if (previewAudioUrl.value) {
+    try {
+      URL.revokeObjectURL(previewAudioUrl.value);
+    } catch {}
+    previewAudioUrl.value = '';
+  }
   if (waveformResizeObserver) {
     waveformResizeObserver.disconnect();
     waveformResizeObserver = null;
-  }
-  if (mediaSourceNode) {
-    try { mediaSourceNode.disconnect(); } catch {}
-    mediaSourceNode = null;
-  }
-  if (splitterNode) {
-    try { splitterNode.disconnect(); } catch {}
-    splitterNode = null;
-  }
-  if (mergerNode) {
-    try { mergerNode.disconnect(); } catch {}
-    mergerNode = null;
-  }
-  if (micGainNode) {
-    try { micGainNode.disconnect(); } catch {}
-    micGainNode = null;
-  }
-  if (inputGainNode) {
-    try { inputGainNode.disconnect(); } catch {}
-    inputGainNode = null;
-  }
-  if (masterGainNode) {
-    try { masterGainNode.disconnect(); } catch {}
-    masterGainNode = null;
   }
   window.removeEventListener('resize', drawWaveform);
   window.removeEventListener('mousemove', onHandleMouseMove);
