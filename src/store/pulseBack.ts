@@ -15,6 +15,13 @@ export interface PulseBackClip {
   createdAt: number
   hasDualTracks?: boolean
   tags?: string[]
+  trimStart?: number
+  trimEnd?: number
+  currentTime?: number
+  volume?: number
+  color?: string
+  includeMic?: boolean
+  includeInput?: boolean
 }
 
 interface PulseBackState {
@@ -87,11 +94,23 @@ export const usePulseBackStore = defineStore('pulseBack', {
               createdAt: raw.createdAt || Date.now(),
               hasDualTracks: raw.hasDualTracks ?? false,
               tags: raw.tags || [],
+              trimStart: raw.trimStart !== undefined ? Number(raw.trimStart) : undefined,
+              trimEnd: raw.trimEnd !== undefined ? Number(raw.trimEnd) : undefined,
+              currentTime: raw.currentTime !== undefined ? Number(raw.currentTime) : undefined,
+              volume: raw.volume !== undefined ? Number(raw.volume) : undefined,
+              color: raw.color !== undefined ? String(raw.color) : undefined,
+              includeMic: raw.includeMic !== undefined ? Boolean(raw.includeMic) : undefined,
+              includeInput: raw.includeInput !== undefined ? Boolean(raw.includeInput) : undefined,
             }))
             .sort((a, b) => b.createdAt - a.createdAt)
 
           if (this.clips.length > 0 && !this.selectedClipId) {
-            this.selectedClipId = this.clips[0].id
+            const savedSelectedId = localStorage.getItem('pulse_back_selected_clip_id')
+            if (savedSelectedId && this.clips.some(c => c.id === savedSelectedId)) {
+              this.selectedClipId = savedSelectedId
+            } else {
+              this.selectedClipId = this.clips[0].id
+            }
           }
         }
       } catch (err) {
@@ -212,10 +231,20 @@ export const usePulseBackStore = defineStore('pulseBack', {
         createdAt: now,
         hasDualTracks,
         tags: ['clip'],
+        trimStart: 0,
+        trimEnd: duration,
+        currentTime: 0,
+        volume: 100,
+        color: '#3b82f6',
+        includeMic: true,
+        includeInput: true,
       }
 
       this.clips.unshift(clip)
       this.selectedClipId = clip.id
+      try {
+        localStorage.setItem('pulse_back_selected_clip_id', clip.id)
+      } catch {}
 
       try {
         const rawBlob = toRaw(clip.blob)
@@ -229,6 +258,13 @@ export const usePulseBackStore = defineStore('pulseBack', {
           createdAt: Number(clip.createdAt),
           hasDualTracks: Boolean(clip.hasDualTracks),
           tags: rawTags,
+          trimStart: 0,
+          trimEnd: Number(clip.duration),
+          currentTime: 0,
+          volume: 100,
+          color: '#3b82f6',
+          includeMic: true,
+          includeInput: true,
         })
       } catch (err) {
         console.warn('Could not persist clip to IndexedDB:', err)
@@ -236,6 +272,13 @@ export const usePulseBackStore = defineStore('pulseBack', {
 
       this.showToast(`Saved ${clip.title}!`)
       return clip
+    },
+
+    selectClip(clipId: string): void {
+      this.selectedClipId = clipId
+      try {
+        localStorage.setItem('pulse_back_selected_clip_id', clipId)
+      } catch {}
     },
 
     async deleteClip(clipId: string): Promise<void> {
@@ -249,6 +292,13 @@ export const usePulseBackStore = defineStore('pulseBack', {
 
         if (this.selectedClipId === clipId) {
           this.selectedClipId = this.clips[0]?.id ?? null
+          try {
+            if (this.selectedClipId) {
+              localStorage.setItem('pulse_back_selected_clip_id', this.selectedClipId)
+            } else {
+              localStorage.removeItem('pulse_back_selected_clip_id')
+            }
+          } catch {}
         }
 
         try {
@@ -270,7 +320,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
         const rawBlob = toRaw(clip.blob)
         const rawTags = clip.tags ? Array.from(toRaw(clip.tags)) : []
         const db = await getClipDB()
-        await db.put(STORE_NAME, {
+        const toSave: Record<string, any> = {
           id: String(clip.id),
           title: String(clip.title),
           duration: Number(clip.duration),
@@ -278,7 +328,15 @@ export const usePulseBackStore = defineStore('pulseBack', {
           createdAt: Number(clip.createdAt),
           hasDualTracks: Boolean(clip.hasDualTracks),
           tags: rawTags,
-        })
+        }
+        if (clip.trimStart !== undefined) toSave.trimStart = Number(clip.trimStart)
+        if (clip.trimEnd !== undefined) toSave.trimEnd = Number(clip.trimEnd)
+        if (clip.currentTime !== undefined) toSave.currentTime = Number(clip.currentTime)
+        if (clip.volume !== undefined) toSave.volume = Number(clip.volume)
+        if (clip.color !== undefined) toSave.color = String(clip.color)
+        if (clip.includeMic !== undefined) toSave.includeMic = Boolean(clip.includeMic)
+        if (clip.includeInput !== undefined) toSave.includeInput = Boolean(clip.includeInput)
+        await db.put(STORE_NAME, toSave)
       } catch (err) {
         console.warn('Could not update clip in IDB:', err)
       }

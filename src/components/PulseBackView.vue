@@ -270,6 +270,8 @@
               <div class="flex items-center gap-2">
                 <input type="color"
                        v-model="clipColor"
+                       @input="onColorChange"
+                       @change="onColorChange"
                        class="color-picker-input cursor-pointer" />
                 <span class="text-xs text-zinc-400 uppercase font-mono">{{ clipColor }}</span>
               </div>
@@ -291,6 +293,8 @@
                      min="0"
                      max="100"
                      v-model="clipVolume"
+                     @input="onVolumeChange"
+                     @change="onVolumeChange"
                      class="volume-slider cursor-pointer" />
             </div>
           </div>
@@ -412,29 +416,50 @@ const playheadPercent = computed(() => {
 
 watch(
   () => selectedClip.value?.id,
-  async newId => {
+  async (newId, oldId) => {
     stopPreview();
+    if (oldId) {
+      const oldClip = pulseBackStore.clips.find(c => c.id === oldId);
+      if (oldClip) {
+        pulseBackStore.updateClip(oldId, {
+          title: clipTitle.value,
+          tags: clipTagsString.value.split(',').map(t => t.trim()).filter(Boolean),
+          trimStart: trimStart.value,
+          trimEnd: trimEnd.value,
+          currentTime: currentTime.value,
+          volume: clipVolume.value,
+          color: clipColor.value,
+          includeMic: includeMic.value,
+          includeInput: includeInput.value,
+        });
+      }
+    }
     if (!selectedClip.value) return;
 
-    clipTitle.value = selectedClip.value.title;
-    clipTagsString.value = (selectedClip.value.tags || ['clip']).join(', ');
-    trimStart.value = 0;
-    trimEnd.value = selectedClip.value.duration;
-    currentTime.value = 0;
-    includeMic.value = true;
-    includeInput.value = true;
+    const clip = selectedClip.value;
+    clipTitle.value = clip.title;
+    clipTagsString.value = (clip.tags || ['clip']).join(', ');
+    trimStart.value = clip.trimStart ?? 0;
+    trimEnd.value = clip.trimEnd ?? clip.duration;
+    currentTime.value = clip.currentTime ?? trimStart.value;
+    clipVolume.value = clip.volume ?? 100;
+    clipColor.value = clip.color ?? '#3b82f6';
+    includeMic.value = clip.includeMic ?? true;
+    includeInput.value = clip.includeInput ?? true;
+
     if (micGainNode && audioContext) {
-      micGainNode.gain.setValueAtTime(1, audioContext.currentTime);
+      micGainNode.gain.setValueAtTime(includeMic.value ? 1 : 0, audioContext.currentTime);
     }
     if (inputGainNode && audioContext) {
-      inputGainNode.gain.setValueAtTime(1, audioContext.currentTime);
+      inputGainNode.gain.setValueAtTime(includeInput.value ? 1 : 0, audioContext.currentTime);
     }
 
     if (audioElementRef.value) {
-      audioElementRef.value.currentTime = 0;
+      audioElementRef.value.currentTime = currentTime.value;
+      audioElementRef.value.volume = clipVolume.value / 100;
     }
 
-    await loadAudioData(selectedClip.value.blob);
+    await loadAudioData(clip.blob);
   },
   { immediate: true }
 );
@@ -479,7 +504,20 @@ async function loadAudioData(blob: Blob) {
     }
     audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
     hasDualChannels.value = audioBuffer.numberOfChannels >= 2;
-    trimEnd.value = audioBuffer.duration;
+    if (selectedClip.value?.trimEnd !== undefined) {
+      trimEnd.value = selectedClip.value.trimEnd;
+    } else {
+      trimEnd.value = audioBuffer.duration;
+    }
+    if (selectedClip.value?.trimStart !== undefined) {
+      trimStart.value = selectedClip.value.trimStart;
+    }
+    if (selectedClip.value?.currentTime !== undefined) {
+      currentTime.value = selectedClip.value.currentTime;
+      if (audioElementRef.value) {
+        audioElementRef.value.currentTime = currentTime.value;
+      }
+    }
     await nextTick();
     requestAnimationFrame(() => {
       drawWaveform();
@@ -489,6 +527,21 @@ async function loadAudioData(blob: Blob) {
   }
 }
 
+function saveCurrentClipState() {
+  if (!selectedClip.value) return;
+  pulseBackStore.updateClip(selectedClip.value.id, {
+    title: clipTitle.value,
+    tags: clipTagsString.value.split(',').map(t => t.trim()).filter(Boolean),
+    trimStart: trimStart.value,
+    trimEnd: trimEnd.value,
+    currentTime: currentTime.value,
+    volume: clipVolume.value,
+    color: clipColor.value,
+    includeMic: includeMic.value,
+    includeInput: includeInput.value,
+  });
+}
+
 function toggleMicTrack() {
   includeMic.value = !includeMic.value;
   setupAudioGraph();
@@ -496,6 +549,7 @@ function toggleMicTrack() {
     micGainNode.gain.setValueAtTime(includeMic.value ? 1 : 0, audioContext.currentTime);
   }
   drawWaveform();
+  saveCurrentClipState();
 }
 
 function toggleInputTrack() {
@@ -505,6 +559,7 @@ function toggleInputTrack() {
     inputGainNode.gain.setValueAtTime(includeInput.value ? 1 : 0, audioContext.currentTime);
   }
   drawWaveform();
+  saveCurrentClipState();
 }
 
 function drawWaveform() {
@@ -639,7 +694,8 @@ function drawWaveform() {
 
 function selectClip(clip: PulseBackClip) {
   if (pulseBackStore.selectedClipId === clip.id) return;
-  pulseBackStore.selectedClipId = clip.id;
+  saveCurrentClipState();
+  pulseBackStore.selectClip(clip.id);
 }
 
 function onTitleInput() {
@@ -657,7 +713,7 @@ async function onTitleChange() {
   }
   clipTitle.value = newTitle;
   selectedClip.value.title = newTitle;
-  await pulseBackStore.updateClip(selectedClip.value.id, { title: newTitle });
+  saveCurrentClipState();
 }
 
 async function onTagsChange() {
@@ -667,7 +723,18 @@ async function onTagsChange() {
     .map(t => t.trim())
     .filter(t => t.length > 0);
   selectedClip.value.tags = tags;
-  await pulseBackStore.updateClip(selectedClip.value.id, { tags });
+  saveCurrentClipState();
+}
+
+function onVolumeChange() {
+  if (audioElementRef.value) {
+    audioElementRef.value.volume = clipVolume.value / 100;
+  }
+  saveCurrentClipState();
+}
+
+function onColorChange() {
+  saveCurrentClipState();
 }
 
 async function deleteClip(id: string) {
@@ -679,6 +746,11 @@ function resetTrim() {
   if (!selectedClip.value) return;
   trimStart.value = 0;
   trimEnd.value = selectedClip.value.duration;
+  currentTime.value = 0;
+  if (audioElementRef.value) {
+    audioElementRef.value.currentTime = 0;
+  }
+  saveCurrentClipState();
 }
 
 function playTrimmedOnly() {
@@ -689,6 +761,7 @@ function playTrimmedOnly() {
 function togglePlayPreview() {
   if (isPlaying.value) {
     stopPreview();
+    saveCurrentClipState();
   } else {
     const startFrom =
       currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
@@ -704,6 +777,7 @@ function onStopBtnClick() {
   if (audioElementRef.value) {
     audioElementRef.value.currentTime = trimStart.value;
   }
+  saveCurrentClipState();
 }
 
 async function startPlayback(offsetSec: number, endSec: number) {
@@ -718,6 +792,7 @@ async function startPlayback(offsetSec: number, endSec: number) {
 
   playbackEndSec = endSec;
   audioEl.currentTime = offsetSec;
+  audioEl.volume = clipVolume.value / 100;
   currentTime.value = offsetSec;
 
   try {
@@ -764,6 +839,7 @@ function onAudioEnded() {
   if (audioElementRef.value) {
     audioElementRef.value.currentTime = trimStart.value;
   }
+  saveCurrentClipState();
 }
 
 // Dragging Trim Handles & Scrubbing
@@ -822,6 +898,7 @@ function onScrubMouseUp() {
     }
     window.removeEventListener('mousemove', onScrubMouseMove);
     window.removeEventListener('mouseup', onScrubMouseUp);
+    saveCurrentClipState();
   }
 }
 
@@ -839,6 +916,7 @@ function onHandleMouseUp() {
   isDraggingEnd = false;
   window.removeEventListener('mousemove', onHandleMouseMove);
   window.removeEventListener('mouseup', onHandleMouseUp);
+  saveCurrentClipState();
 }
 
 function getTrimmedWAVBlob(): { blob: Blob; duration: number; } | null {
@@ -968,6 +1046,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopPreview();
+  saveCurrentClipState();
   if (waveformResizeObserver) {
     waveformResizeObserver.disconnect();
     waveformResizeObserver = null;
