@@ -1,5 +1,6 @@
 const { join } = require('path')
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu } = require('electron')
+const fs = require('fs')
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog } = require('electron')
 const settings = require('../settings')
 const updater = require('./updater')
 
@@ -104,6 +105,21 @@ app.whenReady().then(() => {
   ipcMain.handle('delete-sound', (_, sound) => settings.deleteSound(sound))
   ipcMain.handle('save-sounds-array', (_, sounds) => settings.saveSoundsArray(sounds))
   ipcMain.handle('save-visibility', (_, visibilityChanges) => settings.saveVisibility(visibilityChanges))
+  ipcMain.handle('save-file-dialog', async (_, { defaultName, buffer }) => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Audio Clip',
+      defaultPath: defaultName,
+      filters: [
+        { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
+        { name: 'All Files (*.*)', extensions: ['*'] },
+      ],
+    })
+    if (result.canceled || !result.filePath) {
+      return false
+    }
+    await fs.promises.writeFile(result.filePath, Buffer.from(buffer))
+    return true
+  })
   ipcMain.handle('download-and-install-update', async (_, downloadUrl) => {
     return updater.downloadAndInstallUpdate(downloadUrl, progress => {
       if (mainWindow && !mainWindow.isDestroyed()) {

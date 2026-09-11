@@ -626,7 +626,7 @@ onMounted(() => {
   if (!pulseBackBuffer.active) {
     const micDevice = settingsStore.selectedMicrophoneId
     const inputDevice = settingsStore.pulse_back_input_device
-    const effectiveMicVol = settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1)
+    const effectiveMicVol = settingsStore.microphoneVolume ?? 1
     const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
     pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
   }
@@ -684,7 +684,7 @@ onUnmounted(() => {
 const saveMicVolumeDebounced = throttle((value: number) => {
   const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100
   settingsStore.saveMicrophoneVolume(newValue)
-  pulseBackBuffer.setMicVolume(settingsStore.microphoneMuted ? 0 : newValue)
+  pulseBackBuffer.setMicVolume(newValue)
 }, 100)
 
 const micVolumeDisplay = computed({
@@ -705,7 +705,7 @@ async function onMicSelected(payload: Event | string) {
     await settingsStore.saveMicrophoneDevice(deviceId)
     if (pulseBackBuffer.active) {
       const inputDevice = settingsStore.pulse_back_input_device
-      const effectiveMicVol = settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1)
+      const effectiveMicVol = settingsStore.microphoneVolume ?? 1
       const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
       await pulseBackBuffer.start(deviceId, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
     }
@@ -714,7 +714,6 @@ async function onMicSelected(payload: Event | string) {
 
 async function toggleMicMute() {
   await settingsStore.toggleMicrophoneMute()
-  pulseBackBuffer.setMicVolume(settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1))
 }
 
 async function installVirtualCable() {
@@ -865,7 +864,7 @@ async function onPulseBackDeviceSelected(payload: any) {
   }
   await settingsStore.savePulseBackInputDevice(deviceId)
   const micDevice = settingsStore.selectedMicrophoneId
-  const effectiveMicVol = settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1)
+  const effectiveMicVol = settingsStore.microphoneVolume ?? 1
   const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
   await pulseBackBuffer.start(micDevice, deviceId, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
 }

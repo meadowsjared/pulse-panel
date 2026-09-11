@@ -57,6 +57,7 @@ export interface Settings {
   checkVirtualCableInstalled: () => Promise<boolean>
   downloadAndInstallUpdate: (downloadUrl: string) => Promise<void>
   onUpdateDownloadProgress: (callback: (progress: UpdateDownloadProgress) => void) => void
+  saveFileDialog?: (defaultName: string, buffer: ArrayBuffer) => Promise<boolean>
   // Database related functions
   readAllDBSettings: () => Promise<{ [settingName: string]: string }[]>
   saveDBSetting: (settingName: string, settingValue: SettingValue) => Promise<boolean>

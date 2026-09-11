@@ -176,3 +176,18 @@ label:has(> input[type='checkbox']:focus-visible) {
   outline: 1px dashed var(--active-color);
   outline-offset: 2px;
 }
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #71717a;
+  transition: background-color 0.3s;
+  display: inline-block;
+}
+
+.status-dot.online {
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e;
+}
+

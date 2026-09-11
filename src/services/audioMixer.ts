@@ -150,6 +150,13 @@ class AudioMixer {
     }
   }
 
+  public getMicrophoneStream(): MediaStream | null {
+    if (this.micStream && this.micStream.active && this.micStream.getAudioTracks().some(t => t.readyState === 'live')) {
+      return this.micStream
+    }
+    return null
+  }
+
   public setMicrophoneVolume(volume: number): void {
     this.micVolume = volume
     this.updateMicTestGain()

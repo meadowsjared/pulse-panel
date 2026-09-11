@@ -4,7 +4,11 @@
     <div class="view-header">
       <div class="header-left">
         <h1 class="view-title">
-          <svg class="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="w-6 h-6 text-blue-400"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
             <path d="M3 3v5h5" />
             <path d="M12 7v5l3 3" />
@@ -15,22 +19,21 @@
       </div>
 
       <div class="header-right">
-        <div class="buffer-indicator" :class="{ active: pulseBackStore.isBufferRunning }">
-          <span class="status-indicator-dot"></span>
-          <span>Buffer: {{ pulseBackStore.isBufferRunning ? 'Active (Listening)' : 'Disabled' }}</span>
-        </div>
+        <!-- Quick Clip Button & Popover -->
+        <QuickClipButton />
 
-        <button
-          :class="['trigger-clip-btn', { disabled: !pulseBackStore.isBufferRunning }]"
-          :disabled="!pulseBackStore.isBufferRunning"
-          @click="pulseBackStore.triggerQuickClip(settingsStore.pulse_back_default_duration || 30)"
-          :title="`Capture past ${settingsStore.pulse_back_default_duration || 30} seconds right now`">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polygon points="11 19 2 12 11 5 11 19"></polygon>
-            <polygon points="22 19 13 12 22 5 22 19"></polygon>
-          </svg>
-          Quick Clip ({{ settingsStore.pulse_back_default_duration || 30 }}s)
-        </button>
+
+        <!-- Pulse Back Buffer Toggle -->
+        <toggle class="pulseBackToggle"
+                :modelValue="pulseBackStore.isBufferEnabled"
+                @update:modelValue="pulseBackStore.toggleBuffer">
+          <span class="flex items-center gap-1.5">
+            <span :class="['status-dot', { online: pulseBackStore.isBufferRunning }]"></span>
+            Pulse Back
+          </span>
+        </toggle>
+
+
       </div>
     </div>
 
@@ -42,21 +45,28 @@
           <span class="rail-title">Captured Clips ({{ pulseBackStore.clips.length }})</span>
         </div>
 
-        <div v-if="pulseBackStore.clips.length === 0" class="empty-clips">
-          <svg class="w-10 h-10 text-zinc-600 mb-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <div v-if="pulseBackStore.clips.length === 0"
+             class="empty-clips">
+          <svg class="w-10 h-10 text-zinc-600 mb-2"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="1.5">
             <path d="M12 8v4l3 3" />
-            <circle cx="12" cy="12" r="9" />
+            <circle cx="12"
+                    cy="12"
+                    r="9" />
           </svg>
           <p class="font-medium text-zinc-300">No clips captured yet</p>
           <p class="text-xs text-zinc-500 mt-1">Press <kbd class="px-1 py-0.5 bg-zinc-800 rounded border border-zinc-700">F12</kbd> or click <strong>Clip</strong> in the top bar when audio happens.</p>
         </div>
 
-        <div v-else class="clips-list">
-          <div
-            v-for="clip in pulseBackStore.clips"
-            :key="clip.id"
-            :class="['clip-card', { active: pulseBackStore.selectedClipId === clip.id }]"
-            @click="selectClip(clip)">
+        <div v-else
+             class="clips-list">
+          <div v-for="clip in pulseBackStore.clips"
+               :key="clip.id"
+               :class="['clip-card', { active: pulseBackStore.selectedClipId === clip.id }]"
+               @click="selectClip(clip)">
             <div class="clip-card-main">
               <div class="clip-card-title">{{ clip.title }}</div>
               <div class="clip-card-meta">
@@ -64,10 +74,22 @@
                 <span class="duration-badge">{{ formatSeconds(clip.duration) }}</span>
               </div>
             </div>
-            <button class="delete-clip-btn" @click.stop="deleteClip(clip.id)" title="Delete clip">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
+            <button class="delete-clip-btn"
+                    @click.stop="deleteClip(clip.id)"
+                    title="Delete clip">
+              <svg class="w-4 h-4"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <line x1="18"
+                      y1="6"
+                      x2="6"
+                      y2="18"></line>
+                <line x1="6"
+                      y1="6"
+                      x2="18"
+                      y2="18"></line>
               </svg>
             </button>
           </div>
@@ -75,92 +97,129 @@
       </div>
 
       <!-- Right Area: Waveform Studio & Soundboard Export -->
-      <div v-if="selectedClip" class="studio-main">
+      <div v-if="selectedClip"
+           class="studio-main">
         <!-- Clip Details & Title -->
         <div class="clip-info-bar">
           <div class="title-input-group">
             <label for="clip-title-input">Clip Title:</label>
-            <input
-              id="clip-title-input"
-              type="text"
-              v-model="clipTitle"
-              placeholder="Give your sound a name..."
-              class="clip-title-input" />
-          </div>
-        </div>
-
-        <!-- Audio Tracks Selector (Mic & Input Device Mute/Unmute) -->
-        <div v-if="hasDualChannels" class="audio-tracks-bar">
-          <div class="tracks-heading">
-            <span class="tracks-title">Audio Tracks in Clip:</span>
-            <span class="tracks-subtitle">Toggle either track to mute or exclude it from the soundboard</span>
-          </div>
-          <div class="tracks-buttons">
-            <button
-              :class="['track-toggle-btn', { active: includeMic, muted: !includeMic }]"
-              @click="toggleMicTrack"
-              :title="includeMic ? 'Mute Microphone in this clip' : 'Unmute Microphone in this clip'">
-              <inline-svg :src="includeMic ? MicrophoneIcon : MicrophoneSlashIcon" class="w-4 h-4" />
-              <span class="track-name">Microphone</span>
-              <span class="track-badge">{{ includeMic ? 'INCLUDED' : 'MUTED' }}</span>
-            </button>
-
-            <button
-              :class="['track-toggle-btn', { active: includeInput, muted: !includeInput }]"
-              @click="toggleInputTrack"
-              :title="includeInput ? 'Mute Input Device in this clip' : 'Unmute Input Device in this clip'">
-              <inline-svg :src="includeInput ? SpeakerIcon : HeadphonesIcon" class="w-4 h-4" />
-              <span class="track-name">Input</span>
-              <span class="track-badge">{{ includeInput ? 'INCLUDED' : 'MUTED' }}</span>
-            </button>
+            <input id="clip-title-input"
+                   type="text"
+                   v-model="clipTitle"
+                   @input="onTitleInput"
+                   @change="onTitleChange"
+                   @blur="onTitleChange"
+                   @keydown.enter="($event.target as HTMLInputElement).blur()"
+                   placeholder="Give your sound a name..."
+                   class="clip-title-input" />
           </div>
         </div>
 
         <!-- Waveform Visualizer & Trimmer -->
-        <div class="waveform-container" ref="waveformContainerRef">
+        <div class="waveform-container"
+             ref="waveformContainerRef">
           <div class="waveform-labels">
-            <span>Waveform Trimmer</span>
-            <span class="text-xs text-zinc-400">Drag green handle for Start, red handle for End</span>
+            <span class="playback-controls">
+              <button class="play-btn"
+                      :class="{ playing: isPlaying }"
+                      @click="togglePlayPreview"
+                      title="Preview trimmed region">
+                <svg v-if="!isPlaying"
+                     class="w-5 h-5 ml-0.5"
+                     viewBox="0 0 24 24"
+                     fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <svg v-else
+                     class="w-5 h-5"
+                     viewBox="0 0 24 24"
+                     fill="currentColor">
+                  <rect x="6"
+                        y="4"
+                        width="4"
+                        height="16"></rect>
+                  <rect x="14"
+                        y="4"
+                        width="4"
+                        height="16"></rect>
+                </svg>
+              </button>
+              <button class="stop-btn"
+                      @click="onStopBtnClick"
+                      title="Stop">
+                <svg class="w-4 h-4"
+                     viewBox="0 0 24 24"
+                     fill="currentColor">
+                  <rect x="6"
+                        y="6"
+                        width="12"
+                        height="12"></rect>
+                </svg>
+              </button>
+              <span class="time-readout">
+                {{ formatSeconds(currentTime) }} / {{ formatSeconds(trimmedDuration) }}
+              </span>
+            </span>
+
+            <!-- Audio Tracks Selector (Mic & Input Device Mute/Unmute) -->
+            <div v-if="hasDualChannels"
+                 class="audio-tracks-bar">
+              <span>Waveform Trimmer</span>
+              <button :class="['track-toggle-btn', 'mic-track-btn', { active: includeMic, muted: !includeMic }]"
+                      @click="toggleMicTrack"
+                      :title="includeMic ? 'Mute Microphone in this clip' : 'Unmute Microphone in this clip'">
+                <inline-svg :src="includeMic ? MicrophoneIcon : MicrophoneSlashIcon"
+                            class="w-4 h-4" />
+                <span class="track-name">Microphone</span>
+                <span class="track-badge">{{ includeMic ? 'ON' : 'OFF' }}</span>
+              </button>
+
+              <button :class="['track-toggle-btn', 'input-track-btn', { active: includeInput, muted: !includeInput }]"
+                      @click="toggleInputTrack"
+                      :title="includeInput ? 'Mute Input Device in this clip' : 'Unmute Input Device in this clip'">
+                <inline-svg :src="includeInput ? SpeakerIcon : HeadphonesIcon"
+                            class="w-4 h-4" />
+                <span class="track-name">Input</span>
+                <span class="track-badge">{{ includeInput ? 'ON' : 'OFF' }}</span>
+              </button>
+            </div>
+
+
           </div>
 
-          <div
-            class="waveform-wrapper"
-            ref="waveformWrapperRef"
-            @mousedown="onWaveformMouseDown">
-            <canvas ref="canvasRef" class="waveform-canvas"></canvas>
+          <div class="waveform-wrapper"
+               ref="waveformWrapperRef"
+               @mousedown="onWaveformMouseDown">
+            <canvas ref="canvasRef"
+                    class="waveform-canvas"></canvas>
 
             <!-- Dimmed Region Overlays -->
-            <div
-              class="trim-overlay start-overlay"
-              :style="{ width: `${startPercent}%` }"></div>
-            <div
-              class="trim-overlay end-overlay"
-              :style="{ left: `${endPercent}%`, width: `${100 - endPercent}%` }"></div>
+            <div class="trim-overlay start-overlay"
+                 :style="{ width: `${startPercent}%` }"></div>
+            <div class="trim-overlay end-overlay"
+                 :style="{ left: `${endPercent}%`, width: `${100 - endPercent}%` }"></div>
 
             <!-- Start Trim Handle -->
-            <div
-              class="trim-handle start-handle"
-              :style="{ left: `${startPercent}%` }"
-              @mousedown.stop="onStartHandleMouseDown"
-              title="Drag Start Trim">
+            <div class="trim-handle start-handle"
+                 :style="{ left: `${startPercent}%` }"
+                 @mousedown.stop="onStartHandleMouseDown"
+                 title="Drag Start Trim">
               <div class="handle-flag start-flag">In: {{ formatSeconds(trimStart) }}</div>
               <div class="handle-line"></div>
             </div>
 
             <!-- End Trim Handle -->
-            <div
-              class="trim-handle end-handle"
-              :style="{ left: `${endPercent}%` }"
-              @mousedown.stop="onEndHandleMouseDown"
-              title="Drag End Trim">
+            <div class="trim-handle end-handle"
+                 :style="{ left: `${endPercent}%` }"
+                 @mousedown.stop="onEndHandleMouseDown"
+                 title="Drag End Trim">
               <div class="handle-flag end-flag">Out: {{ formatSeconds(trimEnd) }}</div>
               <div class="handle-line"></div>
             </div>
 
             <!-- Playhead Scrub Line -->
-            <div
-              class="playhead-line"
-              :style="{ left: `${playheadPercent}%` }">
+            <div class="playhead-line"
+                 :style="{ left: `${playheadPercent}%` }">
               <div class="playhead-cap"></div>
             </div>
           </div>
@@ -173,40 +232,18 @@
             <span>{{ formatSeconds(selectedClip.duration * 0.75) }}</span>
             <span>{{ formatSeconds(selectedClip.duration) }}</span>
           </div>
+          <span class="text-xs text-zinc-400">Drag green handle for Start, red handle for End</span>
         </div>
+
 
         <!-- Native Audio Element for 1:1 hardware clock playback -->
-        <audio
-          ref="audioElementRef"
-          :src="selectedClip?.audioUrl"
-          crossorigin="anonymous"
-          preload="auto"
-          style="display: none"
-          @ended="onAudioEnded"></audio>
+        <audio ref="audioElementRef"
+               :src="selectedClip?.audioUrl"
+               crossorigin="anonymous"
+               preload="auto"
+               style="display: none"
+               @ended="onAudioEnded"></audio>
 
-        <div class="playback-controls">
-          <button
-            class="play-btn"
-            :class="{ playing: isPlaying }"
-            @click="togglePlayPreview"
-            title="Preview trimmed region">
-            <svg v-if="!isPlaying" class="w-5 h-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-            <svg v-else class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="4" width="4" height="16"></rect>
-              <rect x="14" y="4" width="4" height="16"></rect>
-            </svg>
-          </button>
-          <button class="stop-btn" @click="onStopBtnClick" title="Stop">
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-              <rect x="6" y="6" width="12" height="12"></rect>
-            </svg>
-          </button>
-          <span class="time-readout">
-            {{ formatSeconds(currentTime) }} / {{ formatSeconds(trimmedDuration) }}
-          </span>
-        </div>
 
         <!-- Trim Range Summary Bar -->
         <div class="trim-summary-bar">
@@ -217,8 +254,10 @@
           </div>
 
           <div class="trim-quick-actions">
-            <button class="secondary-btn" @click="resetTrim">Reset Trim</button>
-            <button class="secondary-btn" @click="playTrimmedOnly">Play Trimmed</button>
+            <button class="secondary-btn"
+                    @click="resetTrim">Reset Trim</button>
+            <button class="secondary-btn"
+                    @click="playTrimmedOnly">Play Trimmed</button>
           </div>
         </div>
 
@@ -229,29 +268,60 @@
             <div class="publish-field">
               <label>Button Color:</label>
               <div class="flex items-center gap-2">
-                <input type="color" v-model="clipColor" class="color-picker-input cursor-pointer" />
+                <input type="color"
+                       v-model="clipColor"
+                       class="color-picker-input cursor-pointer" />
                 <span class="text-xs text-zinc-400 uppercase font-mono">{{ clipColor }}</span>
               </div>
             </div>
 
             <div class="publish-field">
               <label>Tags (comma separated):</label>
-              <input
-                type="text"
-                v-model="clipTagsString"
-                placeholder="e.g. funny, meme, scream"
-                class="tags-input" />
+              <input type="text"
+                     v-model="clipTagsString"
+                     @change="onTagsChange"
+                     @blur="onTagsChange"
+                     placeholder="e.g. funny, meme, scream"
+                     class="tags-input" />
             </div>
 
             <div class="publish-field">
               <label>Volume: {{ clipVolume }}%</label>
-              <input type="range" min="0" max="100" v-model="clipVolume" class="volume-slider cursor-pointer" />
+              <input type="range"
+                     min="0"
+                     max="100"
+                     v-model="clipVolume"
+                     class="volume-slider cursor-pointer" />
             </div>
           </div>
 
           <div class="publish-actions">
-            <button class="publish-btn" :disabled="isPublishing" @click="publishToSoundboard">
-              <svg class="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="save-file-btn"
+                    :disabled="isSavingFile || isPublishing"
+                    @click="saveToFile"
+                    title="Save audio file to your computer">
+              <svg class="w-5 h-5 mr-1.5"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12"
+                      y1="15"
+                      x2="12"
+                      y2="3" />
+              </svg>
+              {{ isSavingFile ? 'Saving...' : 'Save to File' }}
+            </button>
+            <button class="publish-btn"
+                    :disabled="isPublishing || isSavingFile"
+                    @click="publishToSoundboard">
+              <svg class="w-5 h-5 mr-1"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
                 <path d="M12 5v14M5 12h14" />
               </svg>
               {{ isPublishing ? 'Publishing...' : 'Add to Soundboard' }}
@@ -261,7 +331,8 @@
       </div>
 
       <!-- No Clip Selected -->
-      <div v-else class="studio-empty">
+      <div v-else
+           class="studio-empty">
         <p class="text-zinc-400">Select a clip on the left to edit and publish</p>
       </div>
     </div>
@@ -269,561 +340,644 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import InlineSvg from 'vue-inline-svg'
-import { usePulseBackStore, PulseBackClip } from '../store/pulseBack'
-import { useSettingsStore } from '../store/settings'
-import { encodeWAV } from '../services/pulseBackBuffer'
-import MicrophoneIcon from '../assets/images/microphone.svg'
-import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg'
-import SpeakerIcon from '../assets/images/speaker.svg'
-import HeadphonesIcon from '../assets/images/headphones.svg'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import InlineSvg from 'vue-inline-svg';
+import { usePulseBackStore, PulseBackClip } from '../store/pulseBack';
+import { useSettingsStore } from '../store/settings';
+import { encodeWAV } from '../services/pulseBackBuffer';
+import MicrophoneIcon from '../assets/images/microphone.svg';
+import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg';
+import SpeakerIcon from '../assets/images/speaker.svg';
+import HeadphonesIcon from '../assets/images/headphones.svg';
 
-const pulseBackStore = usePulseBackStore()
-const settingsStore = useSettingsStore()
+const pulseBackStore = usePulseBackStore();
+const settingsStore = useSettingsStore();
 
-const selectedClip = computed(() => pulseBackStore.selectedClip)
+const selectedClip = computed(() => pulseBackStore.selectedClip);
 
 // Editor State
-const clipTitle = ref('')
-const clipColor = ref('#3b82f6')
-const clipTagsString = ref('clip')
-const clipVolume = ref(100)
-const isPublishing = ref(false)
+const clipTitle = ref('');
+const clipColor = ref('#3b82f6');
+const clipTagsString = ref('clip');
+const clipVolume = ref(100);
+const isPublishing = ref(false);
+const isSavingFile = ref(false);
+
+
 
 // Trimming State
-const trimStart = ref(0)
-const trimEnd = ref(0)
+const trimStart = ref(0);
+const trimEnd = ref(0);
 
 // Waveform & Audio State
-const canvasRef = ref<HTMLCanvasElement | null>(null)
-const waveformWrapperRef = ref<HTMLDivElement | null>(null)
-const audioElementRef = ref<HTMLAudioElement | null>(null)
-let audioBuffer: AudioBuffer | null = null
-let audioContext: AudioContext | null = null
-let mediaSourceNode: MediaElementAudioSourceNode | null = null
-let splitterNode: ChannelSplitterNode | null = null
-let micGainNode: GainNode | null = null
-let inputGainNode: GainNode | null = null
+const canvasRef = ref<HTMLCanvasElement | null>(null);
+const waveformWrapperRef = ref<HTMLDivElement | null>(null);
+const audioElementRef = ref<HTMLAudioElement | null>(null);
+let audioBuffer: AudioBuffer | null = null;
+let audioContext: AudioContext | null = null;
+let mediaSourceNode: MediaElementAudioSourceNode | null = null;
+let splitterNode: ChannelSplitterNode | null = null;
+let micGainNode: GainNode | null = null;
+let inputGainNode: GainNode | null = null;
 
 // Dual-Track State
-const includeMic = ref(true)
-const includeInput = ref(true)
-const hasDualChannels = ref(false)
+const includeMic = ref(true);
+const includeInput = ref(true);
+const hasDualChannels = ref(false);
 
 // Playback State
-const isPlaying = ref(false)
-const currentTime = ref(0)
-let playbackEndSec = 0
-let playbackAnimationId: number | null = null
+const isPlaying = ref(false);
+const currentTime = ref(0);
+let playbackEndSec = 0;
+let playbackAnimationId: number | null = null;
 
-const audioDuration = computed(() => audioBuffer?.duration || selectedClip.value?.duration || 1)
+const audioDuration = computed(() => audioBuffer?.duration || selectedClip.value?.duration || 1);
 
-const trimmedDuration = computed(() => Math.max(0, trimEnd.value - trimStart.value))
+const trimmedDuration = computed(() => Math.max(0, trimEnd.value - trimStart.value));
 
 const startPercent = computed(() => {
-  if (audioDuration.value <= 0) return 0
-  return Math.max(0, Math.min(100, (trimStart.value / audioDuration.value) * 100))
-})
+  if (audioDuration.value <= 0) return 0;
+  return Math.max(0, Math.min(100, (trimStart.value / audioDuration.value) * 100));
+});
 
 const endPercent = computed(() => {
-  if (audioDuration.value <= 0) return 100
-  return Math.max(0, Math.min(100, (trimEnd.value / audioDuration.value) * 100))
-})
+  if (audioDuration.value <= 0) return 100;
+  return Math.max(0, Math.min(100, (trimEnd.value / audioDuration.value) * 100));
+});
 
 const playheadPercent = computed(() => {
-  if (audioDuration.value <= 0) return 0
-  return Math.max(0, Math.min(100, (currentTime.value / audioDuration.value) * 100))
-})
+  if (audioDuration.value <= 0) return 0;
+  return Math.max(0, Math.min(100, (currentTime.value / audioDuration.value) * 100));
+});
 
 watch(
   () => selectedClip.value?.id,
   async newId => {
-    stopPreview()
-    if (!selectedClip.value) return
+    stopPreview();
+    if (!selectedClip.value) return;
 
-    clipTitle.value = selectedClip.value.title
-    clipTagsString.value = (selectedClip.value.tags || ['clip']).join(', ')
-    trimStart.value = 0
-    trimEnd.value = selectedClip.value.duration
-    currentTime.value = 0
-    includeMic.value = true
-    includeInput.value = true
+    clipTitle.value = selectedClip.value.title;
+    clipTagsString.value = (selectedClip.value.tags || ['clip']).join(', ');
+    trimStart.value = 0;
+    trimEnd.value = selectedClip.value.duration;
+    currentTime.value = 0;
+    includeMic.value = true;
+    includeInput.value = true;
+    if (micGainNode && audioContext) {
+      micGainNode.gain.setValueAtTime(1, audioContext.currentTime);
+    }
+    if (inputGainNode && audioContext) {
+      inputGainNode.gain.setValueAtTime(1, audioContext.currentTime);
+    }
 
     if (audioElementRef.value) {
-      audioElementRef.value.currentTime = 0
+      audioElementRef.value.currentTime = 0;
     }
 
-    await loadAudioData(selectedClip.value.blob)
+    await loadAudioData(selectedClip.value.blob);
   },
   { immediate: true }
-)
+);
 
 function setupAudioGraph() {
-  const audioEl = audioElementRef.value
-  if (!audioEl || mediaSourceNode) return
+  const audioEl = audioElementRef.value;
+  if (!audioEl || mediaSourceNode) return;
 
   try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!audioContext) {
-      audioContext = new AudioContextClass()
+      audioContext = new AudioContextClass();
     }
-    mediaSourceNode = audioContext.createMediaElementSource(audioEl)
-    splitterNode = audioContext.createChannelSplitter(2)
-    micGainNode = audioContext.createGain()
-    inputGainNode = audioContext.createGain()
+    mediaSourceNode = audioContext.createMediaElementSource(audioEl);
+    splitterNode = audioContext.createChannelSplitter(2);
+    micGainNode = audioContext.createGain();
+    inputGainNode = audioContext.createGain();
 
-    micGainNode.gain.value = includeMic.value ? 1 : 0
-    inputGainNode.gain.value = includeInput.value ? 1 : 0
+    micGainNode.gain.value = includeMic.value ? 1 : 0;
+    inputGainNode.gain.value = includeInput.value ? 1 : 0;
 
-    mediaSourceNode.connect(splitterNode)
+    mediaSourceNode.connect(splitterNode);
 
     // Route Left (Mic) -> micGainNode -> destination (centers mono output in stereo headphones)
-    splitterNode.connect(micGainNode, 0)
-    micGainNode.connect(audioContext.destination)
+    splitterNode.connect(micGainNode, 0);
+    micGainNode.connect(audioContext.destination);
 
     // Route Right (Input) -> inputGainNode -> destination (centers mono output in stereo headphones)
-    splitterNode.connect(inputGainNode, 1)
-    inputGainNode.connect(audioContext.destination)
+    splitterNode.connect(inputGainNode, 1);
+    inputGainNode.connect(audioContext.destination);
   } catch (err) {
-    console.warn('AudioGraph setup warning (audio will play directly):', err)
+    console.warn('AudioGraph setup warning (audio will play directly):', err);
   }
 }
 
 async function loadAudioData(blob: Blob) {
   try {
-    const arrayBuffer = await blob.arrayBuffer()
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    const arrayBuffer = await blob.arrayBuffer();
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!audioContext) {
-      audioContext = new AudioContextClass()
+      audioContext = new AudioContextClass();
     }
-    audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0))
-    hasDualChannels.value = audioBuffer.numberOfChannels >= 2
-    trimEnd.value = audioBuffer.duration
-    await nextTick()
+    audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+    hasDualChannels.value = audioBuffer.numberOfChannels >= 2;
+    trimEnd.value = audioBuffer.duration;
+    await nextTick();
     requestAnimationFrame(() => {
-      drawWaveform()
-    })
+      drawWaveform();
+    });
   } catch (err) {
-    console.error('Failed to decode audio data for waveform:', err)
+    console.error('Failed to decode audio data for waveform:', err);
   }
 }
 
 function toggleMicTrack() {
-  includeMic.value = !includeMic.value
-  setupAudioGraph()
+  includeMic.value = !includeMic.value;
+  setupAudioGraph();
   if (micGainNode && audioContext) {
-    micGainNode.gain.setValueAtTime(includeMic.value ? 1 : 0, audioContext.currentTime)
+    micGainNode.gain.setValueAtTime(includeMic.value ? 1 : 0, audioContext.currentTime);
   }
-  drawWaveform()
+  drawWaveform();
 }
 
 function toggleInputTrack() {
-  includeInput.value = !includeInput.value
-  setupAudioGraph()
+  includeInput.value = !includeInput.value;
+  setupAudioGraph();
   if (inputGainNode && audioContext) {
-    inputGainNode.gain.setValueAtTime(includeInput.value ? 1 : 0, audioContext.currentTime)
+    inputGainNode.gain.setValueAtTime(includeInput.value ? 1 : 0, audioContext.currentTime);
   }
-  drawWaveform()
+  drawWaveform();
 }
 
 function drawWaveform() {
-  const canvas = canvasRef.value
-  if (!canvas || !audioBuffer) return
+  const canvas = canvasRef.value;
+  if (!canvas || !audioBuffer) return;
 
-  const rect = canvas.getBoundingClientRect()
+  const rect = canvas.getBoundingClientRect();
   if (rect.width <= 0 || rect.height <= 0) {
-    requestAnimationFrame(drawWaveform)
-    return
+    requestAnimationFrame(drawWaveform);
+    return;
   }
 
-  const dpr = window.devicePixelRatio || 1
-  const width = (canvas.width = Math.round(rect.width * dpr))
-  const height = (canvas.height = Math.round(rect.height * dpr))
+  const dpr = window.devicePixelRatio || 1;
+  const width = (canvas.width = Math.round(rect.width * dpr));
+  const height = (canvas.height = Math.round(rect.height * dpr));
 
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
-  ctx.clearRect(0, 0, width, height)
+  ctx.clearRect(0, 0, width, height);
 
-  const isDual = audioBuffer.numberOfChannels >= 2
-  const barWidth = 2 * (window.devicePixelRatio || 1)
-  const barGap = 1 * (window.devicePixelRatio || 1)
-  const totalBarWidth = barWidth + barGap
-  const numBars = Math.floor(width / totalBarWidth)
+  const isDual = audioBuffer.numberOfChannels >= 2;
+  const barWidth = 2 * (window.devicePixelRatio || 1);
+  const barGap = 1 * (window.devicePixelRatio || 1);
+  const totalBarWidth = barWidth + barGap;
+  const numBars = Math.floor(width / totalBarWidth);
 
   if (isDual) {
-    const micData = audioBuffer.getChannelData(0)
-    const inputData = audioBuffer.getChannelData(1)
-    const halfHeight = height / 2
-    const samplesPerBar = Math.floor(micData.length / numBars)
+    const micData = audioBuffer.getChannelData(0);
+    const inputData = audioBuffer.getChannelData(1);
+    const halfHeight = height / 2;
+    const samplesPerBar = Math.floor(micData.length / numBars);
 
     // Center dividing line
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'
-    ctx.lineWidth = 1 * (window.devicePixelRatio || 1)
-    ctx.beginPath()
-    ctx.moveTo(0, halfHeight)
-    ctx.lineTo(width, halfHeight)
-    ctx.stroke()
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1 * (window.devicePixelRatio || 1);
+    ctx.beginPath();
+    ctx.moveTo(0, halfHeight);
+    ctx.lineTo(width, halfHeight);
+    ctx.stroke();
 
     // 1. Draw Mic Track (Top Half)
-    const micBaseline = halfHeight * 0.5
+    const micBaseline = halfHeight * 0.5;
     for (let i = 0; i < numBars; i++) {
-      const start = i * samplesPerBar
-      let peak = 0
+      const start = i * samplesPerBar;
+      let peak = 0;
       for (let j = 0; j < samplesPerBar; j++) {
-        const val = Math.abs(micData[start + j])
-        if (val > peak) peak = val
+        const val = Math.abs(micData[start + j]);
+        if (val > peak) peak = val;
       }
-      const x = i * totalBarWidth
-      const barH = Math.max(2, peak * (halfHeight * 0.88))
-      const y = micBaseline - barH / 2
+      const x = i * totalBarWidth;
+      const barH = Math.max(2, peak * (halfHeight * 0.88));
+      const y = micBaseline - barH / 2;
 
       if (includeMic.value) {
-        const grad = ctx.createLinearGradient(0, y, 0, y + barH)
-        grad.addColorStop(0, '#38bdf8')
-        grad.addColorStop(1, '#0284c7')
-        ctx.fillStyle = grad
+        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+        grad.addColorStop(0, '#38bdf8');
+        grad.addColorStop(1, '#0284c7');
+        ctx.fillStyle = grad;
       } else {
-        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)'
+        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
       }
 
-      ctx.beginPath()
-      ctx.roundRect(x, y, barWidth, barH, 1)
-      ctx.fill()
+      ctx.beginPath();
+      ctx.roundRect(x, y, barWidth, barH, 1);
+      ctx.fill();
     }
 
     // 2. Draw Input Device Track (Bottom Half)
-    const inputBaseline = halfHeight + halfHeight * 0.5
+    const inputBaseline = halfHeight + halfHeight * 0.5;
     for (let i = 0; i < numBars; i++) {
-      const start = i * samplesPerBar
-      let peak = 0
+      const start = i * samplesPerBar;
+      let peak = 0;
       for (let j = 0; j < samplesPerBar; j++) {
-        const val = Math.abs(inputData[start + j])
-        if (val > peak) peak = val
+        const val = Math.abs(inputData[start + j]);
+        if (val > peak) peak = val;
       }
-      const x = i * totalBarWidth
-      const barH = Math.max(2, peak * (halfHeight * 0.88))
-      const y = inputBaseline - barH / 2
+      const x = i * totalBarWidth;
+      const barH = Math.max(2, peak * (halfHeight * 0.88));
+      const y = inputBaseline - barH / 2;
 
       if (includeInput.value) {
-        const grad = ctx.createLinearGradient(0, y, 0, y + barH)
-        grad.addColorStop(0, '#34d399')
-        grad.addColorStop(1, '#059669')
-        ctx.fillStyle = grad
+        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+        grad.addColorStop(0, '#34d399');
+        grad.addColorStop(1, '#059669');
+        ctx.fillStyle = grad;
       } else {
-        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)'
+        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
       }
 
-      ctx.beginPath()
-      ctx.roundRect(x, y, barWidth, barH, 1)
-      ctx.fill()
+      ctx.beginPath();
+      ctx.roundRect(x, y, barWidth, barH, 1);
+      ctx.fill();
     }
 
     // Watermark track labels inside canvas
-    ctx.font = `600 ${10 * (window.devicePixelRatio || 1)}px sans-serif`
-    ctx.fillStyle = includeMic.value ? 'rgba(56, 189, 248, 0.85)' : 'rgba(113, 113, 122, 0.5)'
-    ctx.fillText('🎤 MIC (VOICE)', 10 * (window.devicePixelRatio || 1), 16 * (window.devicePixelRatio || 1))
+    ctx.font = `600 ${10 * (window.devicePixelRatio || 1)}px sans-serif`;
+    ctx.fillStyle = includeMic.value ? 'rgba(56, 189, 248, 0.85)' : 'rgba(113, 113, 122, 0.5)';
+    ctx.fillText('🎤 MIC (VOICE)', 10 * (window.devicePixelRatio || 1), 16 * (window.devicePixelRatio || 1));
 
-    ctx.fillStyle = includeInput.value ? 'rgba(52, 211, 153, 0.85)' : 'rgba(113, 113, 122, 0.5)'
-    ctx.fillText('🔊 INPUT DEVICE (AUDIO)', 10 * (window.devicePixelRatio || 1), halfHeight + 16 * (window.devicePixelRatio || 1))
+    ctx.fillStyle = includeInput.value ? 'rgba(52, 211, 153, 0.85)' : 'rgba(113, 113, 122, 0.5)';
+    ctx.fillText('🔊 INPUT DEVICE (AUDIO)', 10 * (window.devicePixelRatio || 1), halfHeight + 16 * (window.devicePixelRatio || 1));
   } else {
     // Single mono channel
-    const channelData = audioBuffer.getChannelData(0)
-    const amp = height / 2
-    const samplesPerBar = Math.floor(channelData.length / numBars)
+    const channelData = audioBuffer.getChannelData(0);
+    const amp = height / 2;
+    const samplesPerBar = Math.floor(channelData.length / numBars);
 
     for (let i = 0; i < numBars; i++) {
-      const start = i * samplesPerBar
-      let peak = 0
+      const start = i * samplesPerBar;
+      let peak = 0;
       for (let j = 0; j < samplesPerBar; j++) {
-        const val = Math.abs(channelData[start + j])
-        if (val > peak) peak = val
+        const val = Math.abs(channelData[start + j]);
+        if (val > peak) peak = val;
       }
 
-      const x = i * totalBarWidth
-      const barHeight = Math.max(3, peak * amp * 0.95)
-      const y = amp - barHeight / 2
+      const x = i * totalBarWidth;
+      const barHeight = Math.max(3, peak * amp * 0.95);
+      const y = amp - barHeight / 2;
 
-      const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight)
-      gradient.addColorStop(0, '#38bdf8')
-      gradient.addColorStop(1, '#2563eb')
-      ctx.fillStyle = gradient
+      const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+      gradient.addColorStop(0, '#38bdf8');
+      gradient.addColorStop(1, '#2563eb');
+      ctx.fillStyle = gradient;
 
-      ctx.beginPath()
-      ctx.roundRect(x, y, barWidth, barHeight, 2)
-      ctx.fill()
+      ctx.beginPath();
+      ctx.roundRect(x, y, barWidth, barHeight, 2);
+      ctx.fill();
     }
   }
 }
 
 function selectClip(clip: PulseBackClip) {
-  pulseBackStore.selectedClipId = clip.id
+  if (pulseBackStore.selectedClipId === clip.id) return;
+  pulseBackStore.selectedClipId = clip.id;
+}
+
+function onTitleInput() {
+  if (selectedClip.value && clipTitle.value.trim().length > 0) {
+    selectedClip.value.title = clipTitle.value;
+  }
+}
+
+async function onTitleChange() {
+  if (!selectedClip.value) return;
+  const newTitle = clipTitle.value.trim();
+  if (!newTitle) {
+    clipTitle.value = selectedClip.value.title || 'Untitled Clip';
+    return;
+  }
+  clipTitle.value = newTitle;
+  selectedClip.value.title = newTitle;
+  await pulseBackStore.updateClip(selectedClip.value.id, { title: newTitle });
+}
+
+async function onTagsChange() {
+  if (!selectedClip.value) return;
+  const tags = clipTagsString.value
+    .split(',')
+    .map(t => t.trim())
+    .filter(t => t.length > 0);
+  selectedClip.value.tags = tags;
+  await pulseBackStore.updateClip(selectedClip.value.id, { tags });
 }
 
 async function deleteClip(id: string) {
-  stopPreview()
-  await pulseBackStore.deleteClip(id)
+  stopPreview();
+  await pulseBackStore.deleteClip(id);
 }
 
 function resetTrim() {
-  if (!selectedClip.value) return
-  trimStart.value = 0
-  trimEnd.value = selectedClip.value.duration
+  if (!selectedClip.value) return;
+  trimStart.value = 0;
+  trimEnd.value = selectedClip.value.duration;
 }
 
 function playTrimmedOnly() {
-  stopPreview()
-  startPlayback(trimStart.value, trimEnd.value)
+  stopPreview();
+  startPlayback(trimStart.value, trimEnd.value);
 }
 
 function togglePlayPreview() {
   if (isPlaying.value) {
-    stopPreview()
+    stopPreview();
   } else {
     const startFrom =
       currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
         ? trimStart.value
-        : currentTime.value
-    startPlayback(startFrom, trimEnd.value)
+        : currentTime.value;
+    startPlayback(startFrom, trimEnd.value);
   }
 }
 
 function onStopBtnClick() {
-  stopPreview()
-  currentTime.value = trimStart.value
+  stopPreview();
+  currentTime.value = trimStart.value;
   if (audioElementRef.value) {
-    audioElementRef.value.currentTime = trimStart.value
+    audioElementRef.value.currentTime = trimStart.value;
   }
 }
 
 async function startPlayback(offsetSec: number, endSec: number) {
-  const audioEl = audioElementRef.value
-  if (!audioEl || !selectedClip.value) return
+  const audioEl = audioElementRef.value;
+  if (!audioEl || !selectedClip.value) return;
 
-  setupAudioGraph()
+  setupAudioGraph();
 
   if (audioContext && audioContext.state === 'suspended') {
-    await audioContext.resume().catch(() => {})
+    await audioContext.resume().catch(() => { });
   }
 
-  playbackEndSec = endSec
-  audioEl.currentTime = offsetSec
-  currentTime.value = offsetSec
+  playbackEndSec = endSec;
+  audioEl.currentTime = offsetSec;
+  currentTime.value = offsetSec;
 
   try {
-    await audioEl.play()
-    isPlaying.value = true
-    updatePlaybackAnimation()
+    await audioEl.play();
+    isPlaying.value = true;
+    updatePlaybackAnimation();
   } catch (err) {
-    console.error('Audio play error:', err)
+    console.error('Audio play error:', err);
   }
 }
 
 function updatePlaybackAnimation() {
-  const audioEl = audioElementRef.value
-  if (!isPlaying.value || !audioEl) return
+  const audioEl = audioElementRef.value;
+  if (!isPlaying.value || !audioEl) return;
 
   // Playhead directly tracks native HTML5 audio clock with zero latency
-  currentTime.value = audioEl.currentTime
+  currentTime.value = audioEl.currentTime;
 
   if (currentTime.value >= playbackEndSec || audioEl.ended) {
-    stopPreview()
-    currentTime.value = trimStart.value
-    audioEl.currentTime = trimStart.value
-    return
+    stopPreview();
+    currentTime.value = trimStart.value;
+    audioEl.currentTime = trimStart.value;
+    return;
   }
 
-  playbackAnimationId = requestAnimationFrame(updatePlaybackAnimation)
+  playbackAnimationId = requestAnimationFrame(updatePlaybackAnimation);
 }
 
 function stopPreview() {
-  const audioEl = audioElementRef.value
+  const audioEl = audioElementRef.value;
   if (audioEl) {
-    audioEl.pause()
+    audioEl.pause();
   }
   if (playbackAnimationId) {
-    cancelAnimationFrame(playbackAnimationId)
-    playbackAnimationId = null
+    cancelAnimationFrame(playbackAnimationId);
+    playbackAnimationId = null;
   }
-  isPlaying.value = false
+  isPlaying.value = false;
 }
 
 function onAudioEnded() {
-  stopPreview()
-  currentTime.value = trimStart.value
+  stopPreview();
+  currentTime.value = trimStart.value;
   if (audioElementRef.value) {
-    audioElementRef.value.currentTime = trimStart.value
+    audioElementRef.value.currentTime = trimStart.value;
   }
 }
 
 // Dragging Trim Handles & Scrubbing
-let isDraggingStart = false
-let isDraggingEnd = false
-let isScrubbing = false
+let isDraggingStart = false;
+let isDraggingEnd = false;
+let isScrubbing = false;
 
 function getSecondsFromMouseEvent(e: MouseEvent): number {
-  if (!waveformWrapperRef.value || !selectedClip.value) return 0
-  const rect = waveformWrapperRef.value.getBoundingClientRect()
-  const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left))
-  const percent = relX / rect.width
-  return percent * audioDuration.value
+  if (!waveformWrapperRef.value || !selectedClip.value) return 0;
+  const rect = waveformWrapperRef.value.getBoundingClientRect();
+  const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const percent = relX / rect.width;
+  return percent * audioDuration.value;
 }
 
 function onStartHandleMouseDown(e: MouseEvent) {
-  isDraggingStart = true
-  window.addEventListener('mousemove', onHandleMouseMove)
-  window.addEventListener('mouseup', onHandleMouseUp)
+  isDraggingStart = true;
+  window.addEventListener('mousemove', onHandleMouseMove);
+  window.addEventListener('mouseup', onHandleMouseUp);
 }
 
 function onEndHandleMouseDown(e: MouseEvent) {
-  isDraggingEnd = true
-  window.addEventListener('mousemove', onHandleMouseMove)
-  window.addEventListener('mouseup', onHandleMouseUp)
+  isDraggingEnd = true;
+  window.addEventListener('mousemove', onHandleMouseMove);
+  window.addEventListener('mouseup', onHandleMouseUp);
 }
 
 function onWaveformMouseDown(e: MouseEvent) {
-  isScrubbing = true
-  const clickSec = getSecondsFromMouseEvent(e)
-  currentTime.value = Math.max(0, Math.min(audioDuration.value, clickSec))
+  isScrubbing = true;
+  const clickSec = getSecondsFromMouseEvent(e);
+  currentTime.value = Math.max(0, Math.min(audioDuration.value, clickSec));
   if (audioElementRef.value) {
-    audioElementRef.value.currentTime = currentTime.value
+    audioElementRef.value.currentTime = currentTime.value;
   }
   if (isPlaying.value) {
-    startPlayback(currentTime.value, trimEnd.value)
+    startPlayback(currentTime.value, trimEnd.value);
   }
-  window.addEventListener('mousemove', onScrubMouseMove)
-  window.addEventListener('mouseup', onScrubMouseUp)
+  window.addEventListener('mousemove', onScrubMouseMove);
+  window.addEventListener('mouseup', onScrubMouseUp);
 }
 
 function onScrubMouseMove(e: MouseEvent) {
-  if (!isScrubbing) return
-  const sec = getSecondsFromMouseEvent(e)
-  currentTime.value = Math.max(0, Math.min(audioDuration.value, sec))
+  if (!isScrubbing) return;
+  const sec = getSecondsFromMouseEvent(e);
+  currentTime.value = Math.max(0, Math.min(audioDuration.value, sec));
   if (audioElementRef.value) {
-    audioElementRef.value.currentTime = currentTime.value
+    audioElementRef.value.currentTime = currentTime.value;
   }
 }
 
 function onScrubMouseUp() {
   if (isScrubbing) {
-    isScrubbing = false
+    isScrubbing = false;
     if (isPlaying.value && audioElementRef.value) {
-      startPlayback(currentTime.value, trimEnd.value)
+      startPlayback(currentTime.value, trimEnd.value);
     }
-    window.removeEventListener('mousemove', onScrubMouseMove)
-    window.removeEventListener('mouseup', onScrubMouseUp)
+    window.removeEventListener('mousemove', onScrubMouseMove);
+    window.removeEventListener('mouseup', onScrubMouseUp);
   }
 }
 
 function onHandleMouseMove(e: MouseEvent) {
-  const sec = getSecondsFromMouseEvent(e)
+  const sec = getSecondsFromMouseEvent(e);
   if (isDraggingStart) {
-    trimStart.value = Math.max(0, Math.min(sec, trimEnd.value - 0.2))
+    trimStart.value = Math.max(0, Math.min(sec, trimEnd.value - 0.2));
   } else if (isDraggingEnd) {
-    trimEnd.value = Math.min(selectedClip.value?.duration || 0, Math.max(sec, trimStart.value + 0.2))
+    trimEnd.value = Math.min(selectedClip.value?.duration || 0, Math.max(sec, trimStart.value + 0.2));
   }
 }
 
 function onHandleMouseUp() {
-  isDraggingStart = false
-  isDraggingEnd = false
-  window.removeEventListener('mousemove', onHandleMouseMove)
-  window.removeEventListener('mouseup', onHandleMouseUp)
+  isDraggingStart = false;
+  isDraggingEnd = false;
+  window.removeEventListener('mousemove', onHandleMouseMove);
+  window.removeEventListener('mouseup', onHandleMouseUp);
+}
+
+function getTrimmedWAVBlob(): { blob: Blob; duration: number; } | null {
+  if (!audioBuffer) return null;
+
+  const sampleRate = audioBuffer.sampleRate;
+  const startSample = Math.max(0, Math.floor(trimStart.value * sampleRate));
+  const endSample = Math.min(audioBuffer.length, Math.floor(trimEnd.value * sampleRate));
+  const length = Math.max(0, endSample - startSample);
+
+  const slicedSamples = new Float32Array(length);
+  const micData = audioBuffer.getChannelData(0).subarray(startSample, endSample);
+  const hasSecondChannel = audioBuffer.numberOfChannels >= 2;
+  const inputData = hasSecondChannel ? audioBuffer.getChannelData(1).subarray(startSample, endSample) : null;
+
+  if (includeMic.value && (!hasSecondChannel || !includeInput.value || !inputData)) {
+    slicedSamples.set(micData);
+  } else if (!includeMic.value && hasSecondChannel && includeInput.value && inputData) {
+    slicedSamples.set(inputData);
+  } else if (hasSecondChannel && inputData && includeMic.value && includeInput.value) {
+    for (let i = 0; i < length; i++) {
+      slicedSamples[i] = Math.max(-1, Math.min(1, (micData[i] + inputData[i]) * 0.75));
+    }
+  } else {
+    slicedSamples.set(micData);
+  }
+
+  const blob = encodeWAV(slicedSamples, sampleRate);
+  const duration = slicedSamples.length / sampleRate;
+
+  return { blob, duration };
 }
 
 async function publishToSoundboard() {
-  if (!selectedClip.value || !audioBuffer || isPublishing.value) return
+  if (!selectedClip.value || !audioBuffer || isPublishing.value || isSavingFile.value) return;
 
-  isPublishing.value = true
+  isPublishing.value = true;
   try {
-    // Slice the audio buffer to the trimmed range
-    const sampleRate = audioBuffer.sampleRate
-    const startSample = Math.max(0, Math.floor(trimStart.value * sampleRate))
-    const endSample = Math.min(audioBuffer.length, Math.floor(trimEnd.value * sampleRate))
-    const length = Math.max(0, endSample - startSample)
-
-    const slicedSamples = new Float32Array(length)
-    const micData = audioBuffer.getChannelData(0).subarray(startSample, endSample)
-    const hasSecondChannel = audioBuffer.numberOfChannels >= 2
-    const inputData = hasSecondChannel ? audioBuffer.getChannelData(1).subarray(startSample, endSample) : null
-
-    if (includeMic.value && (!hasSecondChannel || !includeInput.value || !inputData)) {
-      slicedSamples.set(micData)
-    } else if (!includeMic.value && hasSecondChannel && includeInput.value && inputData) {
-      slicedSamples.set(inputData)
-    } else if (hasSecondChannel && inputData && includeMic.value && includeInput.value) {
-      for (let i = 0; i < length; i++) {
-        slicedSamples[i] = Math.max(-1, Math.min(1, (micData[i] + inputData[i]) * 0.75))
-      }
-    } else {
-      slicedSamples.set(micData)
-    }
-
-    const trimmedBlob = encodeWAV(slicedSamples, sampleRate)
-    const duration = slicedSamples.length / sampleRate
+    const trimmed = getTrimmedWAVBlob();
+    if (!trimmed) return;
 
     const tags = clipTagsString.value
       .split(',')
       .map(t => t.trim())
-      .filter(t => t.length > 0)
+      .filter(t => t.length > 0);
 
-    await pulseBackStore.publishToSoundboard(selectedClip.value.id, trimmedBlob, duration, {
+    await pulseBackStore.publishToSoundboard(selectedClip.value.id, trimmed.blob, trimmed.duration, {
       title: clipTitle.value.trim() || selectedClip.value.title,
       tags,
       color: clipColor.value,
       volume: clipVolume.value,
-    })
+    });
   } catch (err) {
-    console.error('Failed to publish clip to soundboard:', err)
+    console.error('Failed to publish clip to soundboard:', err);
   } finally {
-    isPublishing.value = false
+    isPublishing.value = false;
+  }
+}
+
+async function saveToFile() {
+  if (!selectedClip.value || !audioBuffer || isSavingFile.value || isPublishing.value) return;
+
+  isSavingFile.value = true;
+  try {
+    const trimmed = getTrimmedWAVBlob();
+    if (!trimmed) return;
+
+    const rawTitle = clipTitle.value.trim() || selectedClip.value.title || 'pulse_back_clip';
+    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'pulse_back_clip';
+    const defaultFilename = sanitizedTitle.toLowerCase().endsWith('.wav') ? sanitizedTitle : `${sanitizedTitle}.wav`;
+
+    if (window.electron?.saveFileDialog) {
+      const arrayBuffer = await trimmed.blob.arrayBuffer();
+      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer);
+      if (saved) {
+        pulseBackStore.showToast(`Saved "${defaultFilename}"`);
+      }
+    } else {
+      const url = URL.createObjectURL(trimmed.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = defaultFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      pulseBackStore.showToast(`Downloaded "${defaultFilename}"`);
+    }
+  } catch (err) {
+    console.error('Failed to save audio file:', err);
+    pulseBackStore.showToast('Failed to save audio file');
+  } finally {
+    isSavingFile.value = false;
   }
 }
 
 function formatSeconds(secs: number): string {
-  if (isNaN(secs) || secs < 0) secs = 0
-  const m = Math.floor(secs / 60)
-  const s = Math.floor(secs % 60)
-  const ms = Math.floor((secs % 1) * 10)
-  return `${m}:${s.toString().padStart(2, '0')}.${ms}`
+  if (isNaN(secs) || secs < 0) secs = 0;
+  const m = Math.floor(secs / 60);
+  const s = Math.floor(secs % 60);
+  const ms = Math.floor((secs % 1) * 10);
+  return `${m}:${s.toString().padStart(2, '0')}.${ms}`;
 }
 
 function formatTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-let waveformResizeObserver: ResizeObserver | null = null
+let waveformResizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
-  window.addEventListener('resize', drawWaveform)
+  window.addEventListener('resize', drawWaveform);
   if (waveformWrapperRef.value) {
     waveformResizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          drawWaveform()
+          drawWaveform();
         }
       }
-    })
-    waveformResizeObserver.observe(waveformWrapperRef.value)
+    });
+    waveformResizeObserver.observe(waveformWrapperRef.value);
   }
   nextTick(() => {
-    requestAnimationFrame(drawWaveform)
-  })
-})
+    requestAnimationFrame(drawWaveform);
+  });
+});
 
 onUnmounted(() => {
-  stopPreview()
+  stopPreview();
   if (waveformResizeObserver) {
-    waveformResizeObserver.disconnect()
-    waveformResizeObserver = null
+    waveformResizeObserver.disconnect();
+    waveformResizeObserver = null;
   }
-  window.removeEventListener('resize', drawWaveform)
-  window.removeEventListener('mousemove', onHandleMouseMove)
-  window.removeEventListener('mouseup', onHandleMouseUp)
-  window.removeEventListener('mousemove', onScrubMouseMove)
-  window.removeEventListener('mouseup', onScrubMouseUp)
-})
+  window.removeEventListener('resize', drawWaveform);
+  window.removeEventListener('mousemove', onHandleMouseMove);
+  window.removeEventListener('mouseup', onHandleMouseUp);
+  window.removeEventListener('mousemove', onScrubMouseMove);
+  window.removeEventListener('mouseup', onScrubMouseUp);
+});
 </script>
 
 <style scoped>
@@ -844,6 +998,8 @@ onUnmounted(() => {
   padding: 0.85rem 1.25rem;
   background: #18181b;
   border-bottom: 1px solid #27272a;
+  position: relative;
+  z-index: 30;
 }
 
 .view-title {
@@ -865,59 +1021,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 1rem;
-}
-
-.buffer-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.8rem;
-  padding: 0.35rem 0.65rem;
-  background: #27272a;
-  border-radius: 9999px;
-  color: #a1a1aa;
-}
-
-.buffer-indicator.active {
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.status-indicator-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #71717a;
-}
-
-.buffer-indicator.active .status-indicator-dot {
-  background: #10b981;
-  box-shadow: 0 0 6px #10b981;
-}
-
-.trigger-clip-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.85rem;
-  background: #2563eb;
-  color: white;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.trigger-clip-btn:hover:not(:disabled) {
-  background: #1d4ed8;
-}
-
-.trigger-clip-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 .workspace {
@@ -1073,10 +1176,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  width: 100%;
-  background: #18181b;
-  padding: 1rem;
-  border-radius: 10px;
+  flex-wrap: wrap;
 }
 
 .play-btn {
@@ -1136,14 +1236,17 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  min-width: min-content;
 }
 
 .waveform-labels {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-size: 0.85rem;
   font-weight: 600;
   color: #e4e4e7;
+  gap: 0.25rem;
 }
 
 .waveform-wrapper {
@@ -1362,8 +1465,35 @@ onUnmounted(() => {
 .publish-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 0.75rem;
   border-top: 1px solid #27272a;
   padding-top: 1rem;
+}
+
+.save-file-btn {
+  display: flex;
+  align-items: center;
+  padding: 0.65rem 1.25rem;
+  background: #27272a;
+  color: #e4e4e7;
+  border: 1px solid #3f3f46;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.save-file-btn:hover:not(:disabled) {
+  background: #3f3f46;
+  color: #ffffff;
+  border-color: #52525b;
+  transform: translateY(-1px);
+}
+
+.save-file-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .publish-btn {
@@ -1401,19 +1531,14 @@ onUnmounted(() => {
 /* Audio Tracks Bar */
 .audio-tracks-bar {
   display: flex;
+  gap: 0.25rem 0.5rem;
   align-items: center;
-  justify-content: space-between;
-  background: #18181b;
-  border: 1px solid #27272a;
-  border-radius: 10px;
-  padding: 0.75rem 1.25rem;
-  gap: 1rem;
   flex-wrap: wrap;
+  justify-content: end;
 }
 
 .tracks-heading {
   display: flex;
-  flex-direction: column;
   gap: 0.2rem;
 }
 
@@ -1439,17 +1564,19 @@ onUnmounted(() => {
 .track-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   padding: 0.45rem 0.85rem;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 600;
+  justify-content: center;
   cursor: pointer;
   background: #27272a;
   border: 1px solid #3f3f46;
   color: #d4d4d8;
   transition: all 0.15s ease;
   user-select: none;
+  width: 8.5rem;
 }
 
 .track-toggle-btn:hover {
@@ -1462,7 +1589,7 @@ onUnmounted(() => {
   color: #38bdf8;
 }
 
-.track-toggle-btn:nth-child(2).active {
+.input-track-btn.active {
   background: rgba(52, 211, 153, 0.12);
   border-color: #34d399;
   color: #34d399;
@@ -1493,7 +1620,7 @@ onUnmounted(() => {
   color: #38bdf8;
 }
 
-.track-toggle-btn:nth-child(2).active .track-badge {
+.input-track-btn.active .track-badge {
   background: rgba(52, 211, 153, 0.2);
   color: #34d399;
 }

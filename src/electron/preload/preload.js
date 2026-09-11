@@ -51,6 +51,7 @@ contextBridge.exposeInMainWorld('electron', {
   onUpdateDownloadProgress: callback => {
     ipcRenderer.on('update-download-progress', (_, progress) => callback(progress))
   },
+  saveFileDialog: (defaultName, buffer) => ipcRenderer.invoke('save-file-dialog', { defaultName, buffer }),
   // Database related
   readAllDBSettings: () => ipcRenderer.invoke('read-all-db-settings'),
   saveDBSetting: (settingName, settingValue) => ipcRenderer.invoke('save-db-setting', settingName, settingValue),

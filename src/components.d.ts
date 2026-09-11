@@ -24,6 +24,7 @@ declare module 'vue' {
     InputTimeFormatted: typeof import('./components/BaseComponents/InputTimeFormatted.vue')['default']
     Main: typeof import('./components/Main.vue')['default']
     PulseBackView: typeof import('./components/PulseBackView.vue')['default']
+    QuickClipButton: typeof import('./components/QuickClipButton.vue')['default']
     QuickTagButtons: typeof import('./components/QuickTagButtons.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

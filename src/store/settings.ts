@@ -440,6 +440,12 @@ export const useSettingsStore = defineStore('settings', {
           await audioMixer.setCableOutput(this.virtualCableDeviceId)
         }
       }
+      import('./pulseBack').then(({ usePulseBackStore }) => {
+        const pulseBackStore = usePulseBackStore()
+        if (pulseBackStore.isBufferRunning) {
+          pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
+        }
+      }).catch(() => {})
     },
     /**
      * Save an array setting to the store
@@ -475,6 +481,19 @@ export const useSettingsStore = defineStore('settings', {
           (this as any)[key] = value
           if (key === 'selectedMicrophoneId') {
             audioMixer.setMicrophone(this.selectedMicrophoneId)
+            import('./pulseBack').then(({ usePulseBackStore }) => {
+              const pulseBackStore = usePulseBackStore()
+              if (pulseBackStore.isBufferRunning) {
+                pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
+              }
+            }).catch(() => {})
+          } else if (key === 'pulse_back_input_device') {
+            import('./pulseBack').then(({ usePulseBackStore }) => {
+              const pulseBackStore = usePulseBackStore()
+              if (pulseBackStore.isBufferRunning) {
+                pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
+              }
+            }).catch(() => {})
           }
           return true
         }
@@ -485,6 +504,7 @@ export const useSettingsStore = defineStore('settings', {
           this[key] = value
           if (key === 'microphoneVolume') {
             audioMixer.setMicrophoneVolume(this.microphoneVolume)
+            pulseBackBuffer.setMicVolume(this.microphoneVolume ?? 1)
           } else if (key === 'cableOutputVolume') {
             audioMixer.setSoundboardVolume(this.muted ? 0 : this.cableOutputVolume)
           } else if (key === 'pulse_back_volume') {

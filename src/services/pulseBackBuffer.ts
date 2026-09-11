@@ -1,3 +1,5 @@
+import { audioMixer } from './audioMixer'
+
 export function encodeWAV(
   micSamples: Float32Array,
   sampleRate: number,
@@ -272,7 +274,7 @@ class PulseBackBuffer {
       noiseSuppression: false,
       autoGainControl: false,
     }
-    if (deviceId) {
+    if (deviceId && deviceId !== 'default') {
       try {
         return await navigator.mediaDevices.getUserMedia({
           audio: { ...audioConstraints, deviceId: { exact: deviceId } },
@@ -315,7 +317,25 @@ class PulseBackBuffer {
     this.maxSeconds = Math.max(15, Math.min(300, maxBufferSeconds))
 
     // 1. Open primary microphone stream
-    this.micStream = await this.openStream(micDeviceId)
+    // Check if audioMixer already has an active, live stream for this microphone to avoid multiple conflicting getUserMedia calls
+    const mixerStream = audioMixer.getMicrophoneStream()
+    const mixerMicId = audioMixer.getCurrentMicId()
+    if (
+      mixerStream &&
+      (!micDeviceId || micDeviceId === mixerMicId) &&
+      mixerStream.getAudioTracks().some(t => t.readyState === 'live')
+    ) {
+      this.micStream = mixerStream.clone()
+    } else {
+      this.micStream = await this.openStream(micDeviceId)
+    }
+
+    // Ensure all audio tracks are active
+    if (this.micStream) {
+      this.micStream.getAudioTracks().forEach(track => {
+        track.enabled = true
+      })
+    }
 
     // 2. If separate input device specified, open secondary stream
     const isDistinctInput = !!(inputDeviceId && inputDeviceId !== micDeviceId)

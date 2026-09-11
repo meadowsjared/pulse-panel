@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { toRaw } from 'vue'
 import { openDB, IDBPDatabase } from 'idb'
 import { pulseBackBuffer } from '../services/pulseBackBuffer'
 import { useSettingsStore } from './settings'
@@ -129,7 +130,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
       const settingsStore = useSettingsStore()
       const micDevice = micDeviceId ?? settingsStore.selectedMicrophoneId
       const inputDevice = inputDeviceId ?? settingsStore.pulse_back_input_device
-      const effectiveMicVol = settingsStore.microphoneMuted ? 0 : (settingsStore.microphoneVolume ?? 1)
+      const effectiveMicVol = settingsStore.microphoneVolume ?? 1
       const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
       try {
         await pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol)
@@ -217,15 +218,17 @@ export const usePulseBackStore = defineStore('pulseBack', {
       this.selectedClipId = clip.id
 
       try {
+        const rawBlob = toRaw(clip.blob)
+        const rawTags = clip.tags ? Array.from(toRaw(clip.tags)) : []
         const db = await getClipDB()
         await db.put(STORE_NAME, {
-          id: clip.id,
-          title: clip.title,
-          duration: clip.duration,
-          blob: clip.blob,
-          createdAt: clip.createdAt,
-          hasDualTracks: clip.hasDualTracks,
-          tags: clip.tags,
+          id: String(clip.id),
+          title: String(clip.title),
+          duration: Number(clip.duration),
+          blob: rawBlob,
+          createdAt: Number(clip.createdAt),
+          hasDualTracks: Boolean(clip.hasDualTracks),
+          tags: rawTags,
         })
       } catch (err) {
         console.warn('Could not persist clip to IndexedDB:', err)
@@ -264,15 +267,17 @@ export const usePulseBackStore = defineStore('pulseBack', {
       Object.assign(clip, updates)
 
       try {
+        const rawBlob = toRaw(clip.blob)
+        const rawTags = clip.tags ? Array.from(toRaw(clip.tags)) : []
         const db = await getClipDB()
         await db.put(STORE_NAME, {
-          id: clip.id,
-          title: clip.title,
-          duration: clip.duration,
-          blob: clip.blob,
-          createdAt: clip.createdAt,
-          hasDualTracks: clip.hasDualTracks,
-          tags: clip.tags,
+          id: String(clip.id),
+          title: String(clip.title),
+          duration: Number(clip.duration),
+          blob: rawBlob,
+          createdAt: Number(clip.createdAt),
+          hasDualTracks: Boolean(clip.hasDualTracks),
+          tags: rawTags,
         })
       } catch (err) {
         console.warn('Could not update clip in IDB:', err)
