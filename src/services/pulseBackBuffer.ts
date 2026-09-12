@@ -1,4 +1,7 @@
 import { audioMixer } from './audioMixer'
+import { Mp3Encoder } from '@breezystack/lamejs'
+// @ts-ignore
+import vorbisEncoderPkg from 'vorbis-encoder-js'
 
 export function encodeWAV(
   micSamples: Float32Array,
@@ -63,6 +66,52 @@ export function encodeWAV(
   }
 
   return new Blob([buffer], { type: 'audio/wav' })
+}
+
+export function encodeMP3(
+  samples: Float32Array,
+  sampleRate: number,
+  kbps: number = 192
+): Blob {
+  const encoder = new Mp3Encoder(1, sampleRate, kbps)
+  const int16Samples = new Int16Array(samples.length)
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]))
+    int16Samples[i] = s < 0 ? s * 0x8000 : s * 0x7fff
+  }
+
+  const mp3Data: Uint8Array[] = []
+  const sampleBlockSize = 1152
+  for (let i = 0; i < int16Samples.length; i += sampleBlockSize) {
+    const chunk = int16Samples.subarray(i, i + sampleBlockSize)
+    const mp3buf = encoder.encodeBuffer(chunk)
+    if (mp3buf.length > 0) {
+      mp3Data.push(new Uint8Array(mp3buf))
+    }
+  }
+
+  const endBuf = encoder.flush()
+  if (endBuf.length > 0) {
+    mp3Data.push(new Uint8Array(endBuf))
+  }
+
+  return new Blob(mp3Data as BlobPart[], { type: 'audio/mp3' })
+}
+
+export function encodeOGG(
+  samples: Float32Array,
+  sampleRate: number,
+  quality: number = 0.6
+): Blob {
+  // @ts-ignore
+  const VorbisEncoder = vorbisEncoderPkg.encoder || vorbisEncoderPkg.default?.encoder
+  const encoder = new VorbisEncoder(sampleRate, 1, quality)
+  const chunkSize = 4096
+  for (let i = 0; i < samples.length; i += chunkSize) {
+    const chunk = samples.subarray(i, Math.min(samples.length, i + chunkSize))
+    encoder.encode([chunk])
+  }
+  return encoder.finish('audio/ogg')
 }
 
 const WORKLET_CODE = `

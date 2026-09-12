@@ -105,13 +105,14 @@ app.whenReady().then(() => {
   ipcMain.handle('delete-sound', (_, sound) => settings.deleteSound(sound))
   ipcMain.handle('save-sounds-array', (_, sounds) => settings.saveSoundsArray(sounds))
   ipcMain.handle('save-visibility', (_, visibilityChanges) => settings.saveVisibility(visibilityChanges))
-  ipcMain.handle('save-file-dialog', async (_, { defaultName, buffer }) => {
+  ipcMain.handle('save-file-dialog', async (_, { defaultName, buffer, filters }) => {
     const result = await dialog.showSaveDialog(mainWindow, {
       title: 'Save Audio Clip',
       defaultPath: defaultName,
-      filters: [
+      filters: filters || [
+        { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
+        { name: 'OGG Audio (*.ogg)', extensions: ['ogg'] },
         { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
-        { name: 'All Files (*.*)', extensions: ['*'] },
       ],
     })
     if (result.canceled || !result.filePath) {

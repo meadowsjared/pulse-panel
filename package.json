@@ -69,6 +69,8 @@
     ]
   },
   "dependencies": {
+    "@breezystack/lamejs": "^1.2.7",
+    "@meadowsjared/qhotkeys": "^1.1.18",
     "@meadowsjared/robotjs": "0.6.26",
     "@slosk/sudo-prompt": "^9.2.2",
     "@tailwindcss/forms": "^0.5.11",
@@ -81,9 +83,9 @@
     "lodash": "^4.18.1",
     "nconf": "^0.13.0",
     "pinia": "^3.0.4",
-    "@meadowsjared/qhotkeys": "^1.1.18",
     "regedit": "^5.1.4",
     "tailwindcss": "^4.3.2",
+    "vorbis-encoder-js": "^1.0.2",
     "vue": "^3.5.39",
     "vue-color": "^3.3.3",
     "vue-inline-svg": "^4.0.1"

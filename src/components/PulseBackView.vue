@@ -296,13 +296,37 @@
                      @change="onVolumeChange"
                      class="volume-slider cursor-pointer" />
             </div>
+
+            <div class="publish-field">
+              <label>Save Format:</label>
+              <div class="format-toggle-group">
+                <button type="button"
+                        class="format-toggle-btn"
+                        :class="{ active: exportFormat === 'mp3' }"
+                        @click="setExportFormat('mp3')">
+                  MP3
+                </button>
+                <button type="button"
+                        class="format-toggle-btn"
+                        :class="{ active: exportFormat === 'wav' }"
+                        @click="setExportFormat('wav')">
+                  WAV
+                </button>
+                <button type="button"
+                        class="format-toggle-btn"
+                        :class="{ active: exportFormat === 'ogg' }"
+                        @click="setExportFormat('ogg')">
+                  OGG
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="publish-actions">
             <button class="save-file-btn"
                     :disabled="isSavingFile || isPublishing"
                     @click="saveToFile"
-                    title="Save audio file to your computer">
+                    :title="`Save audio file as .${exportFormat} to your computer`">
               <svg class="w-5 h-5 mr-1.5"
                    viewBox="0 0 24 24"
                    fill="none"
@@ -315,7 +339,7 @@
                       x2="12"
                       y2="3" />
               </svg>
-              {{ isSavingFile ? 'Saving...' : 'Save to File' }}
+              {{ isSavingFile ? 'Saving...' : `Save as .${exportFormat.toUpperCase()}` }}
             </button>
             <button class="publish-btn"
                     :disabled="isPublishing || isSavingFile"
@@ -346,7 +370,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import InlineSvg from 'vue-inline-svg';
 import { usePulseBackStore, PulseBackClip } from '../store/pulseBack';
-import { encodeWAV } from '../services/pulseBackBuffer';
+import { encodeWAV, encodeMP3, encodeOGG } from '../services/pulseBackBuffer';
 import MicrophoneIcon from '../assets/images/microphone.svg';
 import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg';
 import SpeakerIcon from '../assets/images/speaker.svg';
@@ -363,6 +387,18 @@ const clipTagsString = ref('clip');
 const clipVolume = ref(100);
 const isPublishing = ref(false);
 const isSavingFile = ref(false);
+
+const savedFormat = localStorage.getItem('pulse_back_export_format');
+const exportFormat = ref<'mp3' | 'wav' | 'ogg'>(
+  savedFormat === 'wav' || savedFormat === 'ogg' ? savedFormat : 'mp3'
+);
+
+function setExportFormat(format: 'mp3' | 'wav' | 'ogg') {
+  exportFormat.value = format;
+  try {
+    localStorage.setItem('pulse_back_export_format', format);
+  } catch {}
+}
 
 
 
@@ -921,7 +957,9 @@ function onHandleMouseUp() {
   saveCurrentClipState();
 }
 
-function getTrimmedWAVBlob(): { blob: Blob; duration: number; } | null {
+function getTrimmedAudioBlob(
+  format: 'mp3' | 'wav' | 'ogg' = 'mp3'
+): { blob: Blob; duration: number; extension: string } | null {
   if (!audioBuffer) return null;
 
   const sampleRate = audioBuffer.sampleRate;
@@ -946,10 +984,22 @@ function getTrimmedWAVBlob(): { blob: Blob; duration: number; } | null {
     slicedSamples.set(micData);
   }
 
-  const blob = encodeWAV(slicedSamples, sampleRate);
   const duration = slicedSamples.length / sampleRate;
+  let blob: Blob;
+  let extension: string;
 
-  return { blob, duration };
+  if (format === 'mp3') {
+    blob = encodeMP3(slicedSamples, sampleRate, 192);
+    extension = 'mp3';
+  } else if (format === 'ogg') {
+    blob = encodeOGG(slicedSamples, sampleRate, 0.6);
+    extension = 'ogg';
+  } else {
+    blob = encodeWAV(slicedSamples, sampleRate);
+    extension = 'wav';
+  }
+
+  return { blob, duration, extension };
 }
 
 async function publishToSoundboard() {
@@ -957,7 +1007,7 @@ async function publishToSoundboard() {
 
   isPublishing.value = true;
   try {
-    const trimmed = getTrimmedWAVBlob();
+    const trimmed = getTrimmedAudioBlob('wav');
     if (!trimmed) return;
 
     const tags = clipTagsString.value
@@ -983,16 +1033,25 @@ async function saveToFile() {
 
   isSavingFile.value = true;
   try {
-    const trimmed = getTrimmedWAVBlob();
+    const format = exportFormat.value;
+    const trimmed = getTrimmedAudioBlob(format);
     if (!trimmed) return;
 
     const rawTitle = clipTitle.value.trim() || selectedClip.value.title || 'pulse_back_clip';
     const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'pulse_back_clip';
-    const defaultFilename = sanitizedTitle.toLowerCase().endsWith('.wav') ? sanitizedTitle : `${sanitizedTitle}.wav`;
+    const baseName = sanitizedTitle.replace(/\.(mp3|wav|ogg)$/i, '');
+    const defaultFilename = `${baseName}.${trimmed.extension}`;
 
     if (window.electron?.saveFileDialog) {
       const arrayBuffer = await trimmed.blob.arrayBuffer();
-      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer);
+      const formatFilterMap: Record<'mp3' | 'wav' | 'ogg', { name: string; extensions: string[] }> = {
+        mp3: { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
+        ogg: { name: 'OGG Audio (*.ogg)', extensions: ['ogg'] },
+        wav: { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
+      };
+      const filters = [formatFilterMap[format]];
+
+      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
       if (saved) {
         pulseBackStore.showToast(`Saved "${defaultFilename}"`);
       }
@@ -1547,6 +1606,37 @@ onUnmounted(() => {
 
 .volume-slider {
   width: 100%;
+}
+
+.format-toggle-group {
+  display: inline-flex;
+  background: #27272a;
+  border-radius: 6px;
+  padding: 2px;
+  border: 1px solid #3f3f46;
+  width: fit-content;
+}
+
+.format-toggle-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.format-toggle-btn:hover {
+  color: white;
+}
+
+.format-toggle-btn.active {
+  background: #3b82f6;
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .publish-actions {
