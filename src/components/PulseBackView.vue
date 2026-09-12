@@ -236,12 +236,16 @@
         </div>
 
 
-        <!-- Native Audio Element for 1:1 hardware clock playback -->
-        <audio ref="audioElementRef"
-               :src="previewAudioUrl"
+        <!-- Native Audio Elements for 1:1 hardware clock playback -->
+        <audio ref="micAudioElRef"
+               :src="micPreviewUrl"
                preload="auto"
                style="display: none"
                @ended="onAudioEnded"></audio>
+        <audio ref="inputAudioElRef"
+               :src="inputPreviewUrl"
+               preload="auto"
+               style="display: none"></audio>
 
 
         <!-- Trim Range Summary Bar -->
@@ -409,8 +413,10 @@ const trimEnd = ref(0);
 // Waveform & Audio State
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const waveformWrapperRef = ref<HTMLDivElement | null>(null);
-const audioElementRef = ref<HTMLAudioElement | null>(null);
-const previewAudioUrl = ref<string>('');
+const micAudioElRef = ref<HTMLAudioElement | null>(null);
+const inputAudioElRef = ref<HTMLAudioElement | null>(null);
+const micPreviewUrl = ref<string>('');
+const inputPreviewUrl = ref<string>('');
 let audioBuffer: AudioBuffer | null = null;
 let audioContext: AudioContext | null = null;
 
@@ -443,6 +449,78 @@ const playheadPercent = computed(() => {
   if (audioDuration.value <= 0) return 0;
   return Math.max(0, Math.min(100, (currentTime.value / audioDuration.value) * 100));
 });
+
+function syncAudioCurrentTime(sec: number) {
+  if (micAudioElRef.value) {
+    micAudioElRef.value.currentTime = sec;
+  }
+  if (inputAudioElRef.value) {
+    inputAudioElRef.value.currentTime = sec;
+  }
+}
+
+function updateTrackVolumes() {
+  const masterVol = clipVolume.value / 100;
+  const bothActive = includeMic.value && includeInput.value && hasDualChannels.value;
+  const factor = bothActive ? 0.75 : 1.0;
+
+  if (micAudioElRef.value) {
+    micAudioElRef.value.muted = !includeMic.value;
+    micAudioElRef.value.volume = includeMic.value ? masterVol * factor : 0;
+  }
+  if (inputAudioElRef.value) {
+    inputAudioElRef.value.muted = !includeInput.value;
+    inputAudioElRef.value.volume = includeInput.value ? masterVol * factor : 0;
+  }
+}
+
+function clearPreviewUrls() {
+  if (micPreviewUrl.value) {
+    try {
+      URL.revokeObjectURL(micPreviewUrl.value);
+    } catch {}
+    micPreviewUrl.value = '';
+  }
+  if (inputPreviewUrl.value) {
+    try {
+      URL.revokeObjectURL(inputPreviewUrl.value);
+    } catch {}
+    inputPreviewUrl.value = '';
+  }
+}
+
+function updatePreviewUrls() {
+  if (!audioBuffer) return;
+  const numChannels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+
+  const micData = audioBuffer.getChannelData(0);
+  const micBlob = encodeWAV(micData, sampleRate);
+  if (micPreviewUrl.value) {
+    try {
+      URL.revokeObjectURL(micPreviewUrl.value);
+    } catch {}
+  }
+  micPreviewUrl.value = URL.createObjectURL(micBlob);
+
+  if (numChannels >= 2) {
+    const inputData = audioBuffer.getChannelData(1);
+    const inputBlob = encodeWAV(inputData, sampleRate);
+    if (inputPreviewUrl.value) {
+      try {
+        URL.revokeObjectURL(inputPreviewUrl.value);
+      } catch {}
+    }
+    inputPreviewUrl.value = URL.createObjectURL(inputBlob);
+  } else {
+    if (inputPreviewUrl.value) {
+      try {
+        URL.revokeObjectURL(inputPreviewUrl.value);
+      } catch {}
+    }
+    inputPreviewUrl.value = '';
+  }
+}
 
 watch(
   () => selectedClip.value?.id,
@@ -477,60 +555,13 @@ watch(
     includeMic.value = clip.includeMic ?? true;
     includeInput.value = clip.includeInput ?? true;
 
-    if (audioElementRef.value) {
-      audioElementRef.value.currentTime = currentTime.value;
-      audioElementRef.value.volume = clipVolume.value / 100;
-    }
+    syncAudioCurrentTime(currentTime.value);
+    updateTrackVolumes();
 
     await loadAudioData(clip.blob);
   },
   { immediate: true }
 );
-
-function updatePreviewAudio() {
-  if (!audioBuffer) return;
-  const numChannels = audioBuffer.numberOfChannels;
-  const length = audioBuffer.length;
-  const sampleRate = audioBuffer.sampleRate;
-
-  const micData = audioBuffer.getChannelData(0);
-  const inputData = numChannels >= 2 ? audioBuffer.getChannelData(1) : null;
-
-  // Mix to a 1-channel (centered mono) Float32Array so audio is heard equally in both ears
-  const mixed = new Float32Array(length);
-  const useMic = includeMic.value;
-  const useInput = includeInput.value && inputData !== null;
-
-  if (useMic && useInput) {
-    for (let i = 0; i < length; i++) {
-      mixed[i] = Math.max(-1, Math.min(1, (micData[i] + inputData[i]) * 0.75));
-    }
-  } else if (useMic) {
-    mixed.set(micData);
-  } else if (useInput) {
-    mixed.set(inputData);
-  }
-
-  const previewBlob = encodeWAV(mixed, sampleRate);
-  if (previewAudioUrl.value) {
-    try {
-      URL.revokeObjectURL(previewAudioUrl.value);
-    } catch {}
-  }
-  previewAudioUrl.value = URL.createObjectURL(previewBlob);
-
-  const audioEl = audioElementRef.value;
-  if (audioEl) {
-    const wasPlaying = isPlaying.value;
-    const currentPos = currentTime.value;
-    audioEl.src = previewAudioUrl.value;
-    audioEl.currentTime = currentPos;
-    audioEl.volume = clipVolume.value / 100;
-    if (wasPlaying) {
-      audioEl.play().catch(err => console.error('Audio resume error:', err));
-    }
-  }
-}
 
 async function loadAudioData(blob: Blob) {
   try {
@@ -551,12 +582,11 @@ async function loadAudioData(blob: Blob) {
     }
     if (selectedClip.value?.currentTime !== undefined) {
       currentTime.value = selectedClip.value.currentTime;
-      if (audioElementRef.value) {
-        audioElementRef.value.currentTime = currentTime.value;
-      }
+      syncAudioCurrentTime(currentTime.value);
     }
 
-    updatePreviewAudio();
+    updatePreviewUrls();
+    updateTrackVolumes();
 
     await nextTick();
     requestAnimationFrame(() => {
@@ -584,14 +614,14 @@ function saveCurrentClipState() {
 
 function toggleMicTrack() {
   includeMic.value = !includeMic.value;
-  updatePreviewAudio();
+  updateTrackVolumes();
   drawWaveform();
   saveCurrentClipState();
 }
 
 function toggleInputTrack() {
   includeInput.value = !includeInput.value;
-  updatePreviewAudio();
+  updateTrackVolumes();
   drawWaveform();
   saveCurrentClipState();
 }
@@ -761,9 +791,7 @@ async function onTagsChange() {
 }
 
 function onVolumeChange() {
-  if (audioElementRef.value) {
-    audioElementRef.value.volume = clipVolume.value / 100;
-  }
+  updateTrackVolumes();
   saveCurrentClipState();
 }
 
@@ -773,12 +801,7 @@ function onColorChange() {
 
 async function deleteClip(id: string) {
   stopPreview();
-  if (previewAudioUrl.value) {
-    try {
-      URL.revokeObjectURL(previewAudioUrl.value);
-    } catch {}
-    previewAudioUrl.value = '';
-  }
+  clearPreviewUrls();
   await pulseBackStore.deleteClip(id);
 }
 
@@ -787,9 +810,7 @@ function resetTrim() {
   trimStart.value = 0;
   trimEnd.value = selectedClip.value.duration;
   currentTime.value = 0;
-  if (audioElementRef.value) {
-    audioElementRef.value.currentTime = 0;
-  }
+  syncAudioCurrentTime(0);
   saveCurrentClipState();
 }
 
@@ -814,27 +835,33 @@ function togglePlayPreview() {
 function onStopBtnClick() {
   stopPreview();
   currentTime.value = trimStart.value;
-  if (audioElementRef.value) {
-    audioElementRef.value.currentTime = trimStart.value;
-  }
+  syncAudioCurrentTime(trimStart.value);
   saveCurrentClipState();
 }
 
 async function startPlayback(offsetSec: number, endSec: number) {
-  const audioEl = audioElementRef.value;
-  if (!audioEl || !selectedClip.value) return;
+  const micEl = micAudioElRef.value;
+  const inputEl = inputAudioElRef.value;
+  if (!micEl || !selectedClip.value) return;
 
-  if (!previewAudioUrl.value && audioBuffer) {
-    updatePreviewAudio();
+  if (!micPreviewUrl.value && audioBuffer) {
+    updatePreviewUrls();
   }
 
   playbackEndSec = endSec;
-  audioEl.currentTime = offsetSec;
-  audioEl.volume = clipVolume.value / 100;
+  micEl.currentTime = offsetSec;
+  if (hasDualChannels.value && inputEl) {
+    inputEl.currentTime = offsetSec;
+  }
+  updateTrackVolumes();
   currentTime.value = offsetSec;
 
   try {
-    await audioEl.play();
+    const playPromises: Promise<void>[] = [micEl.play()];
+    if (hasDualChannels.value && inputEl) {
+      playPromises.push(inputEl.play());
+    }
+    await Promise.all(playPromises);
     isPlaying.value = true;
     updatePlaybackAnimation();
   } catch (err) {
@@ -843,16 +870,16 @@ async function startPlayback(offsetSec: number, endSec: number) {
 }
 
 function updatePlaybackAnimation() {
-  const audioEl = audioElementRef.value;
-  if (!isPlaying.value || !audioEl) return;
+  const micEl = micAudioElRef.value;
+  if (!isPlaying.value || !micEl) return;
 
   // Playhead directly tracks native HTML5 audio clock with zero latency
-  currentTime.value = audioEl.currentTime;
+  currentTime.value = micEl.currentTime;
 
-  if (currentTime.value >= playbackEndSec || audioEl.ended) {
+  if (currentTime.value >= playbackEndSec || micEl.ended) {
     stopPreview();
     currentTime.value = trimStart.value;
-    audioEl.currentTime = trimStart.value;
+    syncAudioCurrentTime(trimStart.value);
     return;
   }
 
@@ -860,9 +887,11 @@ function updatePlaybackAnimation() {
 }
 
 function stopPreview() {
-  const audioEl = audioElementRef.value;
-  if (audioEl) {
-    audioEl.pause();
+  if (micAudioElRef.value) {
+    micAudioElRef.value.pause();
+  }
+  if (inputAudioElRef.value) {
+    inputAudioElRef.value.pause();
   }
   if (playbackAnimationId) {
     cancelAnimationFrame(playbackAnimationId);
@@ -874,9 +903,7 @@ function stopPreview() {
 function onAudioEnded() {
   stopPreview();
   currentTime.value = trimStart.value;
-  if (audioElementRef.value) {
-    audioElementRef.value.currentTime = trimStart.value;
-  }
+  syncAudioCurrentTime(trimStart.value);
   saveCurrentClipState();
 }
 
@@ -909,9 +936,7 @@ function onWaveformMouseDown(e: MouseEvent) {
   isScrubbing = true;
   const clickSec = getSecondsFromMouseEvent(e);
   currentTime.value = Math.max(0, Math.min(audioDuration.value, clickSec));
-  if (audioElementRef.value) {
-    audioElementRef.value.currentTime = currentTime.value;
-  }
+  syncAudioCurrentTime(currentTime.value);
   if (isPlaying.value) {
     startPlayback(currentTime.value, trimEnd.value);
   }
@@ -923,15 +948,13 @@ function onScrubMouseMove(e: MouseEvent) {
   if (!isScrubbing) return;
   const sec = getSecondsFromMouseEvent(e);
   currentTime.value = Math.max(0, Math.min(audioDuration.value, sec));
-  if (audioElementRef.value) {
-    audioElementRef.value.currentTime = currentTime.value;
-  }
+  syncAudioCurrentTime(currentTime.value);
 }
 
 function onScrubMouseUp() {
   if (isScrubbing) {
     isScrubbing = false;
-    if (isPlaying.value && audioElementRef.value) {
+    if (isPlaying.value && micAudioElRef.value) {
       startPlayback(currentTime.value, trimEnd.value);
     }
     window.removeEventListener('mousemove', onScrubMouseMove);
@@ -1108,12 +1131,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopPreview();
   saveCurrentClipState();
-  if (previewAudioUrl.value) {
-    try {
-      URL.revokeObjectURL(previewAudioUrl.value);
-    } catch {}
-    previewAudioUrl.value = '';
-  }
+  clearPreviewUrls();
   if (waveformResizeObserver) {
     waveformResizeObserver.disconnect();
     waveformResizeObserver = null;
