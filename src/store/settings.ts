@@ -273,6 +273,9 @@ export const useSettingsStore = defineStore('settings', {
     quickTags(): LabelActive[] {
       return this.quickTagsAr ?? []
     },
+    totalSounds(): number {
+      return this.sounds.filter(sound => sound && sound.title !== undefined && !sound.isDragPreview).length
+    },
   },
   actions: {
     soundsFiltered(params?: SliceParams): Sound[] {

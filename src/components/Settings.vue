@@ -363,8 +363,8 @@
     <div class="flex justify-center mt-4 flex-col">
       <h2>Quick Tags:</h2>
       <div class="flex justify-center gap-2 flex-wrap flex-col">
-        <div v-if="settingsStore.quickTags.length === 0">No tags however,</div>
-        <div>{{ allTags.length }} tags are available</div>
+        <div v-if="settingsStore.quickTags.length === 0">No quick tags added</div>
+        <div>{{ totalSoundsText }} &bull; {{ allTagsText }}</div>
         <div class="flex justify-center flex-wrap gap-1 cursor-grab">
           <div
             v-for="(tag, index) in settingsStore.quickTags"
@@ -810,6 +810,16 @@ const allTags = computed(() => {
       }
       return a.name.localeCompare(b.name)
     })
+})
+
+const totalSoundsText = computed(() => {
+  const count = settingsStore.totalSounds
+  return `${count.toLocaleString()} total ${count === 1 ? 'sound' : 'sounds'}`
+})
+
+const allTagsText = computed(() => {
+  const count = allTags.value.length
+  return `${count.toLocaleString()} ${count === 1 ? 'tag is' : 'tags are'} available`
 })
 
 const saveVolumeDebounced = throttle((value: number) => {
