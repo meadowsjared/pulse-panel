@@ -40,5 +40,6 @@ declare module 'vue' {
     TagInput: typeof import('./components/BaseComponents/TagInput.vue')['default']
     TitleBar: typeof import('./components/TitleBar.vue')['default']
     Toggle: typeof import('./components/BaseComponents/Toggle.vue')['default']
+    WaveformGraph: typeof import('./components/WaveformGraph.vue')['default']
   }
 }
