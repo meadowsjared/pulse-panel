@@ -467,7 +467,15 @@ onMounted(async () => {
 
 watch(
   () => props.modelValue?.id,
-  async () => {
+  async (newId, oldId) => {
+    if (newId !== oldId) {
+      isScrubbing = false;
+      stopScrubSnippet();
+      wasPlayingBeforeScrub = false;
+      activeSegmentBeforeScrub = null;
+      wasPreviewBeforeScrub = false;
+      currentTime.value = 0;
+    }
     if (props.modelValue) {
       await settingsStore.ensureSoundLoaded(props.modelValue);
       loadAudioBuffer();
@@ -477,8 +485,11 @@ watch(
 
 watch(
   () => props.modelValue?.audioUrl,
-  () => {
-    loadAudioBuffer();
+  (newUrl, oldUrl) => {
+    if (newUrl !== oldUrl) {
+      currentTime.value = 0;
+      loadAudioBuffer();
+    }
   }
 );
 
@@ -630,6 +641,7 @@ async function handleAudioFileUpload(event: Event) {
   props.modelValue.audioKey = fileKey;
   props.modelValue.audioUrl = fileUrl;
   props.modelValue.duration = await settingsStore.getAudioDuration(fileUrl);
+  currentTime.value = 0;
   loadAudioBuffer();
   emit('update:modelValue', props.modelValue);
 }
