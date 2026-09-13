@@ -655,36 +655,65 @@ function drawWaveform() {
   ctx.clearRect(0, 0, width, height);
 
   const isDual = audioBuffer.numberOfChannels >= 2;
-  const barWidth = 2 * (window.devicePixelRatio || 1);
-  const barGap = 1 * (window.devicePixelRatio || 1);
-  const totalBarWidth = barWidth + barGap;
-  const numBars = Math.floor(width / totalBarWidth);
+  const targetBarWidth = 2 * dpr;
+  const targetBarGap = 1 * dpr;
+  const nominalStep = targetBarWidth + targetBarGap;
+  const numBars = Math.max(10, Math.floor(width / nominalStep));
+  const barStep = width / numBars;
+  const barWidth = Math.max(1, barStep - targetBarGap);
+  const minBarH = Math.max(2, 1.5 * dpr);
+  const cornerRadius = Math.max(1, 1 * dpr);
 
   if (isDual) {
     const micData = audioBuffer.getChannelData(0);
     const inputData = audioBuffer.getChannelData(1);
     const halfHeight = height / 2;
-    const samplesPerBar = Math.floor(micData.length / numBars);
+    const maxTrackHeight = halfHeight * 0.88;
 
     // Center dividing line
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1 * (window.devicePixelRatio || 1);
+    ctx.lineWidth = 1 * dpr;
     ctx.beginPath();
     ctx.moveTo(0, halfHeight);
     ctx.lineTo(width, halfHeight);
     ctx.stroke();
 
+    // Sample peaks for both tracks
+    const micPeaks = new Float32Array(numBars);
+    const inputPeaks = new Float32Array(numBars);
+    let maxMicPeak = 0.001;
+    let maxInputPeak = 0.001;
+
+    for (let i = 0; i < numBars; i++) {
+      const start = Math.floor((i / numBars) * micData.length);
+      const end = Math.min(micData.length, Math.floor(((i + 1) / numBars) * micData.length));
+
+      let pMic = 0;
+      let pInput = 0;
+      for (let j = start; j < end; j++) {
+        const vMic = Math.abs(micData[j]);
+        if (vMic > pMic) pMic = vMic;
+        const vIn = Math.abs(inputData[j]);
+        if (vIn > pInput) pInput = vIn;
+      }
+      micPeaks[i] = pMic;
+      inputPeaks[i] = pInput;
+      if (pMic > maxMicPeak) maxMicPeak = pMic;
+      if (pInput > maxInputPeak) maxInputPeak = pInput;
+    }
+
+    // Auto-normalize tracks independently with a gentle floor so noise isn't amplified
+    const micNormFactor = Math.max(0.06, maxMicPeak);
+    const inputNormFactor = Math.max(0.06, maxInputPeak);
+
     // 1. Draw Mic Track (Top Half)
     const micBaseline = halfHeight * 0.5;
     for (let i = 0; i < numBars; i++) {
-      const start = i * samplesPerBar;
-      let peak = 0;
-      for (let j = 0; j < samplesPerBar; j++) {
-        const val = Math.abs(micData[start + j]);
-        if (val > peak) peak = val;
-      }
-      const x = i * totalBarWidth;
-      const barH = Math.max(2, peak * (halfHeight * 0.88));
+      const normVal = Math.min(1, micPeaks[i] / micNormFactor);
+      // Perceptual power curve gives speech body without clipping
+      const curved = Math.pow(normVal, 0.65);
+      const x = i * barStep;
+      const barH = Math.max(minBarH, curved * maxTrackHeight);
       const y = micBaseline - barH / 2;
 
       if (includeMic.value) {
@@ -697,21 +726,17 @@ function drawWaveform() {
       }
 
       ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barH, 1);
+      ctx.roundRect(x, y, barWidth, barH, cornerRadius);
       ctx.fill();
     }
 
     // 2. Draw Input Device Track (Bottom Half)
     const inputBaseline = halfHeight + halfHeight * 0.5;
     for (let i = 0; i < numBars; i++) {
-      const start = i * samplesPerBar;
-      let peak = 0;
-      for (let j = 0; j < samplesPerBar; j++) {
-        const val = Math.abs(inputData[start + j]);
-        if (val > peak) peak = val;
-      }
-      const x = i * totalBarWidth;
-      const barH = Math.max(2, peak * (halfHeight * 0.88));
+      const normVal = Math.min(1, inputPeaks[i] / inputNormFactor);
+      const curved = Math.pow(normVal, 0.65);
+      const x = i * barStep;
+      const barH = Math.max(minBarH, curved * maxTrackHeight);
       const y = inputBaseline - barH / 2;
 
       if (includeInput.value) {
@@ -724,33 +749,61 @@ function drawWaveform() {
       }
 
       ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barH, 1);
+      ctx.roundRect(x, y, barWidth, barH, cornerRadius);
       ctx.fill();
     }
 
-    // Watermark track labels inside canvas
-    ctx.font = `600 ${10 * (window.devicePixelRatio || 1)}px sans-serif`;
-    ctx.fillStyle = includeMic.value ? 'rgba(56, 189, 248, 0.85)' : 'rgba(113, 113, 122, 0.5)';
-    ctx.fillText('🎤 MIC (VOICE)', 10 * (window.devicePixelRatio || 1), 16 * (window.devicePixelRatio || 1));
+    // Watermark track badges inside canvas (with subtle backdrop pill so waveform doesn't clash)
+    const fontSize = Math.round(9.5 * dpr);
+    ctx.font = `600 ${fontSize}px sans-serif`;
 
-    ctx.fillStyle = includeInput.value ? 'rgba(52, 211, 153, 0.85)' : 'rgba(113, 113, 122, 0.5)';
-    ctx.fillText('🔊 INPUT DEVICE (AUDIO)', 10 * (window.devicePixelRatio || 1), halfHeight + 16 * (window.devicePixelRatio || 1));
+    // Mic badge
+    const micText = '🎤 MIC (VOICE)';
+    const micTextWidth = ctx.measureText(micText).width;
+    ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
+    ctx.beginPath();
+    ctx.roundRect(6 * dpr, 4 * dpr, micTextWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
+    ctx.fill();
+    ctx.fillStyle = includeMic.value ? 'rgba(56, 189, 248, 0.95)' : 'rgba(161, 161, 170, 0.6)';
+    ctx.fillText(micText, 11 * dpr, 4 * dpr + fontSize);
+
+    // Input badge
+    const inText = '🔊 INPUT DEVICE (AUDIO)';
+    const inTextWidth = ctx.measureText(inText).width;
+    ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
+    ctx.beginPath();
+    ctx.roundRect(6 * dpr, halfHeight + 4 * dpr, inTextWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
+    ctx.fill();
+    ctx.fillStyle = includeInput.value ? 'rgba(52, 211, 153, 0.95)' : 'rgba(161, 161, 170, 0.6)';
+    ctx.fillText(inText, 11 * dpr, halfHeight + 4 * dpr + fontSize);
   } else {
     // Single mono channel
     const channelData = audioBuffer.getChannelData(0);
     const amp = height / 2;
-    const samplesPerBar = Math.floor(channelData.length / numBars);
+    const maxTrackHeight = amp * 0.92;
+
+    const monoPeaks = new Float32Array(numBars);
+    let maxPeak = 0.001;
 
     for (let i = 0; i < numBars; i++) {
-      const start = i * samplesPerBar;
+      const start = Math.floor((i / numBars) * channelData.length);
+      const end = Math.min(channelData.length, Math.floor(((i + 1) / numBars) * channelData.length));
       let peak = 0;
-      for (let j = 0; j < samplesPerBar; j++) {
-        const val = Math.abs(channelData[start + j]);
+      for (let j = start; j < end; j++) {
+        const val = Math.abs(channelData[j]);
         if (val > peak) peak = val;
       }
+      monoPeaks[i] = peak;
+      if (peak > maxPeak) maxPeak = peak;
+    }
 
-      const x = i * totalBarWidth;
-      const barHeight = Math.max(3, peak * amp * 0.95);
+    const normFactor = Math.max(0.06, maxPeak);
+
+    for (let i = 0; i < numBars; i++) {
+      const normVal = Math.min(1, monoPeaks[i] / normFactor);
+      const curved = Math.pow(normVal, 0.65);
+      const x = i * barStep;
+      const barHeight = Math.max(minBarH, curved * maxTrackHeight);
       const y = amp - barHeight / 2;
 
       const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
@@ -759,7 +812,7 @@ function drawWaveform() {
       ctx.fillStyle = gradient;
 
       ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barHeight, 2);
+      ctx.roundRect(x, y, barWidth, barHeight, cornerRadius);
       ctx.fill();
     }
   }
