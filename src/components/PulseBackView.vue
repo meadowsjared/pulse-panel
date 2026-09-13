@@ -187,54 +187,18 @@
 
           </div>
 
-          <div class="waveform-wrapper"
-               ref="waveformWrapperRef"
-               @mousedown="onWaveformMouseDown">
-            <canvas ref="canvasRef"
-                    class="waveform-canvas"></canvas>
-
-            <!-- Dimmed Region Overlays -->
-            <div class="trim-overlay start-overlay"
-                 :style="{ width: `${startPercent}%` }"></div>
-            <div class="trim-overlay end-overlay"
-                 :style="{ left: `${endPercent}%`, width: `${100 - endPercent}%` }"></div>
-
-            <!-- Start Trim Handle -->
-            <div :class="['trim-handle', 'start-handle', { 'active-handle': activeDragHandle === 'start' }]"
-                 :style="{ left: `${startPercent}%` }"
-                 @mousedown.stop="onStartHandleMouseDown"
-                 title="Drag Start Trim">
-              <div class="handle-flag start-flag">In: {{ formatSeconds(trimStart) }}</div>
-              <div class="handle-line"></div>
-            </div>
-
-            <!-- End Trim Handle -->
-            <div :class="['trim-handle', 'end-handle', { 'active-handle': activeDragHandle === 'end' }]"
-                 :style="{ left: `${endPercent}%` }"
-                 @mousedown.stop="onEndHandleMouseDown"
-                 title="Drag End Trim">
-              <div class="handle-flag end-flag">Out: {{ formatSeconds(trimEnd) }}</div>
-              <div class="handle-line"></div>
-            </div>
-
-            <!-- Playhead Scrub Line -->
-            <div class="playhead-line"
-                 :style="{ left: `${playheadPercent}%` }">
-              <div class="playhead-cap"
-                   @mousedown.stop="onPlayheadMouseDown"
-                   title="Drag to Scrub Playhead"></div>
-            </div>
-          </div>
-
-          <!-- Time Ticks along bottom -->
-          <div class="time-ticks">
-            <span>0:00</span>
-            <span>{{ formatSeconds(audioDuration * 0.25) }}</span>
-            <span>{{ formatSeconds(audioDuration * 0.5) }}</span>
-            <span>{{ formatSeconds(audioDuration * 0.75) }}</span>
-            <span>{{ formatSeconds(audioDuration) }}</span>
-          </div>
-          <span class="text-xs text-zinc-400">Drag green handle for Start, red handle for End</span>
+          <waveform-graph :audio-buffer="audioBuffer"
+                          :duration="audioDuration"
+                          v-model:current-time="currentTime"
+                          v-model:trim-start="trimStart"
+                          v-model:trim-end="trimEnd"
+                          :include-mic="includeMic"
+                          :include-input="includeInput"
+                          @scrub-start="onScrubStart"
+                          @scrub-move="onScrubMove"
+                          @scrub-end="onScrubEnd"
+                          @trim-change="onTrimChange"
+                          @trim-end-change="onTrimEndChange" />
         </div>
 
 
@@ -375,10 +339,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, shallowRef, watch, onUnmounted } from 'vue';
 import InlineSvg from 'vue-inline-svg';
 import { usePulseBackStore, PulseBackClip } from '../store/pulseBack';
 import { encodeWAV, encodeMP3, encodeOGG } from '../services/pulseBackBuffer';
+import WaveformGraph from './WaveformGraph.vue';
 import MicrophoneIcon from '../assets/images/microphone.svg';
 import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg';
 import SpeakerIcon from '../assets/images/speaker.svg';
@@ -408,20 +373,16 @@ function setExportFormat(format: 'mp3' | 'wav' | 'ogg') {
   } catch { }
 }
 
-
-
 // Trimming State
 const trimStart = ref(0);
 const trimEnd = ref(0);
 
 // Waveform & Audio State
-const canvasRef = ref<HTMLCanvasElement | null>(null);
-const waveformWrapperRef = ref<HTMLDivElement | null>(null);
 const micAudioElRef = ref<HTMLAudioElement | null>(null);
 const inputAudioElRef = ref<HTMLAudioElement | null>(null);
 const micPreviewUrl = ref<string>('');
 const inputPreviewUrl = ref<string>('');
-let audioBuffer: AudioBuffer | null = null;
+const audioBuffer = shallowRef<AudioBuffer | null>(null);
 let audioContext: AudioContext | null = null;
 
 // Dual-Track State
@@ -435,28 +396,13 @@ const currentTime = ref(0);
 let playbackEndSec = 0;
 let playbackAnimationId: number | null = null;
 
-const audioDuration = computed(() => audioBuffer?.duration || selectedClip.value?.duration || 1);
+const audioDuration = computed(() => audioBuffer.value?.duration || selectedClip.value?.duration || 1);
 
 const trimmedDuration = computed(() => Math.max(0, trimEnd.value - trimStart.value));
 
 const relativeCurrentTime = computed(() => {
   if (trimmedDuration.value <= 0) return 0;
   return Math.max(0, Math.min(trimmedDuration.value, currentTime.value - trimStart.value));
-});
-
-const startPercent = computed(() => {
-  if (audioDuration.value <= 0) return 0;
-  return Math.max(0, Math.min(100, (trimStart.value / audioDuration.value) * 100));
-});
-
-const endPercent = computed(() => {
-  if (audioDuration.value <= 0) return 100;
-  return Math.max(0, Math.min(100, (trimEnd.value / audioDuration.value) * 100));
-});
-
-const playheadPercent = computed(() => {
-  if (audioDuration.value <= 0) return 0;
-  return Math.max(0, Math.min(100, (currentTime.value / audioDuration.value) * 100));
 });
 
 function syncAudioCurrentTime(sec: number) {
@@ -499,11 +445,11 @@ function clearPreviewUrls() {
 }
 
 function updatePreviewUrls() {
-  if (!audioBuffer) return;
-  const numChannels = audioBuffer.numberOfChannels;
-  const sampleRate = audioBuffer.sampleRate;
+  if (!audioBuffer.value) return;
+  const numChannels = audioBuffer.value.numberOfChannels;
+  const sampleRate = audioBuffer.value.sampleRate;
 
-  const micData = audioBuffer.getChannelData(0);
+  const micData = audioBuffer.value.getChannelData(0);
   const micBlob = encodeWAV(micData, sampleRate);
   if (micPreviewUrl.value) {
     try {
@@ -513,7 +459,7 @@ function updatePreviewUrls() {
   micPreviewUrl.value = URL.createObjectURL(micBlob);
 
   if (numChannels >= 2) {
-    const inputData = audioBuffer.getChannelData(1);
+    const inputData = audioBuffer.value.getChannelData(1);
     const inputBlob = encodeWAV(inputData, sampleRate);
     if (inputPreviewUrl.value) {
       try {
@@ -579,12 +525,12 @@ async function loadAudioData(blob: Blob) {
     if (!audioContext) {
       audioContext = new AudioContextClass();
     }
-    audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
-    hasDualChannels.value = audioBuffer.numberOfChannels >= 2;
+    audioBuffer.value = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+    hasDualChannels.value = audioBuffer.value.numberOfChannels >= 2;
     if (selectedClip.value?.trimEnd !== undefined && selectedClip.value.trimEnd > 0) {
-      trimEnd.value = Math.min(audioBuffer.duration, selectedClip.value.trimEnd);
+      trimEnd.value = Math.min(audioBuffer.value.duration, selectedClip.value.trimEnd);
     } else {
-      trimEnd.value = audioBuffer.duration;
+      trimEnd.value = audioBuffer.value.duration;
     }
     if (selectedClip.value?.trimStart !== undefined) {
       trimStart.value = Math.max(0, Math.min(selectedClip.value.trimStart, trimEnd.value - 0.05));
@@ -596,11 +542,6 @@ async function loadAudioData(blob: Blob) {
 
     updatePreviewUrls();
     updateTrackVolumes();
-
-    await nextTick();
-    requestAnimationFrame(() => {
-      drawWaveform();
-    });
   } catch (err) {
     console.error('Failed to decode audio data for waveform:', err);
   }
@@ -624,198 +565,13 @@ function saveCurrentClipState() {
 function toggleMicTrack() {
   includeMic.value = !includeMic.value;
   updateTrackVolumes();
-  drawWaveform();
   saveCurrentClipState();
 }
 
 function toggleInputTrack() {
   includeInput.value = !includeInput.value;
   updateTrackVolumes();
-  drawWaveform();
   saveCurrentClipState();
-}
-
-function drawWaveform() {
-  const canvas = canvasRef.value;
-  if (!canvas || !audioBuffer) return;
-
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) {
-    requestAnimationFrame(drawWaveform);
-    return;
-  }
-
-  const dpr = window.devicePixelRatio || 1;
-  const width = (canvas.width = Math.round(rect.width * dpr));
-  const height = (canvas.height = Math.round(rect.height * dpr));
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  ctx.clearRect(0, 0, width, height);
-
-  const isDual = audioBuffer.numberOfChannels >= 2;
-  const targetBarWidth = 2 * dpr;
-  const targetBarGap = 1 * dpr;
-  const nominalStep = targetBarWidth + targetBarGap;
-  const numBars = Math.max(10, Math.floor(width / nominalStep));
-  const barStep = width / numBars;
-  const barWidth = Math.max(1, barStep - targetBarGap);
-  const minBarH = Math.max(2, 1.5 * dpr);
-  const cornerRadius = Math.max(1, 1 * dpr);
-
-  if (isDual) {
-    const micData = audioBuffer.getChannelData(0);
-    const inputData = audioBuffer.getChannelData(1);
-    const halfHeight = height / 2;
-    const maxTrackHeight = halfHeight * 0.88;
-
-    // Center dividing line
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1 * dpr;
-    ctx.beginPath();
-    ctx.moveTo(0, halfHeight);
-    ctx.lineTo(width, halfHeight);
-    ctx.stroke();
-
-    // Sample peaks for both tracks
-    const micPeaks = new Float32Array(numBars);
-    const inputPeaks = new Float32Array(numBars);
-    let maxMicPeak = 0.001;
-    let maxInputPeak = 0.001;
-
-    for (let i = 0; i < numBars; i++) {
-      const start = Math.floor((i / numBars) * micData.length);
-      const end = Math.min(micData.length, Math.floor(((i + 1) / numBars) * micData.length));
-
-      let pMic = 0;
-      let pInput = 0;
-      for (let j = start; j < end; j++) {
-        const vMic = Math.abs(micData[j]);
-        if (vMic > pMic) pMic = vMic;
-        const vIn = Math.abs(inputData[j]);
-        if (vIn > pInput) pInput = vIn;
-      }
-      micPeaks[i] = pMic;
-      inputPeaks[i] = pInput;
-      if (pMic > maxMicPeak) maxMicPeak = pMic;
-      if (pInput > maxInputPeak) maxInputPeak = pInput;
-    }
-
-    // Auto-normalize tracks independently with a gentle floor so noise isn't amplified
-    const micNormFactor = Math.max(0.06, maxMicPeak);
-    const inputNormFactor = Math.max(0.06, maxInputPeak);
-
-    // 1. Draw Mic Track (Top Half)
-    const micBaseline = halfHeight * 0.5;
-    for (let i = 0; i < numBars; i++) {
-      const normVal = Math.min(1, micPeaks[i] / micNormFactor);
-      // Perceptual power curve gives speech body without clipping
-      const curved = Math.pow(normVal, 0.65);
-      const x = i * barStep;
-      const barH = Math.max(minBarH, curved * maxTrackHeight);
-      const y = micBaseline - barH / 2;
-
-      if (includeMic.value) {
-        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
-        grad.addColorStop(0, '#38bdf8');
-        grad.addColorStop(1, '#0284c7');
-        ctx.fillStyle = grad;
-      } else {
-        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
-      }
-
-      ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barH, cornerRadius);
-      ctx.fill();
-    }
-
-    // 2. Draw Input Device Track (Bottom Half)
-    const inputBaseline = halfHeight + halfHeight * 0.5;
-    for (let i = 0; i < numBars; i++) {
-      const normVal = Math.min(1, inputPeaks[i] / inputNormFactor);
-      const curved = Math.pow(normVal, 0.65);
-      const x = i * barStep;
-      const barH = Math.max(minBarH, curved * maxTrackHeight);
-      const y = inputBaseline - barH / 2;
-
-      if (includeInput.value) {
-        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
-        grad.addColorStop(0, '#34d399');
-        grad.addColorStop(1, '#059669');
-        ctx.fillStyle = grad;
-      } else {
-        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
-      }
-
-      ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barH, cornerRadius);
-      ctx.fill();
-    }
-
-    // Watermark track badges inside canvas (with subtle backdrop pill so waveform doesn't clash)
-    const fontSize = Math.round(9.5 * dpr);
-    ctx.font = `600 ${fontSize}px sans-serif`;
-
-    // Mic badge
-    const micText = '🎤 MIC (VOICE)';
-    const micTextWidth = ctx.measureText(micText).width;
-    ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
-    ctx.beginPath();
-    ctx.roundRect(6 * dpr, 4 * dpr, micTextWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
-    ctx.fill();
-    ctx.fillStyle = includeMic.value ? 'rgba(56, 189, 248, 0.95)' : 'rgba(161, 161, 170, 0.6)';
-    ctx.fillText(micText, 11 * dpr, 4 * dpr + fontSize);
-
-    // Input badge
-    const inText = '🔊 INPUT DEVICE (AUDIO)';
-    const inTextWidth = ctx.measureText(inText).width;
-    ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
-    ctx.beginPath();
-    ctx.roundRect(6 * dpr, halfHeight + 4 * dpr, inTextWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
-    ctx.fill();
-    ctx.fillStyle = includeInput.value ? 'rgba(52, 211, 153, 0.95)' : 'rgba(161, 161, 170, 0.6)';
-    ctx.fillText(inText, 11 * dpr, halfHeight + 4 * dpr + fontSize);
-  } else {
-    // Single mono channel
-    const channelData = audioBuffer.getChannelData(0);
-    const amp = height / 2;
-    const maxTrackHeight = amp * 0.92;
-
-    const monoPeaks = new Float32Array(numBars);
-    let maxPeak = 0.001;
-
-    for (let i = 0; i < numBars; i++) {
-      const start = Math.floor((i / numBars) * channelData.length);
-      const end = Math.min(channelData.length, Math.floor(((i + 1) / numBars) * channelData.length));
-      let peak = 0;
-      for (let j = start; j < end; j++) {
-        const val = Math.abs(channelData[j]);
-        if (val > peak) peak = val;
-      }
-      monoPeaks[i] = peak;
-      if (peak > maxPeak) maxPeak = peak;
-    }
-
-    const normFactor = Math.max(0.06, maxPeak);
-
-    for (let i = 0; i < numBars; i++) {
-      const normVal = Math.min(1, monoPeaks[i] / normFactor);
-      const curved = Math.pow(normVal, 0.65);
-      const x = i * barStep;
-      const barHeight = Math.max(minBarH, curved * maxTrackHeight);
-      const y = amp - barHeight / 2;
-
-      const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
-      gradient.addColorStop(0, '#38bdf8');
-      gradient.addColorStop(1, '#2563eb');
-      ctx.fillStyle = gradient;
-
-      ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barHeight, cornerRadius);
-      ctx.fill();
-    }
-  }
 }
 
 function selectClip(clip: PulseBackClip) {
@@ -907,7 +663,7 @@ async function startPlayback(offsetSec: number, endSec: number) {
   const inputEl = inputAudioElRef.value;
   if (!micEl || !selectedClip.value) return;
 
-  if (!micPreviewUrl.value && audioBuffer) {
+  if (!micPreviewUrl.value && audioBuffer.value) {
     updatePreviewUrls();
   }
 
@@ -932,8 +688,7 @@ async function startPlayback(offsetSec: number, endSec: number) {
   }
 }
 
-// Dragging Trim Handles & Scrubbing
-const activeDragHandle = ref<'start' | 'end' | null>(null);
+// Scrubbing & Trim State for Audio Playback
 let isScrubbing = false;
 let wasPlayingBeforeScrub = false;
 let scrubSourceNode: AudioBufferSourceNode | null = null;
@@ -1014,7 +769,7 @@ function stopScrubSnippet() {
 }
 
 function playScrubSnippet(sec: number) {
-  if (!audioBuffer) return;
+  if (!audioBuffer.value) return;
   const now = performance.now();
   // Throttle snippet triggering so rapid mouse events don't pile up
   if (now - lastScrubPlayTime < 45) return;
@@ -1031,15 +786,15 @@ function playScrubSnippet(sec: number) {
   stopScrubSnippet();
 
   const duration = 0.08; // 80ms snippet
-  const startSec = Math.max(0, Math.min(audioBuffer.duration - 0.02, sec));
-  const snippetLen = Math.min(duration, audioBuffer.duration - startSec);
+  const startSec = Math.max(0, Math.min(audioBuffer.value.duration - 0.02, sec));
+  const snippetLen = Math.min(duration, audioBuffer.value.duration - startSec);
   if (snippetLen <= 0) return;
 
   const masterVol = clipVolume.value / 100;
   const bothActive = includeMic.value && includeInput.value && hasDualChannels.value;
   const factor = bothActive ? 0.75 : 1.0;
 
-  const sampleRate = audioBuffer.sampleRate;
+  const sampleRate = audioBuffer.value.sampleRate;
   const sampleCount = Math.floor(snippetLen * sampleRate);
   if (sampleCount <= 0) return;
 
@@ -1047,15 +802,15 @@ function playScrubSnippet(sec: number) {
   const snippetBuffer = audioContext.createBuffer(1, sampleCount, sampleRate);
   const channelData = snippetBuffer.getChannelData(0);
 
-  const micData = includeMic.value ? audioBuffer.getChannelData(0) : null;
+  const micData = includeMic.value ? audioBuffer.value.getChannelData(0) : null;
   const inputData =
-    hasDualChannels.value && includeInput.value && audioBuffer.numberOfChannels >= 2
-      ? audioBuffer.getChannelData(1)
+    hasDualChannels.value && includeInput.value && audioBuffer.value.numberOfChannels >= 2
+      ? audioBuffer.value.getChannelData(1)
       : null;
 
   for (let i = 0; i < sampleCount; i++) {
     const idx = startSample + i;
-    if (idx >= audioBuffer.length) break;
+    if (idx >= audioBuffer.value.length) break;
     let s = 0;
     if (micData) s += micData[idx] * factor;
     if (inputData) s += inputData[idx] * factor;
@@ -1092,137 +847,58 @@ function playScrubSnippet(sec: number) {
   source.start(0);
 }
 
-function getSecondsFromMouseEvent(e: MouseEvent): number {
-  if (!waveformWrapperRef.value || !selectedClip.value) return 0;
-  const rect = waveformWrapperRef.value.getBoundingClientRect();
-  if (rect.width <= 0) return 0;
-  const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-  const percent = relX / rect.width;
-  return percent * audioDuration.value;
-}
-
-function onStartHandleMouseDown(e: MouseEvent) {
-  e.preventDefault();
-  activeDragHandle.value = 'start';
-  window.addEventListener('mousemove', onHandleMouseMove);
-  window.addEventListener('mouseup', onHandleMouseUp);
-}
-
-function onEndHandleMouseDown(e: MouseEvent) {
-  e.preventDefault();
-  activeDragHandle.value = 'end';
-  window.addEventListener('mousemove', onHandleMouseMove);
-  window.addEventListener('mouseup', onHandleMouseUp);
-}
-
-function onPlayheadMouseDown(e: MouseEvent) {
-  e.preventDefault();
-  onWaveformMouseDown(e);
-}
-
-function onWaveformMouseDown(e: MouseEvent) {
-  e.preventDefault();
+function onScrubStart(_sec: number) {
   isScrubbing = true;
   wasPlayingBeforeScrub = isPlaying.value;
   stopPreview();
-
-  const clickSec = getSecondsFromMouseEvent(e);
-  currentTime.value = Math.max(0, Math.min(audioDuration.value, clickSec));
-  playScrubSnippet(currentTime.value);
-
-  window.addEventListener('mousemove', onScrubMouseMove);
-  window.addEventListener('mouseup', onScrubMouseUp);
 }
 
-function onScrubMouseMove(e: MouseEvent) {
-  if (!isScrubbing) return;
-  // Ignore synthetic/invalid (0, 0) coordinates from Chromium native drag
-  if (e.clientX === 0 && e.clientY === 0) return;
-  // If user released mouse button outside window or lost focus
-  if (e.buttons === 0) {
-    onScrubMouseUp();
-    return;
-  }
-  const sec = getSecondsFromMouseEvent(e);
-  currentTime.value = Math.max(0, Math.min(audioDuration.value, sec));
-  playScrubSnippet(currentTime.value);
+function onScrubMove(sec: number) {
+  playScrubSnippet(sec);
 }
 
-function onScrubMouseUp() {
-  if (isScrubbing) {
-    isScrubbing = false;
-    stopScrubSnippet();
-    syncAudioCurrentTime(currentTime.value);
-    const resume = wasPlayingBeforeScrub;
-    wasPlayingBeforeScrub = false;
-    window.removeEventListener('mousemove', onScrubMouseMove);
-    window.removeEventListener('mouseup', onScrubMouseUp);
-    saveCurrentClipState();
-    if (resume) {
-      const startFrom =
-        currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
-          ? trimStart.value
-          : currentTime.value;
-      startPlayback(startFrom, trimEnd.value);
-    }
+function onScrubEnd(sec: number) {
+  isScrubbing = false;
+  stopScrubSnippet();
+  syncAudioCurrentTime(sec);
+  const resume = wasPlayingBeforeScrub;
+  wasPlayingBeforeScrub = false;
+  saveCurrentClipState();
+  if (resume) {
+    const startFrom =
+      currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
+        ? trimStart.value
+        : currentTime.value;
+    startPlayback(startFrom, trimEnd.value);
   }
 }
 
-function onHandleMouseMove(e: MouseEvent) {
-  if (!activeDragHandle.value) return;
-  if (e.clientX === 0 && e.clientY === 0) return;
-  if (e.buttons === 0) {
-    onHandleMouseUp();
-    return;
-  }
-  const maxDuration = audioDuration.value;
-  if (maxDuration <= 0) return;
-  const sec = getSecondsFromMouseEvent(e);
-  const minGap = Math.min(0.05, maxDuration * 0.02);
-
-  if (activeDragHandle.value === 'start') {
-    trimStart.value = Math.max(0, Math.min(sec, trimEnd.value - minGap));
-    if (currentTime.value < trimStart.value) {
-      currentTime.value = trimStart.value;
-      syncAudioCurrentTime(currentTime.value);
-    }
-  } else if (activeDragHandle.value === 'end') {
-    trimEnd.value = Math.min(maxDuration, Math.max(sec, trimStart.value + minGap));
-    playbackEndSec = trimEnd.value;
-    if (currentTime.value >= trimEnd.value) {
-      if (isPlaying.value) {
-        stopPreview();
-        currentTime.value = trimStart.value;
-        syncAudioCurrentTime(trimStart.value);
-      } else {
-        currentTime.value = trimEnd.value;
-        syncAudioCurrentTime(currentTime.value);
-      }
-    }
+function onTrimChange(payload: { start: number; end: number }) {
+  if (currentTime.value < payload.start) {
+    currentTime.value = payload.start;
+  } else if (currentTime.value > payload.end) {
+    currentTime.value = payload.end;
   }
 }
 
-function onHandleMouseUp() {
-  activeDragHandle.value = null;
-  window.removeEventListener('mousemove', onHandleMouseMove);
-  window.removeEventListener('mouseup', onHandleMouseUp);
+function onTrimEndChange() {
   saveCurrentClipState();
 }
 
 function getTrimmedAudioBlob(
   format: 'mp3' | 'wav' | 'ogg' = 'mp3'
 ): { blob: Blob; duration: number; extension: string; } | null {
-  if (!audioBuffer) return null;
+  if (!audioBuffer.value) return null;
 
-  const sampleRate = audioBuffer.sampleRate;
+  const sampleRate = audioBuffer.value.sampleRate;
   const startSample = Math.max(0, Math.floor(trimStart.value * sampleRate));
-  const endSample = Math.min(audioBuffer.length, Math.floor(trimEnd.value * sampleRate));
+  const endSample = Math.min(audioBuffer.value.length, Math.floor(trimEnd.value * sampleRate));
   const length = Math.max(0, endSample - startSample);
 
   const slicedSamples = new Float32Array(length);
-  const micData = audioBuffer.getChannelData(0).subarray(startSample, endSample);
-  const hasSecondChannel = audioBuffer.numberOfChannels >= 2;
-  const inputData = hasSecondChannel ? audioBuffer.getChannelData(1).subarray(startSample, endSample) : null;
+  const micData = audioBuffer.value.getChannelData(0).subarray(startSample, endSample);
+  const hasSecondChannel = audioBuffer.value.numberOfChannels >= 2;
+  const inputData = hasSecondChannel ? audioBuffer.value.getChannelData(1).subarray(startSample, endSample) : null;
 
   if (includeMic.value && (!hasSecondChannel || !includeInput.value || !inputData)) {
     slicedSamples.set(micData);
@@ -1255,7 +931,7 @@ function getTrimmedAudioBlob(
 }
 
 async function publishToSoundboard() {
-  if (!selectedClip.value || !audioBuffer || isPublishing.value || isSavingFile.value) return;
+  if (!selectedClip.value || !audioBuffer.value || isPublishing.value || isSavingFile.value) return;
 
   isPublishing.value = true;
   try {
@@ -1281,7 +957,7 @@ async function publishToSoundboard() {
 }
 
 async function saveToFile() {
-  if (!selectedClip.value || !audioBuffer || isSavingFile.value || isPublishing.value) return;
+  if (!selectedClip.value || !audioBuffer.value || isSavingFile.value || isPublishing.value) return;
 
   isSavingFile.value = true;
   try {
@@ -1338,39 +1014,11 @@ function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-let waveformResizeObserver: ResizeObserver | null = null;
-
-onMounted(() => {
-  window.addEventListener('resize', drawWaveform);
-  if (waveformWrapperRef.value) {
-    waveformResizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          drawWaveform();
-        }
-      }
-    });
-    waveformResizeObserver.observe(waveformWrapperRef.value);
-  }
-  nextTick(() => {
-    requestAnimationFrame(drawWaveform);
-  });
-});
-
 onUnmounted(() => {
   stopPreview();
   stopScrubSnippet();
   saveCurrentClipState();
   clearPreviewUrls();
-  if (waveformResizeObserver) {
-    waveformResizeObserver.disconnect();
-    waveformResizeObserver = null;
-  }
-  window.removeEventListener('resize', drawWaveform);
-  window.removeEventListener('mousemove', onHandleMouseMove);
-  window.removeEventListener('mouseup', onHandleMouseUp);
-  window.removeEventListener('mousemove', onScrubMouseMove);
-  window.removeEventListener('mouseup', onScrubMouseUp);
 });
 </script>
 
@@ -1643,133 +1291,7 @@ onUnmounted(() => {
   gap: 0.25rem;
 }
 
-.waveform-wrapper {
-  position: relative;
-  height: 140px;
-  background: #0f0f11;
-  border: 1px solid #27272a;
-  border-radius: 8px;
-  overflow: hidden;
-  cursor: crosshair;
-  user-select: none;
-}
 
-.waveform-canvas {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-.trim-overlay {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.65);
-  pointer-events: none;
-}
-
-.trim-overlay.start-overlay {
-  left: 0;
-}
-
-.trim-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 16px;
-  margin-left: -8px;
-  cursor: ew-resize;
-  z-index: 10;
-  transition: z-index 0.1s;
-}
-
-.trim-handle:hover {
-  z-index: 15;
-}
-
-.trim-handle.active-handle {
-  z-index: 20;
-}
-
-.handle-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 7px;
-  width: 2px;
-}
-
-.start-handle .handle-line {
-  background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
-}
-
-.end-handle .handle-line {
-  background: #ef4444;
-  box-shadow: 0 0 8px #ef4444;
-}
-
-.handle-flag {
-  position: absolute;
-  top: 4px;
-  font-size: 0.68rem;
-  font-family: monospace;
-  padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  color: white;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
-.start-flag {
-  left: 8px;
-  background: #15803d;
-}
-
-.end-flag {
-  right: 8px;
-  background: #b91c1c;
-}
-
-.playhead-line {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #ffffff;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 12px rgba(56, 189, 248, 0.6);
-  pointer-events: none;
-  z-index: 25;
-}
-
-.playhead-cap {
-  position: absolute;
-  top: 0;
-  left: -7px;
-  width: 16px;
-  height: 16px;
-  background: #ffffff;
-  clip-path: polygon(0% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
-  cursor: ew-resize;
-  pointer-events: auto;
-  transition: transform 0.1s ease;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-.playhead-cap:hover {
-  transform: scale(1.15);
-}
-
-.time-ticks {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.72rem;
-  font-family: monospace;
-  color: #71717a;
-  padding: 0 0.25rem;
-}
 
 /* Trim Summary Bar */
 .trim-summary-bar {
