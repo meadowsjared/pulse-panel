@@ -34,7 +34,8 @@
       </template>
 
       <!-- Playhead Scrub Line -->
-      <div class="playhead-line"
+      <div v-if="showPlayhead"
+           class="playhead-line"
            :style="{ left: `${playheadPercent}%` }">
         <div class="playhead-cap"
              @mousedown.stop="onPlayheadMouseDown"
@@ -107,13 +108,17 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const waveformWrapperRef = ref<HTMLDivElement | null>(null);
 
 const activeDragHandle = ref<'start' | 'end' | null>(null);
-let isScrubbing = false;
+const isScrubbing = ref(false);
 let resizeObserver: ResizeObserver | null = null;
 
 const effectiveDuration = computed(() => {
   if (props.duration > 0) return props.duration;
   if (props.audioBuffer?.duration) return props.audioBuffer.duration;
   return 1;
+});
+
+const showPlayhead = computed(() => {
+  return isScrubbing.value || props.currentTime > 0;
 });
 
 const startPercent = computed(() => {
@@ -342,7 +347,7 @@ function onPlayheadMouseDown(e: MouseEvent) {
 
 function onWaveformMouseDown(e: MouseEvent) {
   e.preventDefault();
-  isScrubbing = true;
+  isScrubbing.value = true;
 
   const clickSec = getSecondsFromMouseEvent(e);
   const clamped = Math.max(0, Math.min(effectiveDuration.value, clickSec));
@@ -355,7 +360,7 @@ function onWaveformMouseDown(e: MouseEvent) {
 }
 
 function onScrubMouseMove(e: MouseEvent) {
-  if (!isScrubbing) return;
+  if (!isScrubbing.value) return;
   // Ignore synthetic/invalid (0, 0) coordinates from Chromium native drag
   if (e.clientX === 0 && e.clientY === 0) return;
   if (e.buttons === 0) {
@@ -369,8 +374,8 @@ function onScrubMouseMove(e: MouseEvent) {
 }
 
 function onScrubMouseUp() {
-  if (isScrubbing) {
-    isScrubbing = false;
+  if (isScrubbing.value) {
+    isScrubbing.value = false;
     window.removeEventListener('mousemove', onScrubMouseMove);
     window.removeEventListener('mouseup', onScrubMouseUp);
     emit('scrubEnd', props.currentTime);
