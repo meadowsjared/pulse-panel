@@ -32,3 +32,4 @@ sqlite3_rsync.exe
 sqlite3_analyzer.exe
 sqldiff.exe
 pulse-panel.db
+stats.html

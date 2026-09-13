@@ -10,6 +10,7 @@ import {
 import { openDB, IDBPDatabase } from 'idb'
 import { File } from '../@types/file'
 import { useSoundStore } from './sound'
+import { usePulseBackStore } from './pulseBack'
 import { Settings, SettingValue, Versions } from '../@types/electron-window'
 import { toRaw } from 'vue'
 import { searchSounds } from '../utils/soundSearch'
@@ -443,12 +444,12 @@ export const useSettingsStore = defineStore('settings', {
           await audioMixer.setCableOutput(this.virtualCableDeviceId)
         }
       }
-      import('./pulseBack').then(({ usePulseBackStore }) => {
+      try {
         const pulseBackStore = usePulseBackStore()
         if (pulseBackStore.isBufferRunning) {
           pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
         }
-      }).catch(() => {})
+      } catch {}
     },
     /**
      * Save an array setting to the store
@@ -484,19 +485,19 @@ export const useSettingsStore = defineStore('settings', {
           (this as any)[key] = value
           if (key === 'selectedMicrophoneId') {
             audioMixer.setMicrophone(this.selectedMicrophoneId)
-            import('./pulseBack').then(({ usePulseBackStore }) => {
+            try {
               const pulseBackStore = usePulseBackStore()
               if (pulseBackStore.isBufferRunning) {
                 pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
               }
-            }).catch(() => {})
+            } catch {}
           } else if (key === 'pulse_back_input_device') {
-            import('./pulseBack').then(({ usePulseBackStore }) => {
+            try {
               const pulseBackStore = usePulseBackStore()
               if (pulseBackStore.isBufferRunning) {
                 pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
               }
-            }).catch(() => {})
+            } catch {}
           }
           return true
         }
@@ -1043,10 +1044,8 @@ export const useSettingsStore = defineStore('settings', {
         }
         // check if the pulse_back_hotkey was pressed
         if (this.pulse_back_hotkey && arraysAreEqual(this.pulse_back_hotkey, keys)) {
-          import('./pulseBack').then(({ usePulseBackStore }) => {
-            const pulseBackStore = usePulseBackStore()
-            pulseBackStore.triggerQuickClip(this.pulse_back_default_duration)
-          })
+          const pulseBackStore = usePulseBackStore()
+          pulseBackStore.triggerQuickClip(this.pulse_back_default_duration)
         }
         if (keys.length === 1 && (keys[0].startsWith('Digit') || keys[0].startsWith('Numpad'))) {
           const soundNumber = parseInt(keys[0].replace('Digit', '').replace('Numpad', ''), 10)

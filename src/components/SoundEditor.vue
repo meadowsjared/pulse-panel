@@ -207,7 +207,7 @@ import PlayIcon from '../assets/images/play.svg';
 import { useSoundStore } from '../store/sound';
 import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils';
 import { TagInputRef } from './BaseComponents/TagInputTypes';
-import { throttle } from 'lodash';
+import { useThrottleFn } from '@vueuse/shared';
 import { SoundSegment } from '../@types/sound.d';
 
 const props = defineProps<{
@@ -595,7 +595,7 @@ const duration = computed(() => {
   return Math.ceil((props.modelValue.duration ?? 100) * multiplier) / multiplier;
 });
 
-const saveVolumeDebounced = throttle((value: number) => {
+const saveVolumeDebounced = useThrottleFn((value: number) => {
   const newValue = Math.round(value) / 100;
   if (props.modelValue.volume === newValue) return;
   // we don't need to handle this here, but if we don't, it will trigger once

@@ -359,7 +359,7 @@ import SpeakerIcon from '../assets/images/speaker.svg';
 import MicrophoneIcon from '../assets/images/microphone.svg';
 import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg';
 import Download from '../assets/images/download.svg';
-import { throttle } from 'lodash';
+import { useThrottleFn } from '@vueuse/shared';
 import PlusIcon from '../assets/images/plus.svg';
 import { LabelActive, OutputDeviceSetting } from '../@types/sound';
 import chordAlert from '../assets/wav/new-notification-7-210334.mp3';
@@ -379,7 +379,7 @@ const newTag = ref<string | null>(null);
 
 const isPlayingCableTest = ref(false);
 
-const saveCableVolumeDebounced = throttle((value: number) => {
+const saveCableVolumeDebounced = useThrottleFn((value: number) => {
   const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100;
   settingsStore.saveCableOutputVolume(newValue);
 }, 100);
@@ -433,7 +433,7 @@ let rafId: number | null = null;
 const pulseBackLevel = ref(0);
 const isTestingPulseBack = ref(false);
 
-const savePulseBackVolumeDebounced = throttle((value: number) => {
+const savePulseBackVolumeDebounced = useThrottleFn((value: number) => {
   const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100;
   settingsStore.savePulseBackVolume(newValue);
 }, 100);
@@ -546,7 +546,7 @@ onUnmounted(() => {
   }
 });
 
-const saveMicVolumeDebounced = throttle((value: number) => {
+const saveMicVolumeDebounced = useThrottleFn((value: number) => {
   const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100;
   settingsStore.saveMicrophoneVolume(newValue);
   pulseBackBuffer.setMicVolume(newValue);
@@ -640,7 +640,7 @@ function getDeviceVolumePercent(index: number): number {
   return Math.round(settingsStore.getDeviceVolume(index) * 100);
 }
 
-const saveDeviceVolumesDebounced = throttle(() => {
+const saveDeviceVolumesDebounced = useThrottleFn(() => {
   settingsStore.saveOutputDevices();
 }, 100);
 
@@ -687,7 +687,7 @@ const allTagsText = computed(() => {
   return `${count.toLocaleString()} ${count === 1 ? 'tag is' : 'tags are'} available`;
 });
 
-const saveVolumeDebounced = throttle((value: number) => {
+const saveVolumeDebounced = useThrottleFn((value: number) => {
   const newValue = Math.round(value) / 100;
   if (settingsStore.defaultVolume === newValue) return;
   settingsStore.saveDefaultVolume(newValue);

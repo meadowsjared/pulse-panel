@@ -1,9 +1,5 @@
 import { createWebHistory, createRouter } from 'vue-router'
-import About from '../components/About.vue'
 import Main from '../components/Main.vue'
-import Settings from '../components/Settings.vue'
-import Soundboard from '../components/Soundboard.vue'
-import PulseBackView from '../components/PulseBackView.vue'
 
 const routes = [
   {
@@ -15,22 +11,22 @@ const routes = [
       {
         path: '/soundboard',
         name: 'Soundboard',
-        component: Soundboard,
+        component: () => import('../components/Soundboard.vue'),
       },
       {
         path: '/pulse-back',
         name: 'PulseBack',
-        component: PulseBackView,
+        component: () => import('../components/PulseBackView.vue'),
       },
       {
         path: '/settings',
         name: 'Settings',
-        component: Settings,
+        component: () => import('../components/Settings.vue'),
       },
       {
         path: '/about',
         name: 'About',
-        component: About,
+        component: () => import('../components/About.vue'),
       },
     ],
   },

@@ -238,11 +238,10 @@
             <div class="publish-field">
               <label>Button Color:</label>
               <div class="flex items-center gap-2">
-                <input type="color"
-                       v-model="clipColor"
-                       @input="onColorChange"
-                       @change="onColorChange"
-                       class="color-picker-input cursor-pointer" />
+                <color-picker v-model="clipColor"
+                              :label="''"
+                              align="left"
+                              @update:model-value="onColorChange" />
                 <span class="text-xs text-zinc-400 uppercase font-mono">{{ clipColor }}</span>
               </div>
             </div>
@@ -899,9 +898,9 @@ function onTrimEndChange() {
   saveCurrentClipState();
 }
 
-function getTrimmedAudioBlob(
+async function getTrimmedAudioBlob(
   format: 'mp3' | 'wav' | 'ogg' = 'mp3'
-): { blob: Blob; duration: number; extension: string; } | null {
+): Promise<{ blob: Blob; duration: number; extension: string; } | null> {
   if (!audioBuffer.value) return null;
 
   const sampleRate = audioBuffer.value.sampleRate;
@@ -931,10 +930,10 @@ function getTrimmedAudioBlob(
   let extension: string;
 
   if (format === 'mp3') {
-    blob = encodeMP3(slicedSamples, sampleRate, 192);
+    blob = await encodeMP3(slicedSamples, sampleRate, 192);
     extension = 'mp3';
   } else if (format === 'ogg') {
-    blob = encodeOGG(slicedSamples, sampleRate, 0.6);
+    blob = await encodeOGG(slicedSamples, sampleRate, 3);
     extension = 'ogg';
   } else {
     blob = encodeWAV(slicedSamples, sampleRate);
@@ -949,7 +948,7 @@ async function publishToSoundboard() {
 
   isPublishing.value = true;
   try {
-    const trimmed = getTrimmedAudioBlob('wav');
+    const trimmed = await getTrimmedAudioBlob('wav');
     if (!trimmed) return;
 
     const tags = clipTagsString.value
@@ -976,7 +975,7 @@ async function saveToFile() {
   isSavingFile.value = true;
   try {
     const format = exportFormat.value;
-    const trimmed = getTrimmedAudioBlob(format);
+    const trimmed = await getTrimmedAudioBlob(format);
     if (!trimmed) return;
 
     const rawTitle = clipTitle.value.trim() || selectedClip.value.title || 'pulse_back_clip';
