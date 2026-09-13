@@ -3,28 +3,33 @@
     <div class="bar">
       <h1 class="mx-auto">Settings</h1>
     </div>
-    <div class="virtual-cable-status-card" :class="{ active: !!settingsStore.virtualCableDeviceId }">
+    <div class="virtual-cable-status-card"
+         :class="{ active: !!settingsStore.virtualCableDeviceId }">
       <div class="virtual-cable-header">
-        <div class="virtual-status-indicator" :class="{ online: !!settingsStore.virtualCableDeviceId }"></div>
+        <div class="virtual-status-indicator"
+             :class="{ online: !!settingsStore.virtualCableDeviceId }"></div>
         <span class="virtual-status-title">
           {{ settingsStore.virtualCableDeviceId ? 'Virtual Microphone: Connected & Ready' : 'Virtual Microphone: Driver Needed' }}
         </span>
       </div>
-      <p class="virtual-status-desc" v-if="settingsStore.virtualCableDeviceId">
+      <p class="virtual-status-desc"
+         v-if="settingsStore.virtualCableDeviceId">
         Your voice and soundboard audio are combined automatically and routed into this device. In Discord, Zoom, or games, select <strong>CABLE Output (VB-Audio Virtual Cable)</strong> as your input device.
       </p>
-      <div v-else class="virtual-status-install">
+      <div v-else
+           class="virtual-status-install">
         <p class="virtual-status-desc">
           To broadcast both your microphone and soundboard clips into voice chats (Discord, Zoom, games) without echo, Pulse-Panel uses a virtual audio driver.
         </p>
-        <button
-          class="install-cable-btn"
-          :disabled="isInstallingCable"
-          @click="installVirtualCable">
-          <inline-svg :src="Download" class="w-4 h-4" />
+        <button class="install-cable-btn"
+                :disabled="isInstallingCable"
+                @click="installVirtualCable">
+          <inline-svg :src="Download"
+                      class="w-4 h-4" />
           {{ isInstallingCable ? 'Installing Driver...' : 'Install Virtual Audio Driver (One-Click)' }}
         </button>
-        <div v-if="cableInstallMessage" class="cable-install-msg">{{ cableInstallMessage }}</div>
+        <div v-if="cableInstallMessage"
+             class="cable-install-msg">{{ cableInstallMessage }}</div>
       </div>
     </div>
 
@@ -33,90 +38,96 @@
     <div class="mx-auto mb-2">
       <div class="mic-controls-container">
         <div class="mic-select-line">
-          <select-custom
-            :modelValue="settingsStore.selectedMicrophoneId"
-            @change="onMicSelected($event)"
-            defaultText="Select your microphone"
-            :options="
-              settingsStore.allInputDevices.map(option => ({ label: option.label, value: option.deviceId }))
-            " />
-          <button
-            :class="{
-              'mic-mute-btn': true,
-              muted: settingsStore.microphoneMuted,
-            }"
-            :title="settingsStore.microphoneMuted ? 'Unmute Microphone' : 'Mute Microphone'"
-            @click="toggleMicMute">
-            <inline-svg :src="settingsStore.microphoneMuted ? MicrophoneSlashIcon : MicrophoneIcon" class="w-5 h-5" />
+          <select-custom :modelValue="settingsStore.selectedMicrophoneId"
+                         @change="onMicSelected($event)"
+                         defaultText="Select your microphone"
+                         :options="settingsStore.allInputDevices.map(option => ({ label: option.label, value: option.deviceId }))
+                          " />
+          <button :class="{
+            'mic-mute-btn': true,
+            muted: settingsStore.microphoneMuted,
+          }"
+                  :title="settingsStore.microphoneMuted ? 'Unmute Microphone' : 'Mute Microphone'"
+                  @click="toggleMicMute">
+            <inline-svg :src="settingsStore.microphoneMuted ? MicrophoneSlashIcon : MicrophoneIcon"
+                        class="w-5 h-5" />
           </button>
-          <div class="device-volume-container" :title="`Microphone Volume: ${micVolumeDisplay}%`">
-            <input-text-number
-              class="device-volume-input"
-              :min="0"
-              :max="100"
-              :bigStep="5"
-              v-model="micVolumeDisplay"
-              :title="`Microphone Volume: ${micVolumeDisplay}%`"
-              aria-label="Microphone Volume" />
-            <input-range-number
-              class="device-volume-slider"
-              :bigStep="5"
-              v-model="micVolumeDisplay"
-              :title="`Microphone Volume: ${micVolumeDisplay}%`"
-              aria-label="Microphone Volume Slider" />
+          <div class="device-volume-container"
+               :title="`Microphone Volume: ${micVolumeDisplay}%`">
+            <input-text-number class="device-volume-input"
+                               :min="0"
+                               :max="100"
+                               :bigStep="5"
+                               v-model="micVolumeDisplay"
+                               :title="`Microphone Volume: ${micVolumeDisplay}%`"
+                               aria-label="Microphone Volume" />
+            <input-range-number class="device-volume-slider"
+                                :bigStep="5"
+                                v-model="micVolumeDisplay"
+                                :title="`Microphone Volume: ${micVolumeDisplay}%`"
+                                aria-label="Microphone Volume Slider" />
           </div>
         </div>
-        <div class="mic-level-container" title="Live Microphone Input Level">
-          <button
-            :class="{
-              'mic-test-btn': true,
-              active: isTestingMic,
-            }"
-            :title="isTestingMic ? 'Stop Mic Test' : 'Test Microphone (Echo to headphones)'"
-            @click="toggleMicTest">
+        <div class="mic-level-container"
+             title="Live Microphone Input Level">
+          <button :class="{
+            'mic-test-btn': true,
+            active: isTestingMic,
+          }"
+                  :title="isTestingMic ? 'Stop Mic Test' : 'Test Microphone (Echo to headphones)'"
+                  @click="toggleMicTest">
             <span>{{ isTestingMic ? 'Stop Testing' : 'Mic Test' }}</span>
           </button>
-          <div ref="trackRef" class="mic-level-track">
-            <svg class="mic-level-svg" :viewBox="`0 0 ${barCount * 10} 20`" preserveAspectRatio="none">
+          <div ref="trackRef"
+               class="mic-level-track">
+            <svg class="mic-level-svg"
+                 :viewBox="`0 0 ${barCount * 10} 20`"
+                 preserveAspectRatio="none">
               <defs>
-                <linearGradient id="mic-meter-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#2ecc71" />
-                  <stop offset="20%" stop-color="#2ecc71" />
-                  <stop offset="55%" stop-color="#f1c40f" />
-                  <stop offset="85%" stop-color="#e74c3c" />
-                  <stop offset="100%" stop-color="#e74c3c" />
+                <linearGradient id="mic-meter-grad"
+                                x1="0%"
+                                y1="0%"
+                                x2="100%"
+                                y2="0%">
+                  <stop offset="0%"
+                        stop-color="#2ecc71" />
+                  <stop offset="20%"
+                        stop-color="#2ecc71" />
+                  <stop offset="55%"
+                        stop-color="#f1c40f" />
+                  <stop offset="85%"
+                        stop-color="#e74c3c" />
+                  <stop offset="100%"
+                        stop-color="#e74c3c" />
                 </linearGradient>
                 <mask id="mic-meter-mask">
-                  <rect
-                    v-for="i in barCount"
-                    :key="i"
-                    :x="(i - 1) * 10 + 2.5"
-                    y="2"
-                    width="5"
-                    height="16"
-                    rx="2.5"
-                    ry="2.5"
-                    fill="white" />
+                  <rect v-for="i in barCount"
+                        :key="i"
+                        :x="(i - 1) * 10 + 2.5"
+                        y="2"
+                        width="5"
+                        height="16"
+                        rx="2.5"
+                        ry="2.5"
+                        fill="white" />
                 </mask>
               </defs>
               <!-- Background ghost scale: faint unlit bars -->
-              <rect
-                x="0"
-                y="0"
-                :width="barCount * 10"
-                height="20"
-                fill="url(#mic-meter-grad)"
-                opacity="0.22"
-                mask="url(#mic-meter-mask)" />
+              <rect x="0"
+                    y="0"
+                    :width="barCount * 10"
+                    height="20"
+                    fill="url(#mic-meter-grad)"
+                    opacity="0.22"
+                    mask="url(#mic-meter-mask)" />
               <!-- Active illuminated bars -->
-              <rect
-                x="0"
-                y="0"
-                :width="activeBarCount * 10"
-                height="20"
-                :fill="settingsStore.microphoneMuted ? '#7f8c8d' : 'url(#mic-meter-grad)'"
-                mask="url(#mic-meter-mask)"
-                class="mic-level-fill-rect" />
+              <rect x="0"
+                    y="0"
+                    :width="activeBarCount * 10"
+                    height="20"
+                    :fill="settingsStore.microphoneMuted ? '#7f8c8d' : 'url(#mic-meter-grad)'"
+                    mask="url(#mic-meter-mask)"
+                    class="mic-level-fill-rect" />
             </svg>
           </div>
         </div>
@@ -128,233 +139,233 @@
     <div class="mx-auto">
       <div class="audio-output-devices">
         <div class="select-line cable-output-line">
-          <button
-            class="delete-button opacity-0 cursor-default"
-            tabindex="-1"
-            aria-hidden="true">
-            <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
+          <button class="delete-button opacity-0 cursor-default"
+                  tabindex="-1"
+                  aria-hidden="true">
+            <inline-svg class="w-full h-full rotate-45"
+                        :src="PlusIcon" />
           </button>
           <div class="hardcoded-select-option">
             <span>CABLE Output</span>
           </div>
-          <button
-            :class="{
-              'play-sound-button': true,
-              light: true,
-              playingAudio: isPlayingCableTest,
-            }"
-            title="Test Audio Output"
-            @click="testCableOutput">
-            <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
+          <button :class="{
+            'play-sound-button': true,
+            light: true,
+            playingAudio: isPlayingCableTest,
+          }"
+                  title="Test Audio Output"
+                  @click="testCableOutput">
+            <inline-svg :src="SpeakerIcon"
+                        class="w-6 h-6" />
           </button>
-          <div
-            class="device-volume-container"
-            :title="`Device Volume: ${cableVolumeDisplay}%`">
-            <input-text-number
-              class="device-volume-input"
-              :min="0"
-              :max="100"
-              :bigStep="5"
-              v-model="cableVolumeDisplay"
-              :title="`Device Volume: ${cableVolumeDisplay}%`"
-              aria-label="Device Volume" />
-            <input-range-number
-              class="device-volume-slider"
-              :bigStep="5"
-              v-model="cableVolumeDisplay"
-              :title="`Device Volume: ${cableVolumeDisplay}%`"
-              aria-label="Device Volume Slider" />
+          <div class="device-volume-container"
+               :title="`Device Volume: ${cableVolumeDisplay}%`">
+            <input-text-number class="device-volume-input"
+                               :min="0"
+                               :max="100"
+                               :bigStep="5"
+                               v-model="cableVolumeDisplay"
+                               :title="`Device Volume: ${cableVolumeDisplay}%`"
+                               aria-label="Device Volume" />
+            <input-range-number class="device-volume-slider"
+                                :bigStep="5"
+                                v-model="cableVolumeDisplay"
+                                :title="`Device Volume: ${cableVolumeDisplay}%`"
+                                aria-label="Device Volume Slider" />
           </div>
         </div>
-        <div v-for="(outputDevice, i) in outputDevices" :key="i" class="select-line">
-          <button
-            :class="{
-              'delete-button': true,
-              light: i !== outputDevices.length - 1,
-              'opacity-0 cursor-default': i === outputDevices.length - 1,
-              'cursor-pointer': i !== outputDevices.length - 1,
-            }"
-            :tabindex="i === outputDevices.length - 1 ? -1 : 0"
-            @click="deleteOutputDevice(i)"
-            title="Remove Output Device">
-            <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
+        <div v-for="(outputDevice, i) in outputDevices"
+             :key="i"
+             class="select-line">
+          <button :class="{
+            'delete-button': true,
+            light: i !== outputDevices.length - 1,
+            'opacity-0 cursor-default': i === outputDevices.length - 1,
+            'cursor-pointer': i !== outputDevices.length - 1,
+          }"
+                  :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+                  @click="deleteOutputDevice(i)"
+                  title="Remove Output Device">
+            <inline-svg class="w-full h-full rotate-45"
+                        :src="PlusIcon" />
           </button>
-          <select-custom
-            :modelValue="outputDevice ? outputDevice.deviceId : null"
-            @change="optionSelected($event, i)"
-            defaultText="Select an output device"
-            :options="
-              settingsStore.allOutputDevices.map(option => ({ label: option.label, value: option.deviceId }))
-            " />
-          <button
-            :class="{
-              'play-sound-button': true,
-              light: i !== outputDevices.length - 1,
-              playingAudio: soundStore.outputDeviceData[i]?.playingAudio,
-              'opacity-0 cursor-default': i === outputDevices.length - 1,
-            }"
-            :tabindex="i === outputDevices.length - 1 ? -1 : 0"
-            title="Test Audio Output"
-            @click="outputDevice && soundStore.playSound(null, [outputDevice.deviceId], outputDevices.map(d => d?.deviceId ?? null), true, false, undefined, [i])">
-            <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
+          <select-custom :modelValue="outputDevice ? outputDevice.deviceId : null"
+                         @change="optionSelected($event, i)"
+                         defaultText="Select an output device"
+                         :options="settingsStore.allOutputDevices.map(option => ({ label: option.label, value: option.deviceId }))
+                          " />
+          <button :class="{
+            'play-sound-button': true,
+            light: i !== outputDevices.length - 1,
+            playingAudio: soundStore.outputDeviceData[i]?.playingAudio,
+            'opacity-0 cursor-default': i === outputDevices.length - 1,
+          }"
+                  :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+                  title="Test Audio Output"
+                  @click="outputDevice && soundStore.playSound(null, [outputDevice.deviceId], outputDevices.map(d => d?.deviceId ?? null), true, false, undefined, [i])">
+            <inline-svg :src="SpeakerIcon"
+                        class="w-6 h-6" />
           </button>
-          <div
-            :class="{
-              'device-volume-container': true,
-              'opacity-0 pointer-events-none': i === outputDevices.length - 1,
-            }"
-            :title="`Device Volume: ${getDeviceVolumePercent(i)}%`">
-            <input-text-number
-              class="device-volume-input"
-              :min="0"
-              :max="100"
-              :bigStep="5"
-              :tabindex="i === outputDevices.length - 1 ? -1 : 0"
-              :modelValue="getDeviceVolumePercent(i)"
-              @update:modelValue="updateDeviceVolume(i, $event)"
-              :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
-              aria-label="Device Volume" />
-            <input-range-number
-              class="device-volume-slider"
-              :bigStep="5"
-              :tabindex="i === outputDevices.length - 1 ? -1 : 0"
-              :modelValue="getDeviceVolumePercent(i)"
-              @update:modelValue="updateDeviceVolume(i, $event)"
-              :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
-              aria-label="Device Volume Slider" />
+          <div :class="{
+            'device-volume-container': true,
+            'opacity-0 pointer-events-none': i === outputDevices.length - 1,
+          }"
+               :title="`Device Volume: ${getDeviceVolumePercent(i)}%`">
+            <input-text-number class="device-volume-input"
+                               :min="0"
+                               :max="100"
+                               :bigStep="5"
+                               :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+                               :modelValue="getDeviceVolumePercent(i)"
+                               @update:modelValue="updateDeviceVolume(i, $event)"
+                               :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
+                               aria-label="Device Volume" />
+            <input-range-number class="device-volume-slider"
+                                :bigStep="5"
+                                :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+                                :modelValue="getDeviceVolumePercent(i)"
+                                @update:modelValue="updateDeviceVolume(i, $event)"
+                                :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
+                                aria-label="Device Volume Slider" />
           </div>
         </div>
       </div>
     </div>
     <div class="default-volume">
       <label for="default-volume-input">Default Volume:</label>
-      <input-text-number id="default-volume-input" :min="0" :max="100" :bigStep="5" v-model="volumeDisplay" />
-      <input-range-number :bigStep="5" v-model="volumeDisplay" />
+      <input-text-number id="default-volume-input"
+                         :min="0"
+                         :max="100"
+                         :bigStep="5"
+                         v-model="volumeDisplay" />
+      <input-range-number :bigStep="5"
+                          v-model="volumeDisplay" />
     </div>
-    <label
-      >Allow overlapping sounds<input
-        type="checkbox"
-        v-model="allowOverlappingSound"
-        @input="updateAllowOverlappingSound"
-    /></label>
-    <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
-    <label>Close to tray<input type="checkbox" v-model="closeToTray" @input="updateCloseToTray" /></label>
-    <label>Start with Windows<input type="checkbox" v-model="startWithWindows" @input="updateStartWithWindows" /></label>
-    <hotkey-picker
-      class="hotkey-picker"
-      v-model="selectedHotkey"
-      :dark="false"
-      @update:modelValue="onPTTHotkeyChange"
-      title="this will be the button that pulse-panel with hold down any time sound is playing"
-      >Push-to-Talk Key:</hotkey-picker
-    >
-    <hotkey-picker
-      class="hotkey-picker"
-      v-model="stopHotkey"
-      :dark="false"
-      @update:modelValue="onStopHotkeyChange"
-      title="this will be the button you can press to stop all sounds immediately"
-      >Stop Sounds Key:</hotkey-picker
-    >
-    <hotkey-picker
-      class="hotkey-picker"
-      v-model="pulseBackHotkey"
-      :dark="false"
-      @update:modelValue="onPulseBackHotkeyChange"
-      title="Global hotkey to capture the recent audio replay buffer"
-      >Pulse Back Key:</hotkey-picker
-    >
+    <label>Allow overlapping sounds<input type="checkbox"
+             v-model="allowOverlappingSound"
+             @input="updateAllowOverlappingSound" /></label>
+    <label>Dark Mode<input type="checkbox"
+             v-model="darkMode"
+             @input="updateDarkMode" /></label>
+    <label>Close to tray<input type="checkbox"
+             v-model="closeToTray"
+             @input="updateCloseToTray" /></label>
+    <label>Start with Windows<input type="checkbox"
+             v-model="startWithWindows"
+             @input="updateStartWithWindows" /></label>
+    <hotkey-picker class="hotkey-picker"
+                   v-model="selectedHotkey"
+                   :dark="false"
+                   @update:modelValue="onPTTHotkeyChange"
+                   title="this will be the button that pulse-panel with hold down any time sound is playing">Push-to-Talk Key:</hotkey-picker>
+    <hotkey-picker class="hotkey-picker"
+                   v-model="stopHotkey"
+                   :dark="false"
+                   @update:modelValue="onStopHotkeyChange"
+                   title="this will be the button you can press to stop all sounds immediately">Stop Sounds Key:</hotkey-picker>
+    <hotkey-picker class="hotkey-picker"
+                   v-model="pulseBackHotkey"
+                   :dark="false"
+                   @update:modelValue="onPulseBackHotkeyChange"
+                   title="Global hotkey to capture the recent audio replay buffer">Pulse Back Key:</hotkey-picker>
 
     <h2 class="mt-4">Pulse Back Input:</h2>
     <p class="section-subtitle">Select the audio input for Pulse Back replay clips. Adjust volume and test input levels.</p>
     <div class="mx-auto mb-2">
       <div class="mic-controls-container">
         <div class="mic-select-line">
-          <select-custom
-            :modelValue="settingsStore.pulse_back_input_device || ''"
-            @change="onPulseBackDeviceSelected($event)"
-            defaultText="Use Selected Microphone"
-            :options="[
-              { label: 'Use Selected Microphone', value: '' },
-              ...settingsStore.allInputDevices.map(option => ({ label: option.label, value: option.deviceId })),
-            ]" />
-          <button
-            :class="{
-              'mic-mute-btn': true,
-              muted: settingsStore.pulse_back_muted,
-            }"
-            :title="settingsStore.pulse_back_muted ? 'Unmute Pulse Back Input' : 'Mute Pulse Back Input'"
-            @click="togglePulseBackMute">
-            <inline-svg :src="settingsStore.pulse_back_muted ? MicrophoneSlashIcon : MicrophoneIcon" class="w-5 h-5" />
+          <select-custom :modelValue="settingsStore.pulse_back_input_device || ''"
+                         @change="onPulseBackDeviceSelected($event)"
+                         defaultText="Use Selected Microphone"
+                         :options="[
+                          { label: 'Use Selected Microphone', value: '' },
+                          ...settingsStore.allInputDevices.map(option => ({ label: option.label, value: option.deviceId })),
+                        ]" />
+          <button :class="{
+            'mic-mute-btn': true,
+            muted: settingsStore.pulse_back_muted,
+          }"
+                  :title="settingsStore.pulse_back_muted ? 'Unmute Pulse Back Input' : 'Mute Pulse Back Input'"
+                  @click="togglePulseBackMute">
+            <inline-svg :src="settingsStore.pulse_back_muted ? MicrophoneSlashIcon : MicrophoneIcon"
+                        class="w-5 h-5" />
           </button>
-          <div class="device-volume-container" :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`">
-            <input-text-number
-              class="device-volume-input"
-              :min="0"
-              :max="100"
-              :bigStep="5"
-              v-model="pulseBackVolumeDisplay"
-              :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
-              aria-label="Pulse Back Volume" />
-            <input-range-number
-              class="device-volume-slider"
-              :bigStep="5"
-              v-model="pulseBackVolumeDisplay"
-              :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
-              aria-label="Pulse Back Volume Slider" />
+          <div class="device-volume-container"
+               :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`">
+            <input-text-number class="device-volume-input"
+                               :min="0"
+                               :max="100"
+                               :bigStep="5"
+                               v-model="pulseBackVolumeDisplay"
+                               :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
+                               aria-label="Pulse Back Volume" />
+            <input-range-number class="device-volume-slider"
+                                :bigStep="5"
+                                v-model="pulseBackVolumeDisplay"
+                                :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
+                                aria-label="Pulse Back Volume Slider" />
           </div>
         </div>
-        <div class="mic-level-container" title="Live Pulse Back Input Level">
-          <button
-            :class="{
-              'mic-test-btn': true,
-              active: isTestingPulseBack,
-            }"
-            :title="isTestingPulseBack ? 'Stop Testing' : 'Test Input (Echo to headphones)'"
-            @click="togglePulseBackTest">
+        <div class="mic-level-container"
+             title="Live Pulse Back Input Level">
+          <button :class="{
+            'mic-test-btn': true,
+            active: isTestingPulseBack,
+          }"
+                  :title="isTestingPulseBack ? 'Stop Testing' : 'Test Input (Echo to headphones)'"
+                  @click="togglePulseBackTest">
             <span>{{ isTestingPulseBack ? 'Stop Testing' : 'Input Test' }}</span>
           </button>
-          <div ref="pulseBackTrackRef" class="mic-level-track">
-            <svg class="mic-level-svg" :viewBox="`0 0 ${pulseBackBarCount * 10} 20`" preserveAspectRatio="none">
+          <div ref="pulseBackTrackRef"
+               class="mic-level-track">
+            <svg class="mic-level-svg"
+                 :viewBox="`0 0 ${pulseBackBarCount * 10} 20`"
+                 preserveAspectRatio="none">
               <defs>
-                <linearGradient id="pb-meter-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stop-color="#2ecc71" />
-                  <stop offset="20%" stop-color="#2ecc71" />
-                  <stop offset="55%" stop-color="#f1c40f" />
-                  <stop offset="85%" stop-color="#e74c3c" />
-                  <stop offset="100%" stop-color="#e74c3c" />
+                <linearGradient id="pb-meter-grad"
+                                x1="0%"
+                                y1="0%"
+                                x2="100%"
+                                y2="0%">
+                  <stop offset="0%"
+                        stop-color="#2ecc71" />
+                  <stop offset="20%"
+                        stop-color="#2ecc71" />
+                  <stop offset="55%"
+                        stop-color="#f1c40f" />
+                  <stop offset="85%"
+                        stop-color="#e74c3c" />
+                  <stop offset="100%"
+                        stop-color="#e74c3c" />
                 </linearGradient>
                 <mask id="pb-meter-mask">
-                  <rect
-                    v-for="i in pulseBackBarCount"
-                    :key="i"
-                    :x="(i - 1) * 10 + 2.5"
-                    y="2"
-                    width="5"
-                    height="16"
-                    rx="2.5"
-                    ry="2.5"
-                    fill="white" />
+                  <rect v-for="i in pulseBackBarCount"
+                        :key="i"
+                        :x="(i - 1) * 10 + 2.5"
+                        y="2"
+                        width="5"
+                        height="16"
+                        rx="2.5"
+                        ry="2.5"
+                        fill="white" />
                 </mask>
               </defs>
               <!-- Background ghost scale -->
-              <rect
-                x="0"
-                y="0"
-                :width="pulseBackBarCount * 10"
-                height="20"
-                fill="url(#pb-meter-grad)"
-                opacity="0.22"
-                mask="url(#pb-meter-mask)" />
+              <rect x="0"
+                    y="0"
+                    :width="pulseBackBarCount * 10"
+                    height="20"
+                    fill="url(#pb-meter-grad)"
+                    opacity="0.22"
+                    mask="url(#pb-meter-mask)" />
               <!-- Active illuminated bars -->
-              <rect
-                x="0"
-                y="0"
-                :width="pulseBackActiveBarCount * 10"
-                height="20"
-                :fill="settingsStore.pulse_back_muted ? '#7f8c8d' : 'url(#pb-meter-grad)'"
-                mask="url(#pb-meter-mask)"
-                class="mic-level-fill-rect" />
+              <rect x="0"
+                    y="0"
+                    :width="pulseBackActiveBarCount * 10"
+                    height="20"
+                    :fill="settingsStore.pulse_back_muted ? '#7f8c8d' : 'url(#pb-meter-grad)'"
+                    mask="url(#pb-meter-mask)"
+                    class="mic-level-fill-rect" />
             </svg>
           </div>
         </div>
@@ -366,29 +377,28 @@
         <div v-if="settingsStore.quickTags.length === 0">No quick tags added</div>
         <div>{{ totalSoundsText }} &bull; {{ allTagsText }}</div>
         <div class="flex justify-center flex-wrap gap-1 cursor-grab">
-          <div
-            v-for="(tag, index) in settingsStore.quickTags"
-            :class="['tag select-none', { dragging: tag.isDragPreview }]"
-            draggable="true"
-            @dragstart="dragStart(tag, index)"
-            @dragenter.prevent="dragOver(tag)"
-            @dragend="dragEnd">
+          <div v-for="(tag, index) in settingsStore.quickTags"
+               :class="['tag select-none', { dragging: tag.isDragPreview }]"
+               draggable="true"
+               @dragstart="dragStart(tag, index)"
+               @dragenter.prevent="dragOver(tag)"
+               @dragend="dragEnd">
             {{ tag.label
-            }}<button class="remove-button" @click="removeTag(index)">
-              <inline-svg :src="PlusIcon" class="rotate-45" />
+            }}<button class="remove-button"
+                    @click="removeTag(index)">
+              <inline-svg :src="PlusIcon"
+                          class="rotate-45" />
             </button>
           </div>
         </div>
       </div>
       <div class="flex justify-center mt-2">
-        <select-custom
-          v-model="newTag"
-          class="new-tag-select"
-          @change="tagSelected($event)"
-          defaultText="Select a tag from the list of used tags"
-          :options="
-            allTags.map((tag, index) => ({ label: `${tag.name} (${tag.count})`, value: tag.name ?? `tag-${index}` }))
-          " />
+        <select-custom v-model="newTag"
+                       class="new-tag-select"
+                       @change="tagSelected($event)"
+                       defaultText="Select a tag from the list of used tags"
+                       :options="allTags.map((tag, index) => ({ label: `${tag.name} (${tag.count})`, value: tag.name ?? `tag-${index}` }))
+                        " />
       </div>
     </div>
     <div class="software-update-section">
@@ -399,31 +409,34 @@
           <span class="version-badge">v{{ currentAppVersion }}</span>
         </div>
 
-        <div v-if="lastCheckedFormatted" class="last-checked-text">
+        <div v-if="lastCheckedFormatted"
+             class="last-checked-text">
           Last checked: {{ lastCheckedFormatted }}
         </div>
 
-        <div v-if="updateStore.statusText" :class="['update-status-msg', { error: updateStore.errorMessage, available: updateStore.updateAvailable }]">
+        <div v-if="updateStore.statusText"
+             :class="['update-status-msg', { error: updateStore.errorMessage, available: updateStore.updateAvailable }]">
           {{ updateStore.statusText }}
         </div>
 
-        <div v-if="updateStore.isDownloading" class="download-progress-container">
-          <div class="download-progress-bar" :style="{ width: `${updateStore.downloadProgress}%` }"></div>
+        <div v-if="updateStore.isDownloading"
+             class="download-progress-container">
+          <div class="download-progress-bar"
+               :style="{ width: `${updateStore.downloadProgress}%` }"></div>
         </div>
 
         <div class="update-buttons-row">
-          <button
-            class="check-update-btn"
-            :disabled="updateStore.isChecking || updateStore.isDownloading"
-            @click="updateStore.checkForUpdates(true)">
+          <button class="check-update-btn"
+                  :disabled="updateStore.isChecking || updateStore.isDownloading"
+                  @click="updateStore.checkForUpdates(true)">
             {{ updateStore.isChecking ? 'Checking...' : 'Check for Updates' }}
           </button>
-          <button
-            v-if="updateStore.updateAvailable"
-            class="install-update-btn"
-            :disabled="updateStore.isDownloading"
-            @click="updateStore.startUpdate">
-            <inline-svg :src="Download" class="w-5 h-5" />
+          <button v-if="updateStore.updateAvailable"
+                  class="install-update-btn"
+                  :disabled="updateStore.isDownloading"
+                  @click="updateStore.startUpdate">
+            <inline-svg :src="Download"
+                        class="w-5 h-5" />
             {{ updateStore.isDownloading ? updateStore.statusText || 'Downloading...' : `Update to ${updateStore.latestVersion}` }}
           </button>
         </div>
@@ -433,333 +446,333 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
-import InlineSvg from 'vue-inline-svg'
-import { useSettingsStore } from '../store/settings'
-import { useSoundStore } from '../store/sound'
-import { useUpdateStore } from '../store/update'
-import { usePulseBackStore } from '../store/pulseBack'
-import { audioMixer } from '../services/audioMixer'
-import { pulseBackBuffer } from '../services/pulseBackBuffer'
-import SpeakerIcon from '../assets/images/speaker.svg'
-import MicrophoneIcon from '../assets/images/microphone.svg'
-import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg'
-import Download from '../assets/images/download.svg'
-import { throttle } from 'lodash'
-import PlusIcon from '../assets/images/plus.svg'
-import { LabelActive, OutputDeviceSetting } from '../@types/sound'
-import chordAlert from '../assets/wav/new-notification-7-210334.mp3'
+import { computed, ref, watch, onMounted, onUnmounted, onActivated, onDeactivated } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
+import InlineSvg from 'vue-inline-svg';
+import { useSettingsStore } from '../store/settings';
+import { useSoundStore } from '../store/sound';
+import { useUpdateStore } from '../store/update';
+import { usePulseBackStore } from '../store/pulseBack';
+import { audioMixer } from '../services/audioMixer';
+import { pulseBackBuffer } from '../services/pulseBackBuffer';
+import SpeakerIcon from '../assets/images/speaker.svg';
+import MicrophoneIcon from '../assets/images/microphone.svg';
+import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg';
+import Download from '../assets/images/download.svg';
+import { throttle } from 'lodash';
+import PlusIcon from '../assets/images/plus.svg';
+import { LabelActive, OutputDeviceSetting } from '../@types/sound';
+import chordAlert from '../assets/wav/new-notification-7-210334.mp3';
 
-const settingsStore = useSettingsStore()
-const soundStore = useSoundStore()
-const updateStore = useUpdateStore()
-const outputDevices = ref<(OutputDeviceSetting | null)[]>([])
-const allowOverlappingSound = ref(false)
-const darkMode = ref(true)
-const closeToTray = ref(false)
-const startWithWindows = ref(false)
-const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined)
-const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined)
-const pulseBackHotkey = ref<string[] | undefined>(settingsStore.pulse_back_hotkey ?? ['F12'])
-const newTag = ref<string | null>(null)
+const settingsStore = useSettingsStore();
+const soundStore = useSoundStore();
+const updateStore = useUpdateStore();
+const outputDevices = ref<(OutputDeviceSetting | null)[]>([]);
+const allowOverlappingSound = ref(false);
+const darkMode = ref(true);
+const closeToTray = ref(false);
+const startWithWindows = ref(false);
+const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? undefined);
+const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined);
+const pulseBackHotkey = ref<string[] | undefined>(settingsStore.pulse_back_hotkey ?? ['F12']);
+const newTag = ref<string | null>(null);
 
-const isPlayingCableTest = ref(false)
+const isPlayingCableTest = ref(false);
 
 const saveCableVolumeDebounced = throttle((value: number) => {
-  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100
-  settingsStore.saveCableOutputVolume(newValue)
-}, 100)
+  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100;
+  settingsStore.saveCableOutputVolume(newValue);
+}, 100);
 
 const cableVolumeDisplay = computed({
   get: () => Math.round((settingsStore.cableOutputVolume ?? 1) * 100),
   set: (value: number) => {
-    const vol = Math.max(0, Math.min(100, Math.round(value))) / 100
-    settingsStore.cableOutputVolume = vol
-    audioMixer.setSoundboardVolume(settingsStore.muted ? 0 : vol)
-    saveCableVolumeDebounced(value)
+    const vol = Math.max(0, Math.min(100, Math.round(value))) / 100;
+    settingsStore.cableOutputVolume = vol;
+    audioMixer.setSoundboardVolume(settingsStore.muted ? 0 : vol);
+    saveCableVolumeDebounced(value);
   },
-})
+});
 
 async function testCableOutput() {
-  isPlayingCableTest.value = true
+  isPlayingCableTest.value = true;
   try {
-    const vol = settingsStore.muted ? 0 : Math.max(0, Math.min(1, settingsStore.cableOutputVolume ?? 1))
-    audioMixer.setSoundboardVolume(vol)
+    const vol = settingsStore.muted ? 0 : Math.max(0, Math.min(1, settingsStore.cableOutputVolume ?? 1));
+    audioMixer.setSoundboardVolume(vol);
     if (audioMixer.getCurrentCableId()) {
-      await audioMixer.playSoundToMixer(chordAlert, 1)
-      isPlayingCableTest.value = false
+      await audioMixer.playSoundToMixer(chordAlert, 1);
+      isPlayingCableTest.value = false;
     } else {
-      const cableDeviceId = settingsStore.virtualCableDeviceId
-      const audio = new Audio(chordAlert)
+      const cableDeviceId = settingsStore.virtualCableDeviceId;
+      const audio = new Audio(chordAlert);
       if (cableDeviceId && typeof (audio as any).setSinkId === 'function') {
-        await (audio as any).setSinkId(cableDeviceId).catch(console.error)
+        await (audio as any).setSinkId(cableDeviceId).catch(console.error);
       }
-      audio.volume = vol
+      audio.volume = vol;
       audio.onended = () => {
-        isPlayingCableTest.value = false
-      }
+        isPlayingCableTest.value = false;
+      };
       audio.onerror = () => {
-        isPlayingCableTest.value = false
-      }
+        isPlayingCableTest.value = false;
+      };
       await audio.play().catch(() => {
-        isPlayingCableTest.value = false
-      })
+        isPlayingCableTest.value = false;
+      });
     }
   } catch {
-    isPlayingCableTest.value = false
+    isPlayingCableTest.value = false;
   }
 }
 
-const isInstallingCable = ref(false)
-const cableInstallMessage = ref('')
-const micLevel = ref(0)
-const isTestingMic = ref(false)
-let rafId: number | null = null
+const isInstallingCable = ref(false);
+const cableInstallMessage = ref('');
+const micLevel = ref(0);
+const isTestingMic = ref(false);
+let rafId: number | null = null;
 
-const trackRef = ref<HTMLElement | null>(null)
-const trackWidth = ref(360)
-let resizeObserver: ResizeObserver | null = null
+const trackRef = ref<HTMLElement | null>(null);
+const trackWidth = ref(360);
+let resizeObserver: ResizeObserver | null = null;
 
-const barCount = computed(() => Math.max(1, Math.floor(trackWidth.value / 10)))
+const barCount = computed(() => Math.max(1, Math.floor(trackWidth.value / 10)));
 const activeBarCount = computed(() => {
-  if (micLevel.value <= 0) return 0
-  return Math.min(barCount.value, Math.ceil((micLevel.value / 100) * barCount.value))
-})
+  if (micLevel.value <= 0) return 0;
+  return Math.min(barCount.value, Math.ceil((micLevel.value / 100) * barCount.value));
+});
 
-const pulseBackTrackRef = ref<HTMLElement | null>(null)
-const pulseBackTrackWidth = ref(360)
-let pulseBackResizeObserver: ResizeObserver | null = null
-const pulseBackLevel = ref(0)
-const isTestingPulseBack = ref(false)
+const pulseBackTrackRef = ref<HTMLElement | null>(null);
+const pulseBackTrackWidth = ref(360);
+let pulseBackResizeObserver: ResizeObserver | null = null;
+const pulseBackLevel = ref(0);
+const isTestingPulseBack = ref(false);
 
-const pulseBackBarCount = computed(() => Math.max(1, Math.floor(pulseBackTrackWidth.value / 10)))
+const pulseBackBarCount = computed(() => Math.max(1, Math.floor(pulseBackTrackWidth.value / 10)));
 const pulseBackActiveBarCount = computed(() => {
-  if (pulseBackLevel.value <= 0) return 0
-  return Math.min(pulseBackBarCount.value, Math.ceil((pulseBackLevel.value / 100) * pulseBackBarCount.value))
-})
+  if (pulseBackLevel.value <= 0) return 0;
+  return Math.min(pulseBackBarCount.value, Math.ceil((pulseBackLevel.value / 100) * pulseBackBarCount.value));
+});
 
 const savePulseBackVolumeDebounced = throttle((value: number) => {
-  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100
-  settingsStore.savePulseBackVolume(newValue)
-}, 100)
+  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100;
+  settingsStore.savePulseBackVolume(newValue);
+}, 100);
 
 const pulseBackVolumeDisplay = computed({
   get: () => Math.round((settingsStore.pulse_back_volume ?? 1) * 100),
   set: (value: number) => {
-    const vol = Math.max(0, Math.min(100, Math.round(value))) / 100
-    settingsStore.pulse_back_volume = vol
-    const effectiveVol = settingsStore.pulse_back_muted ? 0 : vol
-    pulseBackBuffer.setInputVolume(effectiveVol)
-    savePulseBackVolumeDebounced(value)
+    const vol = Math.max(0, Math.min(100, Math.round(value))) / 100;
+    settingsStore.pulse_back_volume = vol;
+    const effectiveVol = settingsStore.pulse_back_muted ? 0 : vol;
+    pulseBackBuffer.setInputVolume(effectiveVol);
+    savePulseBackVolumeDebounced(value);
   },
-})
+});
 
 async function togglePulseBackMute() {
-  await settingsStore.togglePulseBackMute()
-  const effectiveVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
-  pulseBackBuffer.setInputVolume(effectiveVol)
+  await settingsStore.togglePulseBackMute();
+  const effectiveVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1);
+  pulseBackBuffer.setInputVolume(effectiveVol);
 }
 
 async function togglePulseBackTest() {
-  isTestingPulseBack.value = !isTestingPulseBack.value
-  const primaryOutput = settingsStore.outputDevices[0]?.deviceId ?? null
-  await pulseBackBuffer.setInputTest(isTestingPulseBack.value, primaryOutput)
+  isTestingPulseBack.value = !isTestingPulseBack.value;
+  const primaryOutput = settingsStore.outputDevices[0]?.deviceId ?? null;
+  await pulseBackBuffer.setInputTest(isTestingPulseBack.value, primaryOutput);
 }
 
 function stopTestingPulseBack() {
   if (isTestingPulseBack.value) {
-    pulseBackBuffer.setInputTest(false).catch(() => {})
-    isTestingPulseBack.value = false
+    pulseBackBuffer.setInputTest(false).catch(() => { });
+    isTestingPulseBack.value = false;
   }
 }
 
 async function toggleMicTest() {
   if (!settingsStore.selectedMicrophoneId) {
     if (settingsStore.allInputDevices.length > 0) {
-      await settingsStore.saveMicrophoneDevice(settingsStore.allInputDevices[0].deviceId)
+      await settingsStore.saveMicrophoneDevice(settingsStore.allInputDevices[0].deviceId);
     } else {
-      return
+      return;
     }
   }
-  isTestingMic.value = !isTestingMic.value
-  const primaryOutput = settingsStore.outputDevices[0]?.deviceId ?? null
-  await audioMixer.setMicTest(isTestingMic.value, primaryOutput)
+  isTestingMic.value = !isTestingMic.value;
+  const primaryOutput = settingsStore.outputDevices[0]?.deviceId ?? null;
+  await audioMixer.setMicTest(isTestingMic.value, primaryOutput);
 }
 
 function updateMicLevelLoop() {
-  micLevel.value = Math.min(100, Math.round(audioMixer.getMicLevel() * 100))
+  micLevel.value = Math.min(100, Math.round(audioMixer.getMicLevel() * 100));
   pulseBackLevel.value = settingsStore.pulse_back_muted
     ? 0
-    : Math.min(100, Math.round(pulseBackBuffer.getInputLevel() * 100))
-  rafId = requestAnimationFrame(updateMicLevelLoop)
+    : Math.min(100, Math.round(pulseBackBuffer.getInputLevel() * 100));
+  rafId = requestAnimationFrame(updateMicLevelLoop);
 }
 
 onMounted(() => {
-  audioMixer.resume().catch(() => {})
-  rafId = requestAnimationFrame(updateMicLevelLoop)
+  audioMixer.resume().catch(() => { });
+  rafId = requestAnimationFrame(updateMicLevelLoop);
 
   if (trackRef.value) {
-    trackWidth.value = trackRef.value.clientWidth || 360
+    trackWidth.value = trackRef.value.clientWidth || 360;
     resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         if (entry.contentRect.width > 0) {
-          trackWidth.value = Math.round(entry.contentRect.width)
+          trackWidth.value = Math.round(entry.contentRect.width);
         }
       }
-    })
-    resizeObserver.observe(trackRef.value)
+    });
+    resizeObserver.observe(trackRef.value);
   }
 
   if (pulseBackTrackRef.value) {
-    pulseBackTrackWidth.value = pulseBackTrackRef.value.clientWidth || 360
+    pulseBackTrackWidth.value = pulseBackTrackRef.value.clientWidth || 360;
     pulseBackResizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         if (entry.contentRect.width > 0) {
-          pulseBackTrackWidth.value = Math.round(entry.contentRect.width)
+          pulseBackTrackWidth.value = Math.round(entry.contentRect.width);
         }
       }
-    })
-    pulseBackResizeObserver.observe(pulseBackTrackRef.value)
+    });
+    pulseBackResizeObserver.observe(pulseBackTrackRef.value);
   }
 
   if (!pulseBackBuffer.active) {
-    const micDevice = settingsStore.selectedMicrophoneId
-    const inputDevice = settingsStore.pulse_back_input_device
-    const effectiveMicVol = settingsStore.microphoneVolume ?? 1
-    const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
-    pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
+    const micDevice = settingsStore.selectedMicrophoneId;
+    const inputDevice = settingsStore.pulse_back_input_device;
+    const effectiveMicVol = settingsStore.microphoneVolume ?? 1;
+    const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1);
+    pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => { });
   }
-})
+});
 
 function stopTestingMic() {
   if (isTestingMic.value) {
-    audioMixer.setMicTest(false)
-    isTestingMic.value = false
+    audioMixer.setMicTest(false);
+    isTestingMic.value = false;
   }
 }
 
 onActivated(() => {
-  audioMixer.resume().catch(() => {})
+  audioMixer.resume().catch(() => { });
   if (rafId === null) {
-    rafId = requestAnimationFrame(updateMicLevelLoop)
+    rafId = requestAnimationFrame(updateMicLevelLoop);
   }
-})
+});
 
 onDeactivated(() => {
   if (rafId !== null) {
-    cancelAnimationFrame(rafId)
-    rafId = null
+    cancelAnimationFrame(rafId);
+    rafId = null;
   }
-  stopTestingMic()
-  stopTestingPulseBack()
-})
+  stopTestingMic();
+  stopTestingPulseBack();
+});
 
 onBeforeRouteLeave(() => {
-  stopTestingMic()
-  stopTestingPulseBack()
-})
+  stopTestingMic();
+  stopTestingPulseBack();
+});
 
 onUnmounted(() => {
   if (rafId !== null) {
-    cancelAnimationFrame(rafId)
-    rafId = null
+    cancelAnimationFrame(rafId);
+    rafId = null;
   }
   if (resizeObserver) {
-    resizeObserver.disconnect()
-    resizeObserver = null
+    resizeObserver.disconnect();
+    resizeObserver = null;
   }
   if (pulseBackResizeObserver) {
-    pulseBackResizeObserver.disconnect()
-    pulseBackResizeObserver = null
+    pulseBackResizeObserver.disconnect();
+    pulseBackResizeObserver = null;
   }
-  stopTestingMic()
-  stopTestingPulseBack()
-  const pulseBackStore = usePulseBackStore()
+  stopTestingMic();
+  stopTestingPulseBack();
+  const pulseBackStore = usePulseBackStore();
   if (!pulseBackStore.isBufferEnabled) {
-    pulseBackBuffer.stop()
+    pulseBackBuffer.stop();
   }
-})
+});
 
 const saveMicVolumeDebounced = throttle((value: number) => {
-  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100
-  settingsStore.saveMicrophoneVolume(newValue)
-  pulseBackBuffer.setMicVolume(newValue)
-}, 100)
+  const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100;
+  settingsStore.saveMicrophoneVolume(newValue);
+  pulseBackBuffer.setMicVolume(newValue);
+}, 100);
 
 const micVolumeDisplay = computed({
   get: () => Math.round(settingsStore.microphoneVolume * 100),
   set: (value: number) => {
-    saveMicVolumeDebounced(value)
+    saveMicVolumeDebounced(value);
   },
-})
+});
 
 async function onMicSelected(payload: Event | string) {
-  let deviceId: string | null = null
+  let deviceId: string | null = null;
   if (typeof payload === 'string') {
-    deviceId = payload
+    deviceId = payload;
   } else if (payload && (payload as any).target) {
-    deviceId = (payload as any).target.value
+    deviceId = (payload as any).target.value;
   }
   if (deviceId) {
-    await settingsStore.saveMicrophoneDevice(deviceId)
+    await settingsStore.saveMicrophoneDevice(deviceId);
     if (pulseBackBuffer.active) {
-      const inputDevice = settingsStore.pulse_back_input_device
-      const effectiveMicVol = settingsStore.microphoneVolume ?? 1
-      const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
-      await pulseBackBuffer.start(deviceId, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
+      const inputDevice = settingsStore.pulse_back_input_device;
+      const effectiveMicVol = settingsStore.microphoneVolume ?? 1;
+      const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1);
+      await pulseBackBuffer.start(deviceId, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => { });
     }
   }
 }
 
 async function toggleMicMute() {
-  await settingsStore.toggleMicrophoneMute()
+  await settingsStore.toggleMicrophoneMute();
 }
 
 async function installVirtualCable() {
-  isInstallingCable.value = true
-  cableInstallMessage.value = 'Installing driver in background...'
+  isInstallingCable.value = true;
+  cableInstallMessage.value = 'Installing driver in background...';
   try {
-    const res = await window.electron?.downloadVBCable(settingsStore.appName)
+    const res = await window.electron?.downloadVBCable(settingsStore.appName);
     if (res?.vbCableInstallerRan) {
-      cableInstallMessage.value = 'Driver installed! Detecting device...'
+      cableInstallMessage.value = 'Driver installed! Detecting device...';
       setTimeout(async () => {
-        await settingsStore.fetchAllOutputDevices()
-        await settingsStore.fetchAllInputDevices()
-        await settingsStore.checkVirtualCableStatus()
-        isInstallingCable.value = false
-        cableInstallMessage.value = ''
-      }, 3000)
+        await settingsStore.fetchAllOutputDevices();
+        await settingsStore.fetchAllInputDevices();
+        await settingsStore.checkVirtualCableStatus();
+        isInstallingCable.value = false;
+        cableInstallMessage.value = '';
+      }, 3000);
     } else if (res?.vbCableAlreadyInstalled) {
-      cableInstallMessage.value = 'Driver already installed. Refreshing...'
-      await settingsStore.fetchAllOutputDevices()
-      await settingsStore.fetchAllInputDevices()
-      await settingsStore.checkVirtualCableStatus()
-      isInstallingCable.value = false
+      cableInstallMessage.value = 'Driver already installed. Refreshing...';
+      await settingsStore.fetchAllOutputDevices();
+      await settingsStore.fetchAllInputDevices();
+      await settingsStore.checkVirtualCableStatus();
+      isInstallingCable.value = false;
       setTimeout(() => {
-        cableInstallMessage.value = ''
-      }, 2500)
+        cableInstallMessage.value = '';
+      }, 2500);
     } else {
-      cableInstallMessage.value = 'Installation completed.'
-      isInstallingCable.value = false
+      cableInstallMessage.value = 'Installation completed.';
+      isInstallingCable.value = false;
     }
   } catch {
-    cableInstallMessage.value = 'Failed to run installer.'
-    isInstallingCable.value = false
+    cableInstallMessage.value = 'Failed to run installer.';
+    isInstallingCable.value = false;
   }
 }
 
-const currentAppVersion = computed(() => window.electron?.versions?.app || 'Unknown')
+const currentAppVersion = computed(() => window.electron?.versions?.app || 'Unknown');
 
 const lastCheckedFormatted = computed(() => {
-  if (!updateStore.lastCheckedTime) return null
-  const date = new Date(updateStore.lastCheckedTime)
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-})
+  if (!updateStore.lastCheckedTime) return null;
+  const date = new Date(updateStore.lastCheckedTime);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+});
 
-let draggedIndexStart: number | null = null
-let draggedQuickTag: LabelActive | null = null
-const cancelDragEnd = ref(false)
+let draggedIndexStart: number | null = null;
+let draggedQuickTag: LabelActive | null = null;
+const cancelDragEnd = ref(false);
 
 /**
  * Displays the volume as a percentage
@@ -767,133 +780,133 @@ const cancelDragEnd = ref(false)
 const volumeDisplay = computed({
   get: () => Math.round(settingsStore.defaultVolume * 100),
   set: (value: number) => {
-    saveVolumeDebounced(value)
+    saveVolumeDebounced(value);
   },
-})
+});
 
 function getDeviceVolumePercent(index: number): number {
-  return Math.round(settingsStore.getDeviceVolume(index) * 100)
+  return Math.round(settingsStore.getDeviceVolume(index) * 100);
 }
 
 const saveDeviceVolumesDebounced = throttle(() => {
-  settingsStore.saveOutputDevices()
-}, 100)
+  settingsStore.saveOutputDevices();
+}, 100);
 
 function updateDeviceVolume(index: number, percent: number) {
-  const vol = Math.max(0, Math.min(100, percent)) / 100
+  const vol = Math.max(0, Math.min(100, percent)) / 100;
   if (outputDevices.value[index]) {
-    outputDevices.value[index]!.volume = vol
+    outputDevices.value[index]!.volume = vol;
   }
-  settingsStore.setDeviceVolumeLive(index, vol)
-  saveDeviceVolumesDebounced()
+  settingsStore.setDeviceVolumeLive(index, vol);
+  saveDeviceVolumesDebounced();
 }
 
 /**
  * list of unique tags from all sounds with their usage counts
  */
 const allTags = computed(() => {
-  const tagCounts = new Map<string, number>()
+  const tagCounts = new Map<string, number>();
   settingsStore.sounds.forEach(sound => {
     if (sound.tags) {
       sound.tags.forEach(tag => {
-        tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1)
-      })
+        tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+      });
     }
-  })
+  });
   return Array.from(tagCounts.entries())
     .map(([tag, count]) => ({ name: tag, count }))
     .filter(tagObj => !settingsStore.quickTags.some(tag => tag.label === tagObj.name)) // Filter out existing quick tags
     .sort((a, b) => {
       // Sort by count descending first, then by name ascending for ties
       if (b.count !== a.count) {
-        return b.count - a.count
+        return b.count - a.count;
       }
-      return a.name.localeCompare(b.name)
-    })
-})
+      return a.name.localeCompare(b.name);
+    });
+});
 
 const totalSoundsText = computed(() => {
-  const count = settingsStore.totalSounds
-  return `${count.toLocaleString()} total ${count === 1 ? 'sound' : 'sounds'}`
-})
+  const count = settingsStore.totalSounds;
+  return `${count.toLocaleString()} total ${count === 1 ? 'sound' : 'sounds'}`;
+});
 
 const allTagsText = computed(() => {
-  const count = allTags.value.length
-  return `${count.toLocaleString()} ${count === 1 ? 'tag is' : 'tags are'} available`
-})
+  const count = allTags.value.length;
+  return `${count.toLocaleString()} ${count === 1 ? 'tag is' : 'tags are'} available`;
+});
 
 const saveVolumeDebounced = throttle((value: number) => {
-  const newValue = Math.round(value) / 100
-  if (settingsStore.defaultVolume === newValue) return
-  settingsStore.saveDefaultVolume(newValue)
-}, 100)
+  const newValue = Math.round(value) / 100;
+  if (settingsStore.defaultVolume === newValue) return;
+  settingsStore.saveDefaultVolume(newValue);
+}, 100);
 
 function tagSelected(payload: Event) {
   if (!(payload.target instanceof HTMLSelectElement)) {
-    console.debug('payload.target', payload.target)
-    throw new Error('Event target is not a select element.')
+    console.debug('payload.target', payload.target);
+    throw new Error('Event target is not a select element.');
   }
-  const tag = payload.target.value
+  const tag = payload.target.value;
   if (tag && !settingsStore.quickTags.some(t => t.label === tag)) {
-    settingsStore.addQuickTags([tag])
+    settingsStore.addQuickTags([tag]);
   }
-  newTag.value = null
+  newTag.value = null;
 }
 
 function removeTag(index: number) {
-  settingsStore.removeQuickTag(index)
+  settingsStore.removeQuickTag(index);
 }
 
 function onPTTHotkeyChange(event: string[] | undefined) {
-  selectedHotkey.value = event
+  selectedHotkey.value = event;
   // save the value to the IndexedDB store
-  settingsStore.saveSetting('ptt_hotkey', [...(event ?? [])])
+  settingsStore.saveSetting('ptt_hotkey', [...(event ?? [])]);
 }
 
 function onStopHotkeyChange(event: string[] | undefined) {
-  stopHotkey.value = event
+  stopHotkey.value = event;
   // save the value to the IndexedDB store
-  settingsStore.saveSetting('stop_hotkey', [...(event ?? [])])
+  settingsStore.saveSetting('stop_hotkey', [...(event ?? [])]);
 }
 
 function onPulseBackHotkeyChange(event: string[] | undefined) {
-  pulseBackHotkey.value = event
-  settingsStore.saveSetting('pulse_back_hotkey', [...(event ?? [])])
+  pulseBackHotkey.value = event;
+  settingsStore.saveSetting('pulse_back_hotkey', [...(event ?? [])]);
 }
 
 async function onPulseBackDeviceSelected(payload: any) {
-  let deviceId: string | null = null
+  let deviceId: string | null = null;
   if (typeof payload === 'string') {
-    deviceId = payload.length > 0 ? payload : null
+    deviceId = payload.length > 0 ? payload : null;
   } else if (payload && (payload as any).detail) {
-    const d = (payload as any).detail
-    deviceId = typeof d === 'string' && d.length > 0 ? d : null
+    const d = (payload as any).detail;
+    deviceId = typeof d === 'string' && d.length > 0 ? d : null;
   } else if (payload && payload.target) {
-    const val = payload.target.value
-    deviceId = typeof val === 'string' && val.length > 0 ? val : null
+    const val = payload.target.value;
+    deviceId = typeof val === 'string' && val.length > 0 ? val : null;
   }
-  await settingsStore.savePulseBackInputDevice(deviceId)
-  const micDevice = settingsStore.selectedMicrophoneId
-  const effectiveMicVol = settingsStore.microphoneVolume ?? 1
-  const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
-  await pulseBackBuffer.start(micDevice, deviceId, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
+  await settingsStore.savePulseBackInputDevice(deviceId);
+  const micDevice = settingsStore.selectedMicrophoneId;
+  const effectiveMicVol = settingsStore.microphoneVolume ?? 1;
+  const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1);
+  await pulseBackBuffer.start(micDevice, deviceId, 180, effectiveMicVol, effectiveInputVol).catch(() => { });
 }
 
 function dragStart(pTag: LabelActive, index: number) {
-  draggedIndexStart = index
-  pTag.isDragPreview = true
-  draggedQuickTag = pTag
+  draggedIndexStart = index;
+  pTag.isDragPreview = true;
+  draggedQuickTag = pTag;
 }
 
 function dragOver(pTag: LabelActive) {
-  if (draggedQuickTag === null) return
-  const index = settingsStore.quickTags.indexOf(pTag)
-  const draggedIndex = settingsStore.quickTags.indexOf(draggedQuickTag)
-  if (index === draggedIndex) return
-  const quickTagsTemp = [...settingsStore.quickTags]
-  quickTagsTemp.splice(draggedIndex, 1) // remove the previous tag preview
-  quickTagsTemp.splice(index, 0, draggedQuickTag) // add the tag preview to the new index
-  settingsStore.setQuickTags(quickTagsTemp)
+  if (draggedQuickTag === null) return;
+  const index = settingsStore.quickTags.indexOf(pTag);
+  const draggedIndex = settingsStore.quickTags.indexOf(draggedQuickTag);
+  if (index === draggedIndex) return;
+  const quickTagsTemp = [...settingsStore.quickTags];
+  quickTagsTemp.splice(draggedIndex, 1); // remove the previous tag preview
+  quickTagsTemp.splice(index, 0, draggedQuickTag); // add the tag preview to the new index
+  settingsStore.setQuickTags(quickTagsTemp);
 }
 
 /**
@@ -902,58 +915,58 @@ function dragOver(pTag: LabelActive) {
  */
 function dragEnd() {
   if (cancelDragEnd.value) {
-    cancelDragEnd.value = false
-    return
+    cancelDragEnd.value = false;
+    return;
   }
-  if (draggedIndexStart === null || draggedQuickTag === null) return
-  delete draggedQuickTag.isDragPreview
-  draggedIndexStart = null
-  draggedQuickTag = null
+  if (draggedIndexStart === null || draggedQuickTag === null) return;
+  delete draggedQuickTag.isDragPreview;
+  draggedIndexStart = null;
+  draggedQuickTag = null;
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
-  if (settingsStore.darkMode === value) return
-  darkMode.value = value
-  settingsStore.darkMode = value
-})
+  if (settingsStore.darkMode === value) return;
+  darkMode.value = value;
+  settingsStore.darkMode = value;
+});
 
 watch(
   () => outputDevices.value,
   () => {
     if (outputDevices.value[outputDevices.value.length - 1] !== null) {
-      outputDevices.value.push(null)
+      outputDevices.value.push(null);
     }
   },
   { immediate: true }
-)
-settingsStore.checkVirtualCableStatus()
+);
+settingsStore.checkVirtualCableStatus();
 settingsStore.fetchSettings().then(() => {
-  darkMode.value = settingsStore.darkMode
-  closeToTray.value = settingsStore.closeToTray
-  startWithWindows.value = settingsStore.startWithWindows
-  allowOverlappingSound.value = settingsStore.allowOverlappingSound
-  outputDevices.value = settingsStore.outputDevices.map(d => ({ ...d }))
-  selectedHotkey.value = settingsStore.ptt_hotkey ?? undefined
-})
+  darkMode.value = settingsStore.darkMode;
+  closeToTray.value = settingsStore.closeToTray;
+  startWithWindows.value = settingsStore.startWithWindows;
+  allowOverlappingSound.value = settingsStore.allowOverlappingSound;
+  outputDevices.value = settingsStore.outputDevices.map(d => ({ ...d }));
+  selectedHotkey.value = settingsStore.ptt_hotkey ?? undefined;
+});
 
 async function deleteOutputDevice(index: number) {
   if (index < outputDevices.value.length - 1) {
-    outputDevices.value.splice(index, 1) // remove the device from the array
+    outputDevices.value.splice(index, 1); // remove the device from the array
   } else {
-    outputDevices.value[index] = null // set the device to null
+    outputDevices.value[index] = null; // set the device to null
   }
-  saveAndPlaySoundToOutputDevice(null)
+  saveAndPlaySoundToOutputDevice(null);
 }
 
 async function optionSelected(payload: Event, outputIndex: number) {
   if (!(payload.target instanceof HTMLSelectElement)) {
-    console.debug('payload.target', payload.target)
-    throw new Error('Event target is not a select element.')
+    console.debug('payload.target', payload.target);
+    throw new Error('Event target is not a select element.');
   }
-  const deviceId = payload.target.value
+  const deviceId = payload.target.value;
   // ensure there is a blank option at the end of the array
   // note: we re-assign the array to trigger the watcher
-  addOutputDevice(deviceId, outputIndex)
+  addOutputDevice(deviceId, outputIndex);
 }
 
 /**
@@ -962,17 +975,17 @@ async function optionSelected(payload: Event, outputIndex: number) {
  * @param outputIndex - the index to add the device to
  */
 function addOutputDevice(deviceId: string, outputIndex: number = outputDevices.value.length - 1) {
-  const existing = outputDevices.value[outputIndex]
+  const existing = outputDevices.value[outputIndex];
   const newSetting: OutputDeviceSetting = {
     deviceId,
     volume: existing?.volume ?? 1,
-  }
+  };
   outputDevices.value = [
     ...outputDevices.value.slice(0, outputIndex),
     newSetting,
     ...outputDevices.value.slice(outputIndex + 1),
-  ]
-  saveAndPlaySoundToOutputDevice(deviceId)
+  ];
+  saveAndPlaySoundToOutputDevice(deviceId);
 }
 
 /**
@@ -983,51 +996,51 @@ async function saveAndPlaySoundToOutputDevice(device: string | null = null) {
   // remove the null values from the array
   const filteredOutputDevices: OutputDeviceSetting[] = outputDevices.value.filter(
     (device): device is OutputDeviceSetting => device !== null
-  )
+  );
   if ((await settingsStore.saveSetting('outputDevices', filteredOutputDevices)) && device) {
-    soundStore.populatePlayingAudio(filteredOutputDevices.length)
+    soundStore.populatePlayingAudio(filteredOutputDevices.length);
     soundStore.playSound(
       null,
       [device],
       outputDevices.value.map(d => d?.deviceId ?? null),
       true
-    ) // play only to the selected device
+    ); // play only to the selected device
   }
 }
 
 function updateDarkMode(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) {
-    console.debug('payload.target', event.target)
-    throw new Error('Event target is not an input element.')
+    console.debug('payload.target', event.target);
+    throw new Error('Event target is not an input element.');
   }
-  settingsStore.saveSetting('darkMode', !!event.target.checked)
+  settingsStore.saveSetting('darkMode', !!event.target.checked);
 }
 
 function updateCloseToTray(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) {
-    console.debug('payload.target', event.target)
-    throw new Error('Event target is not an input element.')
+    console.debug('payload.target', event.target);
+    throw new Error('Event target is not an input element.');
   }
-  window.electron?.setCloseToTray(!!event.target.checked)
-  settingsStore.saveSetting('closeToTray', !!event.target.checked)
+  window.electron?.setCloseToTray(!!event.target.checked);
+  settingsStore.saveSetting('closeToTray', !!event.target.checked);
 }
 
 function updateStartWithWindows(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) {
-    console.debug('payload.target', event.target)
-    throw new Error('Event target is not an input element.')
+    console.debug('payload.target', event.target);
+    throw new Error('Event target is not an input element.');
   }
-  const checked = !!event.target.checked
-  startWithWindows.value = checked
-  settingsStore.saveSetting('startWithWindows', checked)
+  const checked = !!event.target.checked;
+  startWithWindows.value = checked;
+  settingsStore.saveSetting('startWithWindows', checked);
 }
 
 function updateAllowOverlappingSound(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) {
-    console.debug('payload.target', event.target)
-    throw new Error('Event target is not an input element.')
+    console.debug('payload.target', event.target);
+    throw new Error('Event target is not an input element.');
   }
-  settingsStore.saveSetting('allowOverlappingSound', !!event.target.checked)
+  settingsStore.saveSetting('allowOverlappingSound', !!event.target.checked);
 }
 </script>
 
@@ -1039,10 +1052,12 @@ function updateAllowOverlappingSound(event: Event) {
   align-items: center;
   gap: 1rem;
 }
+
 .default-volume label {
   margin: 0;
   padding: 0;
 }
+
 .default-volume input[type='text'] {
   width: 3rem;
   text-align: center;
@@ -1050,9 +1065,11 @@ function updateAllowOverlappingSound(event: Event) {
   outline: 1px solid var(--text-color);
   outline-offset: 1px;
 }
+
 .default-volume input[type='text']:focus-visible {
   outline-color: var(--active-color);
 }
+
 .default-volume input[type='range'] {
   margin: 0 0 0.1rem 0;
 }
@@ -1130,6 +1147,7 @@ h2 {
 .device-volume-slider {
   width: 5.5rem;
 }
+
 .select-option {
   height: 4rem;
 }
@@ -1150,23 +1168,28 @@ h2 {
 .play-sound-button:focus-visible {
   background-color: var(--active-color);
 }
+
 .play-sound-button:active {
   background-color: var(--alt-text-color);
   color: var(--background-color);
 }
+
 .play-sound-button:hover {
   background-color: var(--link-color);
   color: var(--background-color);
   fill: var(--background-color);
 }
+
 .play-sound-button:active:hover {
   background-color: green;
 }
+
 .playingAudio {
   background-color: lightgreen;
   color: var(--background-color);
   fill: var(--background-color);
 }
+
 .play-sound-button.testing-mic {
   background-color: #2ecc71;
   color: white;
@@ -1181,6 +1204,7 @@ label:has(input[type='checkbox']) {
   align-items: center;
   gap: 0.5rem;
 }
+
 label {
   display: flex;
   justify-content: center;
@@ -1196,9 +1220,11 @@ input[type='checkbox'] {
   padding: 0.75rem;
   cursor: pointer;
 }
+
 input[type='checkbox']:checked {
   background-color: var(--active-color);
 }
+
 input[type='checkbox']:active,
 input[type='checkbox']:focus-visible {
   --tw-ring-shadow: none;
@@ -1357,7 +1383,7 @@ input[type='checkbox']:focus-visible {
   min-width: fit-content;
 }
 
-.mic-select-line > :first-child {
+.mic-select-line> :first-child {
   flex: 1;
   min-width: 0;
 }
