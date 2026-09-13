@@ -189,11 +189,10 @@
 
           <waveform-graph :audio-buffer="audioBuffer"
                           :duration="audioDuration"
+                          :tracks="pulseBackTracks"
                           v-model:current-time="currentTime"
                           v-model:trim-start="trimStart"
                           v-model:trim-end="trimEnd"
-                          :include-mic="includeMic"
-                          :include-input="includeInput"
                           @scrub-start="onScrubStart"
                           @scrub-move="onScrubMove"
                           @scrub-end="onScrubEnd"
@@ -343,7 +342,7 @@ import { ref, computed, shallowRef, watch, onUnmounted } from 'vue';
 import InlineSvg from 'vue-inline-svg';
 import { usePulseBackStore, PulseBackClip } from '../store/pulseBack';
 import { encodeWAV, encodeMP3, encodeOGG } from '../services/pulseBackBuffer';
-import WaveformGraph from './WaveformGraph.vue';
+import WaveformGraph, { WaveformTrack } from './WaveformGraph.vue';
 import MicrophoneIcon from '../assets/images/microphone.svg';
 import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg';
 import SpeakerIcon from '../assets/images/speaker.svg';
@@ -389,6 +388,21 @@ let audioContext: AudioContext | null = null;
 const includeMic = ref(true);
 const includeInput = ref(true);
 const hasDualChannels = ref(false);
+
+const pulseBackTracks = computed<WaveformTrack[]>(() => [
+  {
+    label: '🎤 MIC (VOICE)',
+    channelIndex: 0,
+    enabled: includeMic.value,
+    colors: ['#38bdf8', '#0284c7'],
+  },
+  {
+    label: '🔊 INPUT DEVICE (AUDIO)',
+    channelIndex: 1,
+    enabled: includeInput.value,
+    colors: ['#34d399', '#059669'],
+  },
+]);
 
 // Playback State
 const isPlaying = ref(false);
@@ -873,7 +887,7 @@ function onScrubEnd(sec: number) {
   }
 }
 
-function onTrimChange(payload: { start: number; end: number }) {
+function onTrimChange(payload: { start: number; end: number; }) {
   if (currentTime.value < payload.start) {
     currentTime.value = payload.start;
   } else if (currentTime.value > payload.end) {

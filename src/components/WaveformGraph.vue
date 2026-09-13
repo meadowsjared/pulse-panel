@@ -2,6 +2,7 @@
   <div class="waveform-graph-container">
     <div class="waveform-wrapper"
          ref="waveformWrapperRef"
+         :style="wrapperStyle"
          @mousedown="onWaveformMouseDown">
       <canvas ref="canvasRef"
               class="waveform-canvas"></canvas>
@@ -49,12 +50,24 @@
       <span>{{ formatSeconds(effectiveDuration * 0.75) }}</span>
       <span>{{ formatSeconds(effectiveDuration) }}</span>
     </div>
-    <span v-if="showTrimHandles" class="text-xs text-zinc-400">Drag green handle for Start, red handle for End</span>
+    <span v-if="showTrimHandles"
+          class="text-xs text-zinc-400">Drag green handle for Start, red handle for End</span>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+
+export interface WaveformTrack {
+  /** Label displayed in the watermark badge pill (e.g. '🎤 MIC (VOICE)'). If empty or undefined, badge is omitted. */
+  label?: string;
+  /** AudioBuffer channel index or indices to sample. If undefined, samples all available channels. */
+  channelIndex?: number | number[];
+  /** Whether the track is enabled/active. When false, the track is rendered dimmed/muted. Defaults to true. */
+  enabled?: boolean;
+  /** Custom gradient colors [startColor, endColor] for the bars. */
+  colors?: [string, string];
+}
 
 interface Props {
   audioBuffer: AudioBuffer | null;
@@ -62,9 +75,11 @@ interface Props {
   currentTime?: number;
   trimStart?: number;
   trimEnd?: number;
+  showTrimHandles?: boolean;
+  tracks?: WaveformTrack[];
+  height?: number | string;
   includeMic?: boolean;
   includeInput?: boolean;
-  showTrimHandles?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -72,9 +87,9 @@ const props = withDefaults(defineProps<Props>(), {
   currentTime: 0,
   trimStart: 0,
   trimEnd: 0,
+  showTrimHandles: true,
   includeMic: true,
   includeInput: true,
-  showTrimHandles: true,
 });
 
 const emit = defineEmits<{
@@ -84,8 +99,8 @@ const emit = defineEmits<{
   (e: 'scrubStart', time: number): void;
   (e: 'scrubMove', time: number): void;
   (e: 'scrubEnd', time: number): void;
-  (e: 'trimChange', payload: { start: number; end: number }): void;
-  (e: 'trimEndChange', payload: { start: number; end: number }): void;
+  (e: 'trimChange', payload: { start: number; end: number; }): void;
+  (e: 'trimEndChange', payload: { start: number; end: number; }): void;
 }>();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -117,6 +132,13 @@ const playheadPercent = computed(() => {
   return Math.max(0, Math.min(100, (props.currentTime / effectiveDuration.value) * 100));
 });
 
+const wrapperStyle = computed(() => {
+  if (!props.height) return undefined;
+  return {
+    height: typeof props.height === 'number' ? `${props.height}px` : props.height,
+  };
+});
+
 function formatSeconds(sec: number): string {
   if (isNaN(sec) || sec < 0) sec = 0;
   const m = Math.floor(sec / 60);
@@ -145,7 +167,41 @@ function drawWaveform() {
 
   ctx.clearRect(0, 0, width, height);
 
-  const isDual = buffer.numberOfChannels >= 2;
+  // 1. Resolve active tracks
+  let activeTracks: WaveformTrack[] = [];
+  if (props.tracks && props.tracks.length > 0) {
+    activeTracks = props.tracks;
+  } else if (buffer.numberOfChannels >= 2 && (!props.includeMic || !props.includeInput)) {
+    // Fallback if legacy includeMic / includeInput are explicitly toggled without tracks prop
+    activeTracks = [
+      {
+        label: '🎤 MIC (VOICE)',
+        channelIndex: 0,
+        enabled: props.includeMic,
+        colors: ['#38bdf8', '#0284c7'],
+      },
+      {
+        label: '🔊 INPUT DEVICE (AUDIO)',
+        channelIndex: 1,
+        enabled: props.includeInput,
+        colors: ['#34d399', '#059669'],
+      },
+    ];
+  } else {
+    // Single unified track (mono or stereo merged)
+    activeTracks = [
+      {
+        label: '',
+        channelIndex: buffer.numberOfChannels >= 2 ? [0, 1] : 0,
+        enabled: true,
+        colors: ['#38bdf8', '#0284c7'],
+      },
+    ];
+  }
+
+  const numTracks = activeTracks.length;
+  const trackLaneHeight = height / numTracks;
+
   const targetBarWidth = 2 * dpr;
   const targetBarGap = 1 * dpr;
   const nominalStep = targetBarWidth + targetBarGap;
@@ -155,153 +211,103 @@ function drawWaveform() {
   const minBarH = Math.max(2, 1.5 * dpr);
   const cornerRadius = Math.max(1, 1 * dpr);
 
-  if (isDual) {
-    const micData = buffer.getChannelData(0);
-    const inputData = buffer.getChannelData(1);
-    const halfHeight = height / 2;
-    const maxTrackHeight = halfHeight * 0.88;
+  for (let t = 0; t < numTracks; t++) {
+    const track = activeTracks[t];
+    const trackTop = t * trackLaneHeight;
+    const trackBaseline = trackTop + trackLaneHeight / 2;
+    const maxTrackHeight = (trackLaneHeight / 2) * (numTracks > 1 ? 0.88 : 0.92);
 
-    // Center dividing line
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    ctx.lineWidth = 1 * dpr;
-    ctx.beginPath();
-    ctx.moveTo(0, halfHeight);
-    ctx.lineTo(width, halfHeight);
-    ctx.stroke();
-
-    // Sample peaks for both tracks
-    const micPeaks = new Float32Array(numBars);
-    const inputPeaks = new Float32Array(numBars);
-    let maxMicPeak = 0.001;
-    let maxInputPeak = 0.001;
-
-    for (let i = 0; i < numBars; i++) {
-      const start = Math.floor((i / numBars) * micData.length);
-      const end = Math.min(micData.length, Math.floor(((i + 1) / numBars) * micData.length));
-
-      let pMic = 0;
-      let pInput = 0;
-      for (let j = start; j < end; j++) {
-        const vMic = Math.abs(micData[j]);
-        if (vMic > pMic) pMic = vMic;
-        const vIn = Math.abs(inputData[j]);
-        if (vIn > pInput) pInput = vIn;
-      }
-      micPeaks[i] = pMic;
-      inputPeaks[i] = pInput;
-      if (pMic > maxMicPeak) maxMicPeak = pMic;
-      if (pInput > maxInputPeak) maxInputPeak = pInput;
-    }
-
-    // Auto-normalize tracks independently with a floor to avoid boosting noise
-    const micNormFactor = Math.max(0.06, maxMicPeak);
-    const inputNormFactor = Math.max(0.06, maxInputPeak);
-
-    // 1. Draw Mic Track (Top Half)
-    const micBaseline = halfHeight * 0.5;
-    for (let i = 0; i < numBars; i++) {
-      const normVal = Math.min(1, micPeaks[i] / micNormFactor);
-      const curved = Math.pow(normVal, 0.65);
-      const x = i * barStep;
-      const barH = Math.max(minBarH, curved * maxTrackHeight);
-      const y = micBaseline - barH / 2;
-
-      if (props.includeMic) {
-        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
-        grad.addColorStop(0, '#38bdf8');
-        grad.addColorStop(1, '#0284c7');
-        ctx.fillStyle = grad;
-      } else {
-        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
-      }
-
+    // Separator line between multiple tracks
+    if (numTracks >= 2 && t > 0) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1 * dpr;
       ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barH, cornerRadius);
-      ctx.fill();
+      ctx.moveTo(0, trackTop);
+      ctx.lineTo(width, trackTop);
+      ctx.stroke();
     }
 
-    // 2. Draw Input Device Track (Bottom Half)
-    const inputBaseline = halfHeight + halfHeight * 0.5;
-    for (let i = 0; i < numBars; i++) {
-      const normVal = Math.min(1, inputPeaks[i] / inputNormFactor);
-      const curved = Math.pow(normVal, 0.65);
-      const x = i * barStep;
-      const barH = Math.max(minBarH, curved * maxTrackHeight);
-      const y = inputBaseline - barH / 2;
-
-      if (props.includeInput) {
-        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
-        grad.addColorStop(0, '#34d399');
-        grad.addColorStop(1, '#059669');
-        ctx.fillStyle = grad;
-      } else {
-        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
+    // Resolve channel data arrays for this track
+    let channelsToSample: Float32Array[] = [];
+    if (Array.isArray(track.channelIndex)) {
+      channelsToSample = track.channelIndex
+        .filter(idx => idx >= 0 && idx < buffer.numberOfChannels)
+        .map(idx => buffer.getChannelData(idx));
+    } else if (typeof track.channelIndex === 'number') {
+      if (track.channelIndex >= 0 && track.channelIndex < buffer.numberOfChannels) {
+        channelsToSample = [buffer.getChannelData(track.channelIndex)];
       }
-
-      ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barH, cornerRadius);
-      ctx.fill();
     }
 
-    // Watermark track badges inside canvas with subtle backdrop pill
-    const fontSize = Math.round(9.5 * dpr);
-    ctx.font = `600 ${fontSize}px sans-serif`;
+    if (channelsToSample.length === 0) {
+      if (numTracks === 1 && buffer.numberOfChannels >= 2) {
+        channelsToSample = [buffer.getChannelData(0), buffer.getChannelData(1)];
+      } else {
+        channelsToSample = [buffer.getChannelData(Math.min(t, buffer.numberOfChannels - 1))];
+      }
+    }
 
-    const micText = '🎤 MIC (VOICE)';
-    const micTextWidth = ctx.measureText(micText).width;
-    ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
-    ctx.beginPath();
-    ctx.roundRect(6 * dpr, 4 * dpr, micTextWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
-    ctx.fill();
-    ctx.fillStyle = props.includeMic ? 'rgba(56, 189, 248, 0.95)' : 'rgba(161, 161, 170, 0.6)';
-    ctx.fillText(micText, 11 * dpr, 4 * dpr + fontSize);
-
-    const inText = '🔊 INPUT DEVICE (AUDIO)';
-    const inTextWidth = ctx.measureText(inText).width;
-    ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
-    ctx.beginPath();
-    ctx.roundRect(6 * dpr, halfHeight + 4 * dpr, inTextWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
-    ctx.fill();
-    ctx.fillStyle = props.includeInput ? 'rgba(52, 211, 153, 0.95)' : 'rgba(161, 161, 170, 0.6)';
-    ctx.fillText(inText, 11 * dpr, halfHeight + 4 * dpr + fontSize);
-  } else {
-    // Single mono channel
-    const channelData = buffer.getChannelData(0);
-    const amp = height / 2;
-    const maxTrackHeight = amp * 0.92;
-
-    const monoPeaks = new Float32Array(numBars);
+    // Sample peaks across all channels for this track
+    const primaryLen = channelsToSample[0].length;
+    const trackPeaks = new Float32Array(numBars);
     let maxPeak = 0.001;
 
     for (let i = 0; i < numBars; i++) {
-      const start = Math.floor((i / numBars) * channelData.length);
-      const end = Math.min(channelData.length, Math.floor(((i + 1) / numBars) * channelData.length));
-      let peak = 0;
+      const start = Math.floor((i / numBars) * primaryLen);
+      const end = Math.min(primaryLen, Math.floor(((i + 1) / numBars) * primaryLen));
+
+      let p = 0;
       for (let j = start; j < end; j++) {
-        const val = Math.abs(channelData[j]);
-        if (val > peak) peak = val;
+        for (let c = 0; c < channelsToSample.length; c++) {
+          const val = Math.abs(channelsToSample[c][j]);
+          if (val > p) p = val;
+        }
       }
-      monoPeaks[i] = peak;
-      if (peak > maxPeak) maxPeak = peak;
+      trackPeaks[i] = p;
+      if (p > maxPeak) maxPeak = p;
     }
 
+    // Independent track normalization with a floor to avoid boosting background noise
     const normFactor = Math.max(0.06, maxPeak);
+    const isEnabled = track.enabled !== false;
+    const colors = track.colors || (t % 2 === 0 ? ['#38bdf8', '#0284c7'] : ['#34d399', '#059669']);
 
+    // Draw bars
     for (let i = 0; i < numBars; i++) {
-      const normVal = Math.min(1, monoPeaks[i] / normFactor);
+      const normVal = Math.min(1, trackPeaks[i] / normFactor);
       const curved = Math.pow(normVal, 0.65);
       const x = i * barStep;
-      const barHeight = Math.max(minBarH, curved * maxTrackHeight);
-      const y = amp - barHeight / 2;
+      const barH = Math.max(minBarH, curved * maxTrackHeight);
+      const y = trackBaseline - barH / 2;
 
-      const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
-      gradient.addColorStop(0, '#38bdf8');
-      gradient.addColorStop(1, '#2563eb');
-      ctx.fillStyle = gradient;
+      if (isEnabled) {
+        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
+        grad.addColorStop(0, colors[0]);
+        grad.addColorStop(1, colors[1]);
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
+      }
 
       ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barHeight, cornerRadius);
+      ctx.roundRect(x, y, barWidth, barH, cornerRadius);
       ctx.fill();
+    }
+
+    // Draw track label badge pill only if label is provided and non-empty
+    if (track.label && track.label.trim().length > 0) {
+      const labelText = track.label.trim();
+      const fontSize = Math.round(9.5 * dpr);
+      ctx.font = `600 ${fontSize}px sans-serif`;
+      const textWidth = ctx.measureText(labelText).width;
+
+      ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
+      ctx.beginPath();
+      ctx.roundRect(6 * dpr, trackTop + 4 * dpr, textWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
+      ctx.fill();
+
+      ctx.fillStyle = isEnabled ? (colors[0] || 'rgba(56, 189, 248, 0.95)') : 'rgba(161, 161, 170, 0.6)';
+      ctx.fillText(labelText, 11 * dpr, trackTop + 4 * dpr + fontSize);
     }
   }
 }
