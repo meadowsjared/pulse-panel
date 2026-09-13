@@ -157,7 +157,7 @@
                 </svg>
               </button>
               <span class="time-readout">
-                {{ formatSeconds(currentTime) }} / {{ formatSeconds(trimmedDuration) }}
+                {{ formatSeconds(relativeCurrentTime) }} / {{ formatSeconds(trimmedDuration) }}
               </span>
             </span>
 
@@ -200,7 +200,7 @@
                  :style="{ left: `${endPercent}%`, width: `${100 - endPercent}%` }"></div>
 
             <!-- Start Trim Handle -->
-            <div class="trim-handle start-handle"
+            <div :class="['trim-handle', 'start-handle', { 'active-handle': activeDragHandle === 'start' }]"
                  :style="{ left: `${startPercent}%` }"
                  @mousedown.stop="onStartHandleMouseDown"
                  title="Drag Start Trim">
@@ -209,7 +209,7 @@
             </div>
 
             <!-- End Trim Handle -->
-            <div class="trim-handle end-handle"
+            <div :class="['trim-handle', 'end-handle', { 'active-handle': activeDragHandle === 'end' }]"
                  :style="{ left: `${endPercent}%` }"
                  @mousedown.stop="onEndHandleMouseDown"
                  title="Drag End Trim">
@@ -227,10 +227,10 @@
           <!-- Time Ticks along bottom -->
           <div class="time-ticks">
             <span>0:00</span>
-            <span>{{ formatSeconds(selectedClip.duration * 0.25) }}</span>
-            <span>{{ formatSeconds(selectedClip.duration * 0.5) }}</span>
-            <span>{{ formatSeconds(selectedClip.duration * 0.75) }}</span>
-            <span>{{ formatSeconds(selectedClip.duration) }}</span>
+            <span>{{ formatSeconds(audioDuration * 0.25) }}</span>
+            <span>{{ formatSeconds(audioDuration * 0.5) }}</span>
+            <span>{{ formatSeconds(audioDuration * 0.75) }}</span>
+            <span>{{ formatSeconds(audioDuration) }}</span>
           </div>
           <span class="text-xs text-zinc-400">Drag green handle for Start, red handle for End</span>
         </div>
@@ -241,7 +241,9 @@
                :src="micPreviewUrl"
                preload="auto"
                style="display: none"
-               @ended="onAudioEnded"></audio>
+               @ended="onAudioEnded"
+               @timeupdate="onAudioTimeUpdate"
+               @loadedmetadata="onAudioMetadataLoaded"></audio>
         <audio ref="inputAudioElRef"
                :src="inputPreviewUrl"
                preload="auto"
@@ -435,6 +437,11 @@ const audioDuration = computed(() => audioBuffer?.duration || selectedClip.value
 
 const trimmedDuration = computed(() => Math.max(0, trimEnd.value - trimStart.value));
 
+const relativeCurrentTime = computed(() => {
+  if (trimmedDuration.value <= 0) return 0;
+  return Math.max(0, Math.min(trimmedDuration.value, currentTime.value - trimStart.value));
+});
+
 const startPercent = computed(() => {
   if (audioDuration.value <= 0) return 0;
   return Math.max(0, Math.min(100, (trimStart.value / audioDuration.value) * 100));
@@ -451,10 +458,10 @@ const playheadPercent = computed(() => {
 });
 
 function syncAudioCurrentTime(sec: number) {
-  if (micAudioElRef.value) {
+  if (micAudioElRef.value && micAudioElRef.value.readyState >= 1) {
     micAudioElRef.value.currentTime = sec;
   }
-  if (inputAudioElRef.value) {
+  if (inputAudioElRef.value && inputAudioElRef.value.readyState >= 1) {
     inputAudioElRef.value.currentTime = sec;
   }
 }
@@ -524,7 +531,7 @@ function updatePreviewUrls() {
 
 watch(
   () => selectedClip.value?.id,
-  async (newId, oldId) => {
+  async (_newId, oldId) => {
     stopPreview();
     if (oldId) {
       const oldClip = pulseBackStore.clips.find(c => c.id === oldId);
@@ -572,16 +579,16 @@ async function loadAudioData(blob: Blob) {
     }
     audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
     hasDualChannels.value = audioBuffer.numberOfChannels >= 2;
-    if (selectedClip.value?.trimEnd !== undefined) {
-      trimEnd.value = selectedClip.value.trimEnd;
+    if (selectedClip.value?.trimEnd !== undefined && selectedClip.value.trimEnd > 0) {
+      trimEnd.value = Math.min(audioBuffer.duration, selectedClip.value.trimEnd);
     } else {
       trimEnd.value = audioBuffer.duration;
     }
     if (selectedClip.value?.trimStart !== undefined) {
-      trimStart.value = selectedClip.value.trimStart;
+      trimStart.value = Math.max(0, Math.min(selectedClip.value.trimStart, trimEnd.value - 0.05));
     }
     if (selectedClip.value?.currentTime !== undefined) {
-      currentTime.value = selectedClip.value.currentTime;
+      currentTime.value = Math.max(trimStart.value, Math.min(trimEnd.value, selectedClip.value.currentTime));
       syncAudioCurrentTime(currentTime.value);
     }
 
@@ -807,8 +814,9 @@ async function deleteClip(id: string) {
 
 function resetTrim() {
   if (!selectedClip.value) return;
+  const duration = audioDuration.value;
   trimStart.value = 0;
-  trimEnd.value = selectedClip.value.duration;
+  trimEnd.value = duration;
   currentTime.value = 0;
   syncAudioCurrentTime(0);
   saveCurrentClipState();
@@ -907,10 +915,25 @@ function onAudioEnded() {
   saveCurrentClipState();
 }
 
+function onAudioTimeUpdate() {
+  const micEl = micAudioElRef.value;
+  if (!isPlaying.value || !micEl) return;
+  if (micEl.currentTime >= playbackEndSec || micEl.ended) {
+    stopPreview();
+    currentTime.value = trimStart.value;
+    syncAudioCurrentTime(trimStart.value);
+  }
+}
+
+function onAudioMetadataLoaded() {
+  syncAudioCurrentTime(currentTime.value);
+}
+
 // Dragging Trim Handles & Scrubbing
-let isDraggingStart = false;
-let isDraggingEnd = false;
+const activeDragHandle = ref<'start' | 'end' | null>(null);
+let wasPlayingBeforeDrag = false;
 let isScrubbing = false;
+let wasPlayingBeforeScrub = false;
 
 function getSecondsFromMouseEvent(e: MouseEvent): number {
   if (!waveformWrapperRef.value || !selectedClip.value) return 0;
@@ -920,26 +943,41 @@ function getSecondsFromMouseEvent(e: MouseEvent): number {
   return percent * audioDuration.value;
 }
 
-function onStartHandleMouseDown(e: MouseEvent) {
-  isDraggingStart = true;
+function onStartHandleMouseDown(_e: MouseEvent) {
+  activeDragHandle.value = 'start';
+  wasPlayingBeforeDrag = isPlaying.value;
+  if (wasPlayingBeforeDrag) {
+    stopPreview();
+  }
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
 }
 
-function onEndHandleMouseDown(e: MouseEvent) {
-  isDraggingEnd = true;
+function onEndHandleMouseDown(_e: MouseEvent) {
+  activeDragHandle.value = 'end';
+  wasPlayingBeforeDrag = isPlaying.value;
+  if (wasPlayingBeforeDrag) {
+    stopPreview();
+  }
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
 }
 
 function onWaveformMouseDown(e: MouseEvent) {
   isScrubbing = true;
+  wasPlayingBeforeScrub = isPlaying.value;
+  if (wasPlayingBeforeScrub) {
+    if (micAudioElRef.value) micAudioElRef.value.pause();
+    if (inputAudioElRef.value) inputAudioElRef.value.pause();
+    if (playbackAnimationId) {
+      cancelAnimationFrame(playbackAnimationId);
+      playbackAnimationId = null;
+    }
+  }
   const clickSec = getSecondsFromMouseEvent(e);
   currentTime.value = Math.max(0, Math.min(audioDuration.value, clickSec));
   syncAudioCurrentTime(currentTime.value);
-  if (isPlaying.value) {
-    startPlayback(currentTime.value, trimEnd.value);
-  }
+
   window.addEventListener('mousemove', onScrubMouseMove);
   window.addEventListener('mouseup', onScrubMouseUp);
 }
@@ -954,30 +992,57 @@ function onScrubMouseMove(e: MouseEvent) {
 function onScrubMouseUp() {
   if (isScrubbing) {
     isScrubbing = false;
-    if (isPlaying.value && micAudioElRef.value) {
-      startPlayback(currentTime.value, trimEnd.value);
-    }
+    const resume = wasPlayingBeforeScrub;
+    wasPlayingBeforeScrub = false;
     window.removeEventListener('mousemove', onScrubMouseMove);
     window.removeEventListener('mouseup', onScrubMouseUp);
     saveCurrentClipState();
+    if (resume) {
+      const startFrom =
+        currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
+          ? trimStart.value
+          : currentTime.value;
+      startPlayback(startFrom, trimEnd.value);
+    }
   }
 }
 
 function onHandleMouseMove(e: MouseEvent) {
+  const maxDuration = audioDuration.value;
+  if (maxDuration <= 0) return;
   const sec = getSecondsFromMouseEvent(e);
-  if (isDraggingStart) {
-    trimStart.value = Math.max(0, Math.min(sec, trimEnd.value - 0.2));
-  } else if (isDraggingEnd) {
-    trimEnd.value = Math.min(selectedClip.value?.duration || 0, Math.max(sec, trimStart.value + 0.2));
+  const minGap = Math.min(0.05, maxDuration * 0.02);
+
+  if (activeDragHandle.value === 'start') {
+    trimStart.value = Math.max(0, Math.min(sec, trimEnd.value - minGap));
+    if (currentTime.value < trimStart.value) {
+      currentTime.value = trimStart.value;
+      syncAudioCurrentTime(currentTime.value);
+    }
+  } else if (activeDragHandle.value === 'end') {
+    trimEnd.value = Math.min(maxDuration, Math.max(sec, trimStart.value + minGap));
+    playbackEndSec = trimEnd.value;
+    if (currentTime.value > trimEnd.value) {
+      currentTime.value = trimEnd.value;
+      syncAudioCurrentTime(currentTime.value);
+    }
   }
 }
 
 function onHandleMouseUp() {
-  isDraggingStart = false;
-  isDraggingEnd = false;
+  const resume = wasPlayingBeforeDrag;
+  activeDragHandle.value = null;
+  wasPlayingBeforeDrag = false;
   window.removeEventListener('mousemove', onHandleMouseMove);
   window.removeEventListener('mouseup', onHandleMouseUp);
   saveCurrentClipState();
+  if (resume) {
+    const startFrom =
+      currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
+        ? trimStart.value
+        : currentTime.value;
+    startPlayback(startFrom, trimEnd.value);
+  }
 }
 
 function getTrimmedAudioBlob(
@@ -1446,17 +1511,26 @@ onUnmounted(() => {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 12px;
-  margin-left: -6px;
+  width: 16px;
+  margin-left: -8px;
   cursor: ew-resize;
   z-index: 10;
+  transition: z-index 0.1s;
+}
+
+.trim-handle:hover {
+  z-index: 15;
+}
+
+.trim-handle.active-handle {
+  z-index: 20;
 }
 
 .handle-line {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 5px;
+  left: 7px;
   width: 2px;
 }
 
