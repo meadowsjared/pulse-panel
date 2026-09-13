@@ -1,7 +1,7 @@
 <template>
   <div class="edit-dialog">
     <div class="title-bar flex justify-between">
-      <button @click="soundStore.playSound(modelValue, null, null, true)"
+      <button @click="handlePreviewButtonClick"
               title="preview sound"
               :class="{ 'playing-sound': playingThisSound }"
               class="light preview-button">
@@ -58,7 +58,7 @@
                              v-model="volumeDisplay" />
           <label class="volume-label"
                  for="volume-display">Volume:</label>
-          <button @click="soundStore.playSound(modelValue, null, null, undefined, true)"
+          <button @click="handlePlayButtonClick"
                   :class="['play-sound-button', { focusVisible }, { 'sound-is-playing': playingThisSound }]"
                   @blur="focusVisible = false"
                   @keyup="handleKeyup">
@@ -73,12 +73,12 @@
       <div class="waveform-container w-full">
         <waveform-graph :audio-buffer="audioBuffer"
                         :duration="duration"
-                        :height="100"
+                        :height="50"
                         :show-trim-handles="false"
                         v-model:current-time="currentTime"
-                        @scrub-start="onScrub"
-                        @scrub-move="onScrub"
-                        @scrub-end="onScrub" />
+                        @scrub-start="onScrubStart"
+                        @scrub-move="onScrubMove"
+                        @scrub-end="onScrubEnd" />
       </div>
       <div class="flex flex-row gap-1"
            title="Total duration of the sound">
@@ -188,7 +188,6 @@ import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils';
 import { TagInputRef } from './BaseComponents/TagInputTypes';
 import { throttle } from 'lodash';
 import { SoundSegment } from '../@types/sound.d';
-import WaveformGraph from './WaveformGraph.vue';
 
 const props = defineProps<{
   modelValue: Sound;
@@ -209,6 +208,175 @@ const currentTime = ref(0);
 let audioContext: AudioContext | null = null;
 let currentLoadId = 0;
 let playheadRaf: number | null = null;
+
+// Scrubbing & snippet preview state
+let isScrubbing = false;
+let wasPlayingBeforeScrub = false;
+let lastScrubPlayTime = 0;
+let scrubSourceNode: AudioBufferSourceNode | null = null;
+let scrubGainNode: GainNode | null = null;
+
+function stopScrubSnippet() {
+  if (scrubSourceNode) {
+    try {
+      scrubSourceNode.stop();
+      scrubSourceNode.disconnect();
+    } catch { }
+    scrubSourceNode = null;
+  }
+  if (scrubGainNode) {
+    try {
+      scrubGainNode.disconnect();
+    } catch { }
+    scrubGainNode = null;
+  }
+}
+
+function playScrubSnippet(sec: number) {
+  if (!audioBuffer.value) return;
+  const now = performance.now();
+  if (now - lastScrubPlayTime < 45) return;
+  lastScrubPlayTime = now;
+
+  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!audioContext || audioContext.state === 'closed') {
+    audioContext = new AudioContextClass();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => { });
+  }
+
+  stopScrubSnippet();
+
+  const durationSec = 0.08;
+  const startSec = Math.max(0, Math.min(audioBuffer.value.duration - 0.02, sec));
+  const snippetLen = Math.min(durationSec, audioBuffer.value.duration - startSec);
+  if (snippetLen <= 0) return;
+
+  const effectiveVol = props.modelValue.volume ?? settingsStore.defaultVolume;
+  const sampleRate = audioBuffer.value.sampleRate;
+  const sampleCount = Math.floor(snippetLen * sampleRate);
+  if (sampleCount <= 0) return;
+
+  const startSample = Math.floor(startSec * sampleRate);
+  const snippetBuffer = audioContext.createBuffer(1, sampleCount, sampleRate);
+  const channelData = snippetBuffer.getChannelData(0);
+
+  const numChannels = audioBuffer.value.numberOfChannels;
+  const ch0 = audioBuffer.value.getChannelData(0);
+  const ch1 = numChannels >= 2 ? audioBuffer.value.getChannelData(1) : null;
+
+  for (let i = 0; i < sampleCount; i++) {
+    const idx = startSample + i;
+    if (idx >= audioBuffer.value.length) break;
+    let s = ch0[idx];
+    if (ch1) s = (s + ch1[idx]) * 0.5;
+    channelData[i] = s;
+  }
+
+  const fadeSamples = Math.min(Math.floor(sampleRate * 0.006), Math.floor(sampleCount / 4));
+  for (let i = 0; i < fadeSamples; i++) {
+    const ramp = i / fadeSamples;
+    channelData[i] *= ramp;
+    channelData[sampleCount - 1 - i] *= ramp;
+  }
+
+  const source = audioContext.createBufferSource();
+  source.buffer = snippetBuffer;
+
+  const gain = audioContext.createGain();
+  gain.gain.setValueAtTime(effectiveVol, audioContext.currentTime);
+
+  source.connect(gain);
+  gain.connect(audioContext.destination);
+
+  scrubSourceNode = source;
+  scrubGainNode = gain;
+
+  source.onended = () => {
+    if (scrubSourceNode === source) {
+      scrubSourceNode = null;
+      scrubGainNode = null;
+    }
+  };
+
+  source.start(0);
+}
+
+let activeSegmentBeforeScrub: SoundSegment | null = null;
+let wasPreviewBeforeScrub = false;
+
+function onScrubStart(sec: number) {
+  isScrubbing = true;
+  wasPlayingBeforeScrub = playingThisSound.value;
+  activeSegmentBeforeScrub = soundStore.currentSound?.activeSegment ?? null;
+  wasPreviewBeforeScrub = soundStore.currentSound?.activeSegment?.isSoundPreview === true;
+  if (wasPlayingBeforeScrub) {
+    soundStore.stopAllSounds();
+  }
+  currentTime.value = sec;
+  playScrubSnippet(sec);
+}
+
+function onScrubMove(sec: number) {
+  currentTime.value = sec;
+  playScrubSnippet(sec);
+}
+
+function onScrubEnd(sec: number) {
+  isScrubbing = false;
+  stopScrubSnippet();
+  currentTime.value = sec;
+  if (wasPlayingBeforeScrub) {
+    const resumeSegment = activeSegmentBeforeScrub;
+    const resumePreview = wasPreviewBeforeScrub;
+    wasPlayingBeforeScrub = false;
+    activeSegmentBeforeScrub = null;
+    wasPreviewBeforeScrub = false;
+    playFromCurrentTime(resumePreview, resumeSegment);
+  }
+}
+
+function playFromCurrentTime(preview = false, targetSegment?: SoundSegment | null) {
+  const seg = targetSegment ?? props.modelValue.soundSegments?.[0];
+  const start = Math.max(0, Math.min(duration.value, currentTime.value));
+  const end = seg && start < seg.end ? seg.end : duration.value;
+
+  const segment: SoundSegment = {
+    id: seg?.id ?? crypto.randomUUID(),
+    start,
+    end,
+  };
+  if (preview) {
+    segment.isSoundPreview = true;
+  }
+
+  soundStore.playSound(props.modelValue, null, null, preview, true, segment);
+}
+
+function handlePlayButtonClick() {
+  if (playingThisSound.value) {
+    soundStore.stopAllSounds();
+    return;
+  }
+  if (currentTime.value > 0 && currentTime.value < duration.value) {
+    playFromCurrentTime(false);
+  } else {
+    soundStore.playSound(props.modelValue, null, null, undefined, true);
+  }
+}
+
+function handlePreviewButtonClick() {
+  if (playingThisSound.value) {
+    soundStore.stopAllSounds();
+    return;
+  }
+  if (currentTime.value > 0 && currentTime.value < duration.value) {
+    playFromCurrentTime(true);
+  } else {
+    soundStore.playSound(props.modelValue, null, null, true);
+  }
+}
 
 async function loadAudioBuffer() {
   const loadId = ++currentLoadId;
@@ -239,6 +407,8 @@ async function loadAudioBuffer() {
 }
 
 function updatePlayhead() {
+  if (isScrubbing) return;
+
   if (!playingThisSound.value) {
     if (playheadRaf !== null) {
       cancelAnimationFrame(playheadRaf);
@@ -274,21 +444,11 @@ watch(playingThisSound, isPlaying => {
       cancelAnimationFrame(playheadRaf);
       playheadRaf = null;
     }
-    currentTime.value = 0;
-  }
-});
-
-function onScrub(sec: number) {
-  currentTime.value = sec;
-  for (const device of soundStore.outputDeviceData) {
-    const audio = device.currentAudio?.find(a =>
-      a.getAttribute('data-id')?.startsWith(`${props.modelValue.id}_`)
-    );
-    if (audio) {
-      audio.currentTime = sec;
+    if (!isScrubbing) {
+      currentTime.value = 0;
     }
   }
-}
+});
 
 const scrollToSound = () => {
   if (!props.modelValue?.id) return;
@@ -323,6 +483,7 @@ watch(
 );
 
 onUnmounted(() => {
+  stopScrubSnippet();
   if (playheadRaf !== null) {
     cancelAnimationFrame(playheadRaf);
     playheadRaf = null;
