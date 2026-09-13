@@ -931,7 +931,6 @@ function onAudioMetadataLoaded() {
 
 // Dragging Trim Handles & Scrubbing
 const activeDragHandle = ref<'start' | 'end' | null>(null);
-let wasPlayingBeforeDrag = false;
 let isScrubbing = false;
 let wasPlayingBeforeScrub = false;
 
@@ -945,20 +944,12 @@ function getSecondsFromMouseEvent(e: MouseEvent): number {
 
 function onStartHandleMouseDown(_e: MouseEvent) {
   activeDragHandle.value = 'start';
-  wasPlayingBeforeDrag = isPlaying.value;
-  if (wasPlayingBeforeDrag) {
-    stopPreview();
-  }
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
 }
 
 function onEndHandleMouseDown(_e: MouseEvent) {
   activeDragHandle.value = 'end';
-  wasPlayingBeforeDrag = isPlaying.value;
-  if (wasPlayingBeforeDrag) {
-    stopPreview();
-  }
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
 }
@@ -1022,27 +1013,24 @@ function onHandleMouseMove(e: MouseEvent) {
   } else if (activeDragHandle.value === 'end') {
     trimEnd.value = Math.min(maxDuration, Math.max(sec, trimStart.value + minGap));
     playbackEndSec = trimEnd.value;
-    if (currentTime.value > trimEnd.value) {
-      currentTime.value = trimEnd.value;
-      syncAudioCurrentTime(currentTime.value);
+    if (currentTime.value >= trimEnd.value) {
+      if (isPlaying.value) {
+        stopPreview();
+        currentTime.value = trimStart.value;
+        syncAudioCurrentTime(trimStart.value);
+      } else {
+        currentTime.value = trimEnd.value;
+        syncAudioCurrentTime(currentTime.value);
+      }
     }
   }
 }
 
 function onHandleMouseUp() {
-  const resume = wasPlayingBeforeDrag;
   activeDragHandle.value = null;
-  wasPlayingBeforeDrag = false;
   window.removeEventListener('mousemove', onHandleMouseMove);
   window.removeEventListener('mouseup', onHandleMouseUp);
   saveCurrentClipState();
-  if (resume) {
-    const startFrom =
-      currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
-        ? trimStart.value
-        : currentTime.value;
-    startPlayback(startFrom, trimEnd.value);
-  }
 }
 
 function getTrimmedAudioBlob(
