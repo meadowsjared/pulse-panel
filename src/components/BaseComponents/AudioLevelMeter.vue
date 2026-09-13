@@ -6,10 +6,11 @@
          preserveAspectRatio="none">
       <defs>
         <linearGradient :id="gradientId"
-                        x1="0%"
-                        y1="0%"
-                        x2="100%"
-                        y2="0%">
+                        gradientUnits="userSpaceOnUse"
+                        x1="0"
+                        y1="0"
+                        :x2="barCount * 10"
+                        y2="0">
           <stop offset="0%"
                 stop-color="#2ecc71" />
           <stop offset="20%"
@@ -46,7 +47,7 @@
             y="0"
             :width="activeBarCount * 10"
             height="20"
-            :fill="muted ? '#7f8c8d' : `url(#${gradientId})`"
+            :fill="`url(#${gradientId})`"
             :mask="`url(#${maskId})`"
             class="audio-level-fill-rect" />
     </svg>
