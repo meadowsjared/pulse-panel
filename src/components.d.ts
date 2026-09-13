@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     About: typeof import('./components/About.vue')['default']
+    AudioLevelMeter: typeof import('./components/BaseComponents/AudioLevelMeter.vue')['default']
     ColorPicker: typeof import('./components/ColorPicker.vue')['default']
     ConfirmDialog: typeof import('./components/ConfirmDialog.vue')['default']
     Counter: typeof import('./components/Counter.vue')['default']
