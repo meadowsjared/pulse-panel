@@ -84,64 +84,85 @@
            title="Total duration of the sound">
         <span>Total Duration: </span><span>{{ formatSecondsToMMSS(duration) }}</span>
       </div>
-      <div class="input-group flex flex-col mb-1 w-full">
-        <span>Segments:</span>
+      <div class="input-group flex flex-col mb-1 w-full gap-2">
+        <span class="font-semibold text-xs text-zinc-400 uppercase tracking-wider">Segments:</span>
         <div v-for="(segment, index) in modelValue.soundSegments"
              :key="`input-range-segment-${segment.id}`"
-             :class="['flex gap-2 w-full items-end cursor-grab', { dragging: segment.isDragPreview }]"
+             :class="['segment-card flex flex-col gap-1 w-full cursor-grab p-1.5 rounded-lg border border-zinc-800/80 bg-zinc-900/50', { dragging: segment.isDragPreview }]"
              draggable="true"
              @dragstart="dragStart(segment, index)"
              @dragenter.prevent="dragOver(segment)"
              @dragend="dragEnd">
-          <span>{{ index + 1 }}</span>
-          <button @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
-                  :class="[
-                    'play-sound-button flex items-center',
-                    { focusVisible },
-                    {
+          <!-- Top row: Index number, full-width label, remove button -->
+          <div class="flex items-center gap-1.5 w-full">
+            <span class="text-xs font-mono font-bold text-zinc-500 w-4 text-center select-none">{{ index + 1 }}</span>
+            <input v-model="segment.label"
+                   placeholder="Segment label (optional)"
+                   class="segment-label-input flex-1 min-w-0 text-xs py-0.5" />
+            <button @click="removeSegment(segment)"
+                    class="close-button flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-white flex-shrink-0"
+                    title="Remove segment">
+              <inline-svg class="w-4 h-4 rotate-45"
+                          :src="Plus" />
+            </button>
+          </div>
+
+          <!-- Bottom row: Play button, Preview button, Waveform Graph -->
+          <div class="flex items-center gap-1.5 w-full">
+            <button @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
+                    :class="[
+                      'play-sound-button flex items-center justify-center flex-shrink-0',
+                      { focusVisible },
+                      {
+                        'sound-is-playing':
+                          soundStore.currentSound?.activeSegment?.id === segment.id &&
+                          playingThisSound &&
+                          soundStore.currentSound?.activeSegment?.isSoundPreview !== true,
+                      },
+                    ]"
+                    @blur="focusVisible = false"
+                    @keyup="handleKeyup">
+              <inline-svg :src="PlayIcon"
+                          class="w-5 h-5" />
+            </button>
+            <button @click="soundStore.playSound(modelValue, null, null, true, undefined, segment)"
+                    title="preview sound"
+                    :class="{
+                      'playing-sound': playingThisSound,
                       'sound-is-playing':
                         soundStore.currentSound?.activeSegment?.id === segment.id &&
                         playingThisSound &&
-                        soundStore.currentSound?.activeSegment?.isSoundPreview !== true,
-                    },
-                  ]"
-                  @blur="focusVisible = false"
-                  @keyup="handleKeyup">
-            <inline-svg :src="PlayIcon"
-                        class="w-6 h-6" />
-          </button>
-          <button @click="soundStore.playSound(modelValue, null, null, true, undefined, segment)"
-                  title="preview sound"
-                  :class="{
-                    'playing-sound': playingThisSound,
-                    'sound-is-playing':
-                      soundStore.currentSound?.activeSegment?.id === segment.id &&
-                      playingThisSound &&
-                      soundStore.currentSound?.activeSegment?.isSoundPreview === true,
-                  }"
-                  class="light preview-button w-8 h-8 flex items-center justify-center">
-            <inline-svg class="w-8 h-8"
-                        :src="Listen" />
-          </button>
-          <input-range-number-segment v-if="modelValue.soundSegments"
-                                      class="segment-slider flex-1"
-                                      @update:model-value="handleSegmentChange($event, index)"
-                                      :step="Math.min(duration / 100, 1)"
-                                      :bigStep="Math.min(duration / 10, Math.min(duration / 100, 1) * 5)"
-                                      :max="duration"
-                                      :precision="precision"
-                                      format="time"
-                                      v-model="modelValue.soundSegments[index]" />
-          <button @click="removeSegment(segment)"
-                  class="close-button flex items-center">
-            <inline-svg class="w-8 h-8 rotate-45"
-                        :src="Plus" />
-          </button>
+                        soundStore.currentSound?.activeSegment?.isSoundPreview === true,
+                    }"
+                    class="light preview-button flex items-center justify-center flex-shrink-0">
+              <inline-svg class="w-5 h-5"
+                          :src="Listen" />
+            </button>
+            <div class="flex-1 min-w-0">
+              <waveform-graph :audio-buffer="audioBuffer"
+                              :duration="duration"
+                              :height="36"
+                              :show-trim-handles="true"
+                              :show-trim-labels="false"
+                              :show-time-ticks="false"
+                              :playhead-only-when-active="true"
+                              :is-playing="isSegmentPlaying(segment)"
+                              :current-time="currentTime"
+                              :trim-start="segment.start"
+                              :trim-end="segment.end"
+                              @update:trim-start="val => handleSegmentTrimStart(val, segment)"
+                              @update:trim-end="val => handleSegmentTrimEnd(val, segment)"
+                              @scrub-start="sec => onSegmentScrubStart(sec, segment)"
+                              @scrub-move="onScrubMove"
+                              @scrub-end="sec => onSegmentScrubEnd(sec, segment)" />
+            </div>
+          </div>
         </div>
         <button @click="addSegment"
-                class="close-button w-full flex items-center justify-center">
-          <inline-svg class="w-8 h-8"
+                class="close-button w-full flex items-center justify-center py-1 mt-0.5 border border-dashed border-zinc-700 hover:border-zinc-500 rounded-lg text-zinc-400 hover:text-zinc-200 text-xs gap-1">
+          <inline-svg class="w-4 h-4"
                       :src="Plus" />
+          <span>Add Segment</span>
         </button>
       </div>
       <div v-if="modelValue.imageUrl"
@@ -378,6 +399,47 @@ function handlePreviewButtonClick() {
   }
 }
 
+function handleSegmentTrimStart(val: number, segment: SoundSegment) {
+  const mult = Math.pow(10, precision.value);
+  segment.start = Math.round(val * mult) / mult;
+  emit('update:modelValue', props.modelValue);
+}
+
+function handleSegmentTrimEnd(val: number, segment: SoundSegment) {
+  const mult = Math.pow(10, precision.value);
+  segment.end = Math.round(val * mult) / mult;
+  emit('update:modelValue', props.modelValue);
+}
+
+function isSegmentPlaying(segment: SoundSegment): boolean {
+  return playingThisSound.value && soundStore.currentSound?.activeSegment?.id === segment.id;
+}
+
+function onSegmentScrubStart(sec: number, segment: SoundSegment) {
+  isScrubbing = true;
+  wasPlayingBeforeScrub = playingThisSound.value;
+  activeSegmentBeforeScrub = segment;
+  wasPreviewBeforeScrub = soundStore.currentSound?.activeSegment?.isSoundPreview === true;
+  if (wasPlayingBeforeScrub) {
+    soundStore.stopAllSounds();
+  }
+  currentTime.value = sec;
+  playScrubSnippet(sec);
+}
+
+function onSegmentScrubEnd(sec: number, segment: SoundSegment) {
+  isScrubbing = false;
+  stopScrubSnippet();
+  currentTime.value = sec;
+  if (wasPlayingBeforeScrub) {
+    const resumePreview = wasPreviewBeforeScrub;
+    wasPlayingBeforeScrub = false;
+    activeSegmentBeforeScrub = null;
+    wasPreviewBeforeScrub = false;
+    playFromCurrentTime(resumePreview, segment);
+  }
+}
+
 async function loadAudioBuffer() {
   const loadId = ++currentLoadId;
   const url = props.modelValue?.audioUrl;
@@ -577,12 +639,6 @@ watch(
   },
   { deep: true }
 );
-
-function handleSegmentChange(segment: SoundSegment, index: number) {
-  if (props.modelValue.soundSegments && props.modelValue.soundSegments[index] !== segment) {
-    emit('update:modelValue', props.modelValue);
-  }
-}
 
 /**
  * Adds a segment to the segments array
@@ -922,5 +978,35 @@ input {
 
 .dragging {
   opacity: 0.5;
+}
+
+.segment-card {
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.segment-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(24, 24, 27, 0.7);
+}
+
+.segment-label-input {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 1px 4px !important;
+  color: #d4d4d8 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s;
+}
+
+.segment-label-input:hover {
+  border-bottom-color: #3f3f46 !important;
+}
+
+.segment-label-input:focus {
+  border-bottom-color: #38bdf8 !important;
+  color: #ffffff !important;
 }
 </style>
