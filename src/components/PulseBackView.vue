@@ -220,7 +220,9 @@
             <!-- Playhead Scrub Line -->
             <div class="playhead-line"
                  :style="{ left: `${playheadPercent}%` }">
-              <div class="playhead-cap"></div>
+              <div class="playhead-cap"
+                   @mousedown.stop="onPlayheadMouseDown"
+                   title="Drag to Scrub Playhead"></div>
             </div>
           </div>
 
@@ -933,6 +935,104 @@ function onAudioMetadataLoaded() {
 const activeDragHandle = ref<'start' | 'end' | null>(null);
 let isScrubbing = false;
 let wasPlayingBeforeScrub = false;
+let scrubSourceNode: AudioBufferSourceNode | null = null;
+let scrubGainNode: GainNode | null = null;
+let lastScrubPlayTime = 0;
+
+function stopScrubSnippet() {
+  if (scrubSourceNode) {
+    try {
+      scrubSourceNode.stop();
+      scrubSourceNode.disconnect();
+    } catch { }
+    scrubSourceNode = null;
+  }
+  if (scrubGainNode) {
+    try {
+      scrubGainNode.disconnect();
+    } catch { }
+    scrubGainNode = null;
+  }
+}
+
+function playScrubSnippet(sec: number) {
+  if (!audioBuffer) return;
+  const now = performance.now();
+  // Throttle snippet triggering so rapid mouse events don't pile up
+  if (now - lastScrubPlayTime < 45) return;
+  lastScrubPlayTime = now;
+
+  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!audioContext) {
+    audioContext = new AudioContextClass();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => { });
+  }
+
+  stopScrubSnippet();
+
+  const duration = 0.08; // 80ms snippet
+  const startSec = Math.max(0, Math.min(audioBuffer.duration - 0.02, sec));
+  const snippetLen = Math.min(duration, audioBuffer.duration - startSec);
+  if (snippetLen <= 0) return;
+
+  const masterVol = clipVolume.value / 100;
+  const bothActive = includeMic.value && includeInput.value && hasDualChannels.value;
+  const factor = bothActive ? 0.75 : 1.0;
+
+  const sampleRate = audioBuffer.sampleRate;
+  const sampleCount = Math.floor(snippetLen * sampleRate);
+  if (sampleCount <= 0) return;
+
+  const startSample = Math.floor(startSec * sampleRate);
+  const snippetBuffer = audioContext.createBuffer(1, sampleCount, sampleRate);
+  const channelData = snippetBuffer.getChannelData(0);
+
+  const micData = includeMic.value ? audioBuffer.getChannelData(0) : null;
+  const inputData =
+    hasDualChannels.value && includeInput.value && audioBuffer.numberOfChannels >= 2
+      ? audioBuffer.getChannelData(1)
+      : null;
+
+  for (let i = 0; i < sampleCount; i++) {
+    const idx = startSample + i;
+    if (idx >= audioBuffer.length) break;
+    let s = 0;
+    if (micData) s += micData[idx] * factor;
+    if (inputData) s += inputData[idx] * factor;
+    channelData[i] = s;
+  }
+
+  // Quick 6ms fade-in and fade-out to prevent clicks
+  const fadeSamples = Math.min(Math.floor(sampleRate * 0.006), Math.floor(sampleCount / 4));
+  for (let i = 0; i < fadeSamples; i++) {
+    const ramp = i / fadeSamples;
+    channelData[i] *= ramp;
+    channelData[sampleCount - 1 - i] *= ramp;
+  }
+
+  const source = audioContext.createBufferSource();
+  source.buffer = snippetBuffer;
+
+  const gain = audioContext.createGain();
+  gain.gain.setValueAtTime(masterVol, audioContext.currentTime);
+
+  source.connect(gain);
+  gain.connect(audioContext.destination);
+
+  scrubSourceNode = source;
+  scrubGainNode = gain;
+
+  source.onended = () => {
+    if (scrubSourceNode === source) {
+      scrubSourceNode = null;
+      scrubGainNode = null;
+    }
+  };
+
+  source.start(0);
+}
 
 function getSecondsFromMouseEvent(e: MouseEvent): number {
   if (!waveformWrapperRef.value || !selectedClip.value) return 0;
@@ -954,6 +1054,10 @@ function onEndHandleMouseDown(_e: MouseEvent) {
   window.addEventListener('mouseup', onHandleMouseUp);
 }
 
+function onPlayheadMouseDown(e: MouseEvent) {
+  onWaveformMouseDown(e);
+}
+
 function onWaveformMouseDown(e: MouseEvent) {
   isScrubbing = true;
   wasPlayingBeforeScrub = isPlaying.value;
@@ -968,6 +1072,7 @@ function onWaveformMouseDown(e: MouseEvent) {
   const clickSec = getSecondsFromMouseEvent(e);
   currentTime.value = Math.max(0, Math.min(audioDuration.value, clickSec));
   syncAudioCurrentTime(currentTime.value);
+  playScrubSnippet(currentTime.value);
 
   window.addEventListener('mousemove', onScrubMouseMove);
   window.addEventListener('mouseup', onScrubMouseUp);
@@ -978,11 +1083,13 @@ function onScrubMouseMove(e: MouseEvent) {
   const sec = getSecondsFromMouseEvent(e);
   currentTime.value = Math.max(0, Math.min(audioDuration.value, sec));
   syncAudioCurrentTime(currentTime.value);
+  playScrubSnippet(currentTime.value);
 }
 
 function onScrubMouseUp() {
   if (isScrubbing) {
     isScrubbing = false;
+    stopScrubSnippet();
     const resume = wasPlayingBeforeScrub;
     wasPlayingBeforeScrub = false;
     window.removeEventListener('mousemove', onScrubMouseMove);
@@ -1183,6 +1290,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopPreview();
+  stopScrubSnippet();
   saveCurrentClipState();
   clearPreviewUrls();
   if (waveformResizeObserver) {
@@ -1568,12 +1676,19 @@ onUnmounted(() => {
 .playhead-cap {
   position: absolute;
   top: 0;
-  left: -5px;
-  width: 12px;
-  height: 12px;
+  left: -7px;
+  width: 16px;
+  height: 16px;
   background: #ffffff;
   clip-path: polygon(0% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%);
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  cursor: ew-resize;
+  pointer-events: auto;
+  transition: transform 0.1s ease;
+}
+
+.playhead-cap:hover {
+  transform: scale(1.15);
 }
 
 .time-ticks {
