@@ -932,7 +932,16 @@ async function startPlayback(offsetSec: number, endSec: number) {
   }
 }
 
+// Dragging Trim Handles & Scrubbing
+const activeDragHandle = ref<'start' | 'end' | null>(null);
+let isScrubbing = false;
+let wasPlayingBeforeScrub = false;
+let scrubSourceNode: AudioBufferSourceNode | null = null;
+let scrubGainNode: GainNode | null = null;
+let lastScrubPlayTime = 0;
+
 function updatePlaybackAnimation() {
+  if (isScrubbing) return;
   const micEl = micAudioElRef.value;
   if (!isPlaying.value || !micEl) return;
 
@@ -964,6 +973,7 @@ function stopPreview() {
 }
 
 function onAudioEnded() {
+  if (isScrubbing) return;
   stopPreview();
   currentTime.value = trimStart.value;
   syncAudioCurrentTime(trimStart.value);
@@ -971,6 +981,7 @@ function onAudioEnded() {
 }
 
 function onAudioTimeUpdate() {
+  if (isScrubbing) return;
   const micEl = micAudioElRef.value;
   if (!isPlaying.value || !micEl) return;
   if (micEl.currentTime >= playbackEndSec || micEl.ended) {
@@ -981,16 +992,10 @@ function onAudioTimeUpdate() {
 }
 
 function onAudioMetadataLoaded() {
-  syncAudioCurrentTime(currentTime.value);
+  if (!isScrubbing) {
+    syncAudioCurrentTime(currentTime.value);
+  }
 }
-
-// Dragging Trim Handles & Scrubbing
-const activeDragHandle = ref<'start' | 'end' | null>(null);
-let isScrubbing = false;
-let wasPlayingBeforeScrub = false;
-let scrubSourceNode: AudioBufferSourceNode | null = null;
-let scrubGainNode: GainNode | null = null;
-let lastScrubPlayTime = 0;
 
 function stopScrubSnippet() {
   if (scrubSourceNode) {
@@ -1090,41 +1095,39 @@ function playScrubSnippet(sec: number) {
 function getSecondsFromMouseEvent(e: MouseEvent): number {
   if (!waveformWrapperRef.value || !selectedClip.value) return 0;
   const rect = waveformWrapperRef.value.getBoundingClientRect();
+  if (rect.width <= 0) return 0;
   const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
   const percent = relX / rect.width;
   return percent * audioDuration.value;
 }
 
-function onStartHandleMouseDown(_e: MouseEvent) {
+function onStartHandleMouseDown(e: MouseEvent) {
+  e.preventDefault();
   activeDragHandle.value = 'start';
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
 }
 
-function onEndHandleMouseDown(_e: MouseEvent) {
+function onEndHandleMouseDown(e: MouseEvent) {
+  e.preventDefault();
   activeDragHandle.value = 'end';
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
 }
 
 function onPlayheadMouseDown(e: MouseEvent) {
+  e.preventDefault();
   onWaveformMouseDown(e);
 }
 
 function onWaveformMouseDown(e: MouseEvent) {
+  e.preventDefault();
   isScrubbing = true;
   wasPlayingBeforeScrub = isPlaying.value;
-  if (wasPlayingBeforeScrub) {
-    if (micAudioElRef.value) micAudioElRef.value.pause();
-    if (inputAudioElRef.value) inputAudioElRef.value.pause();
-    if (playbackAnimationId) {
-      cancelAnimationFrame(playbackAnimationId);
-      playbackAnimationId = null;
-    }
-  }
+  stopPreview();
+
   const clickSec = getSecondsFromMouseEvent(e);
   currentTime.value = Math.max(0, Math.min(audioDuration.value, clickSec));
-  syncAudioCurrentTime(currentTime.value);
   playScrubSnippet(currentTime.value);
 
   window.addEventListener('mousemove', onScrubMouseMove);
@@ -1133,9 +1136,15 @@ function onWaveformMouseDown(e: MouseEvent) {
 
 function onScrubMouseMove(e: MouseEvent) {
   if (!isScrubbing) return;
+  // Ignore synthetic/invalid (0, 0) coordinates from Chromium native drag
+  if (e.clientX === 0 && e.clientY === 0) return;
+  // If user released mouse button outside window or lost focus
+  if (e.buttons === 0) {
+    onScrubMouseUp();
+    return;
+  }
   const sec = getSecondsFromMouseEvent(e);
   currentTime.value = Math.max(0, Math.min(audioDuration.value, sec));
-  syncAudioCurrentTime(currentTime.value);
   playScrubSnippet(currentTime.value);
 }
 
@@ -1143,6 +1152,7 @@ function onScrubMouseUp() {
   if (isScrubbing) {
     isScrubbing = false;
     stopScrubSnippet();
+    syncAudioCurrentTime(currentTime.value);
     const resume = wasPlayingBeforeScrub;
     wasPlayingBeforeScrub = false;
     window.removeEventListener('mousemove', onScrubMouseMove);
@@ -1159,6 +1169,12 @@ function onScrubMouseUp() {
 }
 
 function onHandleMouseMove(e: MouseEvent) {
+  if (!activeDragHandle.value) return;
+  if (e.clientX === 0 && e.clientY === 0) return;
+  if (e.buttons === 0) {
+    onHandleMouseUp();
+    return;
+  }
   const maxDuration = audioDuration.value;
   if (maxDuration <= 0) return;
   const sec = getSecondsFromMouseEvent(e);
@@ -1738,6 +1754,8 @@ onUnmounted(() => {
   cursor: ew-resize;
   pointer-events: auto;
   transition: transform 0.1s ease;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .playhead-cap:hover {
