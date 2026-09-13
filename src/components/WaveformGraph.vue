@@ -52,9 +52,9 @@
     </div>
 
     <!-- Unified Trim Capsule Popover -->
-    <div v-if="areTrimPopoversOpen"
+    <div v-if="showTrimHandles"
          class="trim-capsule-card"
-         :class="{ 'is-dragging': isDraggingHandle }"
+         :class="{ 'is-open': areTrimPopoversOpen, 'is-dragging': isDraggingHandle }"
          :style="capsuleCardStyle"
          @mousedown.stop
          @click.stop>
@@ -68,7 +68,7 @@
                  v-model="startInputValue"
                  class="capsule-time-input start"
                  placeholder="0:00.00"
-                 @focus="focusedPopoverHandle = 'start'"
+                 @focus="onInputFocus('start')"
                  @input="onStartInput"
                  @blur="onPopoverBlur($event)"
                  @keydown="onPopoverKeydown('start', $event)" />
@@ -85,7 +85,7 @@
                  v-model="endInputValue"
                  class="capsule-time-input end"
                  placeholder="0:00.00"
-                 @focus="focusedPopoverHandle = 'end'"
+                 @focus="onInputFocus('end')"
                  @input="onEndInput"
                  @blur="onPopoverBlur($event)"
                  @keydown="onPopoverKeydown('end', $event)" />
@@ -301,18 +301,17 @@ watch(globalActiveGraphInstanceId, (activeId) => {
 });
 
 watch(
-  () => [props.trimStart, props.trimEnd],
+  () => [props.trimStart, props.trimEnd, effectiveDuration.value],
   () => {
-    if (areTrimPopoversOpen.value) {
-      if (document.activeElement !== startInputRef.value) {
-        startInputValue.value = formatSeconds(props.trimStart);
-      }
-      if (document.activeElement !== endInputRef.value) {
-        const endVal = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
-        endInputValue.value = formatSeconds(endVal);
-      }
+    if (document.activeElement !== startInputRef.value) {
+      startInputValue.value = formatSeconds(props.trimStart);
     }
-  }
+    if (document.activeElement !== endInputRef.value) {
+      const endVal = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
+      endInputValue.value = formatSeconds(endVal);
+    }
+  },
+  { immediate: true }
 );
 
 function onStartInput(e: Event) {
@@ -347,13 +346,28 @@ function onEndInput(e: Event) {
 function focusStartInput() {
   focusedPopoverHandle.value = 'start';
   startInputRef.value?.focus();
-  startInputRef.value?.select();
 }
 
 function focusEndInput() {
   focusedPopoverHandle.value = 'end';
   endInputRef.value?.focus();
-  endInputRef.value?.select();
+}
+
+function onInputFocus(handle: 'start' | 'end') {
+  focusedPopoverHandle.value = handle;
+  if (!areTrimPopoversOpen.value) {
+    globalActiveGraphInstanceId.value = instanceId;
+    areTrimPopoversOpen.value = true;
+    startInputValue.value = formatSeconds(props.trimStart);
+    endInputValue.value = formatSeconds(props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value);
+  }
+  nextTick(() => {
+    if (handle === 'start') {
+      startInputRef.value?.select();
+    } else {
+      endInputRef.value?.select();
+    }
+  });
 }
 
 function onPopoverBlur(e: FocusEvent) {
@@ -382,25 +396,10 @@ function onPopoverBlur(e: FocusEvent) {
 function onPopoverKeydown(handle: 'start' | 'end', e: KeyboardEvent) {
   if (e.key === 'Enter' || e.key === 'Escape') {
     closePopover();
+    (e.target as HTMLInputElement).blur();
     return;
   }
-  if (e.key === 'Tab') {
-    if (!e.shiftKey && handle === 'start') {
-      e.preventDefault();
-      focusedPopoverHandle.value = 'end';
-      endInputRef.value?.focus();
-      endInputRef.value?.select();
-      return;
-    } else if (e.shiftKey && handle === 'end') {
-      e.preventDefault();
-      focusedPopoverHandle.value = 'start';
-      startInputRef.value?.focus();
-      startInputRef.value?.select();
-      return;
-    }
-    // Tabbing past boundaries lets focus naturally leave capsule; blur will close it.
-    return;
-  }
+
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
     e.preventDefault();
     const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05);
@@ -437,7 +436,6 @@ function onPopoverKeydown(handle: 'start' | 'end', e: KeyboardEvent) {
 }
 
 const capsuleCardStyle = computed(() => {
-  if (!areTrimPopoversOpen.value) return undefined;
   const midPct = (startPercent.value + endPercent.value) / 2;
   return {
     left: `clamp(90px, ${midPct}%, calc(100% - 90px))`,
@@ -446,7 +444,6 @@ const capsuleCardStyle = computed(() => {
 });
 
 const capsuleArrowStyle = computed(() => {
-  if (!areTrimPopoversOpen.value) return undefined;
   const activePct = (focusedPopoverHandle.value === 'end' || activeDragHandle.value === 'end')
     ? endPercent.value
     : startPercent.value;
@@ -902,8 +899,15 @@ defineExpose({
   position: absolute;
   top: -34px;
   z-index: 100;
-  pointer-events: auto;
   user-select: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.trim-capsule-card.is-open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .trim-capsule-card.is-dragging {
