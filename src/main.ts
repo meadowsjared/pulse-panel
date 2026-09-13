@@ -18,3 +18,13 @@ app.mount('#app')
 
 const settingsStore = useSettingsStore()
 document.title = settingsStore.appName
+
+settingsStore.$subscribe((_, state) => {
+  try {
+    if (state.currentEditingSound?.id) {
+      sessionStorage.setItem('activeEditingSoundId', state.currentEditingSound.id)
+    } else {
+      sessionStorage.removeItem('activeEditingSoundId')
+    }
+  } catch (_) {}
+})

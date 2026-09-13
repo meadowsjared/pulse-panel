@@ -971,11 +971,29 @@ export const useSettingsStore = defineStore('settings', {
       )
     },
     /**
+     * Restore active editing sound if one was open before window reload
+     */
+    _restoreEditingSoundState(): void {
+      try {
+        const savedEditingId = sessionStorage.getItem('activeEditingSoundId')
+        if (savedEditingId) {
+          const foundSound = this.sounds.find(s => s.id === savedEditingId)
+          if (foundSound) {
+            this.currentEditingSound = foundSound
+            this.soundEditorOpen = true
+          } else {
+            sessionStorage.removeItem('activeEditingSoundId')
+          }
+        }
+      } catch (_) {}
+    },
+    /**
      * This function listens for windowResize events and sets the windowIsMaximized state
      * @param isMaximized the state of the window
      * @returns void
      */
     registerWindowResize(): void {
+      this._restoreEditingSoundState()
       const electron = window.electron
       electron?.onWindowResized((isMaximized, width, height) => {
         this.windowIsMaximized = isMaximized
