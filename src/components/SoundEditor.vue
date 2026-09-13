@@ -1,214 +1,347 @@
 <template>
   <div class="edit-dialog">
     <div class="title-bar flex justify-between">
-      <button
-        @click="soundStore.playSound(modelValue, null, null, true)"
-        title="preview sound"
-        :class="{ 'playing-sound': playingThisSound }"
-        class="light preview-button">
-        <inline-svg class="w-8 h-8" :src="Listen" />
+      <button @click="soundStore.playSound(modelValue, null, null, true)"
+              title="preview sound"
+              :class="{ 'playing-sound': playingThisSound }"
+              class="light preview-button">
+        <inline-svg class="w-8 h-8"
+                    :src="Listen" />
       </button>
-      <h1 @click="scrollToSound" class="cursor-pointer select-none" title="Scroll sound into view">Edit Sound</h1>
-      <button @click="close" class="close-button">
-        <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
+      <h1 @click="scrollToSound"
+          class="cursor-pointer select-none"
+          title="Scroll sound into view">Edit Sound</h1>
+      <button @click="close"
+              class="close-button">
+        <inline-svg class="w-8 h-8 rotate-45"
+                    :src="Plus" />
       </button>
     </div>
     <div class="sound-properties">
       <div class="input-group">
         <label for="title">Sound title:</label>
-        <input type="text" v-model="props.modelValue.title" id="title" placeholder="Enter text for the button" />
+        <input type="text"
+               v-model="props.modelValue.title"
+               id="title"
+               placeholder="Enter text for the button" />
         <div class="hide-title-checkbox-group">
           <div title="hide title on button">
-            <input type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label for="hideTitle"
-              >Hide title</label
-            >
+            <input type="checkbox"
+                   v-model="props.modelValue.hideTitle"
+                   id="hideTitle" /><label for="hideTitle">Hide title</label>
           </div>
           <div title="set title color button">
             <color-picker v-model="props.modelValue.color" />
           </div>
         </div>
-        <label for="tags" @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
-        <tag-input
-          ref="tagInputRef"
-          id="tags"
-          v-model="props.modelValue.tags"
-          placeholder="Tags are used for searching" />
+        <label for="tags"
+               @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
+        <tag-input ref="tagInputRef"
+                   id="tags"
+                   v-model="props.modelValue.tags"
+                   placeholder="Tags are used for searching" />
       </div>
-      <input
-        type="file"
-        ref="audioFileInput"
-        @change="handleAudioFileUpload"
-        class="file-input hidden"
-        accept="audio/*" />
-      <button @click="audioFileInput?.click()" class="light">Browse Audio...</button>
+      <input type="file"
+             ref="audioFileInput"
+             @change="handleAudioFileUpload"
+             class="file-input hidden"
+             accept="audio/*" />
+      <button @click="audioFileInput?.click()"
+              class="light">Browse Audio...</button>
       <div class="input-group">
         <div class="volume-control-container">
-          <input-text-number
-            id="volume-display"
-            class="volume-display"
-            :min="0"
-            :max="100"
-            :bigStep="5"
-            v-model="volumeDisplay" />
-          <label class="volume-label" for="volume-display">Volume:</label>
-          <button
-            @click="soundStore.playSound(modelValue, null, null, undefined, true)"
-            :class="['play-sound-button', { focusVisible }, { 'sound-is-playing': playingThisSound }]"
-            @blur="focusVisible = false"
-            @keyup="handleKeyup">
-            <inline-svg :src="PlayIcon" class="w-6 h-6" />
+          <input-text-number id="volume-display"
+                             class="volume-display"
+                             :min="0"
+                             :max="100"
+                             :bigStep="5"
+                             v-model="volumeDisplay" />
+          <label class="volume-label"
+                 for="volume-display">Volume:</label>
+          <button @click="soundStore.playSound(modelValue, null, null, undefined, true)"
+                  :class="['play-sound-button', { focusVisible }, { 'sound-is-playing': playingThisSound }]"
+                  @blur="focusVisible = false"
+                  @keyup="handleKeyup">
+            <inline-svg :src="PlayIcon"
+                        class="w-6 h-6" />
           </button>
-          <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
+          <input-range-number class="volume-slider"
+                              :bigStep="5"
+                              v-model="volumeDisplay" />
         </div>
       </div>
-      <div class="flex flex-row gap-1" title="Total duration of the sound">
+      <div class="waveform-container w-full">
+        <waveform-graph :audio-buffer="audioBuffer"
+                        :duration="duration"
+                        :height="100"
+                        :show-trim-handles="false"
+                        v-model:current-time="currentTime"
+                        @scrub-start="onScrub"
+                        @scrub-move="onScrub"
+                        @scrub-end="onScrub" />
+      </div>
+      <div class="flex flex-row gap-1"
+           title="Total duration of the sound">
         <span>Total Duration: </span><span>{{ formatSecondsToMMSS(duration) }}</span>
       </div>
       <div class="input-group flex flex-col mb-1 w-full">
         <span>Segments:</span>
-        <div
-          v-for="(segment, index) in modelValue.soundSegments"
-          :key="`input-range-segment-${segment.id}`"
-          :class="['flex gap-2 w-full items-end cursor-grab', { dragging: segment.isDragPreview }]"
-          draggable="true"
-          @dragstart="dragStart(segment, index)"
-          @dragenter.prevent="dragOver(segment)"
-          @dragend="dragEnd">
+        <div v-for="(segment, index) in modelValue.soundSegments"
+             :key="`input-range-segment-${segment.id}`"
+             :class="['flex gap-2 w-full items-end cursor-grab', { dragging: segment.isDragPreview }]"
+             draggable="true"
+             @dragstart="dragStart(segment, index)"
+             @dragenter.prevent="dragOver(segment)"
+             @dragend="dragEnd">
           <span>{{ index + 1 }}</span>
-          <button
-            @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
-            :class="[
-              'play-sound-button flex items-center',
-              { focusVisible },
-              {
-                'sound-is-playing':
-                  soundStore.currentSound?.activeSegment?.id === segment.id &&
-                  playingThisSound &&
-                  soundStore.currentSound?.activeSegment?.isSoundPreview !== true,
-              },
-            ]"
-            @blur="focusVisible = false"
-            @keyup="handleKeyup">
-            <inline-svg :src="PlayIcon" class="w-6 h-6" />
+          <button @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
+                  :class="[
+                    'play-sound-button flex items-center',
+                    { focusVisible },
+                    {
+                      'sound-is-playing':
+                        soundStore.currentSound?.activeSegment?.id === segment.id &&
+                        playingThisSound &&
+                        soundStore.currentSound?.activeSegment?.isSoundPreview !== true,
+                    },
+                  ]"
+                  @blur="focusVisible = false"
+                  @keyup="handleKeyup">
+            <inline-svg :src="PlayIcon"
+                        class="w-6 h-6" />
           </button>
-          <button
-            @click="soundStore.playSound(modelValue, null, null, true, undefined, segment)"
-            title="preview sound"
-            :class="{
-              'playing-sound': playingThisSound,
-              'sound-is-playing':
-                soundStore.currentSound?.activeSegment?.id === segment.id &&
-                playingThisSound &&
-                soundStore.currentSound?.activeSegment?.isSoundPreview === true,
-            }"
-            class="light preview-button w-8 h-8 flex items-center justify-center">
-            <inline-svg class="w-8 h-8" :src="Listen" />
+          <button @click="soundStore.playSound(modelValue, null, null, true, undefined, segment)"
+                  title="preview sound"
+                  :class="{
+                    'playing-sound': playingThisSound,
+                    'sound-is-playing':
+                      soundStore.currentSound?.activeSegment?.id === segment.id &&
+                      playingThisSound &&
+                      soundStore.currentSound?.activeSegment?.isSoundPreview === true,
+                  }"
+                  class="light preview-button w-8 h-8 flex items-center justify-center">
+            <inline-svg class="w-8 h-8"
+                        :src="Listen" />
           </button>
-          <input-range-number-segment
-            v-if="modelValue.soundSegments"
-            class="segment-slider flex-1"
-            @update:model-value="handleSegmentChange($event, index)"
-            :step="Math.min(duration / 100, 1)"
-            :bigStep="Math.min(duration / 10, Math.min(duration / 100, 1) * 5)"
-            :max="duration"
-            :precision="precision"
-            format="time"
-            v-model="modelValue.soundSegments[index]" />
-          <button @click="removeSegment(segment)" class="close-button flex items-center">
-            <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
+          <input-range-number-segment v-if="modelValue.soundSegments"
+                                      class="segment-slider flex-1"
+                                      @update:model-value="handleSegmentChange($event, index)"
+                                      :step="Math.min(duration / 100, 1)"
+                                      :bigStep="Math.min(duration / 10, Math.min(duration / 100, 1) * 5)"
+                                      :max="duration"
+                                      :precision="precision"
+                                      format="time"
+                                      v-model="modelValue.soundSegments[index]" />
+          <button @click="removeSegment(segment)"
+                  class="close-button flex items-center">
+            <inline-svg class="w-8 h-8 rotate-45"
+                        :src="Plus" />
           </button>
         </div>
-        <button @click="addSegment" class="close-button w-full flex items-center justify-center">
-          <inline-svg class="w-8 h-8" :src="Plus" />
+        <button @click="addSegment"
+                class="close-button w-full flex items-center justify-center">
+          <inline-svg class="w-8 h-8"
+                      :src="Plus" />
         </button>
       </div>
-      <div v-if="modelValue.imageUrl" class="relative">
-        <button @click="removeImage" class="remove-image-button absolute top-2 right-2 w-8 h-8 bg-white">
-          <inline-svg :src="Plus" alt="remove image" class="w-full h-full rotate-45" />
+      <div v-if="modelValue.imageUrl"
+           class="relative">
+        <button @click="removeImage"
+                class="remove-image-button absolute top-2 right-2 w-8 h-8 bg-white">
+          <inline-svg :src="Plus"
+                      alt="remove image"
+                      class="w-full h-full rotate-45" />
         </button>
-        <img :src="modelValue.imageUrl" alt="preview button" class="image" />
+        <img :src="modelValue.imageUrl"
+             alt="preview button"
+             class="image" />
       </div>
-      <input
-        type="file"
-        ref="imageFileInput"
-        @change="handleImageFileUpload"
-        class="file-input hidden"
-        accept="image/*" />
-      <button @click="imageFileInput?.click()" class="light">Browse Image...</button>
+      <input type="file"
+             ref="imageFileInput"
+             @change="handleImageFileUpload"
+             class="file-input hidden"
+             accept="image/*" />
+      <button @click="imageFileInput?.click()"
+              class="light">Browse Image...</button>
       <div class="flex flex-col text-black">
-        <hotkey-picker
-          v-model="props.modelValue.hotkey"
-          @update:modelValue="updateHotkey"
-          :dark="false"
-          title="set a keybind for sound"
-          >Keybind:</hotkey-picker
-        >
+        <hotkey-picker v-model="props.modelValue.hotkey"
+                       @update:modelValue="updateHotkey"
+                       :dark="false"
+                       title="set a keybind for sound">Keybind:</hotkey-picker>
       </div>
-      <button @click="emit('deleteSound', modelValue)" class="light danger">DELETE</button>
+      <button @click="emit('deleteSound', modelValue)"
+              class="light danger">DELETE</button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Sound } from '../@types/sound'
-import Plus from '../assets/images/plus.svg'
-import Listen from '../assets/images/listen.svg'
-import InlineSvg from 'vue-inline-svg'
-import { useSettingsStore } from '../store/settings'
-import { computed, ref, watch, onMounted } from 'vue'
-import PlayIcon from '../assets/images/play.svg'
-import { useSoundStore } from '../store/sound'
-import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils'
-import { TagInputRef } from './BaseComponents/TagInputTypes'
-import { throttle } from 'lodash'
-import { SoundSegment } from '../@types/sound.d'
+import { Sound } from '../@types/sound';
+import Plus from '../assets/images/plus.svg';
+import Listen from '../assets/images/listen.svg';
+import InlineSvg from 'vue-inline-svg';
+import { useSettingsStore } from '../store/settings';
+import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue';
+import PlayIcon from '../assets/images/play.svg';
+import { useSoundStore } from '../store/sound';
+import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils';
+import { TagInputRef } from './BaseComponents/TagInputTypes';
+import { throttle } from 'lodash';
+import { SoundSegment } from '../@types/sound.d';
+import WaveformGraph from './WaveformGraph.vue';
 
 const props = defineProps<{
-  modelValue: Sound
-}>()
+  modelValue: Sound;
+}>();
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: Sound): void
-  (event: 'deleteSound', sound: Sound): void
-  (event: 'close'): void
-}>()
-const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id))
+  (event: 'update:modelValue', value: Sound): void;
+  (event: 'deleteSound', sound: Sound): void;
+  (event: 'close'): void;
+}>();
+const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id));
 
-const settingsStore = useSettingsStore()
-const soundStore = useSoundStore()
+const settingsStore = useSettingsStore();
+const soundStore = useSoundStore();
 
-const scrollToSound = () => {
-  if (!props.modelValue?.id) return
-  const soundButton = document.getElementById(`sound-${props.modelValue.id}`)
-  if (soundButton) {
-    soundButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+const audioBuffer = shallowRef<AudioBuffer | null>(null);
+const currentTime = ref(0);
+let audioContext: AudioContext | null = null;
+let currentLoadId = 0;
+let playheadRaf: number | null = null;
+
+async function loadAudioBuffer() {
+  const loadId = ++currentLoadId;
+  const url = props.modelValue?.audioUrl;
+  if (!url) {
+    audioBuffer.value = null;
+    return;
+  }
+
+  try {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    if (loadId !== currentLoadId) return;
+
+    if (!audioContext || audioContext.state === 'closed') {
+      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const decoded = await audioContext.decodeAudioData(arrayBuffer);
+    if (loadId !== currentLoadId) return;
+
+    audioBuffer.value = decoded;
+  } catch (err) {
+    if (loadId === currentLoadId) {
+      console.error('Error decoding audio buffer for SoundEditor:', err);
+      audioBuffer.value = null;
+    }
   }
 }
 
-onMounted(() => {
-  if (props.modelValue) {
-    settingsStore.ensureSoundLoaded(props.modelValue)
+function updatePlayhead() {
+  if (!playingThisSound.value) {
+    if (playheadRaf !== null) {
+      cancelAnimationFrame(playheadRaf);
+      playheadRaf = null;
+    }
+    return;
   }
-})
+
+  let foundAudio: HTMLAudioElement | null = null;
+  for (const device of soundStore.outputDeviceData) {
+    const audio = device.currentAudio?.find(a =>
+      a.getAttribute('data-id')?.startsWith(`${props.modelValue.id}_`)
+    );
+    if (audio) {
+      foundAudio = audio;
+      break;
+    }
+  }
+
+  if (foundAudio) {
+    currentTime.value = foundAudio.currentTime;
+  }
+
+  playheadRaf = requestAnimationFrame(updatePlayhead);
+}
+
+watch(playingThisSound, isPlaying => {
+  if (isPlaying) {
+    if (playheadRaf !== null) cancelAnimationFrame(playheadRaf);
+    playheadRaf = requestAnimationFrame(updatePlayhead);
+  } else {
+    if (playheadRaf !== null) {
+      cancelAnimationFrame(playheadRaf);
+      playheadRaf = null;
+    }
+    currentTime.value = 0;
+  }
+});
+
+function onScrub(sec: number) {
+  currentTime.value = sec;
+  for (const device of soundStore.outputDeviceData) {
+    const audio = device.currentAudio?.find(a =>
+      a.getAttribute('data-id')?.startsWith(`${props.modelValue.id}_`)
+    );
+    if (audio) {
+      audio.currentTime = sec;
+    }
+  }
+}
+
+const scrollToSound = () => {
+  if (!props.modelValue?.id) return;
+  const soundButton = document.getElementById(`sound-${props.modelValue.id}`);
+  if (soundButton) {
+    soundButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+};
+
+onMounted(async () => {
+  if (props.modelValue) {
+    await settingsStore.ensureSoundLoaded(props.modelValue);
+    loadAudioBuffer();
+  }
+});
 
 watch(
   () => props.modelValue?.id,
-  () => {
+  async () => {
     if (props.modelValue) {
-      settingsStore.ensureSoundLoaded(props.modelValue)
+      await settingsStore.ensureSoundLoaded(props.modelValue);
+      loadAudioBuffer();
     }
   }
-)
-const imageFileInput = ref<HTMLInputElement | null>(null)
-const audioFileInput = ref<HTMLInputElement | null>(null)
-const tagInputRef = ref<TagInputRef | null>(null)
-const focusVisible = ref(false)
-/** how many decimal points should we round to */
-const precision = ref(2)
+);
 
-let draggedIndexStart: number | null = null
-let draggedSegment: SoundSegment | null = null
-const cancelDragEnd = ref(false)
+watch(
+  () => props.modelValue?.audioUrl,
+  () => {
+    loadAudioBuffer();
+  }
+);
+
+onUnmounted(() => {
+  if (playheadRaf !== null) {
+    cancelAnimationFrame(playheadRaf);
+    playheadRaf = null;
+  }
+  if (audioContext) {
+    audioContext.close().catch(() => { });
+    audioContext = null;
+  }
+});
+const imageFileInput = ref<HTMLInputElement | null>(null);
+const audioFileInput = ref<HTMLInputElement | null>(null);
+const tagInputRef = ref<TagInputRef | null>(null);
+const focusVisible = ref(false);
+/** how many decimal points should we round to */
+const precision = ref(2);
+
+let draggedIndexStart: number | null = null;
+let draggedSegment: SoundSegment | null = null;
+const cancelDragEnd = ref(false);
 
 /**
  * Displays the volume as a percentage
@@ -216,31 +349,31 @@ const cancelDragEnd = ref(false)
 const volumeDisplay = computed({
   get: () => Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100),
   set: (value: number) => {
-    value = Math.min(100, Math.max(0, Math.round(value)))
-    soundStore.setVolume(value / 100, props.modelValue.id)
-    saveVolumeDebounced(value)
+    value = Math.min(100, Math.max(0, Math.round(value)));
+    soundStore.setVolume(value / 100, props.modelValue.id);
+    saveVolumeDebounced(value);
   },
-})
+});
 
 /** round the duration up to the nearest precision */
 const duration = computed(() => {
-  const multiplier = Math.pow(10, precision.value)
-  return Math.ceil((props.modelValue.duration ?? 100) * multiplier) / multiplier
-})
+  const multiplier = Math.pow(10, precision.value);
+  return Math.ceil((props.modelValue.duration ?? 100) * multiplier) / multiplier;
+});
 
 const saveVolumeDebounced = throttle((value: number) => {
-  const newValue = Math.round(value) / 100
-  if (props.modelValue.volume === newValue) return
+  const newValue = Math.round(value) / 100;
+  if (props.modelValue.volume === newValue) return;
   // we don't need to handle this here, but if we don't, it will trigger once
   // when it's set to the same number as the default volume,
   // and then a second time when the volume is deleted,
   // because no volume will turn into the default volume
   if (newValue === settingsStore.defaultVolume) {
-    delete props.modelValue.volume
+    delete props.modelValue.volume;
   } else {
-    props.modelValue.volume = newValue
+    props.modelValue.volume = newValue;
   }
-}, 100)
+}, 100);
 
 // Watch for changes to the title and update the modelValue
 watch(
@@ -256,26 +389,26 @@ watch(
   () => {
     // if hideTitle is false and modelValue has the property, delete it
     if (!props.modelValue.hideTitle && props.modelValue.hasOwnProperty('hideTitle')) {
-      delete props.modelValue.hideTitle
+      delete props.modelValue.hideTitle;
     }
     if (props.modelValue.color === '#ffffff') {
-      delete props.modelValue.color
+      delete props.modelValue.color;
     }
-    volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100)
+    volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100);
     if ((props.modelValue.volume ?? settingsStore.defaultVolume) === settingsStore.defaultVolume) {
-      delete props.modelValue.volume
+      delete props.modelValue.volume;
     }
     if (props.modelValue.tags?.length === 0) {
-      delete props.modelValue.tags
+      delete props.modelValue.tags;
     }
-    emit('update:modelValue', props.modelValue)
+    emit('update:modelValue', props.modelValue);
   },
   { deep: true }
-)
+);
 
 function handleSegmentChange(segment: SoundSegment, index: number) {
   if (props.modelValue.soundSegments && props.modelValue.soundSegments[index] !== segment) {
-    emit('update:modelValue', props.modelValue)
+    emit('update:modelValue', props.modelValue);
   }
 }
 
@@ -283,9 +416,9 @@ function handleSegmentChange(segment: SoundSegment, index: number) {
  * Adds a segment to the segments array
  */
 function addSegment() {
-  if (!props.modelValue.soundSegments) props.modelValue.soundSegments = []
-  props.modelValue.soundSegments.push({ start: 0, end: duration.value, id: crypto.randomUUID() })
-  emit('update:modelValue', props.modelValue)
+  if (!props.modelValue.soundSegments) props.modelValue.soundSegments = [];
+  props.modelValue.soundSegments.push({ start: 0, end: duration.value, id: crypto.randomUUID() });
+  emit('update:modelValue', props.modelValue);
 }
 
 /**
@@ -293,12 +426,12 @@ function addSegment() {
  * @param segment The segment to remove
  */
 function removeSegment(segment: SoundSegment) {
-  props.modelValue.soundSegments?.splice(props.modelValue.soundSegments?.indexOf(segment) ?? -1, 1)
+  props.modelValue.soundSegments?.splice(props.modelValue.soundSegments?.indexOf(segment) ?? -1, 1);
   if (props.modelValue.soundSegments?.length === 0) {
-    delete props.modelValue.soundSegments
+    delete props.modelValue.soundSegments;
   }
   // delete props.modelValue.soundSegments
-  emit('update:modelValue', props.modelValue)
+  emit('update:modelValue', props.modelValue);
 }
 
 /**
@@ -309,76 +442,77 @@ function removeSegment(segment: SoundSegment) {
 function handleKeyup(event: KeyboardEvent) {
   // if the soundStore is sending a ptt_hotkey and the keyup event is the ptt_hotkey, prevent the default action (which will focus it)
   if (soundStore.sendingPttHotkey && settingsStore.ptt_hotkey.includes(event.code)) {
-    event.preventDefault()
-    return
+    event.preventDefault();
+    return;
   }
-  focusVisible.value = true
+  focusVisible.value = true;
 }
 
 function updateHotkey(newKey: string[] | undefined, oldKey: string[] | undefined) {
   if (oldKey) {
-    settingsStore.removeSoundHotkey(props.modelValue, oldKey)
+    settingsStore.removeSoundHotkey(props.modelValue, oldKey);
   }
   setTimeout(() => {
     // we must delay this, otherwise it will play the sound when the hotkey is set
-    settingsStore.addSoundHotkey(props.modelValue, newKey)
-  }, 0)
+    settingsStore.addSoundHotkey(props.modelValue, newKey);
+  }, 0);
 }
 
 async function handleAudioFileUpload(event: Event) {
   // Handle the file upload event
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  if (!target.files || !target.files[0]) return
-  const file = target.files[0]
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file)
-  props.modelValue.title = stripFileExtension(file.name)
-  props.modelValue.audioKey = fileKey
-  props.modelValue.audioUrl = fileUrl
-  props.modelValue.duration = await settingsStore.getAudioDuration(fileUrl)
-  emit('update:modelValue', props.modelValue)
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  if (!target.files || !target.files[0]) return;
+  const file = target.files[0];
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file);
+  props.modelValue.title = stripFileExtension(file.name);
+  props.modelValue.audioKey = fileKey;
+  props.modelValue.audioUrl = fileUrl;
+  props.modelValue.duration = await settingsStore.getAudioDuration(fileUrl);
+  loadAudioBuffer();
+  emit('update:modelValue', props.modelValue);
 }
 
 async function handleImageFileUpload(event: Event) {
   // Handle the file upload event
-  const target = event.target
-  if (!(target instanceof HTMLInputElement)) return
-  if (!target.files || !target.files[0]) return
-  const file = target.files[0]
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.imageKey, file)
-  props.modelValue.imageKey = fileKey
-  props.modelValue.imageUrl = fileUrl
-  emit('update:modelValue', props.modelValue)
+  const target = event.target;
+  if (!(target instanceof HTMLInputElement)) return;
+  if (!target.files || !target.files[0]) return;
+  const file = target.files[0];
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.imageKey, file);
+  props.modelValue.imageKey = fileKey;
+  props.modelValue.imageUrl = fileUrl;
+  emit('update:modelValue', props.modelValue);
 }
 
 function removeImage() {
   // Remove the image from the modelValue
-  settingsStore.deleteFile(props.modelValue.imageKey)
-  delete props.modelValue.imageKey
-  delete props.modelValue.imageUrl
-  emit('update:modelValue', props.modelValue)
+  settingsStore.deleteFile(props.modelValue.imageKey);
+  delete props.modelValue.imageKey;
+  delete props.modelValue.imageUrl;
+  emit('update:modelValue', props.modelValue);
 }
 
 function close() {
   // Close the editor
-  emit('close')
+  emit('close');
 }
 
 function dragStart(pSegment: SoundSegment, index: number) {
-  draggedIndexStart = index
-  pSegment.isDragPreview = true
-  draggedSegment = pSegment
+  draggedIndexStart = index;
+  pSegment.isDragPreview = true;
+  draggedSegment = pSegment;
 }
 
 function dragOver(pSegment: SoundSegment) {
-  if (draggedSegment === null || props.modelValue.soundSegments === undefined) return
+  if (draggedSegment === null || props.modelValue.soundSegments === undefined) return;
 
-  const index = props.modelValue.soundSegments.indexOf(pSegment)
-  const draggedIndex = props.modelValue.soundSegments.indexOf(draggedSegment)
-  if (index === draggedIndex) return
+  const index = props.modelValue.soundSegments.indexOf(pSegment);
+  const draggedIndex = props.modelValue.soundSegments.indexOf(draggedSegment);
+  if (index === draggedIndex) return;
   // const segmentsTemp = [...props.modelValue.soundSegments]
-  props.modelValue.soundSegments.splice(draggedIndex, 1) // remove the previous tag preview
-  props.modelValue.soundSegments.splice(index, 0, draggedSegment) // add the tag preview to the new index
+  props.modelValue.soundSegments.splice(draggedIndex, 1); // remove the previous tag preview
+  props.modelValue.soundSegments.splice(index, 0, draggedSegment); // add the tag preview to the new index
 }
 
 /**
@@ -386,13 +520,13 @@ function dragOver(pSegment: SoundSegment) {
  */
 function dragEnd() {
   if (cancelDragEnd.value) {
-    cancelDragEnd.value = false
-    return
+    cancelDragEnd.value = false;
+    return;
   }
-  if (draggedIndexStart === null || draggedSegment === null) return
-  delete draggedSegment.isDragPreview
-  draggedIndexStart = null
-  draggedSegment = null
+  if (draggedIndexStart === null || draggedSegment === null) return;
+  delete draggedSegment.isDragPreview;
+  draggedIndexStart = null;
+  draggedSegment = null;
   // no need to save, because we're resetting back to the original order
 }
 </script>
@@ -451,20 +585,23 @@ function dragEnd() {
   margin: 0.5rem 0;
 }
 
-.hide-title-checkbox-group > div {
+.hide-title-checkbox-group>div {
   display: flex;
   align-items: center;
   justify-self: center;
   gap: 0.5rem;
 }
-.hide-title-checkbox-group > div > input[type='checkbox']:checked {
+
+.hide-title-checkbox-group>div>input[type='checkbox']:checked {
   background-color: var(--button-color);
 }
+
 input[type='checkbox'] {
   --tw-ring-offset-width: unset;
   --tw-ring-color: transparent;
   background-color: var(--input-bg-color);
 }
+
 input[type='checkbox']:focus-visible {
   --tw-ring-color: var(--active-color);
 }
@@ -490,9 +627,11 @@ input[type='checkbox']:focus-visible {
   0% {
     filter: brightness(0.5);
   }
+
   50% {
     filter: brightness(1.3);
   }
+
   100% {
     filter: brightness(0.5);
   }
@@ -503,25 +642,29 @@ input[type='checkbox']:focus-visible {
   outline-offset: 2px;
 }
 
-.close-button > svg,
-.play-sound-button > svg {
+.close-button>svg,
+.play-sound-button>svg {
   fill: var(--text-color);
   stroke: none;
 }
-.play-sound-button > svg {
+
+.play-sound-button>svg {
   fill: var(--button-color);
   stroke: none;
 }
-.play-sound-button.focusVisible > svg {
+
+.play-sound-button.focusVisible>svg {
   stroke: var(--active-color);
   stroke-width: 0.12rem;
   overflow: visible;
   fill: var(--accent-text-color);
 }
-.play-sound-button:hover > svg {
+
+.play-sound-button:hover>svg {
   fill: var(--link-color);
 }
-.play-sound-button:active > svg {
+
+.play-sound-button:active>svg {
   fill: var(--accent-text-color);
 }
 
@@ -557,6 +700,7 @@ input[type='checkbox']:focus-visible {
 .remove-image-button {
   opacity: 0.5;
 }
+
 .remove-image-button:focus-visible {
   opacity: 1;
 }
@@ -567,12 +711,12 @@ input[type='checkbox']:focus-visible {
   align-items: flex-start;
 }
 
-.input-group > span {
+.input-group>span {
   margin-bottom: 0.25rem;
   text-align: left;
 }
 
-.input-group > input {
+.input-group>input {
   width: 100%;
 }
 
@@ -582,12 +726,14 @@ input[type='checkbox']:focus-visible {
   aspect-ratio: 1;
   border-radius: 0.25rem;
 }
-.preview-button > svg {
+
+.preview-button>svg {
   stroke: var(--text-color);
   width: 100%;
   height: 100%;
 }
-.preview-button:active > svg {
+
+.preview-button:active>svg {
   stroke: var(--background-color);
 }
 
