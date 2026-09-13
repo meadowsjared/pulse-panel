@@ -78,58 +78,8 @@
                   @click="toggleMicTest">
             <span>{{ isTestingMic ? 'Stop Testing' : 'Mic Test' }}</span>
           </button>
-          <div ref="trackRef"
-               class="mic-level-track">
-            <svg class="mic-level-svg"
-                 :viewBox="`0 0 ${barCount * 10} 20`"
-                 preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="mic-meter-grad"
-                                x1="0%"
-                                y1="0%"
-                                x2="100%"
-                                y2="0%">
-                  <stop offset="0%"
-                        stop-color="#2ecc71" />
-                  <stop offset="20%"
-                        stop-color="#2ecc71" />
-                  <stop offset="55%"
-                        stop-color="#f1c40f" />
-                  <stop offset="85%"
-                        stop-color="#e74c3c" />
-                  <stop offset="100%"
-                        stop-color="#e74c3c" />
-                </linearGradient>
-                <mask id="mic-meter-mask">
-                  <rect v-for="i in barCount"
-                        :key="i"
-                        :x="(i - 1) * 10 + 2.5"
-                        y="2"
-                        width="5"
-                        height="16"
-                        rx="2.5"
-                        ry="2.5"
-                        fill="white" />
-                </mask>
-              </defs>
-              <!-- Background ghost scale: faint unlit bars -->
-              <rect x="0"
-                    y="0"
-                    :width="barCount * 10"
-                    height="20"
-                    fill="url(#mic-meter-grad)"
-                    opacity="0.22"
-                    mask="url(#mic-meter-mask)" />
-              <!-- Active illuminated bars -->
-              <rect x="0"
-                    y="0"
-                    :width="activeBarCount * 10"
-                    height="20"
-                    :fill="settingsStore.microphoneMuted ? '#7f8c8d' : 'url(#mic-meter-grad)'"
-                    mask="url(#mic-meter-mask)"
-                    class="mic-level-fill-rect" />
-            </svg>
-          </div>
+          <audio-level-meter :level="micLevel"
+                             :muted="settingsStore.microphoneMuted" />
         </div>
       </div>
     </div>
@@ -316,58 +266,8 @@
                   @click="togglePulseBackTest">
             <span>{{ isTestingPulseBack ? 'Stop Testing' : 'Input Test' }}</span>
           </button>
-          <div ref="pulseBackTrackRef"
-               class="mic-level-track">
-            <svg class="mic-level-svg"
-                 :viewBox="`0 0 ${pulseBackBarCount * 10} 20`"
-                 preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="pb-meter-grad"
-                                x1="0%"
-                                y1="0%"
-                                x2="100%"
-                                y2="0%">
-                  <stop offset="0%"
-                        stop-color="#2ecc71" />
-                  <stop offset="20%"
-                        stop-color="#2ecc71" />
-                  <stop offset="55%"
-                        stop-color="#f1c40f" />
-                  <stop offset="85%"
-                        stop-color="#e74c3c" />
-                  <stop offset="100%"
-                        stop-color="#e74c3c" />
-                </linearGradient>
-                <mask id="pb-meter-mask">
-                  <rect v-for="i in pulseBackBarCount"
-                        :key="i"
-                        :x="(i - 1) * 10 + 2.5"
-                        y="2"
-                        width="5"
-                        height="16"
-                        rx="2.5"
-                        ry="2.5"
-                        fill="white" />
-                </mask>
-              </defs>
-              <!-- Background ghost scale -->
-              <rect x="0"
-                    y="0"
-                    :width="pulseBackBarCount * 10"
-                    height="20"
-                    fill="url(#pb-meter-grad)"
-                    opacity="0.22"
-                    mask="url(#pb-meter-mask)" />
-              <!-- Active illuminated bars -->
-              <rect x="0"
-                    y="0"
-                    :width="pulseBackActiveBarCount * 10"
-                    height="20"
-                    :fill="settingsStore.pulse_back_muted ? '#7f8c8d' : 'url(#pb-meter-grad)'"
-                    mask="url(#pb-meter-mask)"
-                    class="mic-level-fill-rect" />
-            </svg>
-          </div>
+          <audio-level-meter :level="pulseBackLevel"
+                             :muted="settingsStore.pulse_back_muted" />
         </div>
       </div>
     </div>
@@ -530,27 +430,8 @@ const micLevel = ref(0);
 const isTestingMic = ref(false);
 let rafId: number | null = null;
 
-const trackRef = ref<HTMLElement | null>(null);
-const trackWidth = ref(360);
-let resizeObserver: ResizeObserver | null = null;
-
-const barCount = computed(() => Math.max(1, Math.floor(trackWidth.value / 10)));
-const activeBarCount = computed(() => {
-  if (micLevel.value <= 0) return 0;
-  return Math.min(barCount.value, Math.ceil((micLevel.value / 100) * barCount.value));
-});
-
-const pulseBackTrackRef = ref<HTMLElement | null>(null);
-const pulseBackTrackWidth = ref(360);
-let pulseBackResizeObserver: ResizeObserver | null = null;
 const pulseBackLevel = ref(0);
 const isTestingPulseBack = ref(false);
-
-const pulseBackBarCount = computed(() => Math.max(1, Math.floor(pulseBackTrackWidth.value / 10)));
-const pulseBackActiveBarCount = computed(() => {
-  if (pulseBackLevel.value <= 0) return 0;
-  return Math.min(pulseBackBarCount.value, Math.ceil((pulseBackLevel.value / 100) * pulseBackBarCount.value));
-});
 
 const savePulseBackVolumeDebounced = throttle((value: number) => {
   const newValue = Math.max(0, Math.min(100, Math.round(value))) / 100;
@@ -612,29 +493,7 @@ onMounted(() => {
   audioMixer.resume().catch(() => { });
   rafId = requestAnimationFrame(updateMicLevelLoop);
 
-  if (trackRef.value) {
-    trackWidth.value = trackRef.value.clientWidth || 360;
-    resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        if (entry.contentRect.width > 0) {
-          trackWidth.value = Math.round(entry.contentRect.width);
-        }
-      }
-    });
-    resizeObserver.observe(trackRef.value);
-  }
 
-  if (pulseBackTrackRef.value) {
-    pulseBackTrackWidth.value = pulseBackTrackRef.value.clientWidth || 360;
-    pulseBackResizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        if (entry.contentRect.width > 0) {
-          pulseBackTrackWidth.value = Math.round(entry.contentRect.width);
-        }
-      }
-    });
-    pulseBackResizeObserver.observe(pulseBackTrackRef.value);
-  }
 
   if (!pulseBackBuffer.active) {
     const micDevice = settingsStore.selectedMicrophoneId;
@@ -678,14 +537,7 @@ onUnmounted(() => {
     cancelAnimationFrame(rafId);
     rafId = null;
   }
-  if (resizeObserver) {
-    resizeObserver.disconnect();
-    resizeObserver = null;
-  }
-  if (pulseBackResizeObserver) {
-    pulseBackResizeObserver.disconnect();
-    pulseBackResizeObserver = null;
-  }
+
   stopTestingMic();
   stopTestingPulseBack();
   const pulseBackStore = usePulseBackStore();
@@ -1452,28 +1304,6 @@ input[type='checkbox']:focus-visible {
   color: white;
   border-color: #2ecc71;
   font-weight: 600;
-}
-
-.mic-level-track {
-  flex: 1;
-  min-width: 0;
-  height: 2.625rem;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  background: transparent;
-  padding: 0;
-}
-
-.mic-level-svg {
-  width: 100%;
-  height: 20px;
-  display: block;
-}
-
-.mic-level-fill-rect {
-  transition: width 0.05s ease-out;
 }
 
 .tag {
