@@ -19,7 +19,7 @@
     "ts": "tsc",
     "watch": "tsc -w",
     "lint": "eslint -c eslint.config.js ./src",
-    "app:dev": "tsc && concurrently vite \" electron .\" \"tsc -w\"",
+    "app:dev": "tsc && concurrently vite \"wait-on tcp:3000 && electron .\" \"tsc -w\"",
     "app:build": "bun vite:build && tsc && electron-builder",
     "app:preview": "bun vite:build && tsc && electron ."
   },
@@ -113,6 +113,7 @@
     "unplugin-auto-import": "^21.0.0",
     "unplugin-vue-components": "^32.1.0",
     "vite": "^8.1.3",
-    "vue-router": "^5.1.0"
+    "vue-router": "^5.1.0",
+    "wait-on": "^9.1.0"
   }
 }
