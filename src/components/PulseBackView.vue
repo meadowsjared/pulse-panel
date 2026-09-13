@@ -401,7 +401,7 @@ function setExportFormat(format: 'mp3' | 'wav' | 'ogg') {
   exportFormat.value = format;
   try {
     localStorage.setItem('pulse_back_export_format', format);
-  } catch {}
+  } catch { }
 }
 
 
@@ -478,13 +478,13 @@ function clearPreviewUrls() {
   if (micPreviewUrl.value) {
     try {
       URL.revokeObjectURL(micPreviewUrl.value);
-    } catch {}
+    } catch { }
     micPreviewUrl.value = '';
   }
   if (inputPreviewUrl.value) {
     try {
       URL.revokeObjectURL(inputPreviewUrl.value);
-    } catch {}
+    } catch { }
     inputPreviewUrl.value = '';
   }
 }
@@ -499,7 +499,7 @@ function updatePreviewUrls() {
   if (micPreviewUrl.value) {
     try {
       URL.revokeObjectURL(micPreviewUrl.value);
-    } catch {}
+    } catch { }
   }
   micPreviewUrl.value = URL.createObjectURL(micBlob);
 
@@ -509,14 +509,14 @@ function updatePreviewUrls() {
     if (inputPreviewUrl.value) {
       try {
         URL.revokeObjectURL(inputPreviewUrl.value);
-      } catch {}
+      } catch { }
     }
     inputPreviewUrl.value = URL.createObjectURL(inputBlob);
   } else {
     if (inputPreviewUrl.value) {
       try {
         URL.revokeObjectURL(inputPreviewUrl.value);
-      } catch {}
+      } catch { }
     }
     inputPreviewUrl.value = '';
   }
@@ -982,7 +982,7 @@ function onHandleMouseUp() {
 
 function getTrimmedAudioBlob(
   format: 'mp3' | 'wav' | 'ogg' = 'mp3'
-): { blob: Blob; duration: number; extension: string } | null {
+): { blob: Blob; duration: number; extension: string; } | null {
   if (!audioBuffer) return null;
 
   const sampleRate = audioBuffer.sampleRate;
@@ -1067,7 +1067,7 @@ async function saveToFile() {
 
     if (window.electron?.saveFileDialog) {
       const arrayBuffer = await trimmed.blob.arrayBuffer();
-      const formatFilterMap: Record<'mp3' | 'wav' | 'ogg', { name: string; extensions: string[] }> = {
+      const formatFilterMap: Record<'mp3' | 'wav' | 'ogg', { name: string; extensions: string[]; }> = {
         mp3: { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
         ogg: { name: 'OGG Audio (*.ogg)', extensions: ['ogg'] },
         wav: { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
