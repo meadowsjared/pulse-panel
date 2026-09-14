@@ -617,13 +617,19 @@ function renderWaveformBars(
       ctx.font = `600 ${fontSize}px sans-serif`;
       const textWidth = ctx.measureText(labelText).width;
 
+      // Position badge so it never collides with start-flag (top: 4px) when handles are visible
+      const badgeY =
+        props.showTrimHandles && t === 0
+          ? trackTop + trackLaneHeight - fontSize - 7 * dpr
+          : trackTop + 4 * dpr;
+
       ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
       ctx.beginPath();
-      ctx.roundRect(6 * dpr, trackTop + 4 * dpr, textWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
+      ctx.roundRect(6 * dpr, badgeY, textWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
       ctx.fill();
 
       ctx.fillStyle = isEnabled ? (colors[0] || 'rgba(56, 189, 248, 0.95)') : 'rgba(161, 161, 170, 0.6)';
-      ctx.fillText(labelText, 11 * dpr, trackTop + 4 * dpr + fontSize);
+      ctx.fillText(labelText, 11 * dpr, badgeY + fontSize);
     }
   }
 }
@@ -691,7 +697,10 @@ function drawWaveform() {
   }
 
   const trackKey = activeTracks
-    .map(t => `${Array.isArray(t.channelIndex) ? t.channelIndex.join(',') : t.channelIndex}:${t.enabled}`)
+    .map(
+      t =>
+        `${Array.isArray(t.channelIndex) ? t.channelIndex.join(',') : t.channelIndex}:${t.enabled !== false}:${t.label || ''}:${(t.colors || []).join(',')}`
+    )
     .join(';');
   const cacheKey = `${width}x${height}_${trackKey}`;
 
@@ -928,10 +937,11 @@ function onHandleMouseUp(e?: MouseEvent) {
 }
 
 watch(
-  () => [props.audioBuffer, props.includeMic, props.includeInput],
+  () => [props.audioBuffer, props.tracks, props.includeMic, props.includeInput],
   () => {
     scheduleDrawWaveform();
-  }
+  },
+  { deep: true }
 );
 
 onMounted(() => {

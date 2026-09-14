@@ -190,6 +190,8 @@
           <waveform-graph :audio-buffer="audioBuffer"
                           :duration="audioDuration"
                           :tracks="pulseBackTracks"
+                          :include-mic="includeMic"
+                          :include-input="includeInput"
                           v-model:current-time="currentTime"
                           v-model:trim-start="trimStart"
                           v-model:trim-end="trimEnd"
@@ -388,20 +390,32 @@ const includeMic = ref(true);
 const includeInput = ref(true);
 const hasDualChannels = ref(false);
 
-const pulseBackTracks = computed<WaveformTrack[]>(() => [
-  {
-    label: '🎤 MIC (VOICE)',
-    channelIndex: 0,
-    enabled: includeMic.value,
-    colors: ['#38bdf8', '#0284c7'],
-  },
-  {
-    label: '🔊 INPUT DEVICE (AUDIO)',
-    channelIndex: 1,
-    enabled: includeInput.value,
-    colors: ['#34d399', '#059669'],
-  },
-]);
+const pulseBackTracks = computed<WaveformTrack[]>(() => {
+  if (!hasDualChannels.value) {
+    return [
+      {
+        label: '',
+        channelIndex: 0,
+        enabled: true,
+        colors: ['#38bdf8', '#0284c7'],
+      },
+    ];
+  }
+  return [
+    {
+      label: '🎤 MIC (VOICE)',
+      channelIndex: 0,
+      enabled: includeMic.value,
+      colors: ['#38bdf8', '#0284c7'],
+    },
+    {
+      label: '🔊 INPUT DEVICE (AUDIO)',
+      channelIndex: 1,
+      enabled: includeInput.value,
+      colors: ['#34d399', '#059669'],
+    },
+  ];
+});
 
 // Playback State
 const isPlaying = ref(false);
@@ -435,10 +449,18 @@ function updateTrackVolumes() {
   if (micAudioElRef.value) {
     micAudioElRef.value.muted = !includeMic.value;
     micAudioElRef.value.volume = includeMic.value ? masterVol * factor : 0;
+    if (isPlaying.value && includeMic.value && micAudioElRef.value.paused) {
+      micAudioElRef.value.currentTime = currentTime.value;
+      micAudioElRef.value.play().catch(() => {});
+    }
   }
   if (inputAudioElRef.value) {
     inputAudioElRef.value.muted = !includeInput.value;
     inputAudioElRef.value.volume = includeInput.value ? masterVol * factor : 0;
+    if (isPlaying.value && includeInput.value && inputAudioElRef.value.paused) {
+      inputAudioElRef.value.currentTime = currentTime.value;
+      inputAudioElRef.value.play().catch(() => {});
+    }
   }
 }
 
@@ -674,14 +696,14 @@ function onStopBtnClick() {
 async function startPlayback(offsetSec: number, endSec: number) {
   const micEl = micAudioElRef.value;
   const inputEl = inputAudioElRef.value;
-  if (!micEl || !selectedClip.value) return;
+  if (!selectedClip.value) return;
 
   if (!micPreviewUrl.value && audioBuffer.value) {
     updatePreviewUrls();
   }
 
   playbackEndSec = endSec;
-  micEl.currentTime = offsetSec;
+  if (micEl) micEl.currentTime = offsetSec;
   if (hasDualChannels.value && inputEl) {
     inputEl.currentTime = offsetSec;
   }
@@ -689,9 +711,16 @@ async function startPlayback(offsetSec: number, endSec: number) {
   currentTime.value = offsetSec;
 
   try {
-    const playPromises: Promise<void>[] = [micEl.play()];
-    if (hasDualChannels.value && inputEl) {
+    const playPromises: Promise<void>[] = [];
+    if (micEl && (includeMic.value || !hasDualChannels.value)) {
+      playPromises.push(micEl.play());
+    }
+    if (hasDualChannels.value && inputEl && includeInput.value) {
       playPromises.push(inputEl.play());
+    }
+    // Fallback: if both are currently muted/toggled off, still start micEl for clock tracking
+    if (playPromises.length === 0 && micEl) {
+      playPromises.push(micEl.play());
     }
     await Promise.all(playPromises);
     isPlaying.value = true;
@@ -711,12 +740,21 @@ let lastScrubPlayTime = 0;
 function updatePlaybackAnimation() {
   if (isScrubbing) return;
   const micEl = micAudioElRef.value;
-  if (!isPlaying.value || !micEl) return;
+  const inputEl = inputAudioElRef.value;
+  if (!isPlaying.value || (!micEl && !inputEl)) return;
+
+  // Use the active element for clock
+  const masterEl =
+    hasDualChannels.value && !includeMic.value && includeInput.value && inputEl
+      ? inputEl
+      : micEl;
+
+  if (!masterEl) return;
 
   // Playhead directly tracks native HTML5 audio clock with zero latency
-  currentTime.value = micEl.currentTime;
+  currentTime.value = masterEl.currentTime;
 
-  if (currentTime.value >= playbackEndSec || micEl.ended) {
+  if (currentTime.value >= playbackEndSec || masterEl.ended) {
     stopPreview();
     currentTime.value = trimStart.value;
     syncAudioCurrentTime(trimStart.value);
