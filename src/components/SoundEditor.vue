@@ -167,12 +167,21 @@
       </div>
       <div v-if="modelValue.imageUrl"
            class="relative">
-        <button @click="removeImage"
-                class="remove-image-button absolute top-2 right-2 w-8 h-8 bg-white">
-          <inline-svg :src="Plus"
-                      alt="remove image"
-                      class="w-full h-full rotate-45" />
-        </button>
+        <div class="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+          <button @click="exportImage"
+                  class="image-action-button w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
+                  title="Save / export image">
+            <inline-svg :src="DownloadIcon"
+                        class="w-full h-full text-black" />
+          </button>
+          <button @click="removeImage"
+                  class="remove-image-button image-action-button w-8 h-8 bg-white flex items-center justify-center p-1 rounded cursor-pointer"
+                  title="Remove image">
+            <inline-svg :src="Plus"
+                        alt="remove image"
+                        class="w-full h-full rotate-45 text-black" />
+          </button>
+        </div>
         <img :src="modelValue.imageUrl"
              alt="preview button"
              class="image" />
@@ -190,6 +199,60 @@
                        :dark="false"
                        title="set a keybind for sound">Keybind:</hotkey-picker>
       </div>
+      <div ref="exportMenuRef"
+           class="relative w-full">
+        <!-- Export options popup if sound has trimmed segments -->
+        <transition name="export-menu-fade">
+          <div v-if="showExportMenu"
+               class="export-menu">
+            <div class="export-menu-header">
+              <span class="export-menu-title">Export Audio</span>
+              <button @click.stop="showExportMenu = false"
+                      type="button"
+                      class="export-menu-close"
+                      title="Close">✕</button>
+            </div>
+            <button @click="exportOriginalAudio"
+                    type="button"
+                    class="export-menu-item">
+              <div class="export-item-info">
+                <inline-svg :src="DownloadIcon"
+                            class="export-item-icon" />
+                <span class="export-item-label">Original Audio (Full)</span>
+              </div>
+              <span class="export-item-time">{{ formatSecondsToMMSS(duration) }}</span>
+            </button>
+            <template v-if="trimmedSegments.length > 0">
+              <div class="export-section-title">Trimmed Segments</div>
+              <button v-for="(seg, idx) in trimmedSegments"
+                      :key="seg.id"
+                      @click="exportTrimmedSegment(seg, idx)"
+                      type="button"
+                      class="export-menu-item">
+                <div class="export-item-info">
+                  <span class="segment-num-badge">{{ idx + 1 }}</span>
+                  <span class="export-item-label truncate">{{ seg.label || `Segment ${idx + 1}` }}</span>
+                </div>
+                <span class="export-item-time">
+                  {{ formatSecondsToMMSS(seg.start) }} - {{ formatSecondsToMMSS(seg.end) }}
+                </span>
+              </button>
+            </template>
+          </div>
+        </transition>
+
+        <button :disabled="!hasAudio || isExporting"
+                @click="handleExportClick"
+                type="button"
+                class="light flex items-center justify-center gap-1.5 w-full"
+                :title="hasAudio ? 'Save or export audio file' : 'No audio file loaded'">
+          <inline-svg class="w-4 h-4"
+                      :src="DownloadIcon" />
+          <span>{{ isExporting ? 'Exporting...' : 'Export Audio...' }}</span>
+          <span v-if="trimmedSegments.length > 0"
+                class="text-xs opacity-75 ml-0.5">▾</span>
+        </button>
+      </div>
       <button @click="emit('deleteSound', modelValue)"
               class="light danger">DELETE</button>
     </div>
@@ -204,7 +267,10 @@ import InlineSvg from 'vue-inline-svg';
 import { useSettingsStore } from '../store/settings';
 import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue';
 import PlayIcon from '../assets/images/play.svg';
+import DownloadIcon from '../assets/images/download.svg';
 import { useSoundStore } from '../store/sound';
+import { usePulseBackStore } from '../store/pulseBack';
+import { encodeMP3 } from '../services/pulseBackBuffer';
 import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils';
 import { TagInputRef } from './BaseComponents/TagInputTypes';
 import { useThrottleFn } from '@vueuse/shared';
@@ -223,6 +289,240 @@ const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => 
 
 const settingsStore = useSettingsStore();
 const soundStore = useSoundStore();
+const pulseBackStore = usePulseBackStore();
+
+const isExporting = ref(false);
+const showExportMenu = ref(false);
+const exportMenuRef = ref<HTMLElement | null>(null);
+
+const hasAudio = computed(() => !!(props.modelValue.audioUrl || props.modelValue.audioKey));
+
+const trimmedSegments = computed(() => {
+  const segs = props.modelValue.soundSegments || [];
+  const dur = duration.value;
+  return segs.filter(s => s.start > 0.05 || (dur > 0 && s.end < dur - 0.05));
+});
+
+function handleExportClick() {
+  if (!hasAudio.value || isExporting.value) return;
+  if (trimmedSegments.value.length > 0) {
+    showExportMenu.value = !showExportMenu.value;
+  } else {
+    exportOriginalAudio();
+  }
+}
+
+async function exportOriginalAudio() {
+  let url = props.modelValue.audioUrl;
+  if (!url && props.modelValue.audioKey) {
+    url = (await settingsStore.getFile(props.modelValue.audioKey)) ?? undefined;
+  }
+  if (!url) return;
+
+  isExporting.value = true;
+  showExportMenu.value = false;
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    const mimeType = (blob.type || '').toLowerCase();
+    let extension = 'mp3';
+    if (mimeType.includes('wav')) extension = 'wav';
+    else if (mimeType.includes('ogg')) extension = 'ogg';
+    else if (mimeType.includes('flac')) extension = 'flac';
+    else if (mimeType.includes('aac')) extension = 'aac';
+    else if (mimeType.includes('m4a') || mimeType.includes('mp4')) extension = 'm4a';
+    else if (mimeType.includes('webm')) extension = 'webm';
+    else if (mimeType.includes('mpeg') || mimeType.includes('mp3')) extension = 'mp3';
+
+    const rawTitle = props.modelValue.title?.trim() || 'sound';
+    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound';
+    const baseName = sanitizedTitle.replace(new RegExp(`\\.${extension}$`, 'i'), '');
+    const defaultFilename = `${baseName}.${extension}`;
+
+    const arrayBuffer = await blob.arrayBuffer();
+    const formatFilterMap: Record<string, { name: string; extensions: string[] }> = {
+      mp3: { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
+      wav: { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
+      ogg: { name: 'OGG Audio (*.ogg)', extensions: ['ogg'] },
+      flac: { name: 'FLAC Audio (*.flac)', extensions: ['flac'] },
+      m4a: { name: 'M4A Audio (*.m4a)', extensions: ['m4a'] },
+      webm: { name: 'WebM Audio (*.webm)', extensions: ['webm'] },
+    };
+    const primaryFilter = formatFilterMap[extension] || {
+      name: `${extension.toUpperCase()} Audio (*.${extension})`,
+      extensions: [extension],
+    };
+    const filters = [primaryFilter, { name: 'All Files (*.*)', extensions: ['*'] }];
+
+    if (window.electron?.saveFileDialog) {
+      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+      if (saved) {
+        pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+      }
+    } else {
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = defaultFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+    }
+  } catch (err) {
+    console.error('Failed to export audio:', err);
+    pulseBackStore.showToast('Failed to export audio');
+  } finally {
+    isExporting.value = false;
+  }
+}
+
+async function exportTrimmedSegment(segment: SoundSegment, segmentIndex?: number) {
+  if (!audioBuffer.value) {
+    await loadAudioBuffer();
+    if (!audioBuffer.value) return;
+  }
+  isExporting.value = true;
+  showExportMenu.value = false;
+  try {
+    const buffer = audioBuffer.value;
+    const sampleRate = buffer.sampleRate;
+    const startSample = Math.max(0, Math.floor(segment.start * sampleRate));
+    const endSample = Math.min(buffer.length, Math.floor(segment.end * sampleRate));
+    const length = Math.max(0, endSample - startSample);
+    if (length <= 0) return;
+
+    const micSamples = new Float32Array(length);
+    buffer.copyFromChannel(micSamples, 0, startSample);
+
+    const isStereo = buffer.numberOfChannels >= 2;
+    const inputSamples = isStereo ? new Float32Array(length) : null;
+    if (isStereo && inputSamples) {
+      buffer.copyFromChannel(inputSamples, 1, startSample);
+    }
+
+    const blob = await encodeMP3(micSamples, sampleRate, 192);
+
+    const rawTitle = props.modelValue.title?.trim() || 'sound';
+    const segLabel = segment.label?.trim() || (segmentIndex !== undefined ? `segment_${segmentIndex + 1}` : 'trimmed');
+    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound';
+    const sanitizedSeg = segLabel.replace(/[<>:"/\\|?*]/g, '_').trim();
+    const defaultFilename = `${sanitizedTitle}_${sanitizedSeg}.mp3`;
+
+    const arrayBuffer = await blob.arrayBuffer();
+    const filters = [
+      { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
+      { name: 'All Files (*.*)', extensions: ['*'] },
+    ];
+
+    if (window.electron?.saveFileDialog) {
+      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+      if (saved) {
+        pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+      }
+    } else {
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = defaultFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+    }
+  } catch (err) {
+    console.error('Failed to export trimmed audio:', err);
+    pulseBackStore.showToast('Failed to export trimmed audio');
+  } finally {
+    isExporting.value = false;
+  }
+}
+
+function handleExportMenuClickOutside(event: MouseEvent) {
+  if (showExportMenu.value && exportMenuRef.value && !exportMenuRef.value.contains(event.target as Node)) {
+    showExportMenu.value = false;
+  }
+}
+
+function handleExportMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && showExportMenu.value) {
+    showExportMenu.value = false;
+  }
+}
+
+const isExportingImage = ref(false);
+
+async function exportImage() {
+  let url = props.modelValue.imageUrl;
+  if (!url && props.modelValue.imageKey) {
+    url = (await settingsStore.getFile(props.modelValue.imageKey)) ?? undefined;
+  }
+  if (!url || isExportingImage.value) return;
+
+  isExportingImage.value = true;
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+
+    const mimeType = (blob.type || '').toLowerCase();
+    let extension = 'png';
+    if (mimeType.includes('jpeg') || mimeType.includes('jpg')) extension = 'jpg';
+    else if (mimeType.includes('png')) extension = 'png';
+    else if (mimeType.includes('webp')) extension = 'webp';
+    else if (mimeType.includes('gif')) extension = 'gif';
+    else if (mimeType.includes('svg')) extension = 'svg';
+    else if (mimeType.includes('avif')) extension = 'avif';
+
+    const rawTitle = props.modelValue.title?.trim() || 'sound';
+    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound';
+    const baseName = sanitizedTitle.replace(new RegExp(`\\.${extension}$`, 'i'), '');
+    const defaultFilename = `${baseName}.${extension}`;
+
+    const arrayBuffer = await blob.arrayBuffer();
+    const formatFilterMap: Record<string, { name: string; extensions: string[] }> = {
+      png: { name: 'PNG Image (*.png)', extensions: ['png'] },
+      jpg: { name: 'JPEG Image (*.jpg;*.jpeg)', extensions: ['jpg', 'jpeg'] },
+      webp: { name: 'WebP Image (*.webp)', extensions: ['webp'] },
+      gif: { name: 'GIF Image (*.gif)', extensions: ['gif'] },
+      svg: { name: 'SVG Image (*.svg)', extensions: ['svg'] },
+      avif: { name: 'AVIF Image (*.avif)', extensions: ['avif'] },
+    };
+    const primaryFilter = formatFilterMap[extension] || {
+      name: `${extension.toUpperCase()} Image (*.${extension})`,
+      extensions: [extension],
+    };
+    const filters = [
+      primaryFilter,
+      { name: 'All Images (*.png;*.jpg;*.jpeg;*.webp;*.gif)', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] },
+      { name: 'All Files (*.*)', extensions: ['*'] },
+    ];
+
+    if (window.electron?.saveFileDialog) {
+      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+      if (saved) {
+        pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+      }
+    } else {
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = defaultFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(downloadUrl);
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+    }
+  } catch (err) {
+    console.error('Failed to export image:', err);
+    pulseBackStore.showToast('Failed to export image');
+  } finally {
+    isExportingImage.value = false;
+  }
+}
 
 const audioBuffer = shallowRef<AudioBuffer | null>(null);
 const currentTime = ref(0);
@@ -521,6 +821,8 @@ const scrollToSound = () => {
 };
 
 onMounted(async () => {
+  document.addEventListener('click', handleExportMenuClickOutside);
+  document.addEventListener('keydown', handleExportMenuKeydown);
   if (props.modelValue) {
     await settingsStore.ensureSoundLoaded(props.modelValue);
     loadAudioBuffer();
@@ -556,6 +858,8 @@ watch(
 );
 
 onUnmounted(() => {
+  document.removeEventListener('click', handleExportMenuClickOutside);
+  document.removeEventListener('keydown', handleExportMenuKeydown);
   stopScrubSnippet();
   if (playheadRaf !== null) {
     cancelAnimationFrame(playheadRaf);
@@ -926,12 +1230,24 @@ input[type='checkbox']:focus-visible {
   aspect-ratio: 1 / 1;
 }
 
-.remove-image-button {
-  opacity: 0.5;
+.remove-image-button,
+.image-action-button {
+  opacity: 0.6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.1s ease;
 }
 
-.remove-image-button:focus-visible {
+.remove-image-button:hover,
+.remove-image-button:focus-visible,
+.image-action-button:hover,
+.image-action-button:focus-visible {
   opacity: 1;
+}
+
+.remove-image-button:active,
+.image-action-button:active {
+  transform: scale(0.95);
 }
 
 .input-group {
@@ -1008,5 +1324,154 @@ input {
 .segment-label-input:focus {
   border-bottom-color: #38bdf8 !important;
   color: #ffffff !important;
+}
+
+.export-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background-color: #18181b !important;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 0.65rem;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.export-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.export-menu::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 3px;
+}
+
+.export-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid #27272a;
+  margin-bottom: 0.2rem;
+}
+
+.export-menu-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #f4f4f5;
+}
+
+.export-menu-close {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+
+.export-menu-close:hover {
+  color: #ffffff;
+}
+
+.export-section-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a1a1aa;
+  margin-top: 0.35rem;
+  margin-bottom: 0.1rem;
+  padding-left: 0.2rem;
+}
+
+.export-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  background-color: #27272a;
+  border: 1px solid #333338;
+  border-radius: 6px;
+  color: #f4f4f5;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  text-align: left;
+}
+
+.export-menu-item:hover {
+  background-color: #3f3f46;
+  border-color: #52525b;
+  color: #ffffff;
+}
+
+.export-menu-item:active {
+  background-color: #23a459;
+  border-color: #23a459;
+  color: #ffffff;
+}
+
+.export-item-info {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.export-item-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
+  color: #2ea32e;
+}
+
+.segment-num-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.12);
+  color: #d4d4d8;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.export-item-label {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-item-time {
+  font-size: 0.7rem;
+  color: #a1a1aa;
+  font-family: monospace;
+  flex-shrink: 0;
+  margin-left: 0.5rem;
+}
+
+.export-menu-fade-enter-active,
+.export-menu-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.export-menu-fade-enter-from,
+.export-menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
 }
 </style>

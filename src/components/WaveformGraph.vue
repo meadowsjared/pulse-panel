@@ -463,58 +463,59 @@ function handleDocumentMouseDown(e: MouseEvent) {
   closePopover();
 }
 
-function drawWaveform() {
-  const canvas = canvasRef.value;
-  const buffer = props.audioBuffer;
-  if (!canvas || !buffer) return;
+const DOWNSAMPLE_RESOLUTION = 2000;
+const bufferPeaksCache = new WeakMap<AudioBuffer, Map<number, Float32Array>>();
 
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) {
-    requestAnimationFrame(drawWaveform);
-    return;
+function getDownsampledChannelPeaks(buffer: AudioBuffer, channelIdx: number): Float32Array {
+  let cache = bufferPeaksCache.get(buffer);
+  if (!cache) {
+    cache = new Map();
+    bufferPeaksCache.set(buffer, cache);
   }
-
-  const dpr = window.devicePixelRatio || 1;
-  const width = (canvas.width = Math.round(rect.width * dpr));
-  const height = (canvas.height = Math.round(rect.height * dpr));
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  ctx.clearRect(0, 0, width, height);
-
-  // 1. Resolve active tracks
-  let activeTracks: WaveformTrack[] = [];
-  if (props.tracks && props.tracks.length > 0) {
-    activeTracks = props.tracks;
-  } else if (buffer.numberOfChannels >= 2 && (!props.includeMic || !props.includeInput)) {
-    // Fallback if legacy includeMic / includeInput are explicitly toggled without tracks prop
-    activeTracks = [
-      {
-        label: '🎤 MIC (VOICE)',
-        channelIndex: 0,
-        enabled: props.includeMic,
-        colors: ['#38bdf8', '#0284c7'],
-      },
-      {
-        label: '🔊 INPUT DEVICE (AUDIO)',
-        channelIndex: 1,
-        enabled: props.includeInput,
-        colors: ['#34d399', '#059669'],
-      },
-    ];
-  } else {
-    // Single unified track (mono or stereo merged)
-    activeTracks = [
-      {
-        label: '',
-        channelIndex: buffer.numberOfChannels >= 2 ? [0, 1] : 0,
-        enabled: true,
-        colors: ['#38bdf8', '#0284c7'],
-      },
-    ];
+  let peaks = cache.get(channelIdx);
+  if (!peaks) {
+    const rawData = buffer.getChannelData(channelIdx);
+    const len = rawData.length;
+    const res = Math.min(len, DOWNSAMPLE_RESOLUTION);
+    peaks = new Float32Array(res);
+    const step = len / res;
+    for (let i = 0; i < res; i++) {
+      const start = Math.floor(i * step);
+      const end = Math.min(len, Math.floor((i + 1) * step));
+      let max = 0;
+      for (let j = start; j < end; j++) {
+        const val = Math.abs(rawData[j]);
+        if (val > max) max = val;
+      }
+      peaks[i] = max;
+    }
+    cache.set(channelIdx, peaks);
   }
+  return peaks;
+}
 
+let cachedWidth = 0;
+let cachedHeight = 0;
+let drawRaf: number | null = null;
+
+function scheduleDrawWaveform() {
+  if (drawRaf !== null) return;
+  drawRaf = requestAnimationFrame(() => {
+    drawRaf = null;
+    drawWaveform();
+  });
+}
+
+const renderedWaveformCache = new WeakMap<AudioBuffer, Map<string, HTMLCanvasElement>>();
+
+function renderWaveformBars(
+  ctx: CanvasRenderingContext2D,
+  buffer: AudioBuffer,
+  width: number,
+  height: number,
+  activeTracks: WaveformTrack[],
+  dpr: number
+) {
   const numTracks = activeTracks.length;
   const trackLaneHeight = height / numTracks;
 
@@ -543,39 +544,38 @@ function drawWaveform() {
       ctx.stroke();
     }
 
-    // Resolve channel data arrays for this track
-    let channelsToSample: Float32Array[] = [];
+    // Resolve channel indices for this track
+    let channelIndices: number[] = [];
     if (Array.isArray(track.channelIndex)) {
-      channelsToSample = track.channelIndex
-        .filter(idx => idx >= 0 && idx < buffer.numberOfChannels)
-        .map(idx => buffer.getChannelData(idx));
+      channelIndices = track.channelIndex.filter(idx => idx >= 0 && idx < buffer.numberOfChannels);
     } else if (typeof track.channelIndex === 'number') {
       if (track.channelIndex >= 0 && track.channelIndex < buffer.numberOfChannels) {
-        channelsToSample = [buffer.getChannelData(track.channelIndex)];
+        channelIndices = [track.channelIndex];
       }
     }
 
-    if (channelsToSample.length === 0) {
+    if (channelIndices.length === 0) {
       if (numTracks === 1 && buffer.numberOfChannels >= 2) {
-        channelsToSample = [buffer.getChannelData(0), buffer.getChannelData(1)];
+        channelIndices = [0, 1];
       } else {
-        channelsToSample = [buffer.getChannelData(Math.min(t, buffer.numberOfChannels - 1))];
+        channelIndices = [Math.min(t, buffer.numberOfChannels - 1)];
       }
     }
 
-    // Sample peaks across all channels for this track
-    const primaryLen = channelsToSample[0].length;
+    // Sample peaks using cached channel downsamples
+    const channelPeaksList = channelIndices.map(cIdx => getDownsampledChannelPeaks(buffer, cIdx));
+    const cachedLen = channelPeaksList[0].length;
     const trackPeaks = new Float32Array(numBars);
     let maxPeak = 0.001;
 
     for (let i = 0; i < numBars; i++) {
-      const start = Math.floor((i / numBars) * primaryLen);
-      const end = Math.min(primaryLen, Math.floor(((i + 1) / numBars) * primaryLen));
+      const start = Math.floor((i / numBars) * cachedLen);
+      const end = Math.min(cachedLen, Math.floor(((i + 1) / numBars) * cachedLen));
 
       let p = 0;
       for (let j = start; j < end; j++) {
-        for (let c = 0; c < channelsToSample.length; c++) {
-          const val = Math.abs(channelsToSample[c][j]);
+        for (let c = 0; c < channelPeaksList.length; c++) {
+          const val = channelPeaksList[c][j];
           if (val > p) p = val;
         }
       }
@@ -625,6 +625,96 @@ function drawWaveform() {
       ctx.fillStyle = isEnabled ? (colors[0] || 'rgba(56, 189, 248, 0.95)') : 'rgba(161, 161, 170, 0.6)';
       ctx.fillText(labelText, 11 * dpr, trackTop + 4 * dpr + fontSize);
     }
+  }
+}
+
+function drawWaveform() {
+  const canvas = canvasRef.value;
+  const buffer = props.audioBuffer;
+  if (!canvas || !buffer) return;
+
+  if (cachedWidth <= 0 || cachedHeight <= 0) {
+    return;
+  }
+
+  const w = cachedWidth;
+  const h = cachedHeight;
+
+  const dpr = window.devicePixelRatio || 1;
+  const targetWidth = Math.round(w * dpr);
+  const targetHeight = Math.round(h * dpr);
+
+  if (canvas.width !== targetWidth) {
+    canvas.width = targetWidth;
+  }
+  if (canvas.height !== targetHeight) {
+    canvas.height = targetHeight;
+  }
+  const width = canvas.width;
+  const height = canvas.height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  ctx.clearRect(0, 0, width, height);
+
+  // 1. Resolve active tracks
+  let activeTracks: WaveformTrack[] = [];
+  if (props.tracks && props.tracks.length > 0) {
+    activeTracks = props.tracks;
+  } else if (buffer.numberOfChannels >= 2 && (!props.includeMic || !props.includeInput)) {
+    // Fallback if legacy includeMic / includeInput are explicitly toggled without tracks prop
+    activeTracks = [
+      {
+        label: '🎤 MIC (VOICE)',
+        channelIndex: 0,
+        enabled: props.includeMic,
+        colors: ['#38bdf8', '#0284c7'],
+      },
+      {
+        label: '🔊 INPUT DEVICE (AUDIO)',
+        channelIndex: 1,
+        enabled: props.includeInput,
+        colors: ['#34d399', '#059669'],
+      },
+    ];
+  } else {
+    // Single unified track (mono or stereo merged)
+    activeTracks = [
+      {
+        label: '',
+        channelIndex: buffer.numberOfChannels >= 2 ? [0, 1] : 0,
+        enabled: true,
+        colors: ['#38bdf8', '#0284c7'],
+      },
+    ];
+  }
+
+  const trackKey = activeTracks
+    .map(t => `${Array.isArray(t.channelIndex) ? t.channelIndex.join(',') : t.channelIndex}:${t.enabled}`)
+    .join(';');
+  const cacheKey = `${width}x${height}_${trackKey}`;
+
+  let bufferCache = renderedWaveformCache.get(buffer);
+  if (!bufferCache) {
+    bufferCache = new Map();
+    renderedWaveformCache.set(buffer, bufferCache);
+  }
+
+  let cachedCanvas = bufferCache.get(cacheKey);
+  if (!cachedCanvas) {
+    cachedCanvas = document.createElement('canvas');
+    cachedCanvas.width = width;
+    cachedCanvas.height = height;
+    const offCtx = cachedCanvas.getContext('2d');
+    if (offCtx) {
+      renderWaveformBars(offCtx, buffer, width, height, activeTracks, dpr);
+      bufferCache.set(cacheKey, cachedCanvas);
+    }
+  }
+
+  if (cachedCanvas) {
+    ctx.drawImage(cachedCanvas, 0, 0);
   }
 }
 
@@ -840,31 +930,31 @@ function onHandleMouseUp(e?: MouseEvent) {
 watch(
   () => [props.audioBuffer, props.includeMic, props.includeInput],
   () => {
-    nextTick(() => {
-      drawWaveform();
-    });
+    scheduleDrawWaveform();
   }
 );
 
 onMounted(() => {
-  window.addEventListener('resize', drawWaveform);
   window.addEventListener('mousedown', handleDocumentMouseDown, true);
   if (waveformWrapperRef.value) {
     resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          drawWaveform();
+          cachedWidth = entry.contentRect.width;
+          cachedHeight = entry.contentRect.height;
+          scheduleDrawWaveform();
         }
       }
     });
     resizeObserver.observe(waveformWrapperRef.value);
   }
-  nextTick(() => {
-    requestAnimationFrame(drawWaveform);
-  });
 });
 
 onUnmounted(() => {
+  if (drawRaf !== null) {
+    cancelAnimationFrame(drawRaf);
+    drawRaf = null;
+  }
   if (globalActiveGraphInstanceId.value === instanceId) {
     globalActiveGraphInstanceId.value = null;
   }
@@ -872,7 +962,6 @@ onUnmounted(() => {
     resizeObserver.disconnect();
     resizeObserver = null;
   }
-  window.removeEventListener('resize', drawWaveform);
   window.removeEventListener('mousedown', handleDocumentMouseDown, true);
   window.removeEventListener('mousemove', onHandleMouseMove);
   window.removeEventListener('mouseup', onHandleMouseUp);
