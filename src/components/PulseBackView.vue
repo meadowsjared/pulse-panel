@@ -226,6 +226,10 @@
           </div>
 
           <div class="trim-quick-actions">
+            <button v-if="canTrimToSelection"
+                    class="secondary-btn"
+                    title="Discard audio outside In and Out points to refine selection"
+                    @click="trimToSelection">Trim to Selection</button>
             <button class="secondary-btn"
                     @click="resetTrim">Reset Trim</button>
             <button class="secondary-btn"
@@ -666,6 +670,64 @@ function resetTrim() {
   currentTime.value = 0;
   syncAudioCurrentTime(0);
   saveCurrentClipState();
+}
+
+const canTrimToSelection = computed(() => {
+  if (!audioBuffer.value || !selectedClip.value) return false;
+  const dur = audioDuration.value;
+  return trimStart.value > 0.05 || (trimEnd.value < dur - 0.05 && trimEnd.value > 0);
+});
+
+async function trimToSelection() {
+  if (!audioBuffer.value || !selectedClip.value || !canTrimToSelection.value) return;
+
+  stopPreview();
+  const buffer = audioBuffer.value;
+  const sampleRate = buffer.sampleRate;
+  const startSample = Math.max(0, Math.floor(trimStart.value * sampleRate));
+  const endSample = Math.min(buffer.length, Math.floor(trimEnd.value * sampleRate));
+  const newLength = Math.max(0, endSample - startSample);
+  if (newLength <= 0) return;
+
+  const newDuration = newLength / sampleRate;
+  const hasDual = buffer.numberOfChannels >= 2;
+
+  let newBlob: Blob;
+  if (hasDual) {
+    const micSlice = buffer.getChannelData(0).slice(startSample, endSample);
+    const inputSlice = buffer.getChannelData(1).slice(startSample, endSample);
+    newBlob = encodeWAV(micSlice, sampleRate, inputSlice);
+  } else {
+    const micSlice = buffer.getChannelData(0).slice(startSample, endSample);
+    newBlob = encodeWAV(micSlice, sampleRate);
+  }
+
+  const clipId = selectedClip.value.id;
+  selectedClip.value.duration = newDuration;
+  selectedClip.value.blob = newBlob;
+  if (selectedClip.value.audioUrl) {
+    try {
+      URL.revokeObjectURL(selectedClip.value.audioUrl);
+    } catch {}
+  }
+  selectedClip.value.audioUrl = URL.createObjectURL(newBlob);
+  selectedClip.value.trimStart = 0;
+  selectedClip.value.trimEnd = newDuration;
+  selectedClip.value.currentTime = 0;
+
+  trimStart.value = 0;
+  trimEnd.value = newDuration;
+  currentTime.value = 0;
+
+  await loadAudioData(newBlob);
+
+  await pulseBackStore.updateClip(clipId, {
+    duration: newDuration,
+    blob: newBlob,
+    trimStart: 0,
+    trimEnd: newDuration,
+    currentTime: 0,
+  });
 }
 
 function playTrimmedOnly() {
@@ -1385,9 +1447,14 @@ onUnmounted(() => {
   transition: all 0.15s ease;
 }
 
-.secondary-btn:hover {
+.secondary-btn:hover:not(:disabled) {
   background: #3f3f46;
   color: white;
+}
+
+.secondary-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* Publish Card */
