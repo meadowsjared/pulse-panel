@@ -222,9 +222,9 @@
               </div>
               <span class="export-item-time">{{ formatSecondsToMMSS(duration) }}</span>
             </button>
-            <template v-if="trimmedSegments.length > 0">
-              <div class="export-section-title">Trimmed Segments</div>
-              <button v-for="(seg, idx) in trimmedSegments"
+            <template v-if="soundSegments.length > 0">
+              <div class="export-section-title">Sound Segments</div>
+              <button v-for="(seg, idx) in soundSegments"
                       :key="seg.id"
                       @click="exportTrimmedSegment(seg, idx)"
                       type="button"
@@ -236,6 +236,16 @@
                 <span class="export-item-time">
                   {{ formatSecondsToMMSS(seg.start) }} - {{ formatSecondsToMMSS(seg.end) }}
                 </span>
+              </button>
+              <button v-if="soundSegments.length > 1"
+                      @click="exportAllSegments"
+                      type="button"
+                      class="export-menu-item export-all-btn">
+                <div class="export-item-info">
+                  <inline-svg :src="DownloadIcon"
+                              class="export-item-icon" />
+                  <span class="export-item-label font-semibold">Export All ({{ soundSegments.length }} segments)</span>
+                </div>
               </button>
             </template>
           </div>
@@ -249,7 +259,7 @@
           <inline-svg class="w-4 h-4"
                       :src="DownloadIcon" />
           <span>{{ isExporting ? 'Exporting...' : 'Export Audio...' }}</span>
-          <span v-if="trimmedSegments.length > 0"
+          <span v-if="soundSegments.length > 0"
                 class="text-xs opacity-75 ml-0.5">▾</span>
         </button>
       </div>
@@ -296,16 +306,11 @@ const showExportMenu = ref(false);
 const exportMenuRef = ref<HTMLElement | null>(null);
 
 const hasAudio = computed(() => !!(props.modelValue.audioUrl || props.modelValue.audioKey));
-
-const trimmedSegments = computed(() => {
-  const segs = props.modelValue.soundSegments || [];
-  const dur = duration.value;
-  return segs.filter(s => s.start > 0.05 || (dur > 0 && s.end < dur - 0.05));
-});
+const soundSegments = computed(() => props.modelValue.soundSegments || []);
 
 function handleExportClick() {
   if (!hasAudio.value || isExporting.value) return;
-  if (trimmedSegments.value.length > 0) {
+  if (soundSegments.value.length > 0) {
     showExportMenu.value = !showExportMenu.value;
   } else {
     exportOriginalAudio();
@@ -379,63 +384,97 @@ async function exportOriginalAudio() {
   }
 }
 
-async function exportTrimmedSegment(segment: SoundSegment, segmentIndex?: number) {
+async function exportSegmentAudio(segment: SoundSegment, segmentIndex?: number, notify = true): Promise<boolean> {
   if (!audioBuffer.value) {
     await loadAudioBuffer();
-    if (!audioBuffer.value) return;
+    if (!audioBuffer.value) return false;
   }
+  const buffer = audioBuffer.value;
+  const sampleRate = buffer.sampleRate;
+  const startSample = Math.max(0, Math.floor(segment.start * sampleRate));
+  const endSample = Math.min(buffer.length, Math.floor(segment.end * sampleRate));
+  const length = Math.max(0, endSample - startSample);
+  if (length <= 0) return false;
+
+  const micSamples = new Float32Array(length);
+  buffer.copyFromChannel(micSamples, 0, startSample);
+
+  const isStereo = buffer.numberOfChannels >= 2;
+  const inputSamples = isStereo ? new Float32Array(length) : null;
+  if (isStereo && inputSamples) {
+    buffer.copyFromChannel(inputSamples, 1, startSample);
+  }
+
+  const blob = await encodeMP3(micSamples, sampleRate, 192);
+
+  const rawTitle = props.modelValue.title?.trim() || 'sound';
+  const segLabel = segment.label?.trim() || (segmentIndex !== undefined ? `segment_${segmentIndex + 1}` : 'segment');
+  const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound';
+  const sanitizedSeg = segLabel.replace(/[<>:"/\\|?*]/g, '_').trim();
+  const defaultFilename = `${sanitizedTitle}_${sanitizedSeg}.mp3`;
+
+  const arrayBuffer = await blob.arrayBuffer();
+  const filters = [
+    { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
+    { name: 'All Files (*.*)', extensions: ['*'] },
+  ];
+
+  if (window.electron?.saveFileDialog) {
+    const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+    if (saved && notify) {
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+    }
+    return Boolean(saved);
+  } else {
+    const downloadUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = defaultFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(downloadUrl);
+    if (notify) {
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+    }
+    return true;
+  }
+}
+
+async function exportTrimmedSegment(segment: SoundSegment, segmentIndex?: number) {
   isExporting.value = true;
   showExportMenu.value = false;
   try {
-    const buffer = audioBuffer.value;
-    const sampleRate = buffer.sampleRate;
-    const startSample = Math.max(0, Math.floor(segment.start * sampleRate));
-    const endSample = Math.min(buffer.length, Math.floor(segment.end * sampleRate));
-    const length = Math.max(0, endSample - startSample);
-    if (length <= 0) return;
+    await exportSegmentAudio(segment, segmentIndex, true);
+  } catch (err) {
+    console.error('Failed to export segment audio:', err);
+    pulseBackStore.showToast('Failed to export segment audio');
+  } finally {
+    isExporting.value = false;
+  }
+}
 
-    const micSamples = new Float32Array(length);
-    buffer.copyFromChannel(micSamples, 0, startSample);
-
-    const isStereo = buffer.numberOfChannels >= 2;
-    const inputSamples = isStereo ? new Float32Array(length) : null;
-    if (isStereo && inputSamples) {
-      buffer.copyFromChannel(inputSamples, 1, startSample);
-    }
-
-    const blob = await encodeMP3(micSamples, sampleRate, 192);
-
-    const rawTitle = props.modelValue.title?.trim() || 'sound';
-    const segLabel = segment.label?.trim() || (segmentIndex !== undefined ? `segment_${segmentIndex + 1}` : 'trimmed');
-    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound';
-    const sanitizedSeg = segLabel.replace(/[<>:"/\\|?*]/g, '_').trim();
-    const defaultFilename = `${sanitizedTitle}_${sanitizedSeg}.mp3`;
-
-    const arrayBuffer = await blob.arrayBuffer();
-    const filters = [
-      { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
-      { name: 'All Files (*.*)', extensions: ['*'] },
-    ];
-
-    if (window.electron?.saveFileDialog) {
-      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+async function exportAllSegments() {
+  isExporting.value = true;
+  showExportMenu.value = false;
+  try {
+    const segs = soundSegments.value;
+    let savedCount = 0;
+    for (let i = 0; i < segs.length; i++) {
+      const saved = await exportSegmentAudio(segs[i], i, false);
       if (saved) {
-        pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+        savedCount++;
+      } else {
+        // User cancelled the save dialog, stop asking for remaining files
+        break;
       }
-    } else {
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = defaultFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
-      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+    }
+    if (savedCount > 0) {
+      pulseBackStore.showToast(`Exported ${savedCount} segment${savedCount > 1 ? 's' : ''}`);
     }
   } catch (err) {
-    console.error('Failed to export trimmed audio:', err);
-    pulseBackStore.showToast('Failed to export trimmed audio');
+    console.error('Failed to export all segments:', err);
+    pulseBackStore.showToast('Failed to export segments');
   } finally {
     isExporting.value = false;
   }
