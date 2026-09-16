@@ -346,6 +346,8 @@
 import { ref, computed, shallowRef, watch, onUnmounted } from 'vue';
 import InlineSvg from 'vue-inline-svg';
 import { usePulseBackStore, PulseBackClip } from '../store/pulseBack';
+import { useSettingsStore } from '../store/settings';
+import { TagInputRef } from './BaseComponents/TagInputTypes';
 import { encodeWAV, encodeMP3, encodeOGG } from '../services/pulseBackBuffer';
 import WaveformGraph, { WaveformTrack } from './WaveformGraph.vue';
 import MicrophoneIcon from '../assets/images/microphone.svg';
@@ -354,6 +356,14 @@ import SpeakerIcon from '../assets/images/speaker.svg';
 import HeadphonesIcon from '../assets/images/headphones.svg';
 
 const pulseBackStore = usePulseBackStore();
+const settingsStore = useSettingsStore();
+
+function getDefaultVolumePercent(): number {
+  const def = settingsStore.defaultVolume;
+  return typeof def === 'number' && !Number.isNaN(def) ? Math.round(def * 100) : 100;
+}
+
+const tagInputRef = ref<TagInputRef | null>(null);
 
 const selectedClip = computed(() => pulseBackStore.selectedClip);
 
@@ -361,7 +371,7 @@ const selectedClip = computed(() => pulseBackStore.selectedClip);
 const clipTitle = ref('');
 const clipColor = ref('#3b82f6');
 const clipTags = ref<string[]>(['clip']);
-const clipVolume = ref(100);
+const clipVolume = ref(getDefaultVolumePercent());
 const isPublishing = ref(false);
 const isSavingFile = ref(false);
 
@@ -525,7 +535,7 @@ watch(
       if (oldClip) {
         pulseBackStore.updateClip(oldId, {
           title: clipTitle.value,
-          tags: clipTagsString.value.split(',').map(t => t.trim()).filter(Boolean),
+          tags: clipTags.value ? [...clipTags.value] : [],
           trimStart: trimStart.value,
           trimEnd: trimEnd.value,
           currentTime: currentTime.value,
@@ -540,11 +550,11 @@ watch(
 
     const clip = selectedClip.value;
     clipTitle.value = clip.title;
-    clipTagsString.value = (clip.tags || ['clip']).join(', ');
+    clipTags.value = clip.tags ? [...clip.tags] : ['clip'];
     trimStart.value = clip.trimStart ?? 0;
     trimEnd.value = clip.trimEnd ?? clip.duration;
     currentTime.value = clip.currentTime ?? trimStart.value;
-    clipVolume.value = clip.volume ?? 100;
+    clipVolume.value = clip.volume ?? getDefaultVolumePercent();
     clipColor.value = clip.color ?? '#3b82f6';
     includeMic.value = clip.includeMic ?? true;
     includeInput.value = clip.includeInput ?? true;
@@ -590,7 +600,7 @@ function saveCurrentClipState() {
   if (!selectedClip.value) return;
   pulseBackStore.updateClip(selectedClip.value.id, {
     title: clipTitle.value,
-    tags: clipTagsString.value.split(',').map(t => t.trim()).filter(Boolean),
+    tags: clipTags.value ? [...clipTags.value] : [],
     trimStart: trimStart.value,
     trimEnd: trimEnd.value,
     currentTime: currentTime.value,
@@ -637,13 +647,10 @@ async function onTitleChange() {
   saveCurrentClipState();
 }
 
-async function onTagsChange() {
+function onTagsChange(tags?: string[]) {
   if (!selectedClip.value) return;
-  const tags = clipTagsString.value
-    .split(',')
-    .map(t => t.trim())
-    .filter(t => t.length > 0);
-  selectedClip.value.tags = tags;
+  clipTags.value = tags || [];
+  selectedClip.value.tags = [...clipTags.value];
   saveCurrentClipState();
 }
 
@@ -1051,14 +1058,9 @@ async function publishToSoundboard() {
     const trimmed = await getTrimmedAudioBlob('wav');
     if (!trimmed) return;
 
-    const tags = clipTagsString.value
-      .split(',')
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
-
     await pulseBackStore.publishToSoundboard(selectedClip.value.id, trimmed.blob, trimmed.duration, {
       title: clipTitle.value.trim() || selectedClip.value.title,
-      tags,
+      tags: clipTags.value ? [...clipTags.value] : [],
       color: clipColor.value,
       volume: clipVolume.value,
     });
@@ -1501,13 +1503,17 @@ onUnmounted(() => {
   background: transparent;
 }
 
-.tags-input {
+.publish-field :deep(.tag-input) {
   background: #27272a;
   border: 1px solid #3f3f46;
   border-radius: 6px;
-  padding: 0.4rem 0.65rem;
-  color: white;
-  font-size: 0.85rem;
+  min-height: 38px;
+  box-sizing: border-box;
+}
+
+.publish-field :deep(.tag-input:focus-within) {
+  border-color: #3b82f6;
+  outline: none;
 }
 
 .volume-slider {

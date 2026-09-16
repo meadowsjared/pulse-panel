@@ -218,6 +218,12 @@ export const usePulseBackStore = defineStore('pulseBack', {
     },
 
     async saveNewClip(blob: Blob, duration: number, title?: string, hasDualTracks: boolean = false): Promise<PulseBackClip> {
+      const settingsStore = useSettingsStore()
+      const defaultVolPercent =
+        typeof settingsStore.defaultVolume === 'number' && !Number.isNaN(settingsStore.defaultVolume)
+          ? Math.round(settingsStore.defaultVolume * 100)
+          : 100
+
       const id = crypto.randomUUID()
       const now = Date.now()
       const defaultTitle = title || `Pulse Back ${new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
@@ -234,7 +240,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
         trimStart: 0,
         trimEnd: duration,
         currentTime: 0,
-        volume: 100,
+        volume: defaultVolPercent,
         color: '#3b82f6',
         includeMic: true,
         includeInput: true,
@@ -261,7 +267,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
           trimStart: 0,
           trimEnd: Number(clip.duration),
           currentTime: 0,
-          volume: 100,
+          volume: defaultVolPercent,
           color: '#3b82f6',
           includeMic: true,
           includeInput: true,
@@ -357,12 +363,28 @@ export const usePulseBackStore = defineStore('pulseBack', {
 
       const { fileUrl, fileKey } = await settingsStore.saveFile(file)
 
+      const defaultVol =
+        typeof settingsStore.defaultVolume === 'number' && !Number.isNaN(settingsStore.defaultVolume)
+          ? settingsStore.defaultVolume
+          : 1
+
+      let soundVolume: number | undefined
+      if (typeof soundMetadata.volume === 'number' && !Number.isNaN(soundMetadata.volume)) {
+        const normalized = Math.round(soundMetadata.volume) / 100
+        if (normalized !== defaultVol) {
+          soundVolume = normalized
+        }
+      }
+
+      const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label)
+      const combinedTags = Array.from(new Set([...(soundMetadata.tags || []), ...activeTags]))
+
       const newSound: Sound = {
         id: crypto.randomUUID(),
         title: soundMetadata.title,
-        tags: soundMetadata.tags,
+        tags: combinedTags,
         color: soundMetadata.color,
-        volume: soundMetadata.volume ?? 100,
+        ...(soundVolume !== undefined ? { volume: soundVolume } : {}),
         audioKey: fileKey,
         audioUrl: fileUrl,
         duration: trimmedDuration,
