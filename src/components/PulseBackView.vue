@@ -253,13 +253,13 @@
             </div>
 
             <div class="publish-field">
-              <label>Tags (comma separated):</label>
-              <input type="text"
-                     v-model="clipTagsString"
-                     @change="onTagsChange"
-                     @blur="onTagsChange"
-                     placeholder="e.g. funny, meme, scream"
-                     class="tags-input" />
+              <label for="clip-tags"
+                     @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
+              <tag-input ref="tagInputRef"
+                         id="clip-tags"
+                         v-model="clipTags"
+                         placeholder="Tags are used for searching"
+                         @update:model-value="onTagsChange" />
             </div>
 
             <div class="publish-field">
@@ -360,7 +360,7 @@ const selectedClip = computed(() => pulseBackStore.selectedClip);
 // Editor State
 const clipTitle = ref('');
 const clipColor = ref('#3b82f6');
-const clipTagsString = ref('clip');
+const clipTags = ref<string[]>(['clip']);
 const clipVolume = ref(100);
 const isPublishing = ref(false);
 const isSavingFile = ref(false);
