@@ -125,6 +125,11 @@ interface State {
    * **VOLATILE**
    */
   windowSize: number[]
+  /**
+   * Currently copied sound image for reuse across buttons
+   * **VOLATILE**
+   */
+  copiedSoundImage: { imageKey: string; imageUrl?: string } | null
 }
 
 interface SoundWithHotkey extends Sound {
@@ -269,6 +274,7 @@ export const useSettingsStore = defineStore('settings', {
     allInputDevices: [],
     virtualCableDeviceId: null,
     virtualCableInstalled: false,
+    copiedSoundImage: null,
   }),
   getters: {
     quickTags(): LabelActive[] {
@@ -821,9 +827,9 @@ export const useSettingsStore = defineStore('settings', {
      * @param pSound the sound to delete
      */
     async deleteSound(pSound: Sound): Promise<void> {
-      this.deleteFile(pSound.audioKey)
-      this.deleteFile(pSound.imageKey)
       this.sounds = this.sounds.filter(sound => sound.id !== pSound.id)
+      await this.deleteFile(pSound.audioKey, pSound.id)
+      await this.deleteFile(pSound.imageKey, pSound.id)
       const electron = window.electron
       await electron?.deleteSound(_prepareSoundForStorage(pSound))
     },
@@ -911,7 +917,9 @@ export const useSettingsStore = defineStore('settings', {
         }
       })
       this.registerWindowResize()
-      this._getImageUrls(this.sounds)
+      this._getImageUrls(this.sounds).then(() => {
+        this.deduplicateExistingImages().catch(() => {})
+      }).catch(() => {})
       return this.sounds
     },
     /** get the duration of an audio file */
@@ -1109,15 +1117,47 @@ export const useSettingsStore = defineStore('settings', {
       electron?.addHotkeys([keys])
     },
     /**
-     * Save a sound to the store
-     * @param file the sound to save
+     * Copy an image reference to clipboard state for quick reuse across buttons
+     */
+    copySoundImage(imageKey: string, imageUrl?: string) {
+      this.copiedSoundImage = { imageKey, imageUrl }
+    },
+    /**
+     * Check if a file key is still referenced by any sound on the soundboard
+     */
+    isFileUsed(key: string | undefined, excludeSoundId?: string): boolean {
+      if (!key) return false
+      return this.sounds.some(sound => {
+        if (excludeSoundId && sound.id === excludeSoundId) return false
+        return sound.imageKey === key || sound.audioKey === key
+      })
+    },
+    /**
+     * Save a sound or image file to the store with content-addressable deduplication.
+     * @param file the file to save
      */
     async saveFile(file: File) {
       const db = await getDB()
-      const key = crypto.randomUUID()
-      await db.put(dbStoreName, file, key)
-      const fileUrl = URL.createObjectURL(file)
-      blobUrlCache.set(key, fileUrl)
+      let key: string
+      try {
+        const buffer = await file.arrayBuffer()
+        const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+        const hashArray = Array.from(new Uint8Array(hashBuffer))
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+        key = `${file.type.startsWith('image/') ? 'img' : 'file'}_${hashHex}`
+        const existing = await db.get(dbStoreName, key)
+        if (!existing) {
+          await db.put(dbStoreName, file, key)
+        }
+      } catch {
+        key = crypto.randomUUID()
+        await db.put(dbStoreName, file, key)
+      }
+      let fileUrl = blobUrlCache.get(key)
+      if (!fileUrl) {
+        fileUrl = URL.createObjectURL(file)
+        blobUrlCache.set(key, fileUrl)
+      }
       return { fileUrl, fileKey: key }
     },
     /**
@@ -1144,11 +1184,15 @@ export const useSettingsStore = defineStore('settings', {
       return null
     },
     /**
-     * Delete a sound from the store
+     * Delete a sound or image from the store only if no other sound references it
      * @param path the key it's saved under
+     * @param excludeSoundId optional sound ID to exclude from reference check
      */
-    async deleteFile(path: string | undefined): Promise<void> {
+    async deleteFile(path: string | undefined, excludeSoundId?: string): Promise<void> {
       if (path === undefined) return
+      if (this.isFileUsed(path, excludeSoundId)) {
+        return
+      }
       blobUrlCache.delete(path)
       try {
         const db = await getDB()
@@ -1157,11 +1201,69 @@ export const useSettingsStore = defineStore('settings', {
         console.warn('Error deleting file from IndexedDB:', error)
       }
     },
-    async replaceFile(oldPath: string | undefined, newFile: File): Promise<{ fileUrl: string; fileKey: string }> {
+    async replaceFile(oldPath: string | undefined, newFile: File, excludeSoundId?: string): Promise<{ fileUrl: string; fileKey: string }> {
       if (oldPath) {
-        await this.deleteFile(oldPath)
+        await this.deleteFile(oldPath, excludeSoundId)
       }
       return this.saveFile(newFile)
+    },
+    /**
+     * Retroactively deduplicate existing images stored in IndexedDB.
+     * Consolidates redundant copies of the same image to a single key and cleans up orphaned DB records.
+     */
+    async deduplicateExistingImages(): Promise<number> {
+      try {
+        const db = await getDB()
+        const soundsWithImages = this.sounds.filter(s => !!s.imageKey && !!s.title)
+        if (soundsWithImages.length <= 1) return 0
+
+        const hashToCanonical = new Map<string, string>()
+        let deduplicatedCount = 0
+
+        for (const sound of soundsWithImages) {
+          const currentKey = sound.imageKey!
+          const file = await db.get(dbStoreName, currentKey)
+          if (!file) continue
+
+          let hashHex: string
+          try {
+            const buffer = await file.arrayBuffer()
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
+            const hashArray = Array.from(new Uint8Array(hashBuffer))
+            hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+          } catch {
+            continue
+          }
+
+          if (!hashToCanonical.has(hashHex)) {
+            hashToCanonical.set(hashHex, currentKey)
+          } else {
+            const canonicalKey = hashToCanonical.get(hashHex)!
+            if (canonicalKey !== currentKey) {
+              sound.imageKey = canonicalKey
+              if (blobUrlCache.has(canonicalKey)) {
+                sound.imageUrl = blobUrlCache.get(canonicalKey)
+              }
+              await this.saveSound(sound)
+
+              // Check if old key is still used by other sounds
+              const stillUsed = this.sounds.some(s => s.imageKey === currentKey && s.id !== sound.id)
+              if (!stillUsed) {
+                blobUrlCache.delete(currentKey)
+                await db.delete(dbStoreName, currentKey)
+                deduplicatedCount++
+              }
+            }
+          }
+        }
+        if (deduplicatedCount > 0) {
+          console.log(`[Pulse Panel] Successfully deduplicated ${deduplicatedCount} duplicate image(s).`)
+        }
+        return deduplicatedCount
+      } catch (err) {
+        console.warn('Error during image deduplication:', err)
+        return 0
+      }
     },
     /**
      * Fetch the quick tags from the store

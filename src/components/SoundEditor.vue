@@ -166,8 +166,17 @@
         </button>
       </div>
       <div v-if="modelValue.imageUrl"
-           class="relative">
+           class="relative"
+           @contextmenu.prevent.stop="openImageContextMenu($event)">
         <div class="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+          <button @click="handleCopyImage"
+                  class="image-action-button w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
+                  title="Copy image">
+            <svg class="w-4 h-4 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
           <button @click="exportImage"
                   class="image-action-button w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
                   title="Save / export image">
@@ -191,8 +200,68 @@
              @change="handleImageFileUpload"
              class="file-input hidden"
              accept="image/*" />
-      <button @click="imageFileInput?.click()"
-              class="light">Browse Image...</button>
+      <div class="flex gap-2 w-full">
+        <button @click="imageFileInput?.click()"
+                @contextmenu.prevent.stop="openImageContextMenu($event)"
+                class="light flex-1">Browse Image...</button>
+        <button v-if="canPasteImage"
+                @click="handlePasteImage"
+                type="button"
+                class="light flex items-center justify-center gap-1 px-3"
+                title="Paste copied image">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          </svg>
+          <span>Paste</span>
+        </button>
+      </div>
+
+      <!-- Image Right-Click Quick Menu -->
+      <teleport to="body">
+        <transition name="image-menu-fade">
+          <div v-if="showImageMenu"
+               ref="imageMenuRef"
+               class="image-context-menu"
+               :style="{ top: `${imageMenuPosition.y}px`, left: `${imageMenuPosition.x}px` }">
+            <button v-if="hasCurrentImage"
+                    @click="handleCopyImage"
+                    type="button"
+                    class="image-menu-item">
+              <svg class="w-3.5 h-3.5 text-zinc-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy Image</span>
+            </button>
+            <button v-if="canPasteImage"
+                    @click="handlePasteImage"
+                    type="button"
+                    class="image-menu-item">
+              <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              <span>Paste Image</span>
+            </button>
+            <div v-if="hasCurrentImage" class="image-menu-divider"></div>
+            <button v-if="hasCurrentImage"
+                    @click="handleExportImageFromMenu"
+                    type="button"
+                    class="image-menu-item">
+              <inline-svg :src="DownloadIcon" class="w-3.5 h-3.5 text-zinc-300" />
+              <span>Export Image</span>
+            </button>
+            <button v-if="hasCurrentImage"
+                    @click="handleRemoveImageFromMenu"
+                    type="button"
+                    class="image-menu-item text-red-400 hover:text-red-300">
+              <inline-svg :src="Plus" class="w-3.5 h-3.5 rotate-45 text-red-400" />
+              <span>Remove Image</span>
+            </button>
+          </div>
+        </transition>
+      </teleport>
       <div class="flex flex-col text-black">
         <hotkey-picker v-model="props.modelValue.hotkey"
                        @update:modelValue="updateHotkey"
@@ -490,6 +559,116 @@ function handleExportMenuKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && showExportMenu.value) {
     showExportMenu.value = false;
   }
+}
+
+const showImageMenu = ref(false);
+const imageMenuPosition = ref({ x: 0, y: 0 });
+const imageMenuRef = ref<HTMLElement | null>(null);
+
+const hasCurrentImage = computed(() => !!props.modelValue?.imageKey);
+const canPasteImage = computed(() => !!settingsStore.copiedSoundImage);
+
+function openImageContextMenu(event: MouseEvent) {
+  if (!hasCurrentImage.value && !canPasteImage.value) {
+    return;
+  }
+  event.stopPropagation();
+
+  const menuWidth = 160;
+  const menuHeight = hasCurrentImage.value ? 140 : 50;
+  let x = event.clientX;
+  let y = event.clientY;
+
+  if (x + menuWidth > window.innerWidth) {
+    x = window.innerWidth - menuWidth - 8;
+  }
+  if (y + menuHeight > window.innerHeight) {
+    y = window.innerHeight - menuHeight - 8;
+  }
+
+  imageMenuPosition.value = { x: Math.max(8, x), y: Math.max(8, y) };
+  showImageMenu.value = true;
+}
+
+function handleImageMenuClickOutside(event: MouseEvent) {
+  if (showImageMenu.value && imageMenuRef.value && !imageMenuRef.value.contains(event.target as Node)) {
+    showImageMenu.value = false;
+  }
+}
+
+function handleImageMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && showImageMenu.value) {
+    showImageMenu.value = false;
+    return;
+  }
+  // Check for Ctrl+V / Cmd+V
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
+    const target = event.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
+      return;
+    }
+    if (canPasteImage.value) {
+      event.preventDefault();
+      handlePasteImage();
+    }
+  }
+}
+
+async function handleCopyImage() {
+  showImageMenu.value = false;
+  if (!props.modelValue.imageKey) return;
+
+  settingsStore.copySoundImage(props.modelValue.imageKey, props.modelValue.imageUrl);
+  pulseBackStore.showToast('Image copied to clipboard');
+
+  try {
+    let url = props.modelValue.imageUrl;
+    if (!url && props.modelValue.imageKey) {
+      url = (await settingsStore.getFile(props.modelValue.imageKey)) ?? undefined;
+    }
+    if (url && navigator.clipboard?.write) {
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      if (blob.type === 'image/png') {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+      }
+    }
+  } catch (err) {
+    console.debug('OS clipboard copy skipped:', err);
+  }
+}
+
+async function handlePasteImage() {
+  showImageMenu.value = false;
+  const copied = settingsStore.copiedSoundImage;
+  if (!copied || !copied.imageKey) return;
+
+  const oldKey = props.modelValue.imageKey;
+  let url = copied.imageUrl;
+  if (!url) {
+    url = (await settingsStore.getFile(copied.imageKey)) ?? undefined;
+  }
+
+  props.modelValue.imageKey = copied.imageKey;
+  props.modelValue.imageUrl = url;
+  emit('update:modelValue', props.modelValue);
+
+  if (oldKey && oldKey !== copied.imageKey) {
+    await settingsStore.deleteFile(oldKey, props.modelValue.id);
+  }
+  pulseBackStore.showToast('Image pasted');
+}
+
+function handleExportImageFromMenu() {
+  showImageMenu.value = false;
+  exportImage();
+}
+
+function handleRemoveImageFromMenu() {
+  showImageMenu.value = false;
+  removeImage();
 }
 
 const isExportingImage = ref(false);
@@ -862,6 +1041,9 @@ const scrollToSound = () => {
 onMounted(async () => {
   document.addEventListener('click', handleExportMenuClickOutside);
   document.addEventListener('keydown', handleExportMenuKeydown);
+  document.addEventListener('click', handleImageMenuClickOutside);
+  document.addEventListener('contextmenu', handleImageMenuClickOutside);
+  document.addEventListener('keydown', handleImageMenuKeydown);
   if (props.modelValue) {
     await settingsStore.ensureSoundLoaded(props.modelValue);
     loadAudioBuffer();
@@ -899,6 +1081,9 @@ watch(
 onUnmounted(() => {
   document.removeEventListener('click', handleExportMenuClickOutside);
   document.removeEventListener('keydown', handleExportMenuKeydown);
+  document.removeEventListener('click', handleImageMenuClickOutside);
+  document.removeEventListener('contextmenu', handleImageMenuClickOutside);
+  document.removeEventListener('keydown', handleImageMenuKeydown);
   stopScrubSnippet();
   if (playheadRaf !== null) {
     cancelAnimationFrame(playheadRaf);
@@ -1051,18 +1236,25 @@ async function handleImageFileUpload(event: Event) {
   if (!(target instanceof HTMLInputElement)) return;
   if (!target.files || !target.files[0]) return;
   const file = target.files[0];
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.imageKey, file);
+  const oldKey = props.modelValue.imageKey;
+  const { fileUrl, fileKey } = await settingsStore.saveFile(file);
   props.modelValue.imageKey = fileKey;
   props.modelValue.imageUrl = fileUrl;
   emit('update:modelValue', props.modelValue);
+  if (oldKey && oldKey !== fileKey) {
+    await settingsStore.deleteFile(oldKey, props.modelValue.id);
+  }
 }
 
 function removeImage() {
   // Remove the image from the modelValue
-  settingsStore.deleteFile(props.modelValue.imageKey);
+  const oldKey = props.modelValue.imageKey;
   delete props.modelValue.imageKey;
   delete props.modelValue.imageUrl;
   emit('update:modelValue', props.modelValue);
+  if (oldKey) {
+    settingsStore.deleteFile(oldKey, props.modelValue.id);
+  }
 }
 
 function close() {
@@ -1512,5 +1704,63 @@ input {
 .export-menu-fade-leave-to {
   opacity: 0;
   transform: translateY(4px);
+}
+
+.image-context-menu {
+  position: fixed;
+  background-color: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 0.35rem;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 150px;
+  user-select: none;
+}
+
+.image-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: #f4f4f5;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.image-menu-item:hover {
+  background-color: #27272a;
+  color: #ffffff;
+}
+
+.image-menu-item:active {
+  background-color: #23a459;
+  color: #ffffff;
+}
+
+.image-menu-divider {
+  height: 1px;
+  background-color: #27272a;
+  margin: 0.2rem 0;
+}
+
+.image-menu-fade-enter-active,
+.image-menu-fade-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.image-menu-fade-enter-from,
+.image-menu-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
 }
 </style>
