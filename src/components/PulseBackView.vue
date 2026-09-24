@@ -1109,7 +1109,8 @@ async function publishToSoundboard() {
 
   isPublishing.value = true;
   try {
-    const trimmed = await getTrimmedAudioBlob('wav');
+    const format = exportFormat.value;
+    const trimmed = await getTrimmedAudioBlob(format);
     if (!trimmed) return;
 
     await pulseBackStore.publishToSoundboard(selectedClip.value.id, trimmed.blob, trimmed.duration, {
@@ -1120,6 +1121,8 @@ async function publishToSoundboard() {
     }, {
       deleteAfterPublish: deleteAfterPublish.value,
       navigateToSoundboard: false,
+      format,
+      extension: trimmed.extension,
     });
   } catch (err) {
     console.error('Failed to publish clip to soundboard:', err);

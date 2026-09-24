@@ -420,14 +420,16 @@ export const usePulseBackStore = defineStore('pulseBack', {
       trimmedBlob: Blob,
       trimmedDuration: number,
       soundMetadata: { title: string; tags: string[]; color: string; volume?: number },
-      options: { deleteAfterPublish?: boolean; navigateToSoundboard?: boolean } = {}
+      options: { deleteAfterPublish?: boolean; navigateToSoundboard?: boolean; format?: 'mp3' | 'wav' | 'ogg'; extension?: string } = {}
     ): Promise<void> {
       const settingsStore = useSettingsStore()
       const clip = this.clips.find(c => c.id === clipId)
       if (!clip) return
 
-      const fileName = `${soundMetadata.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.wav`
-      const file = new window.File([trimmedBlob], fileName, { type: 'audio/wav' })
+      const ext = options.extension || options.format || 'wav'
+      const mimeType = ext === 'mp3' ? 'audio/mpeg' : ext === 'ogg' ? 'audio/ogg' : 'audio/wav'
+      const fileName = `${soundMetadata.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.${ext}`
+      const file = new window.File([trimmedBlob], fileName, { type: mimeType })
 
       const { fileUrl, fileKey } = await settingsStore.saveFile(file)
 
