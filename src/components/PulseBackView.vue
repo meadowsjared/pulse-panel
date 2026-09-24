@@ -74,24 +74,38 @@
                 <span class="duration-badge">{{ formatSeconds(clip.duration) }}</span>
               </div>
             </div>
-            <button class="delete-clip-btn"
-                    @click.stop="deleteClip(clip.id)"
-                    title="Delete clip">
-              <svg class="w-4 h-4"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <line x1="18"
-                      y1="6"
-                      x2="6"
-                      y2="18"></line>
-                <line x1="6"
-                      y1="6"
-                      x2="18"
-                      y2="18"></line>
-              </svg>
-            </button>
+            <div class="clip-card-actions">
+              <button class="clip-card-btn duplicate-clip-btn"
+                      @click.stop="duplicateClip(clip.id)"
+                      title="Duplicate clip">
+                <svg class="w-4 h-4"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+              <button class="clip-card-btn delete-clip-btn"
+                      @click.stop="deleteClip(clip.id)"
+                      title="Delete clip">
+                <svg class="w-4 h-4"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <line x1="18"
+                        y1="6"
+                        x2="6"
+                        y2="18"></line>
+                  <line x1="6"
+                        y1="6"
+                        x2="18"
+                        y2="18"></line>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -113,6 +127,19 @@
                    placeholder="Give your sound a name..."
                    class="clip-title-input" />
           </div>
+          <button class="duplicate-toolbar-btn"
+                  @click="duplicateClip(selectedClip.id)"
+                  title="Duplicate this clip to create another sound from it">
+            <svg class="w-4 h-4 mr-1.5"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Duplicate Clip
+          </button>
         </div>
 
         <!-- Waveform Visualizer & Trimmer -->
@@ -299,36 +326,48 @@
           </div>
 
           <div class="publish-actions">
-            <button class="save-file-btn"
-                    :disabled="isSavingFile || isPublishing"
-                    @click="saveToFile"
-                    :title="`Save audio file as .${exportFormat} to your computer`">
-              <svg class="w-5 h-5 mr-1.5"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12"
-                      y1="15"
-                      x2="12"
-                      y2="3" />
-              </svg>
-              {{ isSavingFile ? 'Saving...' : `Save as .${exportFormat.toUpperCase()}` }}
-            </button>
-            <button class="publish-btn"
-                    :disabled="isPublishing || isSavingFile"
-                    @click="publishToSoundboard">
-              <svg class="w-5 h-5 mr-1"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              {{ isPublishing ? 'Publishing...' : 'Add to Soundboard' }}
-            </button>
+            <div class="publish-options">
+              <label class="publish-option-label"
+                     title="When enabled, removes this clip from Pulse Back after adding it to the soundboard">
+                <input type="checkbox"
+                       v-model="deleteAfterPublish"
+                       @change="onDeleteAfterPublishChange"
+                       class="publish-checkbox" />
+                <span>Delete clip from Pulse Back after adding</span>
+              </label>
+            </div>
+            <div class="publish-buttons">
+              <button class="save-file-btn"
+                      :disabled="isSavingFile || isPublishing"
+                      @click="saveToFile"
+                      :title="`Save audio file as .${exportFormat} to your computer`">
+                <svg class="w-5 h-5 mr-1.5"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12"
+                        y1="15"
+                        x2="12"
+                        y2="3" />
+                </svg>
+                {{ isSavingFile ? 'Saving...' : `Save as .${exportFormat.toUpperCase()}` }}
+              </button>
+              <button class="publish-btn"
+                      :disabled="isPublishing || isSavingFile"
+                      @click="publishToSoundboard">
+                <svg class="w-5 h-5 mr-1"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                {{ isPublishing ? 'Publishing...' : 'Add to Soundboard' }}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -374,6 +413,15 @@ const clipTags = ref<string[]>(['clip']);
 const clipVolume = ref(getDefaultVolumePercent());
 const isPublishing = ref(false);
 const isSavingFile = ref(false);
+
+const savedDeleteAfterPublish = localStorage.getItem('pulse_back_delete_after_publish');
+const deleteAfterPublish = ref(savedDeleteAfterPublish === 'true');
+
+function onDeleteAfterPublishChange() {
+  try {
+    localStorage.setItem('pulse_back_delete_after_publish', String(deleteAfterPublish.value));
+  } catch { }
+}
 
 const savedFormat = localStorage.getItem('pulse_back_export_format');
 const exportFormat = ref<'mp3' | 'wav' | 'ogg'>(
@@ -667,6 +715,12 @@ async function deleteClip(id: string) {
   stopPreview();
   clearPreviewUrls();
   await pulseBackStore.deleteClip(id);
+}
+
+async function duplicateClip(id: string) {
+  stopPreview();
+  saveCurrentClipState();
+  await pulseBackStore.duplicateClip(id);
 }
 
 function resetTrim() {
@@ -1063,6 +1117,9 @@ async function publishToSoundboard() {
       tags: clipTags.value ? [...clipTags.value] : [],
       color: clipColor.value,
       volume: clipVolume.value,
+    }, {
+      deleteAfterPublish: deleteAfterPublish.value,
+      navigateToSoundboard: false,
     });
   } catch (err) {
     console.error('Failed to publish clip to soundboard:', err);
@@ -1270,7 +1327,13 @@ onUnmounted(() => {
   font-family: monospace;
 }
 
-.delete-clip-btn {
+.clip-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.clip-card-btn {
   background: transparent;
   border: none;
   color: #71717a;
@@ -1278,6 +1341,14 @@ onUnmounted(() => {
   padding: 0.25rem;
   border-radius: 4px;
   transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.duplicate-clip-btn:hover {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.15);
 }
 
 .delete-clip-btn:hover {
@@ -1327,6 +1398,27 @@ onUnmounted(() => {
   padding: 0.45rem 0.75rem;
   color: white;
   font-size: 0.9rem;
+}
+
+.duplicate-toolbar-btn {
+  display: flex;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  background: #27272a;
+  color: #d4d4d8;
+  border: 1px solid #3f3f46;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.duplicate-toolbar-btn:hover {
+  background: #3f3f46;
+  color: #ffffff;
+  border-color: #38bdf8;
 }
 
 .playback-controls {
@@ -1553,10 +1645,45 @@ onUnmounted(() => {
 
 .publish-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
   border-top: 1px solid #27272a;
   padding-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.publish-options {
+  display: flex;
+  align-items: center;
+}
+
+.publish-option-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #a1a1aa;
+  cursor: pointer;
+  user-select: none;
+}
+
+.publish-option-label:hover {
+  color: #e4e4e7;
+}
+
+.publish-checkbox {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #3b82f6;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.publish-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .save-file-btn {

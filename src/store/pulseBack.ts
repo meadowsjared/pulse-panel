@@ -348,11 +348,79 @@ export const usePulseBackStore = defineStore('pulseBack', {
       }
     },
 
+    async duplicateClip(clipId: string): Promise<PulseBackClip | null> {
+      const clip = this.clips.find(c => c.id === clipId)
+      if (!clip) return null
+
+      const newId = crypto.randomUUID()
+      const now = Date.now()
+      const duplicatedTitle = `${clip.title} (Copy)`
+      const rawBlob = toRaw(clip.blob)
+
+      const newClip: PulseBackClip = {
+        id: newId,
+        title: duplicatedTitle,
+        duration: clip.duration,
+        blob: clip.blob,
+        audioUrl: clip.blob ? URL.createObjectURL(clip.blob) : '',
+        createdAt: now,
+        hasDualTracks: clip.hasDualTracks ?? false,
+        tags: clip.tags ? [...toRaw(clip.tags)] : ['clip'],
+        trimStart: clip.trimStart !== undefined ? Number(clip.trimStart) : 0,
+        trimEnd: clip.trimEnd !== undefined ? Number(clip.trimEnd) : clip.duration,
+        currentTime: clip.currentTime !== undefined ? Number(clip.currentTime) : 0,
+        volume: clip.volume !== undefined ? Number(clip.volume) : 100,
+        color: clip.color !== undefined ? String(clip.color) : '#3b82f6',
+        includeMic: clip.includeMic !== undefined ? Boolean(clip.includeMic) : true,
+        includeInput: clip.includeInput !== undefined ? Boolean(clip.includeInput) : true,
+      }
+
+      // Insert right after original clip in list
+      const idx = this.clips.findIndex(c => c.id === clipId)
+      if (idx !== -1) {
+        this.clips.splice(idx + 1, 0, newClip)
+      } else {
+        this.clips.unshift(newClip)
+      }
+
+      this.selectedClipId = newClip.id
+      try {
+        localStorage.setItem('pulse_back_selected_clip_id', newClip.id)
+      } catch {}
+
+      try {
+        const rawTags = newClip.tags ? Array.from(toRaw(newClip.tags)) : []
+        const db = await getClipDB()
+        await db.put(STORE_NAME, {
+          id: String(newClip.id),
+          title: String(newClip.title),
+          duration: Number(newClip.duration),
+          blob: rawBlob,
+          createdAt: Number(newClip.createdAt),
+          hasDualTracks: Boolean(newClip.hasDualTracks),
+          tags: rawTags,
+          trimStart: Number(newClip.trimStart ?? 0),
+          trimEnd: Number(newClip.trimEnd ?? newClip.duration),
+          currentTime: Number(newClip.currentTime ?? 0),
+          volume: Number(newClip.volume ?? 100),
+          color: String(newClip.color ?? '#3b82f6'),
+          includeMic: Boolean(newClip.includeMic ?? true),
+          includeInput: Boolean(newClip.includeInput ?? true),
+        })
+      } catch (err) {
+        console.warn('Could not persist duplicated clip to IndexedDB:', err)
+      }
+
+      this.showToast(`Duplicated "${clip.title}"`)
+      return newClip
+    },
+
     async publishToSoundboard(
       clipId: string,
       trimmedBlob: Blob,
       trimmedDuration: number,
-      soundMetadata: { title: string; tags: string[]; color: string; volume?: number }
+      soundMetadata: { title: string; tags: string[]; color: string; volume?: number },
+      options: { deleteAfterPublish?: boolean; navigateToSoundboard?: boolean } = {}
     ): Promise<void> {
       const settingsStore = useSettingsStore()
       const clip = this.clips.find(c => c.id === clipId)
@@ -400,11 +468,16 @@ export const usePulseBackStore = defineStore('pulseBack', {
 
       await settingsStore.insertSounds(settingsStore.sounds.length - 1, newSound)
 
-      // Remove from clips draft
-      await this.deleteClip(clipId)
+      if (options.deleteAfterPublish) {
+        // Remove from clips draft if requested
+        await this.deleteClip(clipId)
+      }
 
       this.showToast(`Added "${newSound.title}" to Soundboard!`)
-      Router.push('/soundboard')
+
+      if (options.navigateToSoundboard) {
+        Router.push('/soundboard')
+      }
     },
 
     showToast(message: string): void {
