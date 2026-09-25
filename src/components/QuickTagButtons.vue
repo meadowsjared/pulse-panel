@@ -10,12 +10,17 @@
       @click="toggleTag"
       @contextmenu.prevent="toggleNegated(tag)"
       :class="[
-        'p-2 tag',
+        'p-2 tag flex items-center gap-1.5',
         { active: tag.active },
         { negated: tag.negated },
         { inverted: settingsStore.invertQuickTags },
       ]">
-      {{ tag.label }}
+      <img
+        v-if="settingsStore.getTagImageUrl(tag.label)"
+        :src="settingsStore.getTagImageUrl(tag.label)"
+        alt=""
+        class="w-4 h-4 rounded-full object-cover -ml-0.5 pointer-events-none" />
+      <span>{{ tag.label }}</span>
     </div>
   </div>
 </template>

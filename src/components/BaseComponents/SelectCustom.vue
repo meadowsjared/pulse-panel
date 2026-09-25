@@ -23,10 +23,13 @@
           class="option-value"
           :class="{ selected: option.value === props.modelValue }"
           @click="selectOption(option)"
+          @contextmenu.prevent.stop="handleOptionContextMenu($event, option)"
           @keydown.prevent="handleKeypress"
           @focus="handleFocus"
           @blur="handleBlur">
-          {{ option.label }}
+          <slot name="option" :option="option">
+            {{ option.label }}
+          </slot>
         </button>
       </ul>
     </div>
@@ -46,6 +49,7 @@ interface LabelValue {
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string | null): void
   (change: 'change', value: Event): void
+  (event: 'option-contextmenu', payload: { event: MouseEvent; option: LabelValue }): void
 }>()
 
 const props = withDefaults(
@@ -100,6 +104,11 @@ function selectOption(option: LabelValue) {
   }
   isOpen.value = false
   selectedOption.value?.focus()
+}
+
+function handleOptionContextMenu(event: MouseEvent, option: LabelValue) {
+  focused.value = true
+  emit('option-contextmenu', { event, option })
 }
 
 /**

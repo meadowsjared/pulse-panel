@@ -130,6 +130,15 @@ interface State {
    * **VOLATILE**
    */
   copiedSoundImage: { imageKey: string; imageUrl?: string } | null
+  /**
+   * Map of tag names to their assigned image keys
+   */
+  tagImages: Record<string, string>
+  /**
+   * Volatile cache of blob URLs for tag images
+   * **VOLATILE**
+   */
+  tagImageUrls: Record<string, string>
 }
 
 interface SoundWithHotkey extends Sound {
@@ -275,6 +284,8 @@ export const useSettingsStore = defineStore('settings', {
     virtualCableDeviceId: null,
     virtualCableInstalled: false,
     copiedSoundImage: null,
+    tagImages: {},
+    tagImageUrls: {},
   }),
   getters: {
     quickTags(): LabelActive[] {
@@ -355,6 +366,15 @@ export const useSettingsStore = defineStore('settings', {
       const settings = await electron?.readAllDBSettings()
       // transfer all the properties from settings to the local state
       if (settings) Object.assign(this, toRaw(settings))
+      if (settings?.tagImages && typeof settings.tagImages === 'object') {
+        this.tagImages = settings.tagImages as Record<string, string>
+      } else {
+        const savedTagImages = await electron?.readDBSetting('tagImages')
+        if (savedTagImages && typeof savedTagImages === 'object' && !Array.isArray(savedTagImages)) {
+          this.tagImages = savedTagImages as Record<string, string>
+        }
+      }
+      this._loadTagImageUrls().catch(() => {})
       if (typeof this.microphoneVolume !== 'number' || Number.isNaN(this.microphoneVolume)) {
         this.microphoneVolume = 1
       }
@@ -1123,14 +1143,105 @@ export const useSettingsStore = defineStore('settings', {
       this.copiedSoundImage = { imageKey, imageUrl }
     },
     /**
-     * Check if a file key is still referenced by any sound on the soundboard
+     * Check if a file key is still referenced by any sound on the soundboard or tag image
      */
     isFileUsed(key: string | undefined, excludeSoundId?: string): boolean {
       if (!key) return false
-      return this.sounds.some(sound => {
+      const usedBySound = this.sounds.some(sound => {
         if (excludeSoundId && sound.id === excludeSoundId) return false
         return sound.imageKey === key || sound.audioKey === key
       })
+      if (usedBySound) return true
+      return Object.values(this.tagImages ?? {}).some(imageKey => imageKey === key)
+    },
+    /**
+     * Get the loaded blob URL for a tag's assigned image
+     */
+    getTagImageUrl(tag: string | undefined): string | undefined {
+      if (!tag) return undefined
+      const normTag = tag.trim().toLowerCase()
+      return this.tagImageUrls?.[normTag]
+    },
+    /**
+     * Get the stored imageKey for a tag's assigned image
+     */
+    getTagImageKey(tag: string | undefined): string | undefined {
+      if (!tag) return undefined
+      const normTag = tag.trim().toLowerCase()
+      return this.tagImages?.[normTag]
+    },
+    /**
+     * Get the inherited tag image URL for a sound if any of its tags has an image assigned
+     */
+    getSoundTagImageUrl(sound: Sound | undefined): string | undefined {
+      if (!sound?.tags || sound.tags.length === 0) return undefined
+      for (const tag of sound.tags) {
+        const url = this.getTagImageUrl(tag)
+        if (url) return url
+      }
+      return undefined
+    },
+    /**
+     * Get the name of the tag providing the fallback image for a sound
+     */
+    getSoundTagImageTag(sound: Sound | undefined): string | undefined {
+      if (!sound?.tags || sound.tags.length === 0) return undefined
+      for (const tag of sound.tags) {
+        const key = this.getTagImageKey(tag)
+        if (key) return tag
+      }
+      return undefined
+    },
+    /**
+     * Assign an imageKey to a tag
+     */
+    async setTagImage(tag: string, imageKey: string, imageUrl?: string): Promise<void> {
+      if (!tag || !imageKey) return
+      const normTag = tag.trim().toLowerCase()
+      this.tagImages ??= {}
+      this.tagImageUrls ??= {}
+      this.tagImages[normTag] = imageKey
+      if (imageUrl) {
+        this.tagImageUrls[normTag] = imageUrl
+      } else {
+        const loadedUrl = await this.getFile(imageKey)
+        if (loadedUrl) this.tagImageUrls[normTag] = loadedUrl
+      }
+      await this.saveTagImages()
+    },
+    /**
+     * Remove an image from a tag
+     */
+    async removeTagImage(tag: string): Promise<void> {
+      if (!tag) return
+      const normTag = tag.trim().toLowerCase()
+      if (!this.tagImages?.[normTag]) return
+      const oldKey = this.tagImages[normTag]
+      delete this.tagImages[normTag]
+      delete this.tagImageUrls[normTag]
+      await this.saveTagImages()
+      if (oldKey) {
+        await this.deleteFile(oldKey)
+      }
+    },
+    async saveTagImages(): Promise<void> {
+      const electron = window.electron
+      await electron?.saveDBSetting('tagImages', toRaw(this.tagImages))
+    },
+    async _loadTagImageUrls(): Promise<void> {
+      if (!this.tagImages) return
+      this.tagImageUrls ??= {}
+      const entries = Object.entries(this.tagImages)
+      await Promise.all(
+        entries.map(async ([tag, imageKey]) => {
+          if (imageKey) {
+            const url = await this.getFile(imageKey)
+            if (url) {
+              this.tagImageUrls[tag] = url
+            }
+          }
+        })
+      )
     },
     /**
      * Save a sound or image file to the store with content-addressable deduplication.

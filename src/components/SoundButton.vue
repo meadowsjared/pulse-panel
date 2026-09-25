@@ -19,7 +19,7 @@
         {
           reset: props.modelValue.reset,
           'playing-sound': playingThisSound,
-          'has-image': modelValue.imageKey,
+          'has-image': props.modelValue.imageKey || !!effectiveImageUrl,
           'edit-mode': props.displayMode === 'edit',
           'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
           focusVisible,
@@ -97,9 +97,15 @@ defineExpose({
   ref: containerElement,
 })
 
+const effectiveImageUrl = computed(() => {
+  if (props.modelValue.imageUrl) return props.modelValue.imageUrl
+  return settingsStore.getSoundTagImageUrl(props.modelValue)
+})
+
 const mergedStyle = computed(() => {
+  const img = effectiveImageUrl.value
   return {
-    ...(props.modelValue.imageUrl ? { backgroundImage: `url(${props.modelValue.imageUrl})` } : {}),
+    ...(img ? { backgroundImage: `url(${img})` } : {}),
     ...(props.modelValue.activeSegment
       ? {
           '--sound-duration': `${

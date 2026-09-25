@@ -165,7 +165,7 @@
           <span>Add Segment</span>
         </button>
       </div>
-      <div v-if="modelValue.imageUrl"
+      <div v-if="effectiveImageUrl"
            class="relative"
            @contextmenu.prevent.stop="openImageContextMenu($event)">
         <div class="absolute top-2 right-2 flex items-center gap-1.5 z-10">
@@ -183,15 +183,21 @@
             <inline-svg :src="DownloadIcon"
                         class="w-full h-full text-black" />
           </button>
-          <button @click="removeImage"
+          <button v-if="modelValue.imageKey"
+                  @click="removeImage"
                   class="remove-image-button image-action-button w-8 h-8 bg-white flex items-center justify-center p-1 rounded cursor-pointer"
-                  title="Remove image">
+                  title="Remove custom image override">
             <inline-svg :src="Plus"
                         alt="remove image"
                         class="w-full h-full rotate-45 text-black" />
           </button>
         </div>
-        <img :src="modelValue.imageUrl"
+        <div v-if="inheritedTag"
+             class="absolute bottom-2 left-2 bg-black/80 backdrop-blur text-white text-[11px] font-medium px-2 py-0.5 rounded flex items-center gap-1 z-10 shadow">
+          <span class="text-zinc-400">Default from</span>
+          <span class="text-emerald-400 font-semibold">#{{ inheritedTag }}</span>
+        </div>
+        <img :src="effectiveImageUrl"
              alt="preview button"
              class="image" />
       </div>
@@ -244,6 +250,21 @@
               </svg>
               <span>Paste Image</span>
             </button>
+            <template v-if="hasCurrentImage && (props.modelValue?.tags?.length ?? 0) > 0">
+              <div class="image-menu-divider"></div>
+              <button v-for="tag in props.modelValue.tags"
+                      :key="tag"
+                      @click="handleSetTagImage(tag)"
+                      type="button"
+                      class="image-menu-item text-emerald-400 hover:text-emerald-300"
+                      :title="`Set this image as the default for all sounds tagged #${tag}`">
+                <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                </svg>
+                <span class="truncate">Set as image for #{{ tag }}</span>
+              </button>
+            </template>
             <div v-if="hasCurrentImage" class="image-menu-divider"></div>
             <button v-if="hasCurrentImage"
                     @click="handleExportImageFromMenu"
@@ -252,12 +273,12 @@
               <inline-svg :src="DownloadIcon" class="w-3.5 h-3.5 text-zinc-300" />
               <span>Export Image</span>
             </button>
-            <button v-if="hasCurrentImage"
+            <button v-if="modelValue.imageKey"
                     @click="handleRemoveImageFromMenu"
                     type="button"
                     class="image-menu-item text-red-400 hover:text-red-300">
               <inline-svg :src="Plus" class="w-3.5 h-3.5 rotate-45 text-red-400" />
-              <span>Remove Image</span>
+              <span>Remove Image Override</span>
             </button>
           </div>
         </transition>
@@ -565,7 +586,29 @@ const showImageMenu = ref(false);
 const imageMenuPosition = ref({ x: 0, y: 0 });
 const imageMenuRef = ref<HTMLElement | null>(null);
 
-const hasCurrentImage = computed(() => !!props.modelValue?.imageKey);
+const inheritedTag = computed(() => {
+  if (props.modelValue.imageKey) return null;
+  return settingsStore.getSoundTagImageTag(props.modelValue) ?? null;
+});
+
+const inheritedTagImageUrl = computed(() => {
+  if (props.modelValue.imageKey) return null;
+  return settingsStore.getSoundTagImageUrl(props.modelValue) ?? null;
+});
+
+const effectiveImageUrl = computed(() => {
+  return props.modelValue.imageUrl || inheritedTagImageUrl.value || undefined;
+});
+
+const currentImageKey = computed(() => {
+  if (props.modelValue.imageKey) return props.modelValue.imageKey;
+  if (inheritedTag.value) {
+    return settingsStore.getTagImageKey(inheritedTag.value);
+  }
+  return undefined;
+});
+
+const hasCurrentImage = computed(() => !!currentImageKey.value);
 const canPasteImage = computed(() => !!settingsStore.copiedSoundImage);
 
 function openImageContextMenu(event: MouseEvent) {
@@ -574,8 +617,9 @@ function openImageContextMenu(event: MouseEvent) {
   }
   event.stopPropagation();
 
-  const menuWidth = 160;
-  const menuHeight = hasCurrentImage.value ? 140 : 50;
+  const menuWidth = 180;
+  const tagCount = props.modelValue?.tags?.length ?? 0;
+  const menuHeight = hasCurrentImage.value ? 140 + tagCount * 30 : 50;
   let x = event.clientX;
   let y = event.clientY;
 
@@ -616,18 +660,20 @@ function handleImageMenuKeydown(event: KeyboardEvent) {
 
 async function handleCopyImage() {
   showImageMenu.value = false;
-  if (!props.modelValue.imageKey) return;
+  const key = currentImageKey.value;
+  if (!key) return;
 
-  settingsStore.copySoundImage(props.modelValue.imageKey, props.modelValue.imageUrl);
+  const url = effectiveImageUrl.value;
+  settingsStore.copySoundImage(key, url);
   pulseBackStore.showToast('Image copied to clipboard');
 
   try {
-    let url = props.modelValue.imageUrl;
-    if (!url && props.modelValue.imageKey) {
-      url = (await settingsStore.getFile(props.modelValue.imageKey)) ?? undefined;
+    let fetchUrl = url;
+    if (!fetchUrl && key) {
+      fetchUrl = (await settingsStore.getFile(key)) ?? undefined;
     }
-    if (url && navigator.clipboard?.write) {
-      const resp = await fetch(url);
+    if (fetchUrl && navigator.clipboard?.write) {
+      const resp = await fetch(fetchUrl);
       const blob = await resp.blob();
       if (blob.type === 'image/png') {
         await navigator.clipboard.write([
@@ -638,6 +684,15 @@ async function handleCopyImage() {
   } catch (err) {
     console.debug('OS clipboard copy skipped:', err);
   }
+}
+
+async function handleSetTagImage(tag: string) {
+  showImageMenu.value = false;
+  const key = currentImageKey.value;
+  if (!key) return;
+  const url = effectiveImageUrl.value;
+  await settingsStore.setTagImage(tag, key, url);
+  pulseBackStore.showToast(`Set as default image for #${tag}`);
 }
 
 async function handlePasteImage() {
@@ -674,9 +729,10 @@ function handleRemoveImageFromMenu() {
 const isExportingImage = ref(false);
 
 async function exportImage() {
-  let url = props.modelValue.imageUrl;
-  if (!url && props.modelValue.imageKey) {
-    url = (await settingsStore.getFile(props.modelValue.imageKey)) ?? undefined;
+  let url = effectiveImageUrl.value;
+  const key = currentImageKey.value;
+  if (!url && key) {
+    url = (await settingsStore.getFile(key)) ?? undefined;
   }
   if (!url || isExportingImage.value) return;
 

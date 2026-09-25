@@ -278,13 +278,18 @@
         <div>{{ totalSoundsText }} &bull; {{ allTagsText }}</div>
         <div class="flex justify-center flex-wrap gap-1 cursor-grab">
           <div v-for="(tag, index) in settingsStore.quickTags"
-               :class="['tag select-none', { dragging: tag.isDragPreview }]"
+               :class="['tag select-none flex items-center', { dragging: tag.isDragPreview }]"
                draggable="true"
                @dragstart="dragStart(tag, index)"
                @dragenter.prevent="dragOver(tag)"
-               @dragend="dragEnd">
-            {{ tag.label
-            }}<button class="remove-button"
+               @dragend="dragEnd"
+               @contextmenu.prevent.stop="openTagMenu($event, tag.label)">
+            <img v-if="settingsStore.getTagImageUrl(tag.label)"
+                 :src="settingsStore.getTagImageUrl(tag.label)"
+                 alt=""
+                 class="w-4 h-4 rounded-full object-cover mr-1.5 -ml-1 pointer-events-none" />
+            <span>{{ tag.label }}</span>
+            <button class="remove-button"
                     @click="removeTag(index)">
               <inline-svg :src="PlusIcon"
                           class="rotate-45" />
@@ -292,13 +297,87 @@
           </div>
         </div>
       </div>
+
+      <!-- Tag Context Menu in Settings -->
+      <teleport to="body">
+        <transition name="tag-menu-fade">
+          <div v-if="showTagMenu && selectedTag"
+               ref="tagMenuRef"
+               class="tag-context-menu"
+               :style="{ top: `${tagMenuPosition.y}px`, left: `${tagMenuPosition.x}px` }">
+            <div class="tag-menu-header">
+              <span class="truncate">#{{ selectedTag }}</span>
+            </div>
+            <button v-if="canPasteImage"
+                    @click="handlePasteImageToTag"
+                    type="button"
+                    class="tag-menu-item text-emerald-400 hover:text-emerald-300">
+              <svg class="w-3.5 h-3.5"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2"
+                   stroke-linecap="round"
+                   stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8"
+                      y="2"
+                      width="8"
+                      height="4"
+                      rx="1"
+                      ry="1"></rect>
+              </svg>
+              <span>Paste Image to Tag</span>
+            </button>
+            <button v-if="selectedTagHasImage"
+                    @click="handleCopyTagImage"
+                    type="button"
+                    class="tag-menu-item">
+              <svg class="w-3.5 h-3.5"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2"
+                   stroke-linecap="round"
+                   stroke-linejoin="round">
+                <rect x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy Tag Image</span>
+            </button>
+            <button v-if="selectedTagHasImage"
+                    @click="handleRemoveTagImage"
+                    type="button"
+                    class="tag-menu-item text-red-400 hover:text-red-300">
+              <inline-svg :src="PlusIcon"
+                          class="w-3.5 h-3.5 rotate-45 text-red-400" />
+              <span>Clear Tag Image</span>
+            </button>
+          </div>
+        </transition>
+      </teleport>
       <div class="flex justify-center mt-2">
         <select-custom v-model="newTag"
                        class="new-tag-select"
                        @change="tagSelected($event)"
+                       @option-contextmenu="openTagMenuFromOption"
                        defaultText="Select a tag from the list of used tags"
-                       :options="allTags.map((tag, index) => ({ label: `${tag.name} (${tag.count})`, value: tag.name ?? `tag-${index}` }))
-                        " />
+                       :options="allTags.map((tag, index) => ({ label: `${tag.name} (${tag.count})`, value: tag.name ?? `tag-${index}` }))">
+          <template #option="{ option }">
+            <div class="flex items-center w-full py-0.5">
+              <img v-if="settingsStore.getTagImageUrl(option.value)"
+                   :src="settingsStore.getTagImageUrl(option.value)"
+                   alt=""
+                   class="w-4 h-4 rounded-full object-cover mr-2 pointer-events-none flex-shrink-0" />
+              <span>{{ option.label }}</span>
+            </div>
+          </template>
+        </select-custom>
       </div>
     </div>
     <div class="software-update-section">
@@ -367,6 +446,7 @@ import chordAlert from '../assets/wav/new-notification-7-210334.mp3';
 const settingsStore = useSettingsStore();
 const soundStore = useSoundStore();
 const updateStore = useUpdateStore();
+const pulseBackStore = usePulseBackStore();
 const outputDevices = ref<(OutputDeviceSetting | null)[]>([]);
 const allowOverlappingSound = ref(false);
 const darkMode = ref(true);
@@ -493,7 +573,9 @@ onMounted(() => {
   audioMixer.resume().catch(() => { });
   rafId = requestAnimationFrame(updateMicLevelLoop);
 
-
+  document.addEventListener('click', handleMenuClickOutside);
+  document.addEventListener('contextmenu', handleMenuClickOutside);
+  document.addEventListener('keydown', handleMenuKeydown);
 
   if (!pulseBackBuffer.active) {
     const micDevice = settingsStore.selectedMicrophoneId;
@@ -538,9 +620,12 @@ onUnmounted(() => {
     rafId = null;
   }
 
+  document.removeEventListener('click', handleMenuClickOutside);
+  document.removeEventListener('contextmenu', handleMenuClickOutside);
+  document.removeEventListener('keydown', handleMenuKeydown);
+
   stopTestingMic();
   stopTestingPulseBack();
-  const pulseBackStore = usePulseBackStore();
   if (!pulseBackStore.isBufferEnabled) {
     pulseBackBuffer.stop();
   }
@@ -774,6 +859,76 @@ function dragEnd() {
   delete draggedQuickTag.isDragPreview;
   draggedIndexStart = null;
   draggedQuickTag = null;
+}
+
+const showTagMenu = ref(false);
+const selectedTag = ref('');
+const tagMenuPosition = ref({ x: 0, y: 0 });
+const tagMenuRef = ref<HTMLElement | null>(null);
+
+const canPasteImage = computed(() => !!settingsStore.copiedSoundImage);
+const selectedTagHasImage = computed(() => !!(selectedTag.value && settingsStore.getTagImageUrl(selectedTag.value)));
+
+function openTagMenu(event: MouseEvent, tag: string) {
+  selectedTag.value = tag;
+  const hasImg = !!settingsStore.getTagImageUrl(tag);
+  const canPaste = canPasteImage.value;
+  if (!hasImg && !canPaste) {
+    pulseBackStore.showToast('Copy an image first to paste onto a tag');
+    return;
+  }
+
+  const menuWidth = 180;
+  const menuHeight = hasImg ? 110 : 60;
+  let x = event.clientX;
+  let y = event.clientY;
+
+  if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 8;
+  if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 8;
+
+  tagMenuPosition.value = { x: Math.max(8, x), y: Math.max(8, y) };
+  showTagMenu.value = true;
+}
+
+function openTagMenuFromOption(payload: { event: MouseEvent; option: { label: string; value: string } }) {
+  openTagMenu(payload.event, payload.option.value);
+}
+
+function handleMenuClickOutside(event: MouseEvent) {
+  if (showTagMenu.value && tagMenuRef.value && !tagMenuRef.value.contains(event.target as Node)) {
+    showTagMenu.value = false;
+  }
+}
+
+function handleMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && showTagMenu.value) {
+    showTagMenu.value = false;
+  }
+}
+
+async function handlePasteImageToTag() {
+  showTagMenu.value = false;
+  const copied = settingsStore.copiedSoundImage;
+  if (!copied || !copied.imageKey || !selectedTag.value) return;
+  await settingsStore.setTagImage(selectedTag.value, copied.imageKey, copied.imageUrl);
+  pulseBackStore.showToast(`Set image for tag #${selectedTag.value}`);
+}
+
+async function handleCopyTagImage() {
+  showTagMenu.value = false;
+  if (!selectedTag.value) return;
+  const key = settingsStore.getTagImageKey(selectedTag.value);
+  const url = settingsStore.getTagImageUrl(selectedTag.value);
+  if (!key) return;
+  settingsStore.copySoundImage(key, url);
+  pulseBackStore.showToast(`Copied image from #${selectedTag.value}`);
+}
+
+async function handleRemoveTagImage() {
+  showTagMenu.value = false;
+  if (!selectedTag.value) return;
+  await settingsStore.removeTagImage(selectedTag.value);
+  pulseBackStore.showToast(`Cleared image for tag #${selectedTag.value}`);
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
@@ -1455,5 +1610,66 @@ input[type='checkbox']:focus-visible {
 .install-update-btn:disabled {
   opacity: 0.6;
   cursor: wait;
+}
+
+.tag-context-menu {
+  position: fixed;
+  background-color: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 0.35rem;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 160px;
+  user-select: none;
+}
+
+.tag-menu-header {
+  padding: 0.25rem 0.5rem 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #a1a1aa;
+  border-bottom: 1px solid #27272a;
+  margin-bottom: 0.2rem;
+}
+
+.tag-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: #f4f4f5;
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.tag-menu-item:hover {
+  background-color: #27272a;
+  color: #ffffff;
+}
+
+.tag-menu-item:active {
+  background-color: #23a459;
+  color: #ffffff;
+}
+
+.tag-menu-fade-enter-active,
+.tag-menu-fade-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.tag-menu-fade-enter-from,
+.tag-menu-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
 }
 </style>

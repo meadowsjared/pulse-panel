@@ -26,6 +26,7 @@ export type SettingValue =
   | number[]
   | LabelActive[]
   | OutputDeviceSetting[]
+  | Record<string, string>
 
 export interface UpdateDownloadProgress {
   receivedBytes: number
@@ -63,7 +64,7 @@ export interface Settings {
     filters?: Array<{ name: string; extensions: string[] }>
   ) => Promise<boolean>
   // Database related functions
-  readAllDBSettings: () => Promise<{ [settingName: string]: string }[]>
+  readAllDBSettings: () => Promise<Record<string, any>>
   saveDBSetting: (settingName: string, settingValue: SettingValue) => Promise<boolean>
   readDBSetting: (settingName: string) => Promise<SettingValue | null>
   deleteDBSetting: (settingName: string) => Promise<void>
