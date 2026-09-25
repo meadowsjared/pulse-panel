@@ -172,8 +172,19 @@
           <button @click="handleCopyImage"
                   class="image-action-button w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
                   title="Copy image">
-            <svg class="w-4 h-4 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <svg class="w-4 h-4 text-black"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2"
+                 stroke-linecap="round"
+                 stroke-linejoin="round">
+              <rect x="9"
+                    y="9"
+                    width="13"
+                    height="13"
+                    rx="2"
+                    ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
           </button>
@@ -198,6 +209,7 @@
           <span class="text-emerald-400 font-semibold">#{{ inheritedTag }}</span>
         </div>
         <img :src="effectiveImageUrl"
+             :title="imageTooltip"
              alt="preview button"
              class="image" />
       </div>
@@ -206,7 +218,8 @@
              @change="handleImageFileUpload"
              class="file-input hidden"
              accept="image/*" />
-      <div class="flex gap-2 w-full">
+      <div class="flex gap-2 w-full"
+           @mouseenter="updateCanPaste">
         <button @click="imageFileInput?.click()"
                 @contextmenu.prevent.stop="openImageContextMenu($event)"
                 class="light flex-1">Browse Image...</button>
@@ -215,9 +228,20 @@
                 type="button"
                 class="light flex items-center justify-center gap-1 px-3"
                 title="Paste copied image">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="w-3.5 h-3.5"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2"
+               stroke-linecap="round"
+               stroke-linejoin="round">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            <rect x="8"
+                  y="2"
+                  width="8"
+                  height="4"
+                  rx="1"
+                  ry="1"></rect>
           </svg>
           <span>Paste</span>
         </button>
@@ -234,8 +258,19 @@
                     @click="handleCopyImage"
                     type="button"
                     class="image-menu-item">
-              <svg class="w-3.5 h-3.5 text-zinc-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <svg class="w-3.5 h-3.5 text-zinc-300"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2"
+                   stroke-linecap="round"
+                   stroke-linejoin="round">
+                <rect x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
               <span>Copy Image</span>
@@ -244,9 +279,20 @@
                     @click="handlePasteImage"
                     type="button"
                     class="image-menu-item">
-              <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg class="w-3.5 h-3.5 text-emerald-400"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2"
+                   stroke-linecap="round"
+                   stroke-linejoin="round">
                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <rect x="8"
+                      y="2"
+                      width="8"
+                      height="4"
+                      rx="1"
+                      ry="1"></rect>
               </svg>
               <span>Paste Image</span>
             </button>
@@ -258,26 +304,38 @@
                       type="button"
                       class="image-menu-item text-emerald-400 hover:text-emerald-300"
                       :title="`Set this image as the default for all sounds tagged #${tag}`">
-                <svg class="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg class="w-3.5 h-3.5 flex-shrink-0"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2"
+                     stroke-linecap="round"
+                     stroke-linejoin="round">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                  <line x1="7"
+                        y1="7"
+                        x2="7.01"
+                        y2="7"></line>
                 </svg>
                 <span class="truncate">Set as image for #{{ tag }}</span>
               </button>
             </template>
-            <div v-if="hasCurrentImage" class="image-menu-divider"></div>
+            <div v-if="hasCurrentImage"
+                 class="image-menu-divider"></div>
             <button v-if="hasCurrentImage"
                     @click="handleExportImageFromMenu"
                     type="button"
                     class="image-menu-item">
-              <inline-svg :src="DownloadIcon" class="w-3.5 h-3.5 text-zinc-300" />
+              <inline-svg :src="DownloadIcon"
+                          class="w-3.5 h-3.5 text-zinc-300" />
               <span>Export Image</span>
             </button>
             <button v-if="modelValue.imageKey"
                     @click="handleRemoveImageFromMenu"
                     type="button"
                     class="image-menu-item text-red-400 hover:text-red-300">
-              <inline-svg :src="Plus" class="w-3.5 h-3.5 rotate-45 text-red-400" />
+              <inline-svg :src="Plus"
+                          class="w-3.5 h-3.5 rotate-45 text-red-400" />
               <span>Remove Image Override</span>
             </button>
           </div>
@@ -436,7 +494,7 @@ async function exportOriginalAudio() {
     const defaultFilename = `${baseName}.${extension}`;
 
     const arrayBuffer = await blob.arrayBuffer();
-    const formatFilterMap: Record<string, { name: string; extensions: string[] }> = {
+    const formatFilterMap: Record<string, { name: string; extensions: string[]; }> = {
       mp3: { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
       wav: { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
       ogg: { name: 'OGG Audio (*.ogg)', extensions: ['ogg'] },
@@ -609,9 +667,42 @@ const currentImageKey = computed(() => {
 });
 
 const hasCurrentImage = computed(() => !!currentImageKey.value);
-const canPasteImage = computed(() => !!settingsStore.copiedSoundImage);
+const canPasteImage = ref(false);
 
-function openImageContextMenu(event: MouseEvent) {
+async function updateCanPaste() {
+  canPasteImage.value = await settingsStore.hasClipboardImage();
+}
+
+onMounted(() => {
+  updateCanPaste();
+  window.addEventListener('focus', updateCanPaste);
+  document.addEventListener('visibilitychange', updateCanPaste);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('focus', updateCanPaste);
+  document.removeEventListener('visibilitychange', updateCanPaste);
+});
+
+watch(
+  () => props.modelValue,
+  () => {
+    updateCanPaste();
+  }
+);
+
+const imageTooltip = computed(() => {
+  if (props.modelValue.imageKey) {
+    return `Image Key: ${props.modelValue.imageKey} (Custom)`;
+  }
+  if (inheritedTag.value) {
+    return `Default from #${inheritedTag.value} (Key: ${currentImageKey.value ?? 'none'})`;
+  }
+  return 'Right-click for options';
+});
+
+async function openImageContextMenu(event: MouseEvent) {
+  await updateCanPaste();
   if (!hasCurrentImage.value && !canPasteImage.value) {
     return;
   }
@@ -643,18 +734,6 @@ function handleImageMenuClickOutside(event: MouseEvent) {
 function handleImageMenuKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && showImageMenu.value) {
     showImageMenu.value = false;
-    return;
-  }
-  // Check for Ctrl+V / Cmd+V
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v') {
-    const target = event.target as HTMLElement;
-    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) {
-      return;
-    }
-    if (canPasteImage.value) {
-      event.preventDefault();
-      handlePasteImage();
-    }
   }
 }
 
@@ -664,26 +743,9 @@ async function handleCopyImage() {
   if (!key) return;
 
   const url = effectiveImageUrl.value;
-  settingsStore.copySoundImage(key, url);
+  await settingsStore.copySoundImage(key, url);
   pulseBackStore.showToast('Image copied to clipboard');
-
-  try {
-    let fetchUrl = url;
-    if (!fetchUrl && key) {
-      fetchUrl = (await settingsStore.getFile(key)) ?? undefined;
-    }
-    if (fetchUrl && navigator.clipboard?.write) {
-      const resp = await fetch(fetchUrl);
-      const blob = await resp.blob();
-      if (blob.type === 'image/png') {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob })
-        ]);
-      }
-    }
-  } catch (err) {
-    console.debug('OS clipboard copy skipped:', err);
-  }
+  await updateCanPaste();
 }
 
 async function handleSetTagImage(tag: string) {
@@ -697,8 +759,11 @@ async function handleSetTagImage(tag: string) {
 
 async function handlePasteImage() {
   showImageMenu.value = false;
-  const copied = settingsStore.copiedSoundImage;
-  if (!copied || !copied.imageKey) return;
+  const copied = await settingsStore.readClipboardImage();
+  if (!copied || !copied.imageKey) {
+    await updateCanPaste();
+    return;
+  }
 
   const oldKey = props.modelValue.imageKey;
   let url = copied.imageUrl;
@@ -713,7 +778,12 @@ async function handlePasteImage() {
   if (oldKey && oldKey !== copied.imageKey) {
     await settingsStore.deleteFile(oldKey, props.modelValue.id);
   }
-  pulseBackStore.showToast('Image pasted');
+  if (copied.isReused) {
+    pulseBackStore.showToast(`Image pasted (reused: ${copied.imageKey.slice(0, 16)}...)`);
+  } else {
+    pulseBackStore.showToast('Image pasted');
+  }
+  await updateCanPaste();
 }
 
 function handleExportImageFromMenu() {
@@ -756,7 +826,7 @@ async function exportImage() {
     const defaultFilename = `${baseName}.${extension}`;
 
     const arrayBuffer = await blob.arrayBuffer();
-    const formatFilterMap: Record<string, { name: string; extensions: string[] }> = {
+    const formatFilterMap: Record<string, { name: string; extensions: string[]; }> = {
       png: { name: 'PNG Image (*.png)', extensions: ['png'] },
       jpg: { name: 'JPEG Image (*.jpg;*.jpeg)', extensions: ['jpg', 'jpeg'] },
       webp: { name: 'WebP Image (*.webp)', extensions: ['webp'] },

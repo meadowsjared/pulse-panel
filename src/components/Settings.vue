@@ -866,11 +866,12 @@ const selectedTag = ref('');
 const tagMenuPosition = ref({ x: 0, y: 0 });
 const tagMenuRef = ref<HTMLElement | null>(null);
 
-const canPasteImage = computed(() => !!settingsStore.copiedSoundImage);
+const canPasteImage = ref(false);
 const selectedTagHasImage = computed(() => !!(selectedTag.value && settingsStore.getTagImageUrl(selectedTag.value)));
 
-function openTagMenu(event: MouseEvent, tag: string) {
+async function openTagMenu(event: MouseEvent, tag: string) {
   selectedTag.value = tag;
+  canPasteImage.value = await settingsStore.hasClipboardImage();
   const hasImg = !!settingsStore.getTagImageUrl(tag);
   const canPaste = canPasteImage.value;
   if (!hasImg && !canPaste) {
@@ -908,8 +909,9 @@ function handleMenuKeydown(event: KeyboardEvent) {
 
 async function handlePasteImageToTag() {
   showTagMenu.value = false;
-  const copied = settingsStore.copiedSoundImage;
-  if (!copied || !copied.imageKey || !selectedTag.value) return;
+  if (!selectedTag.value) return;
+  const copied = await settingsStore.readClipboardImage();
+  if (!copied || !copied.imageKey) return;
   await settingsStore.setTagImage(selectedTag.value, copied.imageKey, copied.imageUrl);
   pulseBackStore.showToast(`Set image for tag #${selectedTag.value}`);
 }
@@ -920,7 +922,7 @@ async function handleCopyTagImage() {
   const key = settingsStore.getTagImageKey(selectedTag.value);
   const url = settingsStore.getTagImageUrl(selectedTag.value);
   if (!key) return;
-  settingsStore.copySoundImage(key, url);
+  await settingsStore.copySoundImage(key, url);
   pulseBackStore.showToast(`Copied image from #${selectedTag.value}`);
 }
 

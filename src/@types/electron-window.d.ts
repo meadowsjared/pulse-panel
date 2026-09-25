@@ -63,6 +63,19 @@ export interface Settings {
     buffer: ArrayBuffer,
     filters?: Array<{ name: string; extensions: string[] }>
   ) => Promise<boolean>
+  writeImageToClipboard?: (payload: {
+    buffer?: ArrayBuffer
+    dataUrl?: string
+    imageKey?: string
+    imageUrl?: string
+  }) => Promise<boolean>
+  readImageFromClipboard?: () => Promise<{
+    imageKey: string | null
+    imageUrl?: string | null
+    buffer?: any
+    dataUrl?: string
+  } | null>
+  hasImageInClipboard?: () => Promise<boolean>
   // Database related functions
   readAllDBSettings: () => Promise<Record<string, any>>
   saveDBSetting: (settingName: string, settingValue: SettingValue) => Promise<boolean>

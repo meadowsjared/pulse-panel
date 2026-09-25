@@ -202,10 +202,52 @@ function saveSoundsArray(sounds) {
 }
 
 /**
- * Save an update to a single sound to the database
+ * Save an update to a single sound to the database, or insert it if it does not exist
  * @param {Sound} sound - The sound object to save
  */
 function saveSound(sound, order_index = null) {
+  const checkStmt = db.prepare('SELECT order_index FROM sounds WHERE id = ?')
+  const existing = checkStmt.get(sound.id)
+
+  if (!existing) {
+    let nextIndex = order_index
+    if (nextIndex === null) {
+      const maxRow = db.prepare('SELECT MAX(order_index) as max_idx FROM sounds').get()
+      nextIndex = (maxRow?.max_idx ?? -1) + 1
+    }
+    const columns = [
+      'id',
+      'title',
+      'hideTitle',
+      'tags',
+      'hotkey',
+      'audioKey',
+      'imageKey',
+      'volume',
+      'color',
+      'soundSegments',
+      'isVisible',
+      'order_index',
+    ]
+    const placeholders = new Array(columns.length).fill('?').join(', ')
+    const insertStmt = db.prepare(`INSERT INTO sounds (${columns.join(', ')}) VALUES (${placeholders})`)
+    insertStmt.run(
+      sound.id,
+      sound.title ?? null,
+      sound.hideTitle ?? null,
+      sound.tags ?? null,
+      sound.hotkey ?? null,
+      sound.audioKey ?? null,
+      sound.imageKey ?? null,
+      sound.volume ?? null,
+      sound.color ?? null,
+      sound.soundSegments ?? null,
+      sound.isVisible ?? null,
+      nextIndex,
+    )
+    return
+  }
+
   const withOrderIndex = order_index !== null
   const columns = [
     'title',

@@ -8,7 +8,6 @@ import {
   SoundSegmentForSaving,
 } from '../@types/sound'
 import { openDB, IDBPDatabase } from 'idb'
-import { File } from '../@types/file'
 import { useSoundStore } from './sound'
 import { usePulseBackStore } from './pulseBack'
 import { Settings, SettingValue, Versions } from '../@types/electron-window'
@@ -242,6 +241,187 @@ function isVirtualCableInput(label: string): boolean {
   if (l.includes('cable input')) return false
   if (l.includes('16ch')) return false
   return l.includes('cable output') || (l.includes('cable') && l.includes('output'))
+}
+
+async function convertBlobOrUrlToPng(
+  blob: Blob | null,
+  url: string | undefined
+): Promise<{ dataUrl: string; buffer: ArrayBuffer } | null> {
+  let createdUrl = false
+  let src = url
+  if (!src && blob) {
+    src = URL.createObjectURL(blob)
+    createdUrl = true
+  }
+  if (!src) return null
+
+  return new Promise(resolve => {
+    const img = new Image()
+    if (src && (src.startsWith('http://') || src.startsWith('https://'))) {
+      img.crossOrigin = 'anonymous'
+    }
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth || img.width
+        canvas.height = img.naturalHeight || img.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          if (createdUrl && src) URL.revokeObjectURL(src)
+          resolve(null)
+          return
+        }
+        ctx.drawImage(img, 0, 0)
+        const dataUrl = canvas.toDataURL('image/png')
+        canvas.toBlob(async pngBlob => {
+          if (createdUrl && src) URL.revokeObjectURL(src)
+          if (!pngBlob) {
+            resolve({ dataUrl, buffer: new ArrayBuffer(0) })
+            return
+          }
+          const buffer = await pngBlob.arrayBuffer()
+          resolve({ dataUrl, buffer })
+        }, 'image/png')
+      } catch (err) {
+        if (createdUrl && src) URL.revokeObjectURL(src)
+        console.warn('[Pulse Panel] Failed canvas PNG conversion:', err)
+        resolve(null)
+      }
+    }
+    img.onerror = err => {
+      if (createdUrl && src) URL.revokeObjectURL(src)
+      console.warn('[Pulse Panel] Failed loading image for canvas conversion:', err)
+      resolve(null)
+    }
+    img.src = src
+  })
+}
+
+function arePixelDataIdentical(data1: Uint8ClampedArray, data2: Uint8ClampedArray): boolean {
+  if (data1.length !== data2.length) return false
+  const totalPixels = data1.length / 4
+  if (totalPixels === 0) return true
+
+  let totalDiff = 0
+  let significantDiffCount = 0
+
+  for (let i = 0; i < data1.length; i += 4) {
+    const a1 = data1[i + 3]
+    const a2 = data2[i + 3]
+
+    // If both pixels are completely transparent, their RGB values don't matter visually
+    if (a1 === 0 && a2 === 0) {
+      continue
+    }
+
+    const diffA = Math.abs(a1 - a2)
+    const diffR = Math.abs(data1[i] - data2[i])
+    const diffG = Math.abs(data1[i + 1] - data2[i + 1])
+    const diffB = Math.abs(data1[i + 2] - data2[i + 2])
+
+    // Weight RGB difference by alpha (if almost transparent, minor RGB differences are invisible)
+    const maxAlpha = Math.max(a1, a2) / 255
+    const weightedDiff = (diffR + diffG + diffB) * maxAlpha + diffA
+
+    totalDiff += weightedDiff
+
+    // Significant diff: perceptible color difference (> 12 on visible pixel or > 12 on alpha)
+    if (diffA > 12 || (maxAlpha > 0.1 && (diffR > 12 || diffG > 12 || diffB > 12))) {
+      significantDiffCount++
+    }
+  }
+
+  // Average channel diff per pixel (0 - 255)
+  const avgDiff = totalDiff / (totalPixels * 4)
+
+  // Two images are identical if:
+  // 1. Average difference is very low (<= 4 channel intensity)
+  // 2. Significant per-pixel differences account for less than 1.5% of pixels
+  return avgDiff <= 4 && significantDiffCount <= totalPixels * 0.015
+}
+
+async function getImagePixels(
+  source: string | Blob
+): Promise<{ width: number; height: number; pixels: Uint8ClampedArray } | null> {
+  // Attempt decoding via createImageBitmap first (direct GPU/compositor decode, no CORS issues with blob URLs)
+  try {
+    let bitmap: ImageBitmap | null = null
+    if (source instanceof Blob) {
+      bitmap = await createImageBitmap(source)
+    } else if (typeof source === 'string') {
+      try {
+        const res = await fetch(source)
+        const blob = await res.blob()
+        bitmap = await createImageBitmap(blob)
+      } catch {
+        // proceed to HTMLImageElement fallback below
+      }
+    }
+
+    if (bitmap) {
+      const width = bitmap.width
+      const height = bitmap.height
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx) {
+        bitmap.close()
+        return null
+      }
+      ctx.drawImage(bitmap, 0, 0)
+      const pixels = ctx.getImageData(0, 0, width, height).data
+      bitmap.close()
+      return { width, height, pixels }
+    }
+  } catch {
+    // proceed to HTMLImageElement fallback
+  }
+
+  // Fallback to HTMLImageElement
+  return new Promise(resolve => {
+    const img = new Image()
+    const url = typeof source === 'string' ? source : URL.createObjectURL(source)
+    const isCreatedUrl = typeof source !== 'string'
+
+    // Note: Never set crossOrigin for blob: or data: URLs, as it triggers CORS network errors in Chromium
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      img.crossOrigin = 'anonymous'
+    }
+
+    img.onload = () => {
+      try {
+        const width = img.naturalWidth || img.width
+        const height = img.naturalHeight || img.height
+        if (!width || !height) {
+          if (isCreatedUrl) URL.revokeObjectURL(url)
+          resolve(null)
+          return
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
+        if (!ctx) {
+          if (isCreatedUrl) URL.revokeObjectURL(url)
+          resolve(null)
+          return
+        }
+        ctx.drawImage(img, 0, 0)
+        const pixels = ctx.getImageData(0, 0, width, height).data
+        if (isCreatedUrl) URL.revokeObjectURL(url)
+        resolve({ width, height, pixels })
+      } catch {
+        if (isCreatedUrl) URL.revokeObjectURL(url)
+        resolve(null)
+      }
+    }
+    img.onerror = () => {
+      if (isCreatedUrl) URL.revokeObjectURL(url)
+      resolve(null)
+    }
+    img.src = url
+  })
 }
 
 export const useSettingsStore = defineStore('settings', {
@@ -1137,10 +1317,185 @@ export const useSettingsStore = defineStore('settings', {
       electron?.addHotkeys([keys])
     },
     /**
-     * Copy an image reference to clipboard state for quick reuse across buttons
+     * Get raw blob from IndexedDB by key
      */
-    copySoundImage(imageKey: string, imageUrl?: string) {
-      this.copiedSoundImage = { imageKey, imageUrl }
+    async getFileBlob(key: string): Promise<Blob | null> {
+      if (!key) return null
+      try {
+        const db = await getDB()
+        return (await db.get(dbStoreName, key)) ?? null
+      } catch {
+        return null
+      }
+    },
+    /**
+     * Copy an image to the system clipboard (for Paint.net, Discord, etc.)
+     * and store its imageKey/metadata for quick reuse across buttons and tags
+     */
+    async copySoundImage(imageKey: string, imageUrl?: string): Promise<void> {
+      let resolvedUrl = imageUrl
+      if (!resolvedUrl) {
+        resolvedUrl = (await this.getFile(imageKey)) ?? undefined
+      }
+      this.copiedSoundImage = { imageKey, imageUrl: resolvedUrl }
+
+      try {
+        const electron = window.electron
+        if (electron?.writeImageToClipboard) {
+          let blob = await this.getFileBlob(imageKey)
+          if (!blob && resolvedUrl) {
+            try {
+              const res = await fetch(resolvedUrl)
+              blob = await res.blob()
+            } catch (fetchErr) {
+              console.warn('[Pulse Panel] Failed to fetch image blob from resolvedUrl:', fetchErr)
+            }
+          }
+
+          const pngData = await convertBlobOrUrlToPng(blob, resolvedUrl)
+          if (pngData) {
+            await electron.writeImageToClipboard({
+              buffer: pngData.buffer,
+              dataUrl: pngData.dataUrl,
+              imageKey,
+              imageUrl: resolvedUrl,
+            })
+          } else {
+            console.warn('[Pulse Panel] Could not convert image to PNG for clipboard:', imageKey)
+          }
+        }
+      } catch (err) {
+        console.warn('Error copying image to OS clipboard:', err)
+      }
+    },
+    /**
+     * Checks if there is an image available on the system clipboard or in-memory state
+     */
+    async hasClipboardImage(): Promise<boolean> {
+      try {
+        const electron = window.electron
+        if (electron?.hasImageInClipboard) {
+          const hasImage = await electron.hasImageInClipboard()
+          if (!hasImage) {
+            // The OS clipboard has no image, so any in-memory copied image is stale!
+            this.copiedSoundImage = null
+            return false
+          }
+          return true
+        }
+      } catch (err) {
+        console.warn('Error checking clipboard image:', err)
+      }
+      return !!this.copiedSoundImage?.imageKey
+    },
+    /**
+     * Reads image from OS clipboard:
+     * - If copied within Pulse Panel, restores the exact imageKey and imageUrl without re-encoding
+     * - If copied from an external app (Paint.net, browser, screenshot), saves and deduplicates it in DB
+     */
+    async readClipboardImage(): Promise<{ imageKey: string; imageUrl?: string; isReused: boolean } | null> {
+      try {
+        const electron = window.electron
+        if (electron?.readImageFromClipboard) {
+          const res = await electron.readImageFromClipboard()
+          if (res) {
+            if (res.imageKey) {
+              let url = res.imageUrl ?? undefined
+              if (!url) {
+                url = (await this.getFile(res.imageKey)) ?? undefined
+              }
+              this.copiedSoundImage = { imageKey: res.imageKey, imageUrl: url }
+              // console.log('[Pulse Panel] Pasted image (reused key):', res.imageKey)
+              return { imageKey: res.imageKey, imageUrl: url, isReused: true }
+            }
+            if (res.buffer || res.dataUrl) {
+              const blob = res.buffer
+                ? new Blob([res.buffer as any], { type: 'image/png' })
+                : null
+              const blobUrl = blob ? URL.createObjectURL(blob) : null
+              const targetSource = blob || res.dataUrl!
+
+              // Check if this clipboard image visually matches any existing image already in use or stored in DB!
+              const matchedKey = await this.findMatchingImageKey(targetSource)
+              if (matchedKey) {
+                if (blobUrl) URL.revokeObjectURL(blobUrl)
+                let matchedUrl = (await this.getFile(matchedKey)) ?? undefined
+                this.copiedSoundImage = { imageKey: matchedKey, imageUrl: matchedUrl }
+                return { imageKey: matchedKey, imageUrl: matchedUrl, isReused: true }
+              }
+
+              let file: File
+              if (blob) {
+                file = new File([blob], 'pasted-image.png', { type: 'image/png' })
+              } else {
+                const resFetch = await fetch(res.dataUrl!)
+                const fetchedBlob = await resFetch.blob()
+                file = new File([fetchedBlob], 'pasted-image.png', { type: 'image/png' })
+              }
+              const saved = await this.saveFile(file)
+              if (blobUrl) URL.revokeObjectURL(blobUrl)
+              this.copiedSoundImage = { imageKey: saved.fileKey, imageUrl: saved.fileUrl }
+              return { imageKey: saved.fileKey, imageUrl: saved.fileUrl, isReused: !saved.isNew }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Error reading from OS clipboard:', err)
+      }
+
+      if (this.copiedSoundImage?.imageKey) {
+        // console.log('[Pulse Panel] Pasted image (reused in-memory key):', this.copiedSoundImage.imageKey)
+        return { ...this.copiedSoundImage, isReused: true }
+      }
+      return null
+    },
+    /**
+     * Checks if a target image visually matches any existing sound, tag, or stored image
+     */
+    async findMatchingImageKey(targetSource: string | Blob): Promise<string | null> {
+      const target = await getImagePixels(targetSource)
+      if (!target) return null
+
+      const uniqueKeys = new Set<string>()
+      if (this.copiedSoundImage?.imageKey) {
+        uniqueKeys.add(this.copiedSoundImage.imageKey)
+      }
+      if (this.currentEditingSound?.imageKey) {
+        uniqueKeys.add(this.currentEditingSound.imageKey)
+      }
+      this.sounds.forEach(s => {
+        if (s.imageKey) uniqueKeys.add(s.imageKey)
+      })
+      Object.values(this.tagImages ?? {}).forEach(k => {
+        if (k) uniqueKeys.add(k)
+      })
+
+      try {
+        const db = await getDB()
+        const allKeys = await db.getAllKeys(dbStoreName)
+        for (const k of allKeys) {
+          if (typeof k === 'string' && k.startsWith('img_')) {
+            uniqueKeys.add(k)
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      for (const key of uniqueKeys) {
+        const url = await this.getFile(key)
+        if (!url) continue
+        const candidate = await getImagePixels(url)
+        if (!candidate) continue
+        if (candidate.width !== target.width || candidate.height !== target.height) {
+          continue
+        }
+        if (arePixelDataIdentical(target.pixels, candidate.pixels)) {
+          // console.log('[Pulse Panel] Visual image match found for key:', key)
+          return key
+        }
+      }
+      return null
     },
     /**
      * Check if a file key is still referenced by any sound on the soundboard or tag image
@@ -1247,9 +1602,10 @@ export const useSettingsStore = defineStore('settings', {
      * Save a sound or image file to the store with content-addressable deduplication.
      * @param file the file to save
      */
-    async saveFile(file: File) {
+    async saveFile(file: File): Promise<{ fileUrl: string; fileKey: string; isNew: boolean }> {
       const db = await getDB()
       let key: string
+      let isNew = false
       try {
         const buffer = await file.arrayBuffer()
         const hashBuffer = await crypto.subtle.digest('SHA-256', buffer)
@@ -1258,10 +1614,12 @@ export const useSettingsStore = defineStore('settings', {
         key = `${file.type.startsWith('image/') ? 'img' : 'file'}_${hashHex}`
         const existing = await db.get(dbStoreName, key)
         if (!existing) {
+          isNew = true
           await db.put(dbStoreName, file, key)
         }
       } catch {
         key = crypto.randomUUID()
+        isNew = true
         await db.put(dbStoreName, file, key)
       }
       let fileUrl = blobUrlCache.get(key)
@@ -1269,7 +1627,7 @@ export const useSettingsStore = defineStore('settings', {
         fileUrl = URL.createObjectURL(file)
         blobUrlCache.set(key, fileUrl)
       }
-      return { fileUrl, fileKey: key }
+      return { fileUrl, fileKey: key, isNew }
     },
     /**
      * Fetch a sound from the store
@@ -1367,9 +1725,9 @@ export const useSettingsStore = defineStore('settings', {
             }
           }
         }
-        if (deduplicatedCount > 0) {
-          console.log(`[Pulse Panel] Successfully deduplicated ${deduplicatedCount} duplicate image(s).`)
-        }
+        // if (deduplicatedCount > 0) {
+        //   console.log(`[Pulse Panel] Successfully deduplicated ${deduplicatedCount} duplicate image(s).`)
+        // }
         return deduplicatedCount
       } catch (err) {
         console.warn('Error during image deduplication:', err)

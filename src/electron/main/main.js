@@ -1,6 +1,6 @@
 const { join } = require('path')
 const fs = require('fs')
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, nativeImage } = require('electron')
 const settings = require('../settings')
 const updater = require('./updater')
 
@@ -127,6 +127,107 @@ app.whenReady().then(() => {
         mainWindow.webContents.send('update-download-progress', progress)
       }
     })
+  })
+  ipcMain.handle('write-image-to-clipboard', (_, { buffer, dataUrl, imageKey, imageUrl }) => {
+    try {
+      let img = null
+      if (dataUrl) {
+        img = nativeImage.createFromDataURL(dataUrl)
+      }
+      if ((!img || img.isEmpty()) && buffer) {
+        const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer)
+        img = nativeImage.createFromBuffer(buf)
+      }
+      if (!img || img.isEmpty()) {
+        console.warn('[Pulse Panel] nativeImage could not be created from provided data')
+        return false
+      }
+      clipboard.write({
+        image: img,
+        html: `<meta name="pulse-panel-image-key" content="${imageKey || ''}"><meta name="pulse-panel-image-url" content="${imageUrl || ''}">`,
+      })
+      return true
+    } catch (err) {
+      console.warn('Error writing image to clipboard:', err)
+      return false
+    }
+  })
+  ipcMain.handle('read-image-from-clipboard', () => {
+    try {
+      const html = clipboard.readHTML()
+      let imageKey = null
+      let imageUrl = null
+
+      if (html) {
+        const keyMatch = html.match(/name="pulse-panel-image-key"\s+content="([^"]*)"/)
+        if (keyMatch && keyMatch[1]) {
+          imageKey = keyMatch[1]
+        }
+        const urlMatch = html.match(/name="pulse-panel-image-url"\s+content="([^"]*)"/)
+        if (urlMatch && urlMatch[1]) {
+          imageUrl = urlMatch[1]
+        }
+      }
+
+      let img = null
+      // Check for raw PNG clipboard format first (preserves alpha and lossless fidelity from Paint.net, browsers, etc.)
+      try {
+        const pngBuf = clipboard.readBuffer('PNG')
+        if (pngBuf && pngBuf.length > 0) {
+          const nativeFromPng = nativeImage.createFromBuffer(pngBuf)
+          if (nativeFromPng && !nativeFromPng.isEmpty()) {
+            img = nativeFromPng
+          }
+        }
+      } catch {
+        // fallback
+      }
+
+      if (!img) {
+        img = clipboard.readImage()
+      }
+
+      if (!img || img.isEmpty()) {
+        if (imageKey) {
+          return { imageKey, imageUrl }
+        }
+        return null
+      }
+
+      if (imageKey) {
+        return {
+          imageKey,
+          imageUrl,
+        }
+      }
+
+      return {
+        imageKey: null,
+        buffer: img.toPNG(),
+        dataUrl: img.toDataURL(),
+      }
+    } catch (err) {
+      console.warn('Error reading image from clipboard:', err)
+      return null
+    }
+  })
+  ipcMain.handle('has-image-in-clipboard', () => {
+    try {
+      const html = clipboard.readHTML()
+      if (html && html.includes('pulse-panel-image-key')) {
+        return true
+      }
+      try {
+        const pngBuf = clipboard.readBuffer('PNG')
+        if (pngBuf && pngBuf.length > 0) return true
+      } catch {
+        // ignore
+      }
+      const img = clipboard.readImage()
+      return !img.isEmpty()
+    } catch {
+      return false
+    }
   })
 })
 
