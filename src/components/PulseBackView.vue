@@ -418,7 +418,7 @@ const selectedClip = computed(() => pulseBackStore.selectedClip);
 
 // Editor State
 const clipTitle = ref('');
-const clipColor = ref('#3b82f6');
+const clipColor = ref('#ffffff');
 const clipTags = ref<string[]>(['clip']);
 const clipVolume = ref(getDefaultVolumePercent());
 const isPublishing = ref(false);
