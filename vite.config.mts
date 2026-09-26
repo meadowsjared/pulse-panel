@@ -37,5 +37,5 @@ export default defineConfig(({ mode }) => ({
       : []),
   ],
   base: './',
-  server: { port: 3000 },
+  server: { port: 3000, strictPort: true },
 }))
