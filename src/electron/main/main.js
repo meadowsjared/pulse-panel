@@ -144,7 +144,8 @@ app.whenReady().then(() => {
       }
       clipboard.write({
         image: img,
-        html: `<meta name="pulse-panel-image-key" content="${imageKey || ''}"><meta name="pulse-panel-image-url" content="${imageUrl || ''}">`,
+        html: `<meta name="pulse-panel-image-key" content="${imageKey || ''
+          }"><meta name="pulse-panel-image-url" content="${imageUrl || ''}">`,
       })
       return true
     } catch (err) {
@@ -308,21 +309,21 @@ function updateTrayMenu() {
   const contextMenu = Menu.buildFromTemplate([
     closedToTray
       ? {
-          label: 'Restore App',
-          click: function () {
-            mainWindow.show()
-            closedToTray = false
-            updateTrayMenu()
-          },
-        }
-      : {
-          label: 'Minimize App',
-          click: function () {
-            mainWindow.hide()
-            closedToTray = true
-            updateTrayMenu()
-          },
+        label: 'Restore App',
+        click: function () {
+          mainWindow.show()
+          closedToTray = false
+          updateTrayMenu()
         },
+      }
+      : {
+        label: 'Minimize App',
+        click: function () {
+          mainWindow.hide()
+          closedToTray = true
+          updateTrayMenu()
+        },
+      },
     {
       label: 'Quit',
       click: function () {
