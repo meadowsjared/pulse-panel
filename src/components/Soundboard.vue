@@ -1,169 +1,174 @@
 <template>
-  <div class="main" ref="main" :style="forcedWidth ? { width: `${forcedWidth}px`, flexGrow: 0 } : {}">
+  <div class="main"
+       ref="main"
+       :style="forcedWidth ? { width: `${forcedWidth}px`, flexGrow: 0 } : {}">
     <SoundToolbar />
-    <div class="soundboard" @dragover.prevent @drop.prevent="droppedOnBackground">
-      <template v-for="sound in filteredSounds" :key="sound.id">
-        <sound-button
-          v-if="sound"
-          :key="`${sound?.id}`"
-          :id="`sound-${sound.id}`"
-          :class="{ placeholder: sound.isDragPreview }"
-          :modelValue="sound"
-          :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
-          :displayMode="settingsStore.displayMode"
-          @update:modelValue="handleSoundsUpdate"
-          @file-dropped="fileDropped"
-          @editSound="editSound(sound)"
-          @dragstart="dragStart(sound)"
-          @dragover="dragOver(sound)"
-          @drop="drop"
-          @dragend="dragEnd(sound)" />
+    <div class="soundboard"
+         @dragover.prevent
+         @drop.prevent="droppedOnBackground">
+      <template v-for="sound in filteredSounds"
+                :key="sound.id">
+        <sound-button v-if="sound"
+                      :key="`${sound?.id}`"
+                      :id="`sound-${sound.id}`"
+                      :class="{ placeholder: sound.isDragPreview }"
+                      :modelValue="sound"
+                      :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
+                      :displayMode="settingsStore.displayMode"
+                      @update:modelValue="handleSoundsUpdate"
+                      @file-dropped="fileDropped"
+                      @editSound="editSound(sound)"
+                      @dragstart="dragStart(sound)"
+                      @dragover="dragOver(sound)"
+                      @drop="drop"
+                      @dragend="dragEnd(sound)" />
       </template>
-      <div v-if="filteredSounds.length === 0 && settingsStore.searchText.trim() !== ''" class="empty-search-state">
+      <div v-if="filteredSounds.length === 0 && settingsStore.searchText.trim() !== ''"
+           class="empty-search-state">
         <p class="empty-title">No sounds found</p>
         <p class="empty-subtitle">No sounds match "<strong>{{ settingsStore.searchText }}</strong>"</p>
-        <button class="clear-search-btn light" @click="settingsStore.searchText = ''">Clear Search</button>
+        <button class="clear-search-btn light"
+                @click="settingsStore.searchText = ''">Clear Search</button>
       </div>
     </div>
   </div>
-  <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
-    <SoundEditor
-      v-model="settingsStore.currentEditingSound"
-      @update:modelValue="updateCurrentEditingSound"
-      @close="closeEditor"
-      @deleteSound="deleteSound($event)" />
+  <div v-if="settingsStore.currentEditingSound !== null"
+       class="rightSideBar">
+    <SoundEditor v-model="settingsStore.currentEditingSound"
+                 @update:modelValue="updateCurrentEditingSound"
+                 @close="closeEditor"
+                 @deleteSound="deleteSound($event)" />
   </div>
-  <confirm-dialog
-    v-model:showDialog="dialogOpen"
-    title="Are you sure?"
-    :message="`that you want to delete the '${soundToDelete?.title}' sound?`"
-    @confirm="deleteSoundConfirmed"
-    confirmText="Yes"
-    cancelText="No" />
+  <confirm-dialog v-model:showDialog="dialogOpen"
+                  title="Are you sure?"
+                  :message="`that you want to delete the '${soundToDelete?.title}' sound?`"
+                  @confirm="deleteSoundConfirmed"
+                  confirmText="Yes"
+                  cancelText="No" />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useSettingsStore } from '../store/settings'
-import { Sound } from '../@types/sound'
-import { File } from '../@types/file'
-import { stripFileExtension } from '../utils/utils'
+import { computed } from 'vue';
+import { useSettingsStore } from '../store/settings';
+import { Sound } from '../@types/sound';
+import { File } from '../@types/file';
+import { stripFileExtension } from '../utils/utils';
 
-const DRAG_THROTTLE_MS = 50
+const DRAG_THROTTLE_MS = 50;
 
-const settingsStore = useSettingsStore()
-const filteredSounds = computed(() => settingsStore.soundsFiltered())
-let draggedIndexStart: number | null = null
-let draggedSound: Sound | null = null
-const skipBgDrop = ref(false)
-const dragOverThrottle = ref<number | null>(null)
-const isDragging = ref(false)
-const dialogOpen = ref(false)
-const soundToDelete = ref<Sound | null>(null)
-const main = ref<HTMLDivElement | null>(null)
-const forcedWidth = ref<number | null>(null)
-const isTransitioning = ref(false)
+const settingsStore = useSettingsStore();
+const filteredSounds = computed(() => settingsStore.soundsFiltered());
+let draggedIndexStart: number | null = null;
+let draggedSound: Sound | null = null;
+const skipBgDrop = ref(false);
+const dragOverThrottle = ref<number | null>(null);
+const isDragging = ref(false);
+const dialogOpen = ref(false);
+const soundToDelete = ref<Sound | null>(null);
+const main = ref<HTMLDivElement | null>(null);
+const forcedWidth = ref<number | null>(null);
+const isTransitioning = ref(false);
 
 function onWindowResize() {
   if (!isTransitioning.value) {
-    forcedWidth.value = null
+    forcedWidth.value = null;
   }
 }
 
 onMounted(() => {
-  window.addEventListener('resize', onWindowResize)
-})
+  window.addEventListener('resize', onWindowResize);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('resize', onWindowResize)
+  window.removeEventListener('resize', onWindowResize);
   if (dragOverThrottle.value) {
-    clearTimeout(dragOverThrottle.value)
+    clearTimeout(dragOverThrottle.value);
   }
-})
+});
 
 interface CompilingSoundWithImage {
-  audioFile?: File
-  imageFile?: File
+  audioFile?: File;
+  imageFile?: File;
 }
 
 interface SoundWithImage extends CompilingSoundWithImage {
   // audioFile is required
-  audioFile: File
+  audioFile: File;
 }
 
 async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
-  event.preventDefault()
-  const files: FileList | null = event.dataTransfer?.files ?? null
-  if (!files) return
+  event.preventDefault();
+  const files: FileList | null = event.dataTransfer?.files ?? null;
+  if (!files) return;
   // iterate the FileList and handle the files
-  const oldImageKey = sound.imageKey
-  const oldAudioKey = sound.audioKey
+  const oldImageKey = sound.imageKey;
+  const oldAudioKey = sound.audioKey;
 
-  const fileArray = Array.from(files)
+  const fileArray = Array.from(files);
 
   if (isNewSound) {
     // go through all the files, and group them by name
     const combinedFiles: SoundWithImage[] = Object.values(
       fileArray.reduce<{
-        [fileName: string]: CompilingSoundWithImage
+        [fileName: string]: CompilingSoundWithImage;
       }>((prevVal, file) => {
-        const fileName = stripFileExtension(file.name).toLowerCase().replace(/[`’]/g, "'")
+        const fileName = stripFileExtension(file.name).toLowerCase().replace(/[`’]/g, "'");
         if (file.type.includes('audio')) {
           if (!prevVal[fileName]) {
-            prevVal[fileName] = { audioFile: file }
+            prevVal[fileName] = { audioFile: file };
           } else if (!prevVal[fileName].audioFile) {
-            prevVal[fileName].audioFile = file
+            prevVal[fileName].audioFile = file;
           }
         } else if (file.type.includes('image')) {
           if (!prevVal[fileName]) {
-            prevVal[fileName] = { imageFile: file }
+            prevVal[fileName] = { imageFile: file };
           } else if (!prevVal[fileName].imageFile) {
-            prevVal[fileName].imageFile = file
+            prevVal[fileName].imageFile = file;
           }
         }
-        return prevVal
+        return prevVal;
       }, {}),
-    ).filter((file): file is SoundWithImage => file.audioFile !== undefined)
-    const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label)
-    const audioContext = new AudioContext()
+    ).filter((file): file is SoundWithImage => file.audioFile !== undefined);
+    const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label);
+    const audioContext = new AudioContext();
     const promAr = combinedFiles.map(async file => {
       const newSound: Sound = {
         id: crypto.randomUUID(),
         title: stripFileExtension(file.audioFile.name),
         ...(activeTags.length > 0 ? { tags: [...activeTags] } : {}),
-      }
-      await handleSoundFileDrop(file.audioFile, newSound, audioContext)
+      };
+      await handleSoundFileDrop(file.audioFile, newSound, audioContext);
       if (file.imageFile) {
-        await handleImageFileDrop(file.imageFile, newSound)
+        await handleImageFileDrop(file.imageFile, newSound);
       }
-      return newSound
-    })
-    const soundsToAdd = await Promise.all(promAr)
-    await audioContext.close()
+      return newSound;
+    });
+    const soundsToAdd = await Promise.all(promAr);
+    await audioContext.close();
 
     // insert the new sounds before the new sound button
-    settingsStore.insertSounds(settingsStore.sounds.length - 1, ...soundsToAdd)
+    settingsStore.insertSounds(settingsStore.sounds.length - 1, ...soundsToAdd);
   } else {
     // we're updating an existing sound button
     // only allow a single file to be dropped for the audio and image at a time
     // (prevents orphaned files from being uploaded)
-    let audioModified = false
-    let imageModified = false
-    const audioContext = new AudioContext()
+    let audioModified = false;
+    let imageModified = false;
+    const audioContext = new AudioContext();
     const promAr = fileArray.map(async file => {
       if (!audioModified && file.type.includes('audio')) {
-        await handleSoundFileDrop(file, sound, audioContext, oldAudioKey)
-        audioModified = true
+        await handleSoundFileDrop(file, sound, audioContext, oldAudioKey);
+        audioModified = true;
       } else if (!imageModified && file.type.includes('image')) {
-        await handleImageFileDrop(file, sound, oldImageKey)
-        imageModified = true
+        await handleImageFileDrop(file, sound, oldImageKey);
+        imageModified = true;
       }
-    })
-    await Promise.all(promAr)
-    await audioContext.close()
+    });
+    await Promise.all(promAr);
+    await audioContext.close();
 
     if (audioModified || imageModified) {
-      settingsStore.saveSound(sound)
+      settingsStore.saveSound(sound);
     }
   }
 }
@@ -174,12 +179,12 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
  */
 async function handleSoundFileDrop(file: File, newSound: Sound, audioContext: AudioContext, oldAudioKey?: string) {
   // if the sound is not new, then they are updating an existing sound
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldAudioKey, file)
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldAudioKey, file);
   // update the audioUrl and path
-  newSound.audioUrl = fileUrl
-  newSound.audioKey = fileKey
-  newSound.duration = await settingsStore.getAudioDuration(fileUrl, audioContext)
-  newSound.title = stripFileExtension(file.name)
+  newSound.audioUrl = fileUrl;
+  newSound.audioKey = fileKey;
+  newSound.duration = await settingsStore.getAudioDuration(fileUrl, audioContext);
+  newSound.title = stripFileExtension(file.name);
 }
 
 /**
@@ -187,22 +192,22 @@ async function handleSoundFileDrop(file: File, newSound: Sound, audioContext: Au
  * @param file The file that was dropped
  */
 async function handleImageFileDrop(file: File, newSound: Sound, oldImageKey?: string) {
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldImageKey, file)
-  newSound.imageUrl = fileUrl
-  newSound.imageKey = fileKey
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(oldImageKey, file);
+  newSound.imageUrl = fileUrl;
+  newSound.imageKey = fileKey;
 }
 
 function droppedOnBackground(event: DragEvent) {
   if (skipBgDrop.value) {
-    skipBgDrop.value = false
-    return
+    skipBgDrop.value = false;
+    return;
   }
   if (draggedSound === null) {
     // treat it as if they dropped it on the new sound button
-    fileDropped(event, settingsStore.sounds[settingsStore.sounds.length - 1], true)
+    fileDropped(event, settingsStore.sounds[settingsStore.sounds.length - 1], true);
   } else {
     // we should process this as a drop
-    drop()
+    drop();
   }
 }
 
@@ -211,193 +216,193 @@ function droppedOnBackground(event: DragEvent) {
  * @param pSound The sound that was dragged
  */
 function dragEnd(pSound: Sound) {
-  isDragging.value = false
+  isDragging.value = false;
 
   if (dragOverThrottle.value) {
-    clearTimeout(dragOverThrottle.value)
-    dragOverThrottle.value = null
+    clearTimeout(dragOverThrottle.value);
+    dragOverThrottle.value = null;
   }
 
-  if (draggedIndexStart === null || draggedSound === null) return
-  const sounds = settingsStore.sounds.filter(sound => !sound.isDragPreview)
-  delete draggedSound.isDragPreview
-  sounds.splice(draggedIndexStart, 0, pSound)
-  settingsStore.sounds = sounds
-  draggedIndexStart = null
-  draggedSound = null
+  if (draggedIndexStart === null || draggedSound === null) return;
+  const sounds = settingsStore.sounds.filter(sound => !sound.isDragPreview);
+  delete draggedSound.isDragPreview;
+  sounds.splice(draggedIndexStart, 0, pSound);
+  settingsStore.sounds = sounds;
+  draggedIndexStart = null;
+  draggedSound = null;
   // no need to save, because we're resetting back to the original order
 }
 
 function dragStart(pSound: Sound) {
-  const index = settingsStore.sounds.indexOf(pSound)
-  if (settingsStore.displayMode !== 'edit' || index === -1) return
-  draggedIndexStart = index
-  pSound.isDragPreview = true
-  draggedSound = pSound
-  isDragging.value = true
+  const index = settingsStore.sounds.indexOf(pSound);
+  if (settingsStore.displayMode !== 'edit' || index === -1) return;
+  draggedIndexStart = index;
+  pSound.isDragPreview = true;
+  draggedSound = pSound;
+  isDragging.value = true;
 }
 
 function drop() {
-  skipBgDrop.value = true
-  isDragging.value = false
+  skipBgDrop.value = true;
+  isDragging.value = false;
 
   if (dragOverThrottle.value) {
-    clearTimeout(dragOverThrottle.value)
-    dragOverThrottle.value = null
+    clearTimeout(dragOverThrottle.value);
+    dragOverThrottle.value = null;
   }
 
-  if (settingsStore.displayMode !== 'edit') return
-  if (draggedSound === null || draggedIndexStart === null) return
+  if (settingsStore.displayMode !== 'edit') return;
+  if (draggedSound === null || draggedIndexStart === null) return;
 
-  delete draggedSound.isDragPreview // remove the preview flag
-  settingsStore.moveSound(draggedIndexStart, settingsStore.sounds.indexOf(draggedSound))
-  draggedIndexStart = null
-  draggedSound = null
+  delete draggedSound.isDragPreview; // remove the preview flag
+  settingsStore.moveSound(draggedIndexStart, settingsStore.sounds.indexOf(draggedSound));
+  draggedIndexStart = null;
+  draggedSound = null;
 }
 
 function dragOver(pSound: Sound) {
-  if (settingsStore.displayMode !== 'edit') return
+  if (settingsStore.displayMode !== 'edit') return;
 
   if (dragOverThrottle.value) {
-    clearTimeout(dragOverThrottle.value)
+    clearTimeout(dragOverThrottle.value);
   }
 
   dragOverThrottle.value = window.setTimeout(() => {
-    performDragOver(pSound)
-    dragOverThrottle.value = null
-  }, DRAG_THROTTLE_MS)
+    performDragOver(pSound);
+    dragOverThrottle.value = null;
+  }, DRAG_THROTTLE_MS);
 }
 
 async function performDragOver(pSound: Sound) {
-  if (settingsStore.displayMode !== 'edit') return
-  if (draggedSound === null) return
-  let index = settingsStore.sounds.indexOf(pSound)
-  index = Math.min(index, settingsStore.sounds.length - 2)
-  const draggedIndex = settingsStore.sounds.indexOf(draggedSound)
-  if (index === draggedIndex) return
-  const sounds = [...settingsStore.sounds]
-  sounds.splice(draggedIndex, 1)
-  sounds.splice(index, 0, draggedSound)
-  settingsStore.sounds = sounds
+  if (settingsStore.displayMode !== 'edit') return;
+  if (draggedSound === null) return;
+  let index = settingsStore.sounds.indexOf(pSound);
+  index = Math.min(index, settingsStore.sounds.length - 2);
+  const draggedIndex = settingsStore.sounds.indexOf(draggedSound);
+  if (index === draggedIndex) return;
+  const sounds = [...settingsStore.sounds];
+  sounds.splice(draggedIndex, 1);
+  sounds.splice(index, 0, draggedSound);
+  settingsStore.sounds = sounds;
 }
 
 function editSound(pSound: Sound) {
   if (settingsStore.currentEditingSound?.id !== pSound.id) {
     // get the browser window's current size
-    expandWindow(pSound)
+    expandWindow(pSound);
   } else {
-    collapseWindow()
+    collapseWindow();
   }
 }
 
 function closeEditor() {
-  collapseWindow()
+  collapseWindow();
 }
 
 function handleSoundsUpdate(pSound: Sound) {
-  const soundIndex = settingsStore.sounds.findIndex(sound => sound.id === pSound.id)
-  if (soundIndex === -1) return
-  settingsStore.sounds[soundIndex] = pSound
+  const soundIndex = settingsStore.sounds.findIndex(sound => sound.id === pSound.id);
+  if (soundIndex === -1) return;
+  settingsStore.sounds[soundIndex] = pSound;
 
   // add a new sound if sound is null
-  const lastSound = settingsStore.sounds[settingsStore.sounds.length - 1]
+  const lastSound = settingsStore.sounds[settingsStore.sounds.length - 1];
   if (lastSound.title !== undefined) {
-    const newSound: Sound = { id: crypto.randomUUID() }
-    settingsStore.sounds.push(newSound)
-    settingsStore.saveSound(newSound)
+    const newSound: Sound = { id: crypto.randomUUID() };
+    settingsStore.sounds.push(newSound);
+    settingsStore.saveSound(newSound);
   }
-  settingsStore.saveSound(pSound)
+  settingsStore.saveSound(pSound);
 }
 
 function updateCurrentEditingSound() {
   if (settingsStore.currentEditingSound !== null) {
-    const currentSound = settingsStore.currentEditingSound
-    const index = settingsStore.sounds.findIndex(sound => sound.id === currentSound.id)
+    const currentSound = settingsStore.currentEditingSound;
+    const index = settingsStore.sounds.findIndex(sound => sound.id === currentSound.id);
     if (index !== -1) {
-      settingsStore.sounds[index] = settingsStore.currentEditingSound
-      settingsStore.saveSound(settingsStore.currentEditingSound)
+      settingsStore.sounds[index] = settingsStore.currentEditingSound;
+      settingsStore.saveSound(settingsStore.currentEditingSound);
     }
   }
 }
 
 function deleteSound(pSound: Sound) {
-  dialogOpen.value = true
-  soundToDelete.value = pSound
+  dialogOpen.value = true;
+  soundToDelete.value = pSound;
 }
 
 function deleteSoundConfirmed() {
-  if (soundToDelete.value === null) return
-  const deletedId = soundToDelete.value.id
-  const deletedIndex = settingsStore.sounds.findIndex(sound => sound.id === deletedId)
-  settingsStore.deleteSound(soundToDelete.value)
-  soundToDelete.value = null
+  if (soundToDelete.value === null) return;
+  const deletedId = soundToDelete.value.id;
+  const deletedIndex = settingsStore.sounds.findIndex(sound => sound.id === deletedId);
+  settingsStore.deleteSound(soundToDelete.value);
+  soundToDelete.value = null;
 
   if (settingsStore.currentEditingSound?.id === deletedId) {
-    const validSounds = settingsStore.sounds.filter(sound => sound.title !== undefined)
+    const validSounds = settingsStore.sounds.filter(sound => sound.title !== undefined);
     if (validSounds.length > 0) {
-      const nextIndex = Math.min(Math.max(0, deletedIndex), validSounds.length - 1)
-      settingsStore.currentEditingSound = validSounds[nextIndex]
+      const nextIndex = Math.min(Math.max(0, deletedIndex), validSounds.length - 1);
+      settingsStore.currentEditingSound = validSounds[nextIndex];
     } else {
-      collapseWindow()
+      collapseWindow();
     }
   }
 }
 
 async function expandWindow(pSound: Sound) {
-  if (isTransitioning.value) return
+  if (isTransitioning.value) return;
   if (settingsStore.currentEditingSound === null && !settingsStore.soundEditorOpen) {
-    settingsStore.soundEditorOpen = true
-    isTransitioning.value = true
+    settingsStore.soundEditorOpen = true;
+    isTransitioning.value = true;
     // get the current width of the soundboard
-    const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0
-    if (soundboardWidth === 0) return
-    forcedWidth.value = soundboardWidth
-    let resizeTimeout: NodeJS.Timeout | null = null
+    const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0;
+    if (soundboardWidth === 0) return;
+    forcedWidth.value = soundboardWidth;
+    let resizeTimeout: NodeJS.Timeout | null = null;
     // Wait for the actual DOM element to resize
 
     const resizePromise = new Promise<void>(resolve => {
       const observer = new ResizeObserver(() => {
         // Debounce: only resolve after no resize events for 10ms
-        if (resizeTimeout) clearTimeout(resizeTimeout)
+        if (resizeTimeout) clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
-          observer.disconnect()
-          resolve()
-        }, 10)
-      })
+          observer.disconnect();
+          resolve();
+        }, 10);
+      });
       if (main.value?.parentElement) {
-        observer.observe(main.value.parentElement)
+        observer.observe(main.value.parentElement);
       } else if (main.value) {
-        observer.observe(main.value)
+        observer.observe(main.value);
       }
-    })
+    });
     // expand the window by 300px, to allow for the SoundEditor
-    await window.electron?.expandWindow(300, 0)
-    await resizePromise
-    window.electron?.requestMainWindowSized()
-    isTransitioning.value = false
+    await window.electron?.expandWindow(300, 0);
+    await resizePromise;
+    window.electron?.requestMainWindowSized();
+    isTransitioning.value = false;
   } else {
-    settingsStore.soundEditorOpen = true
+    settingsStore.soundEditorOpen = true;
   }
-  settingsStore.currentEditingSound = pSound
+  settingsStore.currentEditingSound = pSound;
 }
 
 async function collapseWindow() {
-  if (settingsStore.currentEditingSound === null) return
-  if (isTransitioning.value) return
+  if (settingsStore.currentEditingSound === null) return;
+  if (isTransitioning.value) return;
   if (settingsStore.soundEditorOpen) {
-    settingsStore.soundEditorOpen = false
-    isTransitioning.value = true
-    const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0
-    if (soundboardWidth === 0) return
-    forcedWidth.value = soundboardWidth
-    settingsStore.currentEditingSound = null
-    await window.electron?.expandWindow(-300, 0)
+    settingsStore.soundEditorOpen = false;
+    isTransitioning.value = true;
+    const soundboardWidth = main.value?.getBoundingClientRect().width ?? 0;
+    if (soundboardWidth === 0) return;
+    forcedWidth.value = soundboardWidth;
+    settingsStore.currentEditingSound = null;
+    await window.electron?.expandWindow(-300, 0);
     // reset the size to the original size to allow for window resizing
-    forcedWidth.value = null
-    isTransitioning.value = false
+    forcedWidth.value = null;
+    isTransitioning.value = false;
   } else {
-    settingsStore.currentEditingSound = null
-    forcedWidth.value = null
+    settingsStore.currentEditingSound = null;
+    forcedWidth.value = null;
   }
 }
 </script>
