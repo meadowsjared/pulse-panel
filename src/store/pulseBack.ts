@@ -241,7 +241,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
         trimEnd: duration,
         currentTime: 0,
         volume: defaultVolPercent,
-        color: '#3b82f6',
+        color: '#ffffff',
         includeMic: true,
         includeInput: true,
       };
