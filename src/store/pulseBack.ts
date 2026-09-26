@@ -458,15 +458,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
         audioKey: fileKey,
         audioUrl: fileUrl,
         duration: trimmedDuration,
-        soundSegments: [
-          {
-            id: crypto.randomUUID(),
-            start: 0,
-            end: trimmedDuration,
-            label: 'Full',
-          },
-        ],
-      }
+      };
 
       await settingsStore.insertSounds(settingsStore.sounds.length - 1, newSound);
 
