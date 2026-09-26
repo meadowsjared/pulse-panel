@@ -474,6 +474,51 @@ export const useSettingsStore = defineStore('settings', {
     totalSounds(): number {
       return this.sounds.filter(sound => sound && sound.title !== undefined && !sound.isDragPreview).length
     },
+    allKnownTags(): { name: string; count: number }[] {
+      const tagMap = new Map<string, { name: string; count: number }>()
+      this.sounds.forEach(sound => {
+        if (sound?.tags && Array.isArray(sound.tags)) {
+          sound.tags.forEach(tag => {
+            const trimmed = tag.trim()
+            if (trimmed) {
+              const lower = trimmed.toLowerCase()
+              const existing = tagMap.get(lower)
+              if (existing) {
+                existing.count++
+              } else {
+                tagMap.set(lower, { name: trimmed, count: 1 })
+              }
+            }
+          })
+        }
+      })
+      if (this.quickTagsAr) {
+        this.quickTagsAr.forEach(qt => {
+          const trimmed = qt.label?.trim()
+          if (trimmed) {
+            const lower = trimmed.toLowerCase()
+            if (!tagMap.has(lower)) {
+              tagMap.set(lower, { name: trimmed, count: 0 })
+            }
+          }
+        })
+      }
+      if (this.tagImages) {
+        Object.keys(this.tagImages).forEach(t => {
+          const trimmed = t.trim()
+          if (trimmed) {
+            const lower = trimmed.toLowerCase()
+            if (!tagMap.has(lower)) {
+              tagMap.set(lower, { name: trimmed, count: 0 })
+            }
+          }
+        })
+      }
+      return Array.from(tagMap.values()).sort((a, b) => {
+        if (b.count !== a.count) return b.count - a.count
+        return a.name.localeCompare(b.name)
+      })
+    },
   },
   actions: {
     soundsFiltered(params?: SliceParams): Sound[] {
