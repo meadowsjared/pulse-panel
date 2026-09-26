@@ -118,7 +118,8 @@ async function downloadAndInstallUpdate(downloadUrl, onProgress) {
   await downloadFile(downloadUrl, destPath, onProgress)
 
   if (process.platform === 'win32') {
-    const child = spawn(destPath, [], {
+    // Run NSIS installer silently with previous settings and automatically relaunch after update
+    const child = spawn(destPath, ['/S', '--updated', '--force-run'], {
       detached: true,
       stdio: 'ignore',
     })
