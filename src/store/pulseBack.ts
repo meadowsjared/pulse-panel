@@ -1,60 +1,60 @@
-import { defineStore } from 'pinia'
-import { toRaw } from 'vue'
-import { openDB, IDBPDatabase } from 'idb'
-import { pulseBackBuffer } from '../services/pulseBackBuffer'
-import { useSettingsStore } from './settings'
-import { Sound } from '../@types/sound'
-import Router from '../router'
+import { defineStore } from 'pinia';
+import { toRaw } from 'vue';
+import { openDB, IDBPDatabase } from 'idb';
+import { pulseBackBuffer } from '../services/pulseBackBuffer';
+import { useSettingsStore } from './settings';
+import { Sound } from '../@types/sound';
+import Router from '../router';
 
 export interface PulseBackClip {
-  id: string
-  title: string
-  duration: number
-  audioUrl: string
-  blob: Blob
-  createdAt: number
-  hasDualTracks?: boolean
-  tags?: string[]
-  trimStart?: number
-  trimEnd?: number
-  currentTime?: number
-  volume?: number
-  color?: string
-  includeMic?: boolean
-  includeInput?: boolean
+  id: string;
+  title: string;
+  duration: number;
+  audioUrl: string;
+  blob: Blob;
+  createdAt: number;
+  hasDualTracks?: boolean;
+  tags?: string[];
+  trimStart?: number;
+  trimEnd?: number;
+  currentTime?: number;
+  volume?: number;
+  color?: string;
+  includeMic?: boolean;
+  includeInput?: boolean;
 }
 
 interface PulseBackState {
-  isBufferEnabled: boolean
-  isBufferRunning: boolean
-  isLiveRecording: boolean
-  liveRecordSeconds: number
-  liveRecordRetroStart: number
-  clips: PulseBackClip[]
-  selectedClipId: string | null
-  toastMessage: string | null
-  toastTimeout: ReturnType<typeof setTimeout> | null
+  isBufferEnabled: boolean;
+  isBufferRunning: boolean;
+  isLiveRecording: boolean;
+  liveRecordSeconds: number;
+  liveRecordRetroStart: number;
+  clips: PulseBackClip[];
+  selectedClipId: string | null;
+  toastMessage: string | null;
+  toastTimeout: ReturnType<typeof setTimeout> | null;
 }
 
-const DB_NAME = 'pulse-back-clips'
-const STORE_NAME = 'clips'
+const DB_NAME = 'pulse-back-clips';
+const STORE_NAME = 'clips';
 
-let dbPromise: Promise<IDBPDatabase> | null = null
+let dbPromise: Promise<IDBPDatabase> | null = null;
 
 function getClipDB(): Promise<IDBPDatabase> {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, 1, {
       upgrade(db) {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME, { keyPath: 'id' })
+          db.createObjectStore(STORE_NAME, { keyPath: 'id' });
         }
       },
-    })
+    });
   }
-  return dbPromise
+  return dbPromise;
 }
 
-let liveTimer: ReturnType<typeof setInterval> | null = null
+let liveTimer: ReturnType<typeof setInterval> | null = null;
 
 export const usePulseBackStore = defineStore('pulseBack', {
   state: (): PulseBackState => ({
@@ -72,17 +72,17 @@ export const usePulseBackStore = defineStore('pulseBack', {
   getters: {
     selectedClip(state): PulseBackClip | null {
       if (!state.selectedClipId) {
-        return state.clips.length > 0 ? state.clips[0] : null
+        return state.clips.length > 0 ? state.clips[0] : null;
       }
-      return state.clips.find(c => c.id === state.selectedClipId) || (state.clips[0] ?? null)
+      return state.clips.find(c => c.id === state.selectedClipId) || (state.clips[0] ?? null);
     },
   },
 
   actions: {
     async init(): Promise<void> {
       try {
-        const db = await getClipDB()
-        const rawClips = await db.getAll(STORE_NAME)
+        const db = await getClipDB();
+        const rawClips = await db.getAll(STORE_NAME);
         if (rawClips && rawClips.length > 0) {
           this.clips = rawClips
             .map(raw => ({
@@ -102,131 +102,131 @@ export const usePulseBackStore = defineStore('pulseBack', {
               includeMic: raw.includeMic !== undefined ? Boolean(raw.includeMic) : undefined,
               includeInput: raw.includeInput !== undefined ? Boolean(raw.includeInput) : undefined,
             }))
-            .sort((a, b) => b.createdAt - a.createdAt)
+            .sort((a, b) => b.createdAt - a.createdAt);
 
           if (this.clips.length > 0 && !this.selectedClipId) {
-            const savedSelectedId = localStorage.getItem('pulse_back_selected_clip_id')
+            const savedSelectedId = localStorage.getItem('pulse_back_selected_clip_id');
             if (savedSelectedId && this.clips.some(c => c.id === savedSelectedId)) {
-              this.selectedClipId = savedSelectedId
+              this.selectedClipId = savedSelectedId;
             } else {
-              this.selectedClipId = this.clips[0].id
+              this.selectedClipId = this.clips[0].id;
             }
           }
         }
       } catch (err) {
-        console.warn('Could not load Pulse Back clips from IDB:', err)
+        console.warn('Could not load Pulse Back clips from IDB:', err);
       }
 
       // Check if pulse_back_enabled was saved in database
-      const electron = window.electron
+      const electron = window.electron;
       if (electron?.readDBSetting) {
-        const savedEnabled = await electron.readDBSetting('pulse_back_enabled')
+        const savedEnabled = await electron.readDBSetting('pulse_back_enabled');
         if (savedEnabled === true) {
-          this.isBufferEnabled = true
-          await this.startBuffer()
+          this.isBufferEnabled = true;
+          await this.startBuffer();
         }
       }
     },
 
     async toggleBuffer(): Promise<void> {
-      this.isBufferEnabled = !this.isBufferEnabled
+      this.isBufferEnabled = !this.isBufferEnabled;
 
-      const electron = window.electron
+      const electron = window.electron;
       if (electron?.saveDBSetting) {
-        await electron.saveDBSetting('pulse_back_enabled', this.isBufferEnabled)
+        await electron.saveDBSetting('pulse_back_enabled', this.isBufferEnabled);
       }
 
       if (this.isBufferEnabled) {
-        await this.startBuffer()
-        this.showToast('Pulse Back buffer active')
+        await this.startBuffer();
+        this.showToast('Pulse Back buffer active');
       } else {
-        this.stopBuffer()
-        this.showToast('Pulse Back buffer turned off')
+        this.stopBuffer();
+        this.showToast('Pulse Back buffer turned off');
       }
     },
 
     async startBuffer(micDeviceId?: string | null, inputDeviceId?: string | null): Promise<void> {
-      const settingsStore = useSettingsStore()
-      const micDevice = micDeviceId ?? settingsStore.selectedMicrophoneId
-      const inputDevice = inputDeviceId ?? settingsStore.pulse_back_input_device
-      const effectiveMicVol = settingsStore.microphoneVolume ?? 1
-      const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
+      const settingsStore = useSettingsStore();
+      const micDevice = micDeviceId ?? settingsStore.selectedMicrophoneId;
+      const inputDevice = inputDeviceId ?? settingsStore.pulse_back_input_device;
+      const effectiveMicVol = settingsStore.microphoneVolume ?? 1;
+      const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1);
       try {
-        await pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol)
-        this.isBufferRunning = true
+        await pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol);
+        this.isBufferRunning = true;
       } catch (err) {
-        console.error('Failed to start Pulse Back buffer:', err)
-        this.isBufferRunning = false
-        this.isBufferEnabled = false
-        this.showToast('Could not access audio device for Pulse Back')
+        console.error('Failed to start Pulse Back buffer:', err);
+        this.isBufferRunning = false;
+        this.isBufferEnabled = false;
+        this.showToast('Could not access audio device for Pulse Back');
       }
     },
 
     stopBuffer(): void {
       if (this.isLiveRecording) {
-        this.stopLiveCapture()
+        this.stopLiveCapture();
       }
-      pulseBackBuffer.stop()
-      this.isBufferRunning = false
+      pulseBackBuffer.stop();
+      this.isBufferRunning = false;
     },
 
     async triggerQuickClip(seconds?: number, continueRecording: boolean = false): Promise<PulseBackClip | null> {
       if (!this.isBufferRunning) {
-        this.showToast('Enable Pulse Back buffer first')
-        return null
+        this.showToast('Enable Pulse Back buffer first');
+        return null;
       }
 
-      const captureSecs = seconds ?? 30
+      const captureSecs = seconds ?? 30;
 
       if (continueRecording) {
-        pulseBackBuffer.startLivePunchIn(captureSecs)
-        this.isLiveRecording = true
-        this.liveRecordRetroStart = captureSecs
-        this.liveRecordSeconds = 0
+        pulseBackBuffer.startLivePunchIn(captureSecs);
+        this.isLiveRecording = true;
+        this.liveRecordRetroStart = captureSecs;
+        this.liveRecordSeconds = 0;
 
-        if (liveTimer) clearInterval(liveTimer)
+        if (liveTimer) clearInterval(liveTimer);
         liveTimer = setInterval(() => {
-          this.liveRecordSeconds += 1
-        }, 1000)
+          this.liveRecordSeconds += 1;
+        }, 1000);
 
-        this.showToast(`Pulse Back: Recording live (started at -${captureSecs}s)`)
-        return null
+        this.showToast(`Pulse Back: Recording live (started at -${captureSecs}s)`);
+        return null;
       }
 
       // Instant capture
-      const { blob, duration, hasDualTracks } = await pulseBackBuffer.extractRetroactive(captureSecs)
+      const { blob, duration, hasDualTracks } = await pulseBackBuffer.extractRetroactive(captureSecs);
       if (duration <= 0.1) {
-        this.showToast('Not enough audio recorded yet in buffer')
-        return null
+        this.showToast('Not enough audio recorded yet in buffer');
+        return null;
       }
 
-      return await this.saveNewClip(blob, duration, `Clip -${Math.round(duration)}s`, hasDualTracks)
+      return await this.saveNewClip(blob, duration, `Clip -${Math.round(duration)}s`, hasDualTracks);
     },
 
     async stopLiveCapture(): Promise<PulseBackClip | null> {
-      if (!this.isLiveRecording) return null
+      if (!this.isLiveRecording) return null;
 
       if (liveTimer) {
-        clearInterval(liveTimer)
-        liveTimer = null
+        clearInterval(liveTimer);
+        liveTimer = null;
       }
-      this.isLiveRecording = false
+      this.isLiveRecording = false;
 
-      const { blob, duration, hasDualTracks } = await pulseBackBuffer.stopLivePunchIn()
-      const totalSec = Math.round(duration)
-      return await this.saveNewClip(blob, duration, `Clip (${totalSec}s)`, hasDualTracks)
+      const { blob, duration, hasDualTracks } = await pulseBackBuffer.stopLivePunchIn();
+      const totalSec = Math.round(duration);
+      return await this.saveNewClip(blob, duration, `Clip (${totalSec}s)`, hasDualTracks);
     },
 
     async saveNewClip(blob: Blob, duration: number, title?: string, hasDualTracks: boolean = false): Promise<PulseBackClip> {
-      const settingsStore = useSettingsStore()
+      const settingsStore = useSettingsStore();
       const defaultVolPercent =
         typeof settingsStore.defaultVolume === 'number' && !Number.isNaN(settingsStore.defaultVolume)
           ? Math.round(settingsStore.defaultVolume * 100)
-          : 100
+          : 100;
 
-      const id = crypto.randomUUID()
-      const now = Date.now()
-      const defaultTitle = title || `Pulse Back ${new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+      const id = crypto.randomUUID();
+      const now = Date.now();
+      const defaultTitle = title || `Pulse Back ${new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 
       const clip: PulseBackClip = {
         id,
@@ -244,18 +244,18 @@ export const usePulseBackStore = defineStore('pulseBack', {
         color: '#3b82f6',
         includeMic: true,
         includeInput: true,
-      }
+      };
 
-      this.clips.unshift(clip)
-      this.selectedClipId = clip.id
+      this.clips.unshift(clip);
+      this.selectedClipId = clip.id;
       try {
-        localStorage.setItem('pulse_back_selected_clip_id', clip.id)
-      } catch {}
+        localStorage.setItem('pulse_back_selected_clip_id', clip.id);
+      } catch { }
 
       try {
-        const rawBlob = toRaw(clip.blob)
-        const rawTags = clip.tags ? Array.from(toRaw(clip.tags)) : []
-        const db = await getClipDB()
+        const rawBlob = toRaw(clip.blob);
+        const rawTags = clip.tags ? Array.from(toRaw(clip.tags)) : [];
+        const db = await getClipDB();
         await db.put(STORE_NAME, {
           id: String(clip.id),
           title: String(clip.title),
@@ -271,61 +271,61 @@ export const usePulseBackStore = defineStore('pulseBack', {
           color: '#3b82f6',
           includeMic: true,
           includeInput: true,
-        })
+        });
       } catch (err) {
-        console.warn('Could not persist clip to IndexedDB:', err)
+        console.warn('Could not persist clip to IndexedDB:', err);
       }
 
-      this.showToast(`Saved ${clip.title}!`)
-      return clip
+      this.showToast(`Saved ${clip.title}!`);
+      return clip;
     },
 
     selectClip(clipId: string): void {
-      this.selectedClipId = clipId
+      this.selectedClipId = clipId;
       try {
-        localStorage.setItem('pulse_back_selected_clip_id', clipId)
-      } catch {}
+        localStorage.setItem('pulse_back_selected_clip_id', clipId);
+      } catch { }
     },
 
     async deleteClip(clipId: string): Promise<void> {
-      const idx = this.clips.findIndex(c => c.id === clipId)
+      const idx = this.clips.findIndex(c => c.id === clipId);
       if (idx !== -1) {
-        const clip = this.clips[idx]
+        const clip = this.clips[idx];
         if (clip.audioUrl) {
-          try { URL.revokeObjectURL(clip.audioUrl) } catch {}
+          try { URL.revokeObjectURL(clip.audioUrl); } catch { }
         }
-        this.clips.splice(idx, 1)
+        this.clips.splice(idx, 1);
 
         if (this.selectedClipId === clipId) {
-          this.selectedClipId = this.clips[0]?.id ?? null
+          this.selectedClipId = this.clips[0]?.id ?? null;
           try {
             if (this.selectedClipId) {
-              localStorage.setItem('pulse_back_selected_clip_id', this.selectedClipId)
+              localStorage.setItem('pulse_back_selected_clip_id', this.selectedClipId);
             } else {
-              localStorage.removeItem('pulse_back_selected_clip_id')
+              localStorage.removeItem('pulse_back_selected_clip_id');
             }
-          } catch {}
+          } catch { }
         }
 
         try {
-          const db = await getClipDB()
-          await db.delete(STORE_NAME, clipId)
+          const db = await getClipDB();
+          await db.delete(STORE_NAME, clipId);
         } catch (err) {
-          console.warn('Could not delete clip from IDB:', err)
+          console.warn('Could not delete clip from IDB:', err);
         }
       }
     },
 
     async updateClip(clipId: string, updates: Partial<PulseBackClip>): Promise<void> {
-      const clip = this.clips.find(c => c.id === clipId)
-      if (!clip) return
+      const clip = this.clips.find(c => c.id === clipId);
+      if (!clip) return;
 
-      Object.assign(clip, updates)
+      Object.assign(clip, updates);
 
       try {
-        const rawBlob = toRaw(clip.blob)
-        const rawTags = clip.tags ? Array.from(toRaw(clip.tags)) : []
-        const db = await getClipDB()
+        const rawBlob = toRaw(clip.blob);
+        const rawTags = clip.tags ? Array.from(toRaw(clip.tags)) : [];
+        const db = await getClipDB();
         const toSave: Record<string, any> = {
           id: String(clip.id),
           title: String(clip.title),
@@ -334,28 +334,28 @@ export const usePulseBackStore = defineStore('pulseBack', {
           createdAt: Number(clip.createdAt),
           hasDualTracks: Boolean(clip.hasDualTracks),
           tags: rawTags,
-        }
-        if (clip.trimStart !== undefined) toSave.trimStart = Number(clip.trimStart)
-        if (clip.trimEnd !== undefined) toSave.trimEnd = Number(clip.trimEnd)
-        if (clip.currentTime !== undefined) toSave.currentTime = Number(clip.currentTime)
-        if (clip.volume !== undefined) toSave.volume = Number(clip.volume)
-        if (clip.color !== undefined) toSave.color = String(clip.color)
-        if (clip.includeMic !== undefined) toSave.includeMic = Boolean(clip.includeMic)
-        if (clip.includeInput !== undefined) toSave.includeInput = Boolean(clip.includeInput)
-        await db.put(STORE_NAME, toSave)
+        };
+        if (clip.trimStart !== undefined) toSave.trimStart = Number(clip.trimStart);
+        if (clip.trimEnd !== undefined) toSave.trimEnd = Number(clip.trimEnd);
+        if (clip.currentTime !== undefined) toSave.currentTime = Number(clip.currentTime);
+        if (clip.volume !== undefined) toSave.volume = Number(clip.volume);
+        if (clip.color !== undefined) toSave.color = String(clip.color);
+        if (clip.includeMic !== undefined) toSave.includeMic = Boolean(clip.includeMic);
+        if (clip.includeInput !== undefined) toSave.includeInput = Boolean(clip.includeInput);
+        await db.put(STORE_NAME, toSave);
       } catch (err) {
-        console.warn('Could not update clip in IDB:', err)
+        console.warn('Could not update clip in IDB:', err);
       }
     },
 
     async duplicateClip(clipId: string): Promise<PulseBackClip | null> {
-      const clip = this.clips.find(c => c.id === clipId)
-      if (!clip) return null
+      const clip = this.clips.find(c => c.id === clipId);
+      if (!clip) return null;
 
-      const newId = crypto.randomUUID()
-      const now = Date.now()
-      const duplicatedTitle = `${clip.title} (Copy)`
-      const rawBlob = toRaw(clip.blob)
+      const newId = crypto.randomUUID();
+      const now = Date.now();
+      const duplicatedTitle = `${clip.title} (Copy)`;
+      const rawBlob = toRaw(clip.blob);
 
       const newClip: PulseBackClip = {
         id: newId,
@@ -373,24 +373,24 @@ export const usePulseBackStore = defineStore('pulseBack', {
         color: clip.color !== undefined ? String(clip.color) : '#3b82f6',
         includeMic: clip.includeMic !== undefined ? Boolean(clip.includeMic) : true,
         includeInput: clip.includeInput !== undefined ? Boolean(clip.includeInput) : true,
-      }
+      };
 
       // Insert right after original clip in list
-      const idx = this.clips.findIndex(c => c.id === clipId)
+      const idx = this.clips.findIndex(c => c.id === clipId);
       if (idx !== -1) {
-        this.clips.splice(idx + 1, 0, newClip)
+        this.clips.splice(idx + 1, 0, newClip);
       } else {
-        this.clips.unshift(newClip)
+        this.clips.unshift(newClip);
       }
 
-      this.selectedClipId = newClip.id
+      this.selectedClipId = newClip.id;
       try {
-        localStorage.setItem('pulse_back_selected_clip_id', newClip.id)
-      } catch {}
+        localStorage.setItem('pulse_back_selected_clip_id', newClip.id);
+      } catch { }
 
       try {
-        const rawTags = newClip.tags ? Array.from(toRaw(newClip.tags)) : []
-        const db = await getClipDB()
+        const rawTags = newClip.tags ? Array.from(toRaw(newClip.tags)) : [];
+        const db = await getClipDB();
         await db.put(STORE_NAME, {
           id: String(newClip.id),
           title: String(newClip.title),
@@ -406,48 +406,48 @@ export const usePulseBackStore = defineStore('pulseBack', {
           color: String(newClip.color ?? '#3b82f6'),
           includeMic: Boolean(newClip.includeMic ?? true),
           includeInput: Boolean(newClip.includeInput ?? true),
-        })
+        });
       } catch (err) {
-        console.warn('Could not persist duplicated clip to IndexedDB:', err)
+        console.warn('Could not persist duplicated clip to IndexedDB:', err);
       }
 
-      this.showToast(`Duplicated "${clip.title}"`)
-      return newClip
+      this.showToast(`Duplicated "${clip.title}"`);
+      return newClip;
     },
 
     async publishToSoundboard(
       clipId: string,
       trimmedBlob: Blob,
       trimmedDuration: number,
-      soundMetadata: { title: string; tags: string[]; color: string; volume?: number },
-      options: { deleteAfterPublish?: boolean; navigateToSoundboard?: boolean; format?: 'mp3' | 'wav' | 'ogg'; extension?: string } = {}
+      soundMetadata: { title: string; tags: string[]; color: string; volume?: number; },
+      options: { deleteAfterPublish?: boolean; navigateToSoundboard?: boolean; format?: 'mp3' | 'wav' | 'ogg'; extension?: string; } = {}
     ): Promise<void> {
-      const settingsStore = useSettingsStore()
-      const clip = this.clips.find(c => c.id === clipId)
-      if (!clip) return
+      const settingsStore = useSettingsStore();
+      const clip = this.clips.find(c => c.id === clipId);
+      if (!clip) return;
 
-      const ext = options.extension || options.format || 'wav'
-      const mimeType = ext === 'mp3' ? 'audio/mpeg' : ext === 'ogg' ? 'audio/ogg' : 'audio/wav'
-      const fileName = `${soundMetadata.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.${ext}`
-      const file = new window.File([trimmedBlob], fileName, { type: mimeType })
+      const ext = options.extension || options.format || 'wav';
+      const mimeType = ext === 'mp3' ? 'audio/mpeg' : ext === 'ogg' ? 'audio/ogg' : 'audio/wav';
+      const fileName = `${soundMetadata.title.replace(/[^a-zA-Z0-9_-]/g, '_')}.${ext}`;
+      const file = new window.File([trimmedBlob], fileName, { type: mimeType });
 
-      const { fileUrl, fileKey } = await settingsStore.saveFile(file)
+      const { fileUrl, fileKey } = await settingsStore.saveFile(file);
 
       const defaultVol =
         typeof settingsStore.defaultVolume === 'number' && !Number.isNaN(settingsStore.defaultVolume)
           ? settingsStore.defaultVolume
-          : 1
+          : 1;
 
-      let soundVolume: number | undefined
+      let soundVolume: number | undefined;
       if (typeof soundMetadata.volume === 'number' && !Number.isNaN(soundMetadata.volume)) {
-        const normalized = Math.round(soundMetadata.volume) / 100
+        const normalized = Math.round(soundMetadata.volume) / 100;
         if (normalized !== defaultVol) {
-          soundVolume = normalized
+          soundVolume = normalized;
         }
       }
 
-      const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label)
-      const combinedTags = Array.from(new Set([...(soundMetadata.tags || []), ...activeTags]))
+      const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label);
+      const combinedTags = Array.from(new Set([...(soundMetadata.tags || []), ...activeTags]));
 
       const newSound: Sound = {
         id: crypto.randomUUID(),
@@ -468,29 +468,29 @@ export const usePulseBackStore = defineStore('pulseBack', {
         ],
       }
 
-      await settingsStore.insertSounds(settingsStore.sounds.length - 1, newSound)
+      await settingsStore.insertSounds(settingsStore.sounds.length - 1, newSound);
 
       if (options.deleteAfterPublish) {
         // Remove from clips draft if requested
-        await this.deleteClip(clipId)
+        await this.deleteClip(clipId);
       }
 
-      this.showToast(`Added "${newSound.title}" to Soundboard!`)
+      this.showToast(`Added "${newSound.title}" to Soundboard!`);
 
       if (options.navigateToSoundboard) {
-        Router.push('/soundboard')
+        Router.push('/soundboard');
       }
     },
 
     showToast(message: string): void {
-      this.toastMessage = message
+      this.toastMessage = message;
       if (this.toastTimeout) {
-        clearTimeout(this.toastTimeout)
+        clearTimeout(this.toastTimeout);
       }
       this.toastTimeout = setTimeout(() => {
-        this.toastMessage = null
-        this.toastTimeout = null
-      }, 3500)
+        this.toastMessage = null;
+        this.toastTimeout = null;
+      }, 3500);
     },
   },
-})
+});
