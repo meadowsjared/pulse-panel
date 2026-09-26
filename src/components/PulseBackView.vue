@@ -83,7 +83,12 @@
                      fill="none"
                      stroke="currentColor"
                      stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <rect x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
               </button>
@@ -135,7 +140,12 @@
                  fill="none"
                  stroke="currentColor"
                  stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <rect x="9"
+                    y="9"
+                    width="13"
+                    height="13"
+                    rx="2"
+                    ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
             Duplicate Clip
@@ -513,7 +523,7 @@ function updateTrackVolumes() {
     micAudioElRef.value.volume = includeMic.value ? masterVol * factor : 0;
     if (isPlaying.value && includeMic.value && micAudioElRef.value.paused) {
       micAudioElRef.value.currentTime = currentTime.value;
-      micAudioElRef.value.play().catch(() => {});
+      micAudioElRef.value.play().catch(() => { });
     }
   }
   if (inputAudioElRef.value) {
@@ -521,7 +531,7 @@ function updateTrackVolumes() {
     inputAudioElRef.value.volume = includeInput.value ? masterVol * factor : 0;
     if (isPlaying.value && includeInput.value && inputAudioElRef.value.paused) {
       inputAudioElRef.value.currentTime = currentTime.value;
-      inputAudioElRef.value.play().catch(() => {});
+      inputAudioElRef.value.play().catch(() => { });
     }
   }
 }
@@ -769,7 +779,7 @@ async function trimToSelection() {
   if (selectedClip.value.audioUrl) {
     try {
       URL.revokeObjectURL(selectedClip.value.audioUrl);
-    } catch {}
+    } catch { }
   }
   selectedClip.value.audioUrl = URL.createObjectURL(newBlob);
   selectedClip.value.trimStart = 0;
