@@ -51,7 +51,6 @@
 import { computed } from 'vue';
 import { useSettingsStore } from '../store/settings';
 import { Sound } from '../@types/sound';
-import { File } from '../@types/file';
 import { stripFileExtension } from '../utils/utils';
 
 const DRAG_THROTTLE_MS = 50;

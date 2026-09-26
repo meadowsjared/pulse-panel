@@ -1,4 +1,3 @@
-export interface File extends Blob {
+export interface File extends globalThis.File {
   path?: string
-  name: string
 }
