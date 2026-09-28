@@ -464,7 +464,9 @@ class AudioMixer {
     const ctx = this.cableCtx
 
     return new Promise(resolve => {
-      const audio = new Audio(audioUrl)
+      const audio = new Audio()
+      audio.crossOrigin = 'anonymous'
+      audio.src = audioUrl
       const source = ctx.createMediaElementSource(audio)
       const individualGain = ctx.createGain()
       individualGain.gain.value = volume

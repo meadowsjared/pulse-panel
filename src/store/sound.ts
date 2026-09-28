@@ -363,7 +363,9 @@ export const useSoundStore = defineStore('sound', {
         outputDeviceData.currentAudio = [] // since we stopped them all, empty the array
       }
 
-      const newAudio: ManagedAudioElement = new Audio(soundObject?.audioUrl ?? chordAlert)
+      const newAudio: ManagedAudioElement = new Audio()
+      newAudio.crossOrigin = 'anonymous'
+      newAudio.src = soundObject?.audioUrl ?? chordAlert
       const fullId = `${soundId}_${instanceId}`
       // add the id of the audio to the newAudio object so we can keep track of that later
       newAudio.setAttribute('data-id', fullId)
