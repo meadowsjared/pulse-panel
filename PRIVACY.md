@@ -14,13 +14,36 @@ To provide soundboard functionality, Pulse Panel accesses and stores the followi
 * **Global Hotkeys:** Hotkey keybindings configured to trigger sounds.
 * **Application Settings:** User interface preferences, audio device selections, and general application configuration.
 #### Storage Location
-All configuration data, sound metadata, and application settings are stored locally on your device (typically under `%APPDATA%\pulse-panel` or the application's local user directory).
-#### Data Retention and Deletion
-All audio files, recordings, and settings remain on your local system until you choose to delete them within the Application, delete the configuration folder manually, or uninstall the software.
+All configuration data, sound metadata, and application settings are stored locally on your device:
+* **Windows:** `%APPDATA%\pulse-panel` (typically `C:\Users\<Username>\AppData\Roaming\pulse-panel`)
+* **Linux/macOS:** `~/.config/pulse-panel` or the user profile directory
+
+Files stored in this directory include:
+* `pulse-panel.db`: SQLite database storing sound metadata, hotkey bindings, categories, and tags.
+* `pulse-panel.json`: Application settings, window state, and audio device preferences.
+
+#### Data Retention, Uninstallation, and Deletion
+* **Normal Use:** Audio files, recordings, and settings remain on your local system until you edit or delete them within the Application.
+* **On Uninstall:** When uninstalling Pulse Panel via the Windows uninstaller, the uninstaller presents an interactive prompt asking whether you would also like to delete all Pulse Panel data and settings (soundboards, custom recordings, hotkeys, and preferences):
+  * **Selecting "Yes":** The uninstaller completely removes `%APPDATA%\pulse-panel`, ensuring no traces of local data or databases remain.
+  * **Selecting "No":** The application binaries are removed while preserving `%APPDATA%\pulse-panel` (`deleteAppDataOnUninstall: false`), protecting your custom soundboards and hotkeys if you reinstall in the future.
+  * **Silent / Automated Uninstalls:** In unattended uninstallations (such as automated package manager commands), the uninstaller safely defaults to retaining user data to prevent accidental library loss.
+* **Manual Deletion:** Users can also manually delete local data at any time:
+  1. Press `Win + R` on your keyboard to open the Run dialog.
+  2. Type `%APPDATA%` and press Enter.
+  3. Locate the `pulse-panel` folder and delete it.
+
 ---
-### 3. External Network Activity
-Pulse Panel functions completely offline for its core features. The only external network requests that may occur are:
-1. **Optional VB-CABLE Download:** If you choose to install the optional virtual audio driver (VB-CABLE) from within the Application, Pulse Panel initiates an outbound HTTPS download directly to the official vendor (VB-Audio) to fetch the installer package. No user data, telemetry, or system identifiers are sent during this request.
+
+### 3. External Network Activity & Optional Privileged Components
+Pulse Panel functions completely offline for its core soundboard features. The only external network requests and privileged actions that may occur are:
+
+1. **Optional Virtual Audio Driver Installation (VB-CABLE):**
+   Pulse Panel provides an optional convenience feature in Settings to download and install the third-party virtual audio driver (VB-CABLE by VB-Audio) for audio routing:
+   * **Network Download:** When initiated by the user, Pulse Panel performs an outbound HTTPS download directly from the official vendor server (`https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip`). No telemetry, analytics, or user identifiers are sent.
+   * **Cryptographic Hash Verification:** To prevent tampering and supply-chain risks, the downloaded archive is verified against a pinned SHA-256 cryptographic hash (`66fd0a4d9f4896ff41632b7e3d53892c085c4561f53e8ae8d0f0bc10eedd1cdd`) before extraction. If the hash does not match, the application immediately aborts, deletes the downloaded file, and does not extract or execute anything (fail closed).
+   * **Privileged Execution:** Upon successful integrity verification, the setup executable (`VBCABLE_Setup_x64.exe` or `VBCABLE_Setup.exe`) is launched with administrator elevation (prompting a standard Windows UAC confirmation dialog) to install the system driver. The temporary installer files and directories are cleaned up immediately following installation.
+
 2. **External Web Links:** Clicking external links (such as project documentation, release notes, or GitHub issues) will open the destination URL in your default web browser according to that website's privacy practices.
 ---
 ### 4. Children’s Privacy

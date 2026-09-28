@@ -1,6 +1,7 @@
 'use strict'
 
 const fs = require('fs')
+const crypto = require('crypto')
 const { join } = require('path')
 const nconf = require('nconf').file({
   file: getConfigurationFilePath(),
@@ -710,6 +711,8 @@ function cleanResult(result) {
  * @property { any[] | undefined } errors
  */
 
+const EXPECTED_VBCABLE_SHA256 = '66fd0a4d9f4896ff41632b7e3d53892c085c4561f53e8ae8d0f0bc10eedd1cdd'
+
 /**
  * @param {string} appName
  * @returns {Promise<vbCableResult>}
@@ -737,33 +740,78 @@ async function downloadVBCable(appName) {
 
   return await new Promise((resolve, reject) => {
     request.on('response', response => {
+      if (response.statusCode !== 200) {
+        const errorMsg = `Failed to download VBCABLE package: HTTP status ${response.statusCode}`
+        console.error(errorMsg)
+        mainResponse.errors.push(new Error(errorMsg))
+        return reject(cleanResult(mainResponse))
+      }
+
       const file = fs.createWriteStream(filePath)
+      const hash = crypto.createHash('sha256')
+
       response.on('data', chunk => {
         file.write(chunk)
+        hash.update(chunk)
       })
-      response.on('end', async () => {
-        file.end()
-        try {
-          // Download completed
-          await extractZipFile(mainResponse, filePath, extractPath)
-          // remove the zip file, since it's no longer needed
-          if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath)
+
+      response.on('end', () => {
+        file.end(async () => {
+          try {
+            const calculatedHash = hash.digest('hex').toLowerCase()
+            if (calculatedHash !== EXPECTED_VBCABLE_SHA256) {
+              if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath)
+              }
+              const hashError =
+                'VBCABLE driver package integrity check failed (SHA-256 mismatch: ' +
+                `expected ${EXPECTED_VBCABLE_SHA256}, got ${calculatedHash}). Installation aborted.`
+              console.error(hashError)
+              mainResponse.errors.push(new Error(hashError))
+              mainResponse.messages.push(
+                'VBCABLE driver package integrity verification failed. Installation aborted.'
+              )
+              return reject(cleanResult(mainResponse))
+            }
+
+            // Integrity verified - proceed with extraction and elevated execution
+            await extractZipFile(mainResponse, filePath, extractPath)
+            // remove the zip file, since it's no longer needed
+            if (fs.existsSync(filePath)) {
+              fs.unlinkSync(filePath)
+            }
+            const result = await runSetupAndCleanup(mainResponse, appName, extractPath)
+            resolve(cleanResult(result))
+          } catch (err) {
+            if (fs.existsSync(filePath)) {
+              try { fs.unlinkSync(filePath) } catch {}
+            }
+            console.error('Error extracting or running VBCable zip file', err)
+            mainResponse.errors.push(err)
+            reject(cleanResult(mainResponse))
           }
-          const result = await runSetupAndCleanup(mainResponse, appName, extractPath)
-          resolve(cleanResult(result))
-        } catch (err) {
-          console.error('Error extracting zip file', err)
-          mainResponse.errors.push(err)
-          reject(cleanResult(mainResponse))
+        })
+      })
+
+      file.on('error', err => {
+        console.error('File write error during VBCable download:', err)
+        if (fs.existsSync(filePath)) {
+          try { fs.unlinkSync(filePath) } catch {}
         }
+        mainResponse.errors.push(err)
+        reject(cleanResult(mainResponse))
       })
     })
+
     request.on('error', error => {
       console.error('Request failed:', error)
+      if (fs.existsSync(filePath)) {
+        try { fs.unlinkSync(filePath) } catch {}
+      }
       mainResponse.errors.push(error)
       reject(cleanResult(mainResponse))
     })
+
     request.end()
   })
 }
