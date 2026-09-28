@@ -1,8 +1,9 @@
 const { join } = require('path')
 const fs = require('fs')
 const os = require('os')
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, nativeImage, protocol, net } = require('electron')
-const { pathToFileURL } = require('url')
+const {
+  app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, nativeImage, protocol,
+} = require('electron')
 const settings = require('../settings')
 const updater = require('./updater')
 const mediaManager = require('./mediaManager')
@@ -76,9 +77,31 @@ app.whenReady().then(() => {
             headers: { 'Access-Control-Allow-Origin': '*' },
           })
         }
-        const response = await net.fetch(pathToFileURL(filePath).toString())
-        const headers = new Headers(response.headers)
-        headers.set('Access-Control-Allow-Origin', '*')
+        const stat = fs.statSync(filePath)
+        const fileSize = stat.size
+
+        const ext = (filePath.split('.').pop() || '').toLowerCase()
+        const mimeTypes = {
+          mp3: 'audio/mpeg',
+          wav: 'audio/wav',
+          wave: 'audio/wav',
+          ogg: 'audio/ogg',
+          oga: 'audio/ogg',
+          m4a: 'audio/mp4',
+          aac: 'audio/aac',
+          flac: 'audio/flac',
+          webm: 'audio/webm',
+          weba: 'audio/webm',
+          mp4: 'video/mp4',
+          png: 'image/png',
+          jpg: 'image/jpeg',
+          jpeg: 'image/jpeg',
+          gif: 'image/gif',
+          webp: 'image/webp',
+          svg: 'image/svg+xml',
+          ico: 'image/x-icon',
+        }
+        let contentType = mimeTypes[ext] || 'application/octet-stream'
 
         // Auto-detect SVGs that may have been saved with raster extensions (.png, .jpg)
         try {
@@ -88,13 +111,78 @@ app.whenReady().then(() => {
           fs.closeSync(fd)
           const headerStr = headerBuf.toString('utf8').trim()
           if (headerStr.startsWith('<svg') || headerStr.startsWith('<?xml')) {
-            headers.set('Content-Type', 'image/svg+xml')
+            contentType = 'image/svg+xml'
           }
         } catch (_) {}
 
-        return new Response(response.body, {
-          status: response.status,
-          statusText: response.statusText,
+        if (request.method === 'HEAD') {
+          return new Response(null, {
+            status: 200,
+            headers: {
+              'Content-Type': contentType,
+              'Content-Length': fileSize.toString(),
+              'Accept-Ranges': 'bytes',
+              'Access-Control-Allow-Origin': '*',
+            },
+          })
+        }
+
+        const rangeHeader = request.headers.get('range')
+        if (rangeHeader && rangeHeader.startsWith('bytes=')) {
+          const rangeStr = rangeHeader.slice(6).trim()
+          let start = 0
+          let end = fileSize - 1
+
+          if (rangeStr.startsWith('-')) {
+            const suffix = parseInt(rangeStr.slice(1), 10)
+            if (!isNaN(suffix)) {
+              start = Math.max(0, fileSize - suffix)
+            }
+          } else {
+            const parts = rangeStr.split('-')
+            start = parseInt(parts[0], 10)
+            if (parts[1]) {
+              end = parseInt(parts[1], 10)
+            }
+          }
+
+          if (isNaN(start) || start >= fileSize) {
+            return new Response(null, {
+              status: 416,
+              statusText: 'Range Not Satisfiable',
+              headers: {
+                'Content-Range': `bytes */${fileSize}`,
+                'Access-Control-Allow-Origin': '*',
+              },
+            })
+          }
+
+          const safeEnd = Math.min(end, fileSize - 1)
+          const chunkSize = safeEnd - start + 1
+          const stream = fs.createReadStream(filePath, { start, end: safeEnd })
+          const headers = new Headers({
+            'Content-Type': contentType,
+            'Content-Range': `bytes ${start}-${safeEnd}/${fileSize}`,
+            'Accept-Ranges': 'bytes',
+            'Content-Length': chunkSize.toString(),
+            'Access-Control-Allow-Origin': '*',
+          })
+          return new Response(stream, {
+            status: 206,
+            statusText: 'Partial Content',
+            headers,
+          })
+        }
+
+        const stream = fs.createReadStream(filePath)
+        const headers = new Headers({
+          'Content-Type': contentType,
+          'Accept-Ranges': 'bytes',
+          'Content-Length': fileSize.toString(),
+          'Access-Control-Allow-Origin': '*',
+        })
+        return new Response(stream, {
+          status: 200,
           headers,
         })
       } catch (err) {
