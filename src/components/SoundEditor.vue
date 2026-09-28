@@ -693,10 +693,10 @@ watch(
 
 const imageTooltip = computed(() => {
   if (props.modelValue.imageKey) {
-    return `Image Key: ${props.modelValue.imageKey} (Custom)`;
+    return `Filename: ${props.modelValue.imageKey}`;
   }
   if (inheritedTag.value) {
-    return `Default from #${inheritedTag.value} (Key: ${currentImageKey.value ?? 'none'})`;
+    return `Default from #${inheritedTag.value} (Filename: ${currentImageKey.value ?? 'none'})`;
   }
   return 'Right-click for options';
 });
