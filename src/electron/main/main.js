@@ -65,6 +65,19 @@ app.whenReady().then(() => {
         const response = await net.fetch(pathToFileURL(filePath).toString())
         const headers = new Headers(response.headers)
         headers.set('Access-Control-Allow-Origin', '*')
+
+        // Auto-detect SVGs that may have been saved with raster extensions (.png, .jpg)
+        try {
+          const headerBuf = Buffer.alloc(100)
+          const fd = fs.openSync(filePath, 'r')
+          fs.readSync(fd, headerBuf, 0, 100, 0)
+          fs.closeSync(fd)
+          const headerStr = headerBuf.toString('utf8').trim()
+          if (headerStr.startsWith('<svg') || headerStr.startsWith('<?xml')) {
+            headers.set('Content-Type', 'image/svg+xml')
+          }
+        } catch (_) {}
+
         return new Response(response.body, {
           status: response.status,
           statusText: response.statusText,

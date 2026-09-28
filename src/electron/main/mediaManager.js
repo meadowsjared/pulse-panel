@@ -66,6 +66,13 @@ async function saveMediaFile({ preferredName, extension, buffer }) {
   let ext = (extension || '').toLowerCase().trim()
   if (ext && !ext.startsWith('.')) ext = `.${ext}`
   if (!ext) ext = '.mp3'
+  // Auto-detect SVG content even if caller defaulted extension to .png
+  if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
+    const head = buf.slice(0, 100).toString('utf8').trim()
+    if (head.startsWith('<svg') || head.startsWith('<?xml')) {
+      ext = '.svg'
+    }
+  }
 
   const baseName = sanitizeBaseName(preferredName)
   let candidateName = `${baseName}${ext}`
