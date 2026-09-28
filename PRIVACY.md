@@ -1,6 +1,6 @@
 # Privacy Policy for Pulse Panel
 **Effective Date:** September 27, 2026  
-**Last Updated:** September 27, 2026  
+**Last Updated:** September 28, 2026  
 Pulse Panel ("the Application") is an open-source soundboard application developed by Jared Meadows ("we", "us", or "our"). We respect user privacy and believe in data transparency. This Privacy Policy explains how data, audio recordings, and settings are handled by the Application.
 ---
 ### 1. No Collection or Transmission of Personal Information
@@ -8,9 +8,9 @@ Pulse Panel ("the Application") is an open-source soundboard application develop
 The Application does not maintain any backend servers or external user tracking services. All processing, recording, and storage operations occur strictly on your local computer.
 ---
 ### 2. Information Accessed and Stored Locally
-To provide soundboard functionality, Pulse Panel accesses and stores the following data locally on your device:
-* **Audio Files and User Recordings:** Audio files imported by the user and any microphone recordings made within the Application are stored entirely on the local file system. Audio capture only occurs when you intentionally initiate a recording within the app.
-* **Sound Metadata:** Custom sound labels, tags, volume levels, and playback configurations.
+To provide soundboard and audio replay functionality, Pulse Panel accesses and stores the following data locally on your device:
+* **Audio Files, PulseBack Replays, and User Recordings:** Audio files imported by the user, custom sound artwork, and recordings captured within the Application (including PulseBack audio replays and retroactive buffer captures) are stored entirely on your local file system. Audio capture only occurs when you intentionally enable the PulseBack buffer or initiate a recording within the app. No audio ever leaves your computer.
+* **Sound Metadata:** Custom sound labels, tags, volume levels, playback configurations, and replay clip properties.
 * **Global Hotkeys:** Hotkey keybindings configured to trigger sounds.
 * **Application Settings:** User interface preferences, audio device selections, and general application configuration.
 #### Storage Location
@@ -18,8 +18,10 @@ All configuration data, sound metadata, and application settings are stored loca
 * **Windows:** `%APPDATA%\pulse-panel` (typically `C:\Users\<Username>\AppData\Roaming\pulse-panel`)
 * **Linux/macOS:** `~/.config/pulse-panel` or the user profile directory
 
-Files stored in this directory include:
-* `pulse-panel.db`: SQLite database storing sound metadata, hotkey bindings, categories, and tags.
+Files and directories stored in this folder include:
+* `pulse-panel.db`: SQLite database storing sound metadata, hotkey bindings, categories, tags, and replay metadata.
+* `media\soundboard\`: Soundboard audio files (e.g. MP3, WAV, OGG) and button artwork (PNG, JPG, SVG).
+* `media\clips\`: PulseBack audio replay recordings and scratch capture files (WAV).
 * `pulse-panel.json`: Application settings, window state, and audio device preferences.
 
 #### Data Retention, Uninstallation, and Deletion
