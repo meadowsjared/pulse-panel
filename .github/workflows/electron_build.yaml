@@ -54,6 +54,34 @@ jobs:
           $json = Get-Content package.json | ConvertFrom-Json
           echo "VERSION=$($json.version)" | Out-File -FilePath $env:GITHUB_ENV -Append
 
+      - name: Generate Release Notes
+        shell: pwsh
+        run: |
+          git fetch --tags --force
+          $tags = git tag --sort=-v:refname
+          $prevTag = $tags | Where-Object { $_ -ne "v$($env:VERSION)" } | Select-Object -First 1
+
+          $body = @()
+          $body += "## What's Changed"
+
+          if ($prevTag) {
+            $commits = git log "$prevTag..HEAD" --no-merges --pretty=format:"* %s (%h)" | Where-Object { $_ -and $_ -notmatch '\[skip ci\]' }
+            if ($commits) {
+              $body += $commits
+            } else {
+              $body += "* Miscellaneous improvements and bug fixes"
+            }
+            $body += ""
+            $body += "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$prevTag...v${{ env.VERSION }}"
+          } else {
+            $commits = git log HEAD --no-merges --pretty=format:"* %s (%h)" | Where-Object { $_ -and $_ -notmatch '\[skip ci\]' }
+            if ($commits) {
+              $body += $commits
+            }
+          }
+
+          $body -join "`n" | Out-File -FilePath release_notes.md -Encoding utf8
+
       - name: Create Release
         id: create_release
         uses: ncipollo/release-action@v1.14.0
@@ -64,7 +92,7 @@ jobs:
           name: Pulse Panel v${{ env.VERSION }}
           draft: false
           prerelease: false
-          generateReleaseNotes: true
+          bodyFile: release_notes.md
           tag: v${{ env.VERSION }}
           allowUpdates: true
 
