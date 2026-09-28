@@ -10,6 +10,20 @@ const mediaManager = require('./mediaManager')
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
 
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'pulse-media',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+      bypassCSP: true,
+    },
+  },
+])
+
 // Prevent background throttling so mic passthrough and audio processing do not hitch or skip under system load
 app.commandLine.appendSwitch('disable-renderer-backgrounding')
 app.commandLine.appendSwitch('disable-background-timer-throttling')
@@ -24,23 +38,49 @@ let enableTray = false
 let ignoreFirstTrayToggle = false
 
 app.whenReady().then(() => {
-  protocol.handle('pulse-media', async request => {
-    try {
-      const url = new URL(request.url)
-      let filename = decodeURIComponent(
-        url.hostname === 'media' ? url.pathname.replace(/^\/+/, '') : url.hostname + url.pathname
-      )
-      filename = filename.replace(/^\/+/, '')
-      const filePath = join(mediaManager.getMediaDirectory(), filename)
-      if (!fs.existsSync(filePath)) {
-        return new Response('Not Found', { status: 404 })
+  try {
+    protocol.handle('pulse-media', async request => {
+      try {
+        if (request.method === 'OPTIONS') {
+          return new Response(null, {
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+              'Access-Control-Allow-Headers': '*',
+            },
+          })
+        }
+        const url = new URL(request.url)
+        let filename = decodeURIComponent(
+          url.hostname === 'media' ? url.pathname.replace(/^\/+/, '') : url.hostname + url.pathname
+        )
+        filename = filename.replace(/^\/+/, '')
+        const filePath = join(mediaManager.getMediaDirectory(), filename)
+        if (!fs.existsSync(filePath)) {
+          return new Response('Not Found', {
+            status: 404,
+            headers: { 'Access-Control-Allow-Origin': '*' },
+          })
+        }
+        const response = await net.fetch(pathToFileURL(filePath).toString())
+        const headers = new Headers(response.headers)
+        headers.set('Access-Control-Allow-Origin', '*')
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
+        })
+      } catch (err) {
+        console.error('[pulse-media] Error serving file:', err)
+        return new Response('Internal error', {
+          status: 500,
+          headers: { 'Access-Control-Allow-Origin': '*' },
+        })
       }
-      return net.fetch(pathToFileURL(filePath).toString())
-    } catch (err) {
-      console.error('[pulse-media] Error serving file:', err)
-      return new Response('Internal error', { status: 500 })
-    }
-  })
+    })
+  } catch (err) {
+    console.error('[pulse-media] Failed to register protocol handler:', err)
+  }
 
   ipcMain.handle('save-media-file', (_, payload) => mediaManager.saveMediaFile(payload))
   ipcMain.handle('read-media-file', (_, fileName) => mediaManager.readMediaFile(fileName))
@@ -263,6 +303,12 @@ app.whenReady().then(() => {
       return false
     }
   })
+  createWindow()
+  app.on('activate', function () {
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
 })
 
 function createWindow() {
@@ -410,17 +456,17 @@ function resizeTriggered() {
   })
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  createWindow()
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+// // This method will be called when Electron has finished
+// // initialization and is ready to create browser windows.
+// // Some APIs can only be used after this event occurs.
+// app.whenReady().then(() => {
+//   createWindow()
+//   app.on('activate', function () {
+//     // On macOS it's common to re-create a window in the app when the
+//     // dock icon is clicked and there are no other windows open.
+//     if (BrowserWindow.getAllWindows().length === 0) createWindow()
+//   })
+// })
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits

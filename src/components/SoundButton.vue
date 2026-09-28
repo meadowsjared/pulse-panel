@@ -105,7 +105,7 @@ const effectiveImageUrl = computed(() => {
 const mergedStyle = computed(() => {
   const img = effectiveImageUrl.value
   return {
-    ...(img ? { backgroundImage: `url(${img})` } : {}),
+    ...(img ? { backgroundImage: `url("${img.replace(/"/g, '\\"')}")` } : {}),
     ...(props.modelValue.activeSegment
       ? {
           '--sound-duration': `${

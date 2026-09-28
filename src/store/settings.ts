@@ -1870,7 +1870,7 @@ export const useSettingsStore = defineStore('settings', {
       }
       // If it's a disk file with an extension, return pulse-media:// URL directly
       if (/\.[a-zA-Z0-9]{2,5}$/.test(key)) {
-        return `pulse-media://media/${encodeURIComponent(key)}`
+        return `pulse-media://media/${encodeURIComponent(key).replace(/'/g, '%27')}`
       }
       if (blobUrlCache.has(key)) {
         return blobUrlCache.get(key)!
@@ -1886,7 +1886,7 @@ export const useSettingsStore = defineStore('settings', {
       } catch (error) {
         console.warn('Error fetching file from IndexedDB:', error)
       }
-      return `pulse-media://media/${encodeURIComponent(key)}`
+      return `pulse-media://media/${encodeURIComponent(key).replace(/'/g, '%27')}`
     },
     /**
      * Delete a sound or image from disk/store only if no other sound references it
