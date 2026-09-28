@@ -51,11 +51,25 @@ app.whenReady().then(() => {
           })
         }
         const url = new URL(request.url)
-        let filename = decodeURIComponent(
-          url.hostname === 'media' ? url.pathname.replace(/^\/+/, '') : url.hostname + url.pathname
-        )
+        let host = url.hostname.toLowerCase()
+        let filename = decodeURIComponent(url.pathname.replace(/^\/+/, ''))
+        if (!filename && host !== 'soundboard' && host !== 'clips' && host !== 'media') {
+          filename = decodeURIComponent(host)
+          host = 'soundboard'
+        }
         filename = filename.replace(/^\/+/, '')
-        const filePath = join(mediaManager.getMediaDirectory(), filename)
+
+        const baseDir = host === 'clips' ? mediaManager.getClipsDirectory() : mediaManager.getSoundboardDirectory()
+        let filePath = join(baseDir, filename)
+        if (!fs.existsSync(filePath)) {
+          if (fs.existsSync(join(mediaManager.getMediaDirectory(), filename))) {
+            filePath = join(mediaManager.getMediaDirectory(), filename)
+          } else if (fs.existsSync(join(mediaManager.getSoundboardDirectory(), filename))) {
+            filePath = join(mediaManager.getSoundboardDirectory(), filename)
+          } else if (fs.existsSync(join(mediaManager.getClipsDirectory(), filename))) {
+            filePath = join(mediaManager.getClipsDirectory(), filename)
+          }
+        }
         if (!fs.existsSync(filePath)) {
           return new Response('Not Found', {
             status: 404,
@@ -100,6 +114,13 @@ app.whenReady().then(() => {
   ipcMain.handle('delete-media-file', (_, fileName) => mediaManager.deleteMediaFile(fileName))
   ipcMain.handle('media-file-exists', (_, fileName) => mediaManager.mediaFileExists(fileName))
   ipcMain.handle('get-media-directory', () => mediaManager.getMediaDirectory())
+  ipcMain.handle('get-soundboard-directory', () => mediaManager.getSoundboardDirectory())
+
+  ipcMain.handle('save-clip-file', (_, payload) => mediaManager.saveClipFile(payload))
+  ipcMain.handle('read-clip-file', (_, fileName) => mediaManager.readClipFile(fileName))
+  ipcMain.handle('delete-clip-file', (_, fileName) => mediaManager.deleteClipFile(fileName))
+  ipcMain.handle('clip-file-exists', (_, fileName) => mediaManager.clipFileExists(fileName))
+  ipcMain.handle('get-clips-directory', () => mediaManager.getClipsDirectory())
 
   // Expose a method to read and save settings
   ipcMain.handle('_read-setting', (_, settingKey) => settings._readSetting(settingKey))

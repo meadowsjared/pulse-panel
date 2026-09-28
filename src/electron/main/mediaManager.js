@@ -27,7 +27,7 @@ function sanitizeBaseName(name) {
 }
 
 /**
- * Returns the centralized media directory: %APPDATA%/pulse-panel/media
+ * Returns the centralized media root directory: %APPDATA%/pulse-panel/media
  * Shared across both production and development environments.
  * @returns {string}
  */
@@ -36,6 +36,73 @@ function getMediaDirectory() {
   const mediaDir = join(userHome, 'pulse-panel', 'media')
   settings.ensureDirectoryExistence(mediaDir)
   return mediaDir
+}
+
+let hasCheckedLooseMedia = false
+/**
+ * Migrates loose files directly under %APPDATA%/pulse-panel/media into %APPDATA%/pulse-panel/media/soundboard
+ * @param {string} mediaDir
+ * @param {string} soundboardDir
+ */
+function migrateLooseMediaToSoundboard(mediaDir, soundboardDir) {
+  if (hasCheckedLooseMedia) return
+  hasCheckedLooseMedia = true
+  try {
+    const entries = fs.readdirSync(mediaDir, { withFileTypes: true })
+    for (const entry of entries) {
+      if (entry.isFile()) {
+        const src = join(mediaDir, entry.name)
+        const dest = join(soundboardDir, entry.name)
+        if (!fs.existsSync(dest)) {
+          fs.renameSync(src, dest)
+        } else {
+          try { fs.unlinkSync(src) } catch (_) {}
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[mediaManager] Error migrating loose media to soundboard:', err)
+  }
+}
+
+/**
+ * Returns the soundboard media directory: %APPDATA%/pulse-panel/media/soundboard
+ * Automatically migrates existing media files from media/ to media/soundboard/ on first access.
+ * @returns {string}
+ */
+function getSoundboardDirectory() {
+  const mediaDir = getMediaDirectory()
+  const soundboardDir = join(mediaDir, 'soundboard')
+  settings.ensureDirectoryExistence(soundboardDir)
+  migrateLooseMediaToSoundboard(mediaDir, soundboardDir)
+  return soundboardDir
+}
+
+/**
+ * Returns the clips directory: %APPDATA%/pulse-panel/media/clips
+ * @returns {string}
+ */
+function getClipsDirectory() {
+  const mediaDir = getMediaDirectory()
+  const clipsDir = join(mediaDir, 'clips')
+  settings.ensureDirectoryExistence(clipsDir)
+  // Check if legacy %APPDATA%/pulse-panel/clips exists and migrate any files
+  try {
+    const legacyClipsDir = join(settings.getUserHome(), 'pulse-panel', 'clips')
+    if (fs.existsSync(legacyClipsDir) && legacyClipsDir !== clipsDir) {
+      const entries = fs.readdirSync(legacyClipsDir, { withFileTypes: true })
+      for (const entry of entries) {
+        if (entry.isFile()) {
+          const src = join(legacyClipsDir, entry.name)
+          const dest = join(clipsDir, entry.name)
+          if (!fs.existsSync(dest)) {
+            fs.renameSync(src, dest)
+          }
+        }
+      }
+    }
+  } catch (_) {}
+  return clipsDir
 }
 
 /**
@@ -59,7 +126,7 @@ function computeBufferHash(buffer) {
  * @returns {Promise<{ fileName: string, filePath: string, relativeUrl: string }>}
  */
 async function saveMediaFile({ preferredName, extension, buffer }) {
-  const mediaDir = getMediaDirectory()
+  const soundboardDir = getSoundboardDirectory()
   const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer)
   const contentHash = computeBufferHash(buf)
 
@@ -76,7 +143,7 @@ async function saveMediaFile({ preferredName, extension, buffer }) {
 
   const baseName = sanitizeBaseName(preferredName)
   let candidateName = `${baseName}${ext}`
-  let candidatePath = join(mediaDir, candidateName)
+  let candidatePath = join(soundboardDir, candidateName)
 
   // 1. If candidate does not exist, save directly!
   if (!fs.existsSync(candidatePath)) {
@@ -84,7 +151,7 @@ async function saveMediaFile({ preferredName, extension, buffer }) {
     return {
       fileName: candidateName,
       filePath: candidatePath,
-      relativeUrl: `pulse-media://media/${encodeURIComponent(candidateName)}`,
+      relativeUrl: `pulse-media://soundboard/${encodeURIComponent(candidateName).replace(/'/g, '%27')}`,
     }
   }
 
@@ -95,7 +162,7 @@ async function saveMediaFile({ preferredName, extension, buffer }) {
       return {
         fileName: candidateName,
         filePath: candidatePath,
-        relativeUrl: `pulse-media://media/${encodeURIComponent(candidateName)}`,
+        relativeUrl: `pulse-media://soundboard/${encodeURIComponent(candidateName).replace(/'/g, '%27')}`,
       }
     }
   } catch (err) {
@@ -106,14 +173,14 @@ async function saveMediaFile({ preferredName, extension, buffer }) {
   let index = 1
   while (true) {
     candidateName = `${baseName}_${index}${ext}`
-    candidatePath = join(mediaDir, candidateName)
+    candidatePath = join(soundboardDir, candidateName)
 
     if (!fs.existsSync(candidatePath)) {
       await fs.promises.writeFile(candidatePath, buf)
       return {
         fileName: candidateName,
         filePath: candidatePath,
-        relativeUrl: `pulse-media://media/${encodeURIComponent(candidateName)}`,
+        relativeUrl: `pulse-media://soundboard/${encodeURIComponent(candidateName).replace(/'/g, '%27')}`,
       }
     }
 
@@ -123,7 +190,7 @@ async function saveMediaFile({ preferredName, extension, buffer }) {
         return {
           fileName: candidateName,
           filePath: candidatePath,
-          relativeUrl: `pulse-media://media/${encodeURIComponent(candidateName)}`,
+          relativeUrl: `pulse-media://soundboard/${encodeURIComponent(candidateName).replace(/'/g, '%27')}`,
         }
       }
     } catch {
@@ -141,8 +208,11 @@ async function saveMediaFile({ preferredName, extension, buffer }) {
  */
 async function readMediaFile(fileName) {
   if (!fileName) return null
-  const mediaDir = getMediaDirectory()
-  const filePath = join(mediaDir, fileName)
+  const soundboardDir = getSoundboardDirectory()
+  let filePath = join(soundboardDir, fileName)
+  if (!fs.existsSync(filePath)) {
+    filePath = join(getMediaDirectory(), fileName)
+  }
   if (!fs.existsSync(filePath)) return null
   try {
     return await fs.promises.readFile(filePath)
@@ -159,8 +229,11 @@ async function readMediaFile(fileName) {
  */
 async function deleteMediaFile(fileName) {
   if (!fileName) return false
-  const mediaDir = getMediaDirectory()
-  const filePath = join(mediaDir, fileName)
+  const soundboardDir = getSoundboardDirectory()
+  let filePath = join(soundboardDir, fileName)
+  if (!fs.existsSync(filePath)) {
+    filePath = join(getMediaDirectory(), fileName)
+  }
   if (!fs.existsSync(filePath)) return false
   try {
     await fs.promises.unlink(filePath)
@@ -178,16 +251,129 @@ async function deleteMediaFile(fileName) {
  */
 function mediaFileExists(fileName) {
   if (!fileName) return false
-  const mediaDir = getMediaDirectory()
-  return fs.existsSync(join(mediaDir, fileName))
+  const soundboardDir = getSoundboardDirectory()
+  if (fs.existsSync(join(soundboardDir, fileName))) return true
+  return fs.existsSync(join(getMediaDirectory(), fileName))
+}
+
+/**
+ * Saves a clip file to %APPDATA%/pulse-panel/media/clips/
+ * @param {Object} options
+ * @param {string} options.preferredName - e.g. "Clip -30s" or clip title
+ * @param {string} [options.extension] - default ".wav"
+ * @param {Buffer|ArrayBuffer} options.buffer
+ * @returns {Promise<{ fileName: string, filePath: string, relativeUrl: string }>}
+ */
+async function saveClipFile({ preferredName, extension, buffer }) {
+  const clipsDir = getClipsDirectory()
+  const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer)
+
+  let ext = (extension || '').toLowerCase().trim()
+  if (ext && !ext.startsWith('.')) ext = `.${ext}`
+  if (!ext) ext = '.wav'
+
+  const baseName = sanitizeBaseName(preferredName)
+  let candidateName = `${baseName}${ext}`
+  let candidatePath = join(clipsDir, candidateName)
+
+  if (!fs.existsSync(candidatePath)) {
+    await fs.promises.writeFile(candidatePath, buf)
+    return {
+      fileName: candidateName,
+      filePath: candidatePath,
+      relativeUrl: `pulse-media://clips/${encodeURIComponent(candidateName).replace(/'/g, '%27')}`,
+    }
+  }
+
+  // If duplicate name with same content, reuse it
+  try {
+    const existingContent = await fs.promises.readFile(candidatePath)
+    if (computeBufferHash(existingContent) === computeBufferHash(buf)) {
+      return {
+        fileName: candidateName,
+        filePath: candidatePath,
+        relativeUrl: `pulse-media://clips/${encodeURIComponent(candidateName).replace(/'/g, '%27')}`,
+      }
+    }
+  } catch {}
+
+  let index = 1
+  while (true) {
+    candidateName = `${baseName}_${index}${ext}`
+    candidatePath = join(clipsDir, candidateName)
+    if (!fs.existsSync(candidatePath)) {
+      await fs.promises.writeFile(candidatePath, buf)
+      return {
+        fileName: candidateName,
+        filePath: candidatePath,
+        relativeUrl: `pulse-media://clips/${encodeURIComponent(candidateName).replace(/'/g, '%27')}`,
+      }
+    }
+    index++
+  }
+}
+
+/**
+ * Reads a clip file from disk
+ * @param {string} fileName
+ * @returns {Promise<Buffer|null>}
+ */
+async function readClipFile(fileName) {
+  if (!fileName) return null
+  const clipsDir = getClipsDirectory()
+  const filePath = join(clipsDir, fileName)
+  if (!fs.existsSync(filePath)) return null
+  try {
+    return await fs.promises.readFile(filePath)
+  } catch (err) {
+    console.warn(`[mediaManager] Failed to read clip ${fileName}:`, err)
+    return null
+  }
+}
+
+/**
+ * Deletes a clip file from disk
+ * @param {string} fileName
+ * @returns {Promise<boolean>}
+ */
+async function deleteClipFile(fileName) {
+  if (!fileName) return false
+  const clipsDir = getClipsDirectory()
+  const filePath = join(clipsDir, fileName)
+  if (!fs.existsSync(filePath)) return false
+  try {
+    await fs.promises.unlink(filePath)
+    return true
+  } catch (err) {
+    console.warn(`[mediaManager] Failed to delete clip ${fileName}:`, err)
+    return false
+  }
+}
+
+/**
+ * Checks if a clip file exists
+ * @param {string} fileName
+ * @returns {boolean}
+ */
+function clipFileExists(fileName) {
+  if (!fileName) return false
+  const clipsDir = getClipsDirectory()
+  return fs.existsSync(join(clipsDir, fileName))
 }
 
 module.exports = {
   getMediaDirectory,
+  getSoundboardDirectory,
+  getClipsDirectory,
   sanitizeBaseName,
   computeBufferHash,
   saveMediaFile,
   readMediaFile,
   deleteMediaFile,
   mediaFileExists,
+  saveClipFile,
+  readClipFile,
+  deleteClipFile,
+  clipFileExists,
 }
+

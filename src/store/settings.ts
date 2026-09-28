@@ -1178,7 +1178,13 @@ export const useSettingsStore = defineStore('settings', {
 
       try {
         const isMigrated = await electron.readDBSetting?.('mediaMigratedToDisk')
-        if (isMigrated === true) return
+        if (isMigrated === true) {
+          try {
+            window.indexedDB?.deleteDatabase('pulse-panel')
+            window.indexedDB?.deleteDatabase('pulse-panel-dev')
+          } catch (_) {}
+          return
+        }
 
         const candidateDbNames = ['pulse-panel', 'pulse-panel-dev']
         const dbs: IDBPDatabase[] = []
@@ -1307,6 +1313,15 @@ export const useSettingsStore = defineStore('settings', {
           console.log(`[Pulse Panel] Successfully migrated ${migratedCount} sounds to disk!`)
           await electron.saveDBSetting?.('mediaMigratedToDisk', true)
         }
+
+        // Close and clean up legacy IndexedDB databases
+        dbs.forEach(d => {
+          try { d.close() } catch (_) {}
+        })
+        try {
+          window.indexedDB?.deleteDatabase('pulse-panel')
+          window.indexedDB?.deleteDatabase('pulse-panel-dev')
+        } catch (_) {}
       } catch (err) {
         console.warn('[Pulse Panel] Legacy IndexedDB migration check error:', err)
       }
@@ -1870,7 +1885,7 @@ export const useSettingsStore = defineStore('settings', {
       }
       // If it's a disk file with an extension, return pulse-media:// URL directly
       if (/\.[a-zA-Z0-9]{2,5}$/.test(key)) {
-        return `pulse-media://media/${encodeURIComponent(key).replace(/'/g, '%27')}`
+        return `pulse-media://soundboard/${encodeURIComponent(key).replace(/'/g, '%27')}`
       }
       if (blobUrlCache.has(key)) {
         return blobUrlCache.get(key)!
@@ -1886,7 +1901,7 @@ export const useSettingsStore = defineStore('settings', {
       } catch (error) {
         console.warn('Error fetching file from IndexedDB:', error)
       }
-      return `pulse-media://media/${encodeURIComponent(key).replace(/'/g, '%27')}`
+      return `pulse-media://soundboard/${encodeURIComponent(key).replace(/'/g, '%27')}`
     },
     /**
      * Delete a sound or image from disk/store only if no other sound references it

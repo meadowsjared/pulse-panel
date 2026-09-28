@@ -26,7 +26,8 @@ export type SettingValue =
   | number[]
   | LabelActive[]
   | OutputDeviceSetting[]
-  | Record<string, string>
+  | Record<string, any>
+  | any[]
 
 export interface UpdateDownloadProgress {
   receivedBytes: number
@@ -86,6 +87,17 @@ export interface Settings {
   deleteMediaFile?: (fileName: string) => Promise<boolean>
   mediaFileExists?: (fileName: string) => Promise<boolean>
   getMediaDirectory?: () => Promise<string>
+  getSoundboardDirectory?: () => Promise<string>
+  // Disk Clips related
+  saveClipFile?: (payload: {
+    preferredName: string
+    extension?: string
+    buffer: ArrayBuffer | Uint8Array
+  }) => Promise<{ fileName: string; filePath: string; relativeUrl: string }>
+  readClipFile?: (fileName: string) => Promise<ArrayBuffer | null>
+  deleteClipFile?: (fileName: string) => Promise<boolean>
+  clipFileExists?: (fileName: string) => Promise<boolean>
+  getClipsDirectory?: () => Promise<string>
   // Database related functions
   readAllDBSettings: () => Promise<Record<string, any>>
   saveDBSetting: (settingName: string, settingValue: SettingValue) => Promise<boolean>

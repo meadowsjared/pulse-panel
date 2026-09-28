@@ -62,6 +62,13 @@ contextBridge.exposeInMainWorld('electron', {
   deleteMediaFile: fileName => ipcRenderer.invoke('delete-media-file', fileName),
   mediaFileExists: fileName => ipcRenderer.invoke('media-file-exists', fileName),
   getMediaDirectory: () => ipcRenderer.invoke('get-media-directory'),
+  getSoundboardDirectory: () => ipcRenderer.invoke('get-soundboard-directory'),
+  // Disk Clips related
+  saveClipFile: payload => ipcRenderer.invoke('save-clip-file', payload),
+  readClipFile: fileName => ipcRenderer.invoke('read-clip-file', fileName),
+  deleteClipFile: fileName => ipcRenderer.invoke('delete-clip-file', fileName),
+  clipFileExists: fileName => ipcRenderer.invoke('clip-file-exists', fileName),
+  getClipsDirectory: () => ipcRenderer.invoke('get-clips-directory'),
   // Database related
   readAllDBSettings: () => ipcRenderer.invoke('read-all-db-settings'),
   saveDBSetting: (settingName, settingValue) => ipcRenderer.invoke('save-db-setting', settingName, settingValue),
