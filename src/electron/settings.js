@@ -1004,6 +1004,18 @@ async function checkVirtualCableInstalled() {
   return await vbCableIsInstalled(dummyResponse)
 }
 
+function updateSoundKeys(id, audioKey, imageKey) {
+  const stmt = db.prepare('UPDATE sounds SET audioKey = COALESCE(?, audioKey), imageKey = COALESCE(?, imageKey) WHERE id = ?')
+  stmt.run(audioKey ?? null, imageKey ?? null, id)
+}
+
+function getMediaDirectory() {
+  const userHome = getUserHome()
+  const mediaDir = join(userHome, 'pulse-panel', 'media')
+  ensureDirectoryExistence(mediaDir)
+  return mediaDir
+}
+
 module.exports = {
   _readSetting,
   sendKey,
@@ -1027,4 +1039,9 @@ module.exports = {
   deleteSound,
   saveSoundsArray,
   saveVisibility,
+  getConfigDirectoryAndAppName,
+  getUserHome,
+  ensureDirectoryExistence,
+  getMediaDirectory,
+  updateSoundKeys,
 }

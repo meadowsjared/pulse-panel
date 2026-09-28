@@ -1162,10 +1162,154 @@ export const useSettingsStore = defineStore('settings', {
         }
       })
       this.registerWindowResize()
+      await this.migrateLegacyIndexedDBToDisk()
       this._getImageUrls(this.sounds).then(() => {
         this.deduplicateExistingImages().catch(() => {})
       }).catch(() => {})
       return this.sounds
+    },
+    /**
+     * Migrates legacy audio and image files from IndexedDB to disk in %APPDATA%/pulse-panel/media/
+     * Naming files by their sound title, with _1, _2 duplicate handling.
+     */
+    async migrateLegacyIndexedDBToDisk(): Promise<void> {
+      const electron = window.electron
+      if (!electron?.saveMediaFile) return
+
+      try {
+        const isMigrated = await electron.readDBSetting?.('mediaMigratedToDisk')
+        if (isMigrated === true) return
+
+        const candidateDbNames = ['pulse-panel', 'pulse-panel-dev']
+        const dbs: IDBPDatabase[] = []
+        for (const name of candidateDbNames) {
+          try {
+            const opened = await openDB(name, 1)
+            if (opened && opened.objectStoreNames.length > 0) {
+              dbs.push(opened)
+            }
+          } catch (_) {}
+        }
+        if (dbs.length === 0) return
+
+        async function findBlob(key: string): Promise<Blob | null> {
+          for (const d of dbs) {
+            for (const sName of ['sounds', 'sounds-dev']) {
+              if (d.objectStoreNames.contains(sName)) {
+                try {
+                  const b = await d.get(sName, key)
+                  if (b) return b
+                } catch (_) {}
+              }
+            }
+          }
+          return null
+        }
+
+        let migratedCount = 0
+
+        for (const sound of this.sounds) {
+          if (!sound.id) continue
+          let modified = false
+
+          // 1. Audio migration
+          if (sound.audioKey && !/\.[a-zA-Z0-9]{2,5}$/.test(sound.audioKey)) {
+            try {
+              const blob = await findBlob(sound.audioKey)
+              if (blob) {
+                const buffer = await blob.arrayBuffer()
+                let ext = '.mp3'
+                if (blob.type) {
+                  if (blob.type.includes('wav')) ext = '.wav'
+                  else if (blob.type.includes('ogg')) ext = '.ogg'
+                  else if (blob.type.includes('aac')) ext = '.aac'
+                  else if (blob.type.includes('m4a')) ext = '.m4a'
+                  else if (blob.type.includes('webm')) ext = '.webm'
+                }
+                const blobName = 'name' in blob ? (blob as File).name : ''
+                const title = sound.title ? sound.title.trim() : (blobName ? blobName.replace(/\.[^.]+$/, '') : 'sound')
+                const res = await electron.saveMediaFile({
+                  preferredName: title,
+                  extension: ext,
+                  buffer,
+                })
+                if (res?.fileName) {
+                  sound.audioKey = res.fileName
+                  modified = true
+                }
+              }
+            } catch (e) {
+              console.warn('[Pulse Panel] Error migrating audio for sound:', sound.title, e)
+            }
+          }
+
+          // 2. Image migration
+          if (sound.imageKey && !/\.[a-zA-Z0-9]{2,5}$/.test(sound.imageKey)) {
+            try {
+              const blob = await findBlob(sound.imageKey)
+              if (blob) {
+                const buffer = await blob.arrayBuffer()
+                const ext = blob.type && blob.type.includes('jpeg') ? '.jpg' : '.png'
+                const blobName = 'name' in blob ? (blob as File).name : ''
+                const title = sound.title ? sound.title.trim() : (blobName ? blobName.replace(/\.[^.]+$/, '') : 'image')
+                const res = await electron.saveMediaFile({
+                  preferredName: title,
+                  extension: ext,
+                  buffer,
+                })
+                if (res?.fileName) {
+                  sound.imageKey = res.fileName
+                  modified = true
+                }
+              }
+            } catch (e) {
+              console.warn('[Pulse Panel] Error migrating image for sound:', sound.title, e)
+            }
+          }
+
+          if (modified) {
+            await this.saveSound(sound)
+            migratedCount++
+          }
+        }
+
+        // Also migrate tag images if present
+        if (this.tagImages && typeof this.tagImages === 'object') {
+          const updatedTags = { ...this.tagImages }
+          let tagsModified = false
+          for (const [tag, imageKey] of Object.entries(this.tagImages)) {
+            if (imageKey && !/\.[a-zA-Z0-9]{2,5}$/.test(imageKey)) {
+              try {
+                const blob = await findBlob(imageKey)
+                if (blob) {
+                  const buffer = await blob.arrayBuffer()
+                  const ext = blob.type && blob.type.includes('jpeg') ? '.jpg' : '.png'
+                  const res = await electron.saveMediaFile({
+                    preferredName: `${tag}_tag`,
+                    extension: ext,
+                    buffer,
+                  })
+                  if (res?.fileName) {
+                    updatedTags[tag] = res.fileName
+                    tagsModified = true
+                  }
+                }
+              } catch (_) {}
+            }
+          }
+          if (tagsModified) {
+            this.tagImages = updatedTags
+            await electron.saveDBSetting?.('tagImages', toCloneable(updatedTags))
+          }
+        }
+
+        if (migratedCount > 0) {
+          console.log(`[Pulse Panel] Successfully migrated ${migratedCount} sounds to disk!`)
+          await electron.saveDBSetting?.('mediaMigratedToDisk', true)
+        }
+      } catch (err) {
+        console.warn('[Pulse Panel] Legacy IndexedDB migration check error:', err)
+      }
     },
     /** get the duration of an audio file */
     async getAudioDuration(audioUrl: string, audioContext?: AudioContext): Promise<number | undefined> {
@@ -1362,10 +1506,26 @@ export const useSettingsStore = defineStore('settings', {
       electron?.addHotkeys([keys])
     },
     /**
-     * Get raw blob from IndexedDB by key
+     * Get raw blob from disk or legacy IndexedDB by key
      */
     async getFileBlob(key: string): Promise<Blob | null> {
       if (!key) return null
+      const electron = window.electron
+      if (electron?.readMediaFile && /\.[a-zA-Z0-9]{2,5}$/.test(key)) {
+        try {
+          const buffer = await electron.readMediaFile(key)
+          if (buffer) {
+            return new Blob([buffer])
+          }
+        } catch (_) {}
+      }
+      const url = await this.getFile(key)
+      if (url) {
+        try {
+          const res = await fetch(url)
+          return await res.blob()
+        } catch (_) {}
+      }
       try {
         const db = await getDB()
         return (await db.get(dbStoreName, key)) ?? null
@@ -1644,10 +1804,29 @@ export const useSettingsStore = defineStore('settings', {
       )
     },
     /**
-     * Save a sound or image file to the store with content-addressable deduplication.
+     * Save a sound or image file to disk with friendly naming, smart deduplication, and _1 duplicate handling.
      * @param file the file to save
+     * @param preferredName optional preferred name (e.g. sound title)
      */
-    async saveFile(file: File): Promise<{ fileUrl: string; fileKey: string; isNew: boolean }> {
+    async saveFile(file: File, preferredName?: string): Promise<{ fileUrl: string; fileKey: string; isNew: boolean }> {
+      const electron = window.electron
+      if (electron?.saveMediaFile) {
+        try {
+          const buffer = await file.arrayBuffer()
+          const dotIdx = file.name ? file.name.lastIndexOf('.') : -1
+          const ext = dotIdx !== -1 ? file.name.substring(dotIdx) : (file.type.startsWith('image/') ? '.png' : '.mp3')
+          const base = preferredName || (dotIdx !== -1 ? file.name.substring(0, dotIdx) : (file.type.startsWith('image/') ? 'image' : 'sound'))
+          const res = await electron.saveMediaFile({
+            preferredName: base,
+            extension: ext,
+            buffer,
+          })
+          return { fileUrl: res.relativeUrl, fileKey: res.fileName, isNew: true }
+        } catch (err) {
+          console.warn('[Pulse Panel] Failed saving media to disk, falling back to IDB:', err)
+        }
+      }
+
       const db = await getDB()
       let key: string
       let isNew = false
@@ -1675,12 +1854,24 @@ export const useSettingsStore = defineStore('settings', {
       return { fileUrl, fileKey: key, isNew }
     },
     /**
-     * Fetch a sound from the store
+     * Fetch a sound or image URL from disk (pulse-media://) or legacy store
      * @param key the key it's saved under
      * @returns the value of the URL to the file
      */
     async getFile(key: string): Promise<string | null> {
       if (!key) return null
+      if (
+        key.startsWith('http://') ||
+        key.startsWith('https://') ||
+        key.startsWith('blob:') ||
+        key.startsWith('pulse-media://')
+      ) {
+        return key
+      }
+      // If it's a disk file with an extension, return pulse-media:// URL directly
+      if (/\.[a-zA-Z0-9]{2,5}$/.test(key)) {
+        return `pulse-media://media/${encodeURIComponent(key)}`
+      }
       if (blobUrlCache.has(key)) {
         return blobUrlCache.get(key)!
       }
@@ -1695,10 +1886,10 @@ export const useSettingsStore = defineStore('settings', {
       } catch (error) {
         console.warn('Error fetching file from IndexedDB:', error)
       }
-      return null
+      return `pulse-media://media/${encodeURIComponent(key)}`
     },
     /**
-     * Delete a sound or image from the store only if no other sound references it
+     * Delete a sound or image from disk/store only if no other sound references it
      * @param path the key it's saved under
      * @param excludeSoundId optional sound ID to exclude from reference check
      */
@@ -1708,6 +1899,12 @@ export const useSettingsStore = defineStore('settings', {
         return
       }
       blobUrlCache.delete(path)
+      const electron = window.electron
+      if (electron?.deleteMediaFile) {
+        try {
+          await electron.deleteMediaFile(path)
+        } catch (_) {}
+      }
       try {
         const db = await getDB()
         await db.delete(dbStoreName, path)
@@ -1715,11 +1912,16 @@ export const useSettingsStore = defineStore('settings', {
         console.warn('Error deleting file from IndexedDB:', error)
       }
     },
-    async replaceFile(oldPath: string | undefined, newFile: File, excludeSoundId?: string): Promise<{ fileUrl: string; fileKey: string }> {
+    async replaceFile(
+      oldPath: string | undefined,
+      newFile: File,
+      excludeSoundId?: string,
+      preferredName?: string
+    ): Promise<{ fileUrl: string; fileKey: string }> {
       if (oldPath) {
         await this.deleteFile(oldPath, excludeSoundId)
       }
-      return this.saveFile(newFile)
+      return this.saveFile(newFile, preferredName)
     },
     /**
      * Retroactively deduplicate existing images stored in IndexedDB.

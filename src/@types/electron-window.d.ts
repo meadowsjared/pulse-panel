@@ -76,6 +76,16 @@ export interface Settings {
     dataUrl?: string
   } | null>
   hasImageInClipboard?: () => Promise<boolean>
+  // Disk Media related functions
+  saveMediaFile?: (payload: {
+    preferredName: string
+    extension?: string
+    buffer: ArrayBuffer | Uint8Array
+  }) => Promise<{ fileName: string; filePath: string; relativeUrl: string }>
+  readMediaFile?: (fileName: string) => Promise<ArrayBuffer | null>
+  deleteMediaFile?: (fileName: string) => Promise<boolean>
+  mediaFileExists?: (fileName: string) => Promise<boolean>
+  getMediaDirectory?: () => Promise<string>
   // Database related functions
   readAllDBSettings: () => Promise<Record<string, any>>
   saveDBSetting: (settingName: string, settingValue: SettingValue) => Promise<boolean>

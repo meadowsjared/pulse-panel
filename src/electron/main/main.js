@@ -4,6 +4,7 @@ const os = require('os')
 const { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, nativeImage } = require('electron')
 const settings = require('../settings')
 const updater = require('./updater')
+const mediaManager = require('./mediaManager')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
@@ -22,6 +23,30 @@ let enableTray = false
 let ignoreFirstTrayToggle = false
 
 app.whenReady().then(() => {
+  protocol.handle('pulse-media', async request => {
+    try {
+      const url = new URL(request.url)
+      let filename = decodeURIComponent(
+        url.hostname === 'media' ? url.pathname.replace(/^\/+/, '') : url.hostname + url.pathname
+      )
+      filename = filename.replace(/^\/+/, '')
+      const filePath = join(mediaManager.getMediaDirectory(), filename)
+      if (!fs.existsSync(filePath)) {
+        return new Response('Not Found', { status: 404 })
+      }
+      return net.fetch(pathToFileURL(filePath).toString())
+    } catch (err) {
+      console.error('[pulse-media] Error serving file:', err)
+      return new Response('Internal error', { status: 500 })
+    }
+  })
+
+  ipcMain.handle('save-media-file', (_, payload) => mediaManager.saveMediaFile(payload))
+  ipcMain.handle('read-media-file', (_, fileName) => mediaManager.readMediaFile(fileName))
+  ipcMain.handle('delete-media-file', (_, fileName) => mediaManager.deleteMediaFile(fileName))
+  ipcMain.handle('media-file-exists', (_, fileName) => mediaManager.mediaFileExists(fileName))
+  ipcMain.handle('get-media-directory', () => mediaManager.getMediaDirectory())
+
   // Expose a method to read and save settings
   ipcMain.handle('_read-setting', (_, settingKey) => settings._readSetting(settingKey))
   ipcMain.handle('send-key', (_, keys, down) => settings.sendKey(keys, down))

@@ -56,6 +56,12 @@ contextBridge.exposeInMainWorld('electron', {
   writeImageToClipboard: data => ipcRenderer.invoke('write-image-to-clipboard', data),
   readImageFromClipboard: () => ipcRenderer.invoke('read-image-from-clipboard'),
   hasImageInClipboard: () => ipcRenderer.invoke('has-image-in-clipboard'),
+  // Disk Media related
+  saveMediaFile: payload => ipcRenderer.invoke('save-media-file', payload),
+  readMediaFile: fileName => ipcRenderer.invoke('read-media-file', fileName),
+  deleteMediaFile: fileName => ipcRenderer.invoke('delete-media-file', fileName),
+  mediaFileExists: fileName => ipcRenderer.invoke('media-file-exists', fileName),
+  getMediaDirectory: () => ipcRenderer.invoke('get-media-directory'),
   // Database related
   readAllDBSettings: () => ipcRenderer.invoke('read-all-db-settings'),
   saveDBSetting: (settingName, settingValue) => ipcRenderer.invoke('save-db-setting', settingName, settingValue),
