@@ -1,11 +1,18 @@
 const { join } = require('path')
 const fs = require('fs')
+const os = require('os')
 const { app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, nativeImage } = require('electron')
 const settings = require('../settings')
 const updater = require('./updater')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true'
+
+// Prevent background throttling so mic passthrough and audio processing do not hitch or skip under system load
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+app.commandLine.appendSwitch('disable-background-timer-throttling')
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
+
 /** this is the main window of the app
  * @type {BrowserWindow} */
 let mainWindow = null
@@ -250,8 +257,31 @@ function createWindow() {
     webPreferences: {
       preload: join(__dirname, '../preload/preload.js'),
       nodeIntegration: true,
+      backgroundThrottling: false,
     },
     icon: iconPath,
+  })
+
+  // Elevate process priority on Windows so real-time audio is not starved when games or heavy tasks max out the CPU
+  try {
+    if (process.platform === 'win32') {
+      os.setPriority(process.pid, os.constants.priority.PRIORITY_ABOVE_NORMAL)
+    }
+  } catch (err) {
+    console.warn('[main] Could not set main process priority:', err)
+  }
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    try {
+      if (process.platform === 'win32') {
+        const rendererPid = mainWindow?.webContents?.getOSProcessId()
+        if (rendererPid) {
+          os.setPriority(rendererPid, os.constants.priority.PRIORITY_ABOVE_NORMAL)
+        }
+      }
+    } catch (err) {
+      console.warn('[main] Could not set renderer process priority:', err)
+    }
   })
   if (startHidden) {
     createTray()

@@ -24,6 +24,7 @@ class AudioMixer {
   private micMuted: boolean = false
   private soundboardVolume: number = 1
   private smoothedLevel: number = 0
+  private levelDataArray: Float32Array<ArrayBuffer> | null = null
 
   private activeSounds: Map<
     string,
@@ -33,7 +34,11 @@ class AudioMixer {
   private getInputContext(): AudioContext {
     if (!this.inputCtx) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-      this.inputCtx = new AudioContextClass()
+      try {
+        this.inputCtx = new AudioContextClass({ latencyHint: 'balanced' })
+      } catch {
+        this.inputCtx = new AudioContextClass()
+      }
     }
     if (this.inputCtx.state === 'suspended') {
       this.inputCtx.resume().catch(() => {})
@@ -101,22 +106,24 @@ class AudioMixer {
 
     try {
       let stream: MediaStream
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        sampleRate: { ideal: 48000 },
+      }
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
+            ...audioConstraints,
             deviceId: { exact: deviceId },
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false,
           },
         })
       } catch {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
+            ...audioConstraints,
             deviceId: { ideal: deviceId },
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false,
           },
         })
       }
@@ -234,7 +241,28 @@ class AudioMixer {
 
     try {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-      const ctx = new AudioContextClass()
+
+      // Determine mic sample rate if available to match virtual cable and avoid software resampling
+      const micTrack = this.micStream?.getAudioTracks()[0]
+      const micSampleRate = micTrack?.getSettings?.()?.sampleRate
+
+      const contextOptions: AudioContextOptions = {
+        latencyHint: 'balanced',
+      }
+      if (micSampleRate && micSampleRate >= 22050 && micSampleRate <= 96000) {
+        contextOptions.sampleRate = micSampleRate
+      }
+
+      let ctx: AudioContext
+      try {
+        ctx = new AudioContextClass(contextOptions)
+      } catch {
+        try {
+          ctx = new AudioContextClass({ latencyHint: 'balanced' })
+        } catch {
+          ctx = new AudioContextClass()
+        }
+      }
 
       // Explicitly set the output sinkId to CABLE Input
       if (typeof (ctx as any).setSinkId === 'function') {
@@ -393,14 +421,16 @@ class AudioMixer {
     if (this.inputCtx && this.inputCtx.state === 'suspended') {
       this.inputCtx.resume().catch(() => {})
     }
-    const dataArray = new Float32Array(this.micAnalyser.fftSize)
-    this.micAnalyser.getFloatTimeDomainData(dataArray)
+    if (!this.levelDataArray || this.levelDataArray.length !== this.micAnalyser.fftSize) {
+      this.levelDataArray = new Float32Array(this.micAnalyser.fftSize)
+    }
+    this.micAnalyser.getFloatTimeDomainData(this.levelDataArray)
 
     let sumSquares = 0
-    for (let i = 0; i < dataArray.length; i++) {
-      sumSquares += dataArray[i] * dataArray[i]
+    for (let i = 0; i < this.levelDataArray.length; i++) {
+      sumSquares += this.levelDataArray[i] * this.levelDataArray[i]
     }
-    const rms = Math.sqrt(sumSquares / dataArray.length) * this.micVolume
+    const rms = Math.sqrt(sumSquares / this.levelDataArray.length) * this.micVolume
 
     if (rms < 0.0001) {
       this.smoothedLevel = Math.max(0, this.smoothedLevel * 0.85)

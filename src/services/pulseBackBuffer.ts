@@ -280,6 +280,7 @@ class PulseBackBuffer {
   private currentInputVolume: number = 1
   private smoothedMicLevel: number = 0
   private smoothedInputLevel: number = 0
+  private rmsDataArray: Float32Array<ArrayBuffer> | null = null
   private isTestingInput: boolean = false
   private isDualTracksActive: boolean = false
 
@@ -388,7 +389,11 @@ class PulseBackBuffer {
     }
 
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-    this.audioCtx = new AudioContextClass()
+    try {
+      this.audioCtx = new AudioContextClass({ latencyHint: 'balanced' })
+    } catch {
+      this.audioCtx = new AudioContextClass()
+    }
     if (this.audioCtx.state === 'suspended') {
       await this.audioCtx.resume().catch(() => {})
     }
@@ -594,14 +599,16 @@ class PulseBackBuffer {
 
   private calculateRmsLevel(analyser: AnalyserNode | null, previousSmoothed: number): number {
     if (!analyser || !this.isRunning) return 0
-    const dataArray = new Float32Array(analyser.fftSize)
-    analyser.getFloatTimeDomainData(dataArray)
+    if (!this.rmsDataArray || this.rmsDataArray.length !== analyser.fftSize) {
+      this.rmsDataArray = new Float32Array(analyser.fftSize)
+    }
+    analyser.getFloatTimeDomainData(this.rmsDataArray)
 
     let sumSquares = 0
-    for (let i = 0; i < dataArray.length; i++) {
-      sumSquares += dataArray[i] * dataArray[i]
+    for (let i = 0; i < this.rmsDataArray.length; i++) {
+      sumSquares += this.rmsDataArray[i] * this.rmsDataArray[i]
     }
-    const rms = Math.sqrt(sumSquares / dataArray.length)
+    const rms = Math.sqrt(sumSquares / this.rmsDataArray.length)
 
     if (rms < 0.0001) {
       return Math.max(0, previousSmoothed * 0.85)
