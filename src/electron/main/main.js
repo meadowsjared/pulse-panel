@@ -260,6 +260,13 @@ function createWindow() {
   }
   mainWindow.on('resized', resizeTriggered)
 
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https:') || url.startsWith('http:')) {
+      shell.openExternal(url)
+    }
+    return { action: 'deny' }
+  })
+
   // and load the index.html of the app.
   if (isDev) {
     mainWindow.loadURL('http://localhost:3000') // Open the DevTools.
