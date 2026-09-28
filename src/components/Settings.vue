@@ -30,6 +30,14 @@
         </button>
         <div v-if="cableInstallMessage"
              class="cable-install-msg">{{ cableInstallMessage }}</div>
+        <p v-if="cableInstallFailed"
+           class="virtual-status-manual">
+          Having trouble? You can also
+          <a href="https://vb-audio.com/Cable/"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="vendor-link">download directly from vb-audio.com</a>.
+        </p>
       </div>
     </div>
 
@@ -506,6 +514,7 @@ async function testCableOutput() {
 
 const isInstallingCable = ref(false);
 const cableInstallMessage = ref('');
+const cableInstallFailed = ref(false);
 const micLevel = ref(0);
 const isTestingMic = ref(false);
 let rafId: number | null = null;
@@ -668,6 +677,7 @@ async function toggleMicMute() {
 
 async function installVirtualCable() {
   isInstallingCable.value = true;
+  cableInstallFailed.value = false;
   cableInstallMessage.value = 'Installing driver in background...';
   try {
     const res = await window.electron?.downloadVBCable(settingsStore.appName);
@@ -690,14 +700,17 @@ async function installVirtualCable() {
         cableInstallMessage.value = '';
       }, 2500);
     } else {
-      cableInstallMessage.value = 'Installation completed.';
+      cableInstallMessage.value = 'Failed to run installer.';
+      cableInstallFailed.value = true;
       isInstallingCable.value = false;
     }
   } catch {
     cableInstallMessage.value = 'Failed to run installer.';
+    cableInstallFailed.value = true;
     isInstallingCable.value = false;
   }
 }
+
 
 const currentAppVersion = computed(() => window.electron?.versions?.app || 'Unknown');
 
@@ -891,7 +904,7 @@ async function openTagMenu(event: MouseEvent, tag: string) {
   showTagMenu.value = true;
 }
 
-function openTagMenuFromOption(payload: { event: MouseEvent; option: { label: string; value: string } }) {
+function openTagMenuFromOption(payload: { event: MouseEvent; option: { label: string; value: string; }; }) {
   openTagMenu(payload.event, payload.option.value);
 }
 
@@ -1373,6 +1386,22 @@ input[type='checkbox']:focus-visible {
   font-size: 0.85rem;
   color: var(--active-color);
   font-weight: 500;
+}
+
+.virtual-status-manual {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+.vendor-link {
+  color: var(--active-color);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.vendor-link:hover {
+  filter: brightness(1.2);
 }
 
 .mic-controls-container {

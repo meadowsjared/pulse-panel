@@ -771,7 +771,7 @@ async function downloadVBCable(appName) {
               mainResponse.messages.push(
                 'VBCABLE driver package integrity verification failed. Installation aborted.'
               )
-              return reject(cleanResult(mainResponse))
+              return reject(new Error(hashError))
             }
 
             // Integrity verified - proceed with extraction and elevated execution
