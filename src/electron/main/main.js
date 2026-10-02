@@ -38,6 +38,77 @@ let closedToTray = false
 let enableTray = false
 let ignoreFirstTrayToggle = false
 
+// Catch uncaught exceptions to prevent crashing or showing error modals on harmless aborted stream races
+process.on('uncaughtException', err => {
+  if (err?.code === 'ERR_INVALID_STATE' && String(err?.message || '').includes('ReadableStream')) {
+    // Suppress known Node/Undici race condition when media requests are aborted mid-playback
+    return
+  }
+  console.error('[Main Process] Uncaught Exception:', err)
+})
+
+/**
+ * Safely converts a Node.js Readable stream into a WHATWG ReadableStream.
+ * Handles renderer client aborts and prevents ERR_INVALID_STATE when streams close asynchronously.
+ * @param {import('fs').ReadStream} nodeStream
+ * @returns {ReadableStream}
+ */
+function nodeStreamToWebStream(nodeStream) {
+  let isClosed = false
+
+  const cleanup = () => {
+    if (isClosed) return
+    isClosed = true
+    try {
+      nodeStream.destroy()
+    } catch (_) {}
+  }
+
+  return new ReadableStream({
+    start(controller) {
+      nodeStream.on('data', chunk => {
+        if (isClosed) return
+        try {
+          controller.enqueue(chunk)
+          if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+            nodeStream.pause()
+          }
+        } catch (_) {
+          cleanup()
+        }
+      })
+
+      nodeStream.on('end', () => {
+        if (isClosed) return
+        isClosed = true
+        try {
+          controller.close()
+        } catch (_) {}
+      })
+
+      nodeStream.on('error', err => {
+        if (isClosed) return
+        isClosed = true
+        try {
+          controller.error(err)
+        } catch (_) {}
+      })
+
+      nodeStream.on('close', () => {
+        cleanup()
+      })
+    },
+    pull() {
+      if (!isClosed && nodeStream.isPaused()) {
+        nodeStream.resume()
+      }
+    },
+    cancel() {
+      cleanup()
+    },
+  })
+}
+
 app.whenReady().then(() => {
   try {
     protocol.handle('pulse-media', async request => {
@@ -159,7 +230,7 @@ app.whenReady().then(() => {
 
           const safeEnd = Math.min(end, fileSize - 1)
           const chunkSize = safeEnd - start + 1
-          const stream = fs.createReadStream(filePath, { start, end: safeEnd })
+          const nodeStream = fs.createReadStream(filePath, { start, end: safeEnd })
           const headers = new Headers({
             'Content-Type': contentType,
             'Content-Range': `bytes ${start}-${safeEnd}/${fileSize}`,
@@ -167,21 +238,21 @@ app.whenReady().then(() => {
             'Content-Length': chunkSize.toString(),
             'Access-Control-Allow-Origin': '*',
           })
-          return new Response(stream, {
+          return new Response(nodeStreamToWebStream(nodeStream), {
             status: 206,
             statusText: 'Partial Content',
             headers,
           })
         }
 
-        const stream = fs.createReadStream(filePath)
+        const nodeStream = fs.createReadStream(filePath)
         const headers = new Headers({
           'Content-Type': contentType,
           'Accept-Ranges': 'bytes',
           'Content-Length': fileSize.toString(),
           'Access-Control-Allow-Origin': '*',
         })
-        return new Response(stream, {
+        return new Response(nodeStreamToWebStream(nodeStream), {
           status: 200,
           headers,
         })
