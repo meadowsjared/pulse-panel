@@ -2,155 +2,21 @@
   <div class="clip-panel-root">
     <div class="clip-panel-body">
       <!-- Section 1: Audio Waveform & Studio Trimmer -->
-      <div class="waveform-section">
-        <div class="waveform-header">
-          <div class="playback-controls">
-            <button type="button"
-                    class="play-btn"
-                    :class="{ playing: isPlayingPreview }"
-                    :disabled="!effectiveAudioBuffer || isLoadingAudio"
-                    @click="togglePlayPreview"
-                    title="Preview trimmed region">
-              <svg v-if="!isPlayingPreview"
-                   class="w-5 h-5 ml-0.5"
-                   viewBox="0 0 24 24"
-                   fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-              <svg v-else
-                   class="w-5 h-5"
-                   viewBox="0 0 24 24"
-                   fill="currentColor">
-                <rect x="6"
-                      y="4"
-                      width="4"
-                      height="16"></rect>
-                <rect x="14"
-                      y="4"
-                      width="4"
-                      height="16"></rect>
-              </svg>
-            </button>
-            <button type="button"
-                    class="stop-btn"
-                    :disabled="!effectiveAudioBuffer || isLoadingAudio"
-                    @click="onStopBtnClick"
-                    title="Stop">
-              <svg class="w-4 h-4"
-                   viewBox="0 0 24 24"
-                   fill="currentColor">
-                <rect x="6"
-                      y="6"
-                      width="12"
-                      height="12"></rect>
-              </svg>
-            </button>
-            <span class="time-readout clickable"
-                  role="button"
-                  tabindex="0"
-                  title="Click to reset selection to full waveform extents"
-                  @click="resetSelectionToExtents"
-                  @keydown.enter.prevent="resetSelectionToExtents"
-                  @keydown.space.prevent="resetSelectionToExtents">
-              {{ formatSeconds(relativeCurrentTime) }} / {{ formatSeconds(trimmedDuration) }}
-            </span>
-          </div>
-
-          <div class="waveform-title">
-            <svg class="w-4 h-4 text-emerald-400"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2">
-              <path d="M2 10v4M6 6v12M10 3v18M14 8v8M18 5v14M22 10v4" />
-            </svg>
-            <span>Audio Waveform Trimmer</span>
-          </div>
-        </div>
-
-        <!-- Waveform Graph / Loading Box -->
-        <div class="waveform-graph-box">
-          <!-- Loading State -->
-          <div v-if="isLoadingAudio"
-               class="waveform-loading-state">
-            <svg class="w-5 h-5 animate-spin text-emerald-400"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2">
-              <circle cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                      class="opacity-25"></circle>
-              <path fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                    class="opacity-75"></path>
-            </svg>
-            <span>{{ audioLoadStatus || 'Downloading YouTube audio for waveform...' }}</span>
-            <div class="waveform-progress-bar-bg"
-                 v-if="audioLoadProgress > 0">
-              <div class="waveform-progress-bar-fill"
-                   :style="{ width: `${audioLoadProgress}%` }"></div>
-            </div>
-          </div>
-
-          <!-- Error State -->
-          <div v-else-if="audioLoadError && !effectiveAudioBuffer"
-               class="waveform-error-state">
-            <span>{{ audioLoadError }}</span>
-            <button type="button"
-                    class="waveform-retry-btn"
-                    @click="$emit('retryAudio')">
-              Retry
-            </button>
-          </div>
-
-          <!-- Waveform Graph Component -->
-          <WaveformGraph v-else
-                         :audio-buffer="effectiveAudioBuffer"
-                         :duration="currentTotalDuration"
-                         v-model:current-time="currentTime"
-                         v-model:trim-start="startTime"
-                         v-model:trim-end="endTime"
-                         :is-playing="isPlayingPreview"
-                         :height="76"
-                         :show-trim-handles="true"
-                         :show-trim-labels="true"
-                         :show-time-ticks="true"
-                         :show-playhead="true"
-                         @scrub-start="onScrubStart"
-                         @scrub-move="onScrubMove"
-                         @scrub-end="onScrubEnd"
-                         @trim-change="onTrimChange"
-                         @trim-end-change="onTrimEndChange" />
-        </div>
-
-        <TrimSummaryBar v-model:trim-start="startTime"
-                        v-model:trim-end="endTime"
-                        :duration="currentTotalDuration"
-                        :is-playing="isPlayingPreview"
-                        :show-trim-to-selection="true"
-                        :can-trim-to-selection="canTrimToSelection"
-                        :gain="gainMultiplier"
-                        :has-partial-gains="appliedGainRegions.length > 0"
-                        :gain-regions="appliedGainRegions"
-                        @update:gain="onGainMultiplierChange"
-                        @change-gain="onGainChange"
-                        @auto-level="onAutoLevel"
-                        @reset-gain="onResetGain"
-                        @select-region="onSelectGainRegion"
-                        @delete-region="onDeleteGainRegion"
-                        @clearAllGainRegions="onClearAllGainRegions"
-                        @resetAllGainRegions="onResetAllGainRegions"
-                        @resetStart="resetTrimStart"
-                        @resetEnd="resetTrimEnd"
-                        @resetSelection="resetSelectionToExtents"
-                        @reset="resetTrim"
-                        @play-trimmed="playTrimmedOnly"
-                        @trim-to-selection="trimToSelection" />
-      </div>
+      <WaveformEditor ref="waveformEditorRef"
+                      :audio-buffer="props.audioBuffer"
+                      :duration="props.audioDuration || props.videoTotalDuration || 0"
+                      v-model:trim-start="startTime"
+                      v-model:trim-end="endTime"
+                      v-model:current-time="currentTime"
+                      v-model:gain="gainMultiplier"
+                      v-model:applied-gain-regions="appliedGainRegions"
+                      title="Audio Waveform Trimmer"
+                      :is-loading="props.isLoadingAudio"
+                      :load-progress="props.audioLoadProgress"
+                      :load-status="props.audioLoadStatus"
+                      :load-error="props.audioLoadError"
+                      :enable-dual-tracks="false"
+                      @retry="$emit('retryAudio')" />
 
       <!-- Section 2: Media Preview (Left) + Details (Right) -->
       <div class="modal-top-grid">
@@ -396,15 +262,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, shallowRef, watch, onUnmounted } from 'vue';
+import { ref, watch } from 'vue';
 import { useSettingsStore } from '../store/settings';
 import { usePulseBackStore } from '../store/pulseBack';
 import { Sound } from '../@types/sound';
 import { TagInputRef } from './BaseComponents/TagInputTypes';
 import TagInput from './BaseComponents/TagInput.vue';
-import TrimSummaryBar from './TrimSummaryBar.vue';
-import { encodeMP3 } from '../services/pulseBackBuffer';
-import { calculateAutoGainMultiplier, calculateChannelPeak, applyGainToAudioBuffer, AudioGainRegion } from '../utils/audioGain';
+import WaveformEditor from './WaveformEditor.vue';
+import { AudioGainRegion } from '../utils/audioGain';
 
 interface Props {
   audioBuffer?: AudioBuffer | null;
@@ -442,7 +307,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'captureFrame'): void;
-  (e: 'captureFrame'): void;
   (e: 'close'): void;
   (e: 'retryAudio'): void;
   (e: 'soundAdded', sound: Sound): void;
@@ -451,17 +315,14 @@ const emit = defineEmits<{
 const settingsStore = useSettingsStore();
 const pulseBackStore = usePulseBackStore();
 
-// Local active audio buffer (supports non-destructive trimming and gain adjustments)
-const cleanBaseAudioBuffer = shallowRef<AudioBuffer | null>(null);
-const effectiveAudioBuffer = shallowRef<AudioBuffer | null>(null);
-const appliedGainRegions = ref<AudioGainRegion[]>([]);
-const gainMultiplier = ref(1.0);
+const waveformEditorRef = ref<InstanceType<typeof WaveformEditor> | null>(null);
 
-// Trimming & Playback state
+// Trimming & Gain state
 const startTime = ref(0);
 const endTime = ref(0);
 const currentTime = ref(0);
-const isPlayingPreview = ref(false);
+const gainMultiplier = ref(1.0);
+const appliedGainRegions = ref<AudioGainRegion[]>([]);
 
 // Form / Appearance state
 const clipTitle = ref('');
@@ -490,186 +351,18 @@ const presetColors = [
   '#000000',
 ];
 
-// Audio Context & nodes
 let audioContext: AudioContext | null = null;
-let previewSourceNode: AudioBufferSourceNode | null = null;
-let previewStartTime = 0;
-let previewStartAudioContextTime = 0;
-let previewAnimFrame: number | null = null;
-let lastScrubTime = 0;
-let scrubSourceNode: AudioBufferSourceNode | null = null;
-
-// Total duration calculation
-const currentTotalDuration = computed(() => {
-  if (effectiveAudioBuffer.value) return effectiveAudioBuffer.value.duration;
-  return props.audioDuration || props.videoTotalDuration || 1;
-});
-
-const trimmedDuration = computed(() => Math.max(0, endTime.value - startTime.value));
-
-const relativeCurrentTime = computed(() => {
-  if (trimmedDuration.value <= 0) return 0;
-  return Math.max(0, Math.min(trimmedDuration.value, currentTime.value - startTime.value));
-});
-
-const canTrimToSelection = computed(() => {
-  if (!effectiveAudioBuffer.value) return false;
-  const dur = effectiveAudioBuffer.value.duration;
-  return startTime.value > 0.05 || (endTime.value < dur - 0.05 && endTime.value > 0);
-});
-
-// Watch original audioBuffer prop
-watch(
-  () => props.audioBuffer,
-  (newBuf) => {
-    cleanBaseAudioBuffer.value = newBuf;
-    gainMultiplier.value = 1.0;
-    effectiveAudioBuffer.value = newBuf;
-    if (newBuf) {
-      if (endTime.value === 0 || endTime.value > newBuf.duration) {
-        endTime.value = newBuf.duration;
-      }
-    }
-  },
-  { immediate: true }
-);
-
-function applyCurrentGain() {
-  const base = cleanBaseAudioBuffer.value;
-  if (!base) return;
-  const ctx = getAudioContext();
-  effectiveAudioBuffer.value = applyGainToAudioBuffer(
-    ctx,
-    base,
-    gainMultiplier.value,
-    appliedGainRegions.value
-  );
-}
-
-function onGainMultiplierChange(val: number) {
-  gainMultiplier.value = val;
-  applyCurrentGain();
-}
-
-function onGainChange(payload: { target: 'both' | 'mic' | 'input'; multiplier: number; }) {
-  const totalDur = currentTotalDuration.value;
-  const startSec = Math.max(0, startTime.value);
-  const endSec = Math.min(totalDur, endTime.value > 0 ? endTime.value : totalDur);
-  const isPartial = startSec > 0.05 || (endSec < totalDur - 0.05 && endSec > 0);
-
-  gainMultiplier.value = payload.multiplier;
-  if (isPartial) {
-    appliedGainRegions.value = appliedGainRegions.value.filter(
-      r => !(Math.abs(r.startSec - startSec) < 0.1 && Math.abs(r.endSec - endSec) < 0.1)
-    );
-    appliedGainRegions.value.push({
-      id: 'gain-yt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-      startSec,
-      endSec,
-      multiplier: payload.multiplier,
-    });
-  } else {
-    appliedGainRegions.value = [];
+function getAudioContext(): AudioContext {
+  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!audioContext || audioContext.state === 'closed') {
+    audioContext = new AudioContextClass();
   }
-  applyCurrentGain();
-}
-
-function onAutoLevel() {
-  const base = cleanBaseAudioBuffer.value;
-  if (!base) return;
-  const sampleRate = base.sampleRate;
-  const totalDur = currentTotalDuration.value;
-  const startSec = Math.max(0, startTime.value);
-  const endSec = Math.min(totalDur, endTime.value > 0 ? endTime.value : totalDur);
-  const isPartial = startSec > 0.05 || (endSec < totalDur - 0.05 && endSec > 0);
-
-  const startSample = Math.max(0, Math.floor(startSec * sampleRate));
-  const endSample = Math.min(base.length, Math.floor(endSec * sampleRate));
-
-  const ch0 = base.getChannelData(0);
-  const ch1 = base.numberOfChannels >= 2 ? base.getChannelData(1) : null;
-  const peak0 = calculateChannelPeak(ch0, startSample, endSample);
-  const peak1 = ch1 ? calculateChannelPeak(ch1, startSample, endSample) : 0;
-  const maxPeak = Math.max(peak0, peak1);
-  if (maxPeak <= 0.0001) return;
-  const targetChannel = peak0 >= peak1 ? ch0 : ch1!;
-  const mult = calculateAutoGainMultiplier(targetChannel, 0.944, undefined, startSample, endSample);
-  gainMultiplier.value = mult;
-
-  if (isPartial) {
-    appliedGainRegions.value = appliedGainRegions.value.filter(
-      r => !(Math.abs(r.startSec - startSec) < 0.1 && Math.abs(r.endSec - endSec) < 0.1)
-    );
-    appliedGainRegions.value.push({
-      id: 'gain-yt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-      startSec,
-      endSec,
-      multiplier: mult,
-    });
-  } else {
-    appliedGainRegions.value = [];
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => { });
   }
-
-  applyCurrentGain();
+  return audioContext;
 }
 
-function onResetGain() {
-  appliedGainRegions.value = [];
-  gainMultiplier.value = 1.0;
-  applyCurrentGain();
-}
-
-function onSelectGainRegion(region: AudioGainRegion) {
-  startTime.value = region.startSec;
-  endTime.value = region.endSec;
-  currentTime.value = region.startSec;
-  gainMultiplier.value = region.multiplier;
-}
-
-function onDeleteGainRegion(region: AudioGainRegion) {
-  appliedGainRegions.value = appliedGainRegions.value.filter(r => {
-    if (region.id && r.id) return r.id !== region.id;
-    return !(Math.abs(r.startSec - region.startSec) < 0.05 && Math.abs(r.endSec - region.endSec) < 0.05);
-  });
-  if (Math.abs(startTime.value - region.startSec) < 0.05 && Math.abs(endTime.value - region.endSec) < 0.05) {
-    gainMultiplier.value = 1.0;
-  }
-  applyCurrentGain();
-}
-
-function onClearAllGainRegions() {
-  appliedGainRegions.value = [];
-  gainMultiplier.value = 1.0;
-  applyCurrentGain();
-}
-
-function onResetAllGainRegions() {
-  appliedGainRegions.value = appliedGainRegions.value.map(r => ({ ...r, multiplier: 1.0 }));
-  gainMultiplier.value = 1.0;
-  applyCurrentGain();
-}
-
-function resetTrimStart() {
-  startTime.value = 0;
-  currentTime.value = 0;
-}
-
-function resetTrimEnd() {
-  const dur = currentTotalDuration.value;
-  endTime.value = dur;
-  if (currentTime.value > dur) {
-    currentTime.value = dur;
-  }
-}
-
-function resetSelectionToExtents() {
-  const dur = currentTotalDuration.value;
-  startTime.value = 0;
-  endTime.value = dur;
-  currentTime.value = 0;
-}
-
-// Watch open state to initialize defaults
 watch(
   () => props.isOpen,
   (open) => {
@@ -681,14 +374,8 @@ watch(
         const activeTags = settingsStore.quickTags.filter(t => t.active).map(t => t.label);
         clipTags.value = [...activeTags];
       }
-      const dur = currentTotalDuration.value;
-      if (endTime.value === 0 && dur > 0) {
-        startTime.value = 0;
-        endTime.value = dur;
-      }
     } else {
-      stopAudioPreview();
-      stopScrubSnippet();
+      waveformEditorRef.value?.stopPreview();
     }
   },
   { immediate: true }
@@ -702,14 +389,6 @@ watch(
     }
   }
 );
-
-function formatSeconds(secs: number): string {
-  if (Number.isNaN(secs) || secs < 0) secs = 0;
-  const m = Math.floor(secs / 60);
-  const s = Math.floor(secs % 60);
-  const ms = Math.floor((secs % 1) * 10);
-  return `${m}:${s.toString().padStart(2, '0')}.${ms}`;
-}
 
 function applyOpacityToColor(color: string, opacityPercent: number): string {
   if (opacityPercent >= 100) return color;
@@ -740,267 +419,9 @@ function applyOpacityToColor(color: string, opacityPercent: number): string {
   return color;
 }
 
-function getAudioContext(): AudioContext {
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-  if (!audioContext || audioContext.state === 'closed') {
-    audioContext = new AudioContextClass();
-  }
-  if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(() => { });
-  }
-  return audioContext;
-}
-
-function stopAudioPreview() {
-  if (previewSourceNode) {
-    try {
-      previewSourceNode.stop();
-      previewSourceNode.disconnect();
-    } catch { }
-    previewSourceNode = null;
-  }
-  if (previewAnimFrame) {
-    cancelAnimationFrame(previewAnimFrame);
-    previewAnimFrame = null;
-  }
-  isPlayingPreview.value = false;
-}
-
-function startAudioPreview(fromStart = false) {
-  const buf = effectiveAudioBuffer.value;
-  if (!buf) return;
-  stopAudioPreview();
-
-  const ctx = getAudioContext();
-  const startSec = fromStart || currentTime.value < startTime.value || currentTime.value >= endTime.value
-    ? startTime.value
-    : currentTime.value;
-  const durationSec = Math.max(0, endTime.value - startSec);
-  if (durationSec <= 0) return;
-
-  const source = ctx.createBufferSource();
-  source.buffer = buf;
-
-  const gain = ctx.createGain();
-  gain.gain.value = 1.0;
-  source.connect(gain);
-  gain.connect(ctx.destination);
-
-  previewSourceNode = source;
-  previewStartTime = startSec;
-  previewStartAudioContextTime = ctx.currentTime;
-  isPlayingPreview.value = true;
-  currentTime.value = startSec;
-
-  source.onended = () => {
-    if (previewSourceNode === source) {
-      stopAudioPreview();
-      currentTime.value = startTime.value;
-    }
-  };
-
-  source.start(0, startSec, durationSec);
-
-  const updatePlayhead = () => {
-    if (!isPlayingPreview.value || !audioContext) return;
-    const elapsed = audioContext.currentTime - previewStartAudioContextTime;
-    const cur = previewStartTime + elapsed;
-    if (cur >= endTime.value) {
-      stopAudioPreview();
-      currentTime.value = startTime.value;
-      return;
-    }
-    currentTime.value = cur;
-    previewAnimFrame = requestAnimationFrame(updatePlayhead);
-  };
-  previewAnimFrame = requestAnimationFrame(updatePlayhead);
-}
-
-function togglePlayPreview() {
-  if (isPlayingPreview.value) {
-    stopAudioPreview();
-  } else {
-    const fromStart = currentTime.value < startTime.value || currentTime.value >= endTime.value;
-    startAudioPreview(fromStart);
-  }
-}
-
-function onStopBtnClick() {
-  stopAudioPreview();
-  currentTime.value = startTime.value;
-}
-
-function stopScrubSnippet() {
-  if (scrubSourceNode) {
-    try {
-      scrubSourceNode.stop();
-      scrubSourceNode.disconnect();
-    } catch { }
-    scrubSourceNode = null;
-  }
-}
-
-function playScrubSnippet(sec: number) {
-  const buf = effectiveAudioBuffer.value;
-  if (!buf) return;
-  const now = performance.now();
-  if (now - lastScrubTime < 45) return;
-  lastScrubTime = now;
-
-  const ctx = getAudioContext();
-  stopScrubSnippet();
-
-  const durationSec = 0.08;
-  const startSec = Math.max(0, Math.min(buf.duration - 0.02, sec));
-  const sampleRate = buf.sampleRate;
-  const sampleCount = Math.floor(durationSec * sampleRate);
-  if (sampleCount <= 0) return;
-
-  const startSample = Math.floor(startSec * sampleRate);
-  const snippet = ctx.createBuffer(1, sampleCount, sampleRate);
-  const outData = snippet.getChannelData(0);
-  const ch0 = buf.getChannelData(0);
-  const ch1 = buf.numberOfChannels >= 2 ? buf.getChannelData(1) : null;
-
-  for (let i = 0; i < sampleCount; i++) {
-    const idx = startSample + i;
-    if (idx >= buf.length) break;
-    outData[i] = ch1 ? (ch0[idx] + ch1[idx]) * 0.5 : ch0[idx];
-  }
-
-  const fade = Math.min(Math.floor(sampleRate * 0.005), Math.floor(sampleCount / 4));
-  for (let i = 0; i < fade; i++) {
-    const ramp = i / fade;
-    outData[i] *= ramp;
-    outData[sampleCount - 1 - i] *= ramp;
-  }
-
-  const source = ctx.createBufferSource();
-  source.buffer = snippet;
-  source.connect(ctx.destination);
-  scrubSourceNode = source;
-  source.onended = () => {
-    if (scrubSourceNode === source) scrubSourceNode = null;
-  };
-  source.start(0);
-}
-
-function onScrubStart(sec: number) {
-  stopAudioPreview();
-  currentTime.value = sec;
-  playScrubSnippet(sec);
-}
-
-function onScrubMove(sec: number) {
-  currentTime.value = sec;
-  playScrubSnippet(sec);
-}
-
-function onScrubEnd(sec: number) {
-  currentTime.value = sec;
-  stopScrubSnippet();
-}
-
-function onTrimChange(payload: { start: number; end: number; handle?: 'start' | 'end'; }) {
-  if (isPlayingPreview.value) {
-    stopAudioPreview();
-  }
-  startTime.value = payload.start;
-  endTime.value = payload.end;
-  if (payload.handle !== 'end') {
-    currentTime.value = payload.start;
-  } else if (currentTime.value > payload.end) {
-    currentTime.value = payload.start;
-  }
-}
-
-watch(startTime, (newStart, oldStart) => {
-  if (oldStart !== undefined && newStart !== oldStart) {
-    currentTime.value = newStart;
-  }
-});
-
-function onTrimEndChange() {
-  if (isPlayingPreview.value) {
-    stopAudioPreview();
-  }
-}
-
-function trimToSelection() {
-  const buf = cleanBaseAudioBuffer.value || effectiveAudioBuffer.value;
-  if (!buf || !canTrimToSelection.value) return;
-
-  stopAudioPreview();
-  stopScrubSnippet();
-
-  const startSec = startTime.value;
-  const endSec = endTime.value;
-  const sampleRate = buf.sampleRate;
-  const startSample = Math.max(0, Math.floor(startSec * sampleRate));
-  const endSample = Math.min(buf.length, Math.floor(endSec * sampleRate));
-  const newLength = Math.max(0, endSample - startSample);
-  if (newLength <= 0) return;
-
-  const newDuration = newLength / sampleRate;
-  const ctx = getAudioContext();
-  const numChannels = buf.numberOfChannels;
-  const newBuf = ctx.createBuffer(numChannels, newLength, sampleRate);
-
-  for (let ch = 0; ch < numChannels; ch++) {
-    const srcData = buf.getChannelData(ch);
-    const dstData = newBuf.getChannelData(ch);
-    dstData.set(srcData.subarray(startSample, endSample));
-  }
-
-  cleanBaseAudioBuffer.value = newBuf;
-
-  // Shift partial gain regions to new coordinates
-  const newGainRegions: AudioGainRegion[] = [];
-  for (const reg of appliedGainRegions.value) {
-    const overlapStart = Math.max(reg.startSec, startSec);
-    const overlapEnd = Math.min(reg.endSec, endSec);
-    if (overlapEnd - overlapStart > 0.02) {
-      const regStart = Math.max(0, overlapStart - startSec);
-      const regEnd = Math.min(newDuration, overlapEnd - startSec);
-      newGainRegions.push({
-        id: reg.id || ('gain-yt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6)),
-        startSec: Math.round(regStart * 100) / 100,
-        endSec: Math.round(regEnd * 100) / 100,
-        multiplier: reg.multiplier,
-      });
-    }
-  }
-  appliedGainRegions.value = newGainRegions;
-
-  applyCurrentGain();
-  startTime.value = 0;
-  endTime.value = newDuration;
-  currentTime.value = 0;
-}
-
-function resetTrim() {
-  stopAudioPreview();
-  stopScrubSnippet();
-  cleanBaseAudioBuffer.value = props.audioBuffer;
-  applyCurrentGain();
-  const fullDur = currentTotalDuration.value;
-  startTime.value = 0;
-  endTime.value = fullDur;
-  currentTime.value = 0;
-}
-
-function playTrimmedOnly() {
-  if (isPlayingPreview.value) {
-    stopAudioPreview();
-  } else {
-    startAudioPreview(true);
-  }
-}
-
 function handleCancel() {
   if (isProcessing.value) return;
-  stopAudioPreview();
-  stopScrubSnippet();
+  waveformEditorRef.value?.stopPreview();
   emit('close');
 }
 
@@ -1012,42 +433,25 @@ async function saveSound() {
   progressStatusText.value = 'Preparing audio...';
 
   try {
-    const totalMax = currentTotalDuration.value;
+    const totalMax = props.audioDuration || props.videoTotalDuration || 1;
     if (startTime.value < 0 || Number.isNaN(startTime.value)) startTime.value = 0;
     if (endTime.value <= startTime.value || Number.isNaN(endTime.value)) {
       endTime.value = totalMax > 0 ? totalMax : startTime.value + 1;
     }
 
-    const buf = effectiveAudioBuffer.value;
     let audioBlob: Blob | null = null;
     let extension = 'mp3';
-    let duration = trimmedDuration.value;
+    let duration = Math.max(0, endTime.value - startTime.value);
 
-    if (buf) {
+    if (waveformEditorRef.value?.hasAudioBuffer) {
       progressPercent.value = 35;
       progressStatusText.value = 'Encoding audio snippet to MP3...';
-
-      const sampleRate = buf.sampleRate;
-      const startSample = Math.max(0, Math.floor(startTime.value * sampleRate));
-      const endSample = Math.min(buf.length, Math.floor(endTime.value * sampleRate));
-      const length = Math.max(0, endSample - startSample);
-
-      const slicedSamples = new Float32Array(length);
-      const ch0 = buf.getChannelData(0).subarray(startSample, endSample);
-      const hasSecond = buf.numberOfChannels >= 2;
-      const ch1 = hasSecond ? buf.getChannelData(1).subarray(startSample, endSample) : null;
-
-      if (hasSecond && ch1) {
-        for (let i = 0; i < length; i++) {
-          slicedSamples[i] = (ch0[i] + ch1[i]) * 0.5;
-        }
-      } else {
-        slicedSamples.set(ch0);
+      const trimmed = await waveformEditorRef.value.getTrimmedAudioBlob('mp3');
+      if (trimmed) {
+        audioBlob = trimmed.blob;
+        duration = trimmed.duration;
+        extension = trimmed.extension;
       }
-
-      duration = slicedSamples.length / sampleRate;
-      audioBlob = await encodeMP3(slicedSamples, sampleRate, 192);
-      extension = 'mp3';
     } else {
       progressStatusText.value = 'Downloading audio with yt-dlp...';
       const downloadOpts = {
@@ -1149,13 +553,16 @@ async function saveSound() {
   }
 }
 
+function stopAudio() {
+  waveformEditorRef.value?.stopPreview?.();
+}
+
 defineExpose({
-  stopAudio: stopAudioPreview,
+  stopAudio,
 });
 
 onUnmounted(() => {
-  stopAudioPreview();
-  stopScrubSnippet();
+  stopAudio();
 });
 </script>
 
@@ -1183,202 +590,6 @@ onUnmounted(() => {
   max-width: 960px;
   width: 100%;
   margin: 0 auto;
-}
-
-/* Audio Waveform Section */
-.waveform-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  background: #131316;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.5rem;
-  padding: 0.85rem 1rem;
-  width: 100%;
-}
-
-.waveform-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.playback-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.play-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 50%;
-  background: #23a459;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 2px 6px rgba(35, 164, 89, 0.4);
-}
-
-.play-btn:hover:not(:disabled) {
-  background: #2bb965;
-  transform: scale(1.06);
-}
-
-.play-btn:focus-visible:not(:disabled) {
-  outline: 2px solid var(--active-color, #23a459);
-  outline-offset: 2px;
-  background: #2bb965;
-}
-
-.play-btn.playing {
-  background: #eab308;
-  box-shadow: 0 2px 6px rgba(234, 179, 8, 0.4);
-}
-
-.play-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.stop-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.85rem;
-  height: 1.85rem;
-  border-radius: 0.375rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #ccc;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.stop-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
-
-.stop-btn:focus-visible:not(:disabled) {
-  outline: 2px solid var(--active-color, #38bdf8);
-  outline-offset: 2px;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-}
-
-.stop-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.time-readout {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.8rem;
-  color: #94a3b8;
-  font-weight: 500;
-  user-select: none;
-  min-width: 90px;
-}
-
-.time-readout.clickable {
-  cursor: pointer;
-  padding: 0.15rem 0.35rem;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-}
-
-.time-readout.clickable:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #38bdf8;
-}
-
-.time-readout.clickable:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 1px;
-}
-
-.time-readout.clickable:active {
-  transform: scale(0.96);
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.waveform-title {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.waveform-graph-box {
-  width: 100%;
-  min-height: 80px;
-  background: #0d0d0f;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 0.375rem;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.waveform-loading-state,
-.waveform-error-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1.25rem;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.82rem;
-  text-align: center;
-  width: 100%;
-}
-
-.waveform-progress-bar-bg {
-  width: 60%;
-  max-width: 220px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.waveform-progress-bar-fill {
-  height: 100%;
-  background: #10b981;
-  transition: width 0.2s ease;
-}
-
-.waveform-retry-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.35rem;
-  color: #fff;
-  font-size: 0.78rem;
-  padding: 0.3rem 0.75rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.waveform-retry-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.waveform-retry-btn:focus-visible {
-  outline: 2px solid var(--active-color, #38bdf8);
-  outline-offset: 2px;
 }
 
 /* Media Preview & Details Grid */

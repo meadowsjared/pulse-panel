@@ -13,12 +13,16 @@ export interface AudioTimelineSegment {
   isPasted?: boolean;
 }
 
+import { ref } from 'vue';
+
 export interface AudioClipboardData {
   buffer: AudioBuffer;
   segments?: AudioTimelineSegment[];
   sourceTrack: 'both' | 'mic' | 'input';
   duration: number;
 }
+
+export const sharedAudioClipboard = ref<AudioClipboardData | null>(null);
 
 /**
  * Creates an initial segment array from a single decoded AudioBuffer.
