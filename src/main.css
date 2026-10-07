@@ -63,6 +63,7 @@ select {
 
 html, body, div#app {
   height: 100vh;
+  overflow: hidden;
 }
 
 div#app {

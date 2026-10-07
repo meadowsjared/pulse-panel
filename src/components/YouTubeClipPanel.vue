@@ -905,15 +905,12 @@ function onTrimChange(payload: { start: number; end: number; handle?: 'start' | 
   if (isPlayingPreview.value) {
     stopAudioPreview();
   }
-  const isStartChange = payload.handle === 'start' || startTime.value !== payload.start;
   startTime.value = payload.start;
   endTime.value = payload.end;
-  if (isStartChange) {
-    currentTime.value = payload.start;
-  } else if (currentTime.value < payload.start) {
+  if (payload.handle !== 'end') {
     currentTime.value = payload.start;
   } else if (currentTime.value > payload.end) {
-    currentTime.value = payload.end;
+    currentTime.value = payload.start;
   }
 }
 

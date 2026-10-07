@@ -1,10 +1,11 @@
 <template>
   <div ref="containerRef"
-       class="waveform-graph-container">
-    <div class="waveform-wrapper"
+       :class="['waveform-graph-container', { 'is-dragging-handle': isDraggingHandle }]">
+    <div :class="['waveform-wrapper', { 'is-dragging-handle': isDraggingHandle }]"
          ref="waveformWrapperRef"
          :style="wrapperStyle"
          @mousedown="onWaveformMouseDown"
+         @dblclick="onWaveformDblClick"
          @dragstart.prevent.stop>
       <canvas ref="canvasRef"
               class="waveform-canvas"></canvas>
@@ -43,14 +44,38 @@
                class="selection-dim-curtain dim-bottom"
                :style="bottomDimStyle"></div>
         </div>
+      </template>
 
+      <!-- Segment Boundary Divider Lines (Interactive White Clip Handles) -->
+      <template v-if="segmentBoundaries && segmentBoundaries.length">
+        <div v-for="(boundarySec, idx) in segmentBoundaries"
+             :key="'boundary-' + idx"
+             class="segment-boundary-line"
+             :class="{
+              'is-snapped': snappedBoundarySec !== null && Math.abs(snappedBoundarySec - boundarySec) < 0.002,
+              'is-dragging-handle': isDraggingHandle
+            }"
+             :style="{ left: `${(boundarySec / effectiveDuration) * 100}%` }"
+             @mousedown.stop
+             @click.stop="onBoundaryClick(boundarySec, $event)"
+             @contextmenu.prevent.stop="onBoundaryContextMenu(boundarySec, $event)"
+             :title="`Clip boundary at ${formatSeconds(boundarySec)} — Click for options`">
+          <div class="segment-boundary-hit-area"></div>
+        </div>
+      </template>
+
+      <!-- Start & End Trim Handles -->
+      <template v-if="showTrimHandles">
         <!-- Start Trim Handle -->
-        <div :class="['trim-handle', 'start-handle', { 'active-handle': activeDragHandle === 'start' }]"
+        <div :class="['trim-handle', 'start-handle', {
+          'active-handle': activeDragHandle === 'start',
+          'is-snapped': (activeSnapLineSec !== null && activeDragHandle === 'start') || (isSnappedToStationaryHandle && activeDragHandle === 'end')
+        }]"
              :style="{ left: `${startPercent}%` }"
              @mousedown.stop="onStartHandleMouseDown"
              @dblclick.stop="openTrimPopovers('start')"
              @contextmenu.prevent.stop="openTrimPopovers('start')"
-             :title="`Start: ${formatSeconds(trimStart)} (Click to edit)`">
+             :title="`Start: ${formatSeconds(trimStart)} (Drag to trim, hold Shift to snap, click to edit)`">
           <div v-if="showTrimLabels"
                class="handle-flag start-flag"
                @mousedown.stop="onStartHandleMouseDown"
@@ -59,23 +84,35 @@
         </div>
 
         <!-- End Trim Handle -->
-        <div :class="['trim-handle', 'end-handle', { 'active-handle': activeDragHandle === 'end' }]"
+        <div :class="['trim-handle', 'end-handle', {
+          'active-handle': activeDragHandle === 'end',
+          'is-snapped': (activeSnapLineSec !== null && activeDragHandle === 'end') || (isSnappedToStationaryHandle && activeDragHandle === 'start')
+        }]"
              :style="{ left: `${endPercent}%` }"
              @mousedown.stop="onEndHandleMouseDown"
              @dblclick.stop="openTrimPopovers('end')"
              @contextmenu.prevent.stop="openTrimPopovers('end')"
-             :title="`End: ${formatSeconds(trimEnd > 0 ? trimEnd : effectiveDuration)} (Click to edit)`">
+             :title="`End: ${formatSeconds(trimEnd)} (Drag to trim, hold Shift to snap, click to edit)`">
           <div v-if="showTrimLabels"
                class="handle-flag end-flag"
                @mousedown.stop="onEndHandleMouseDown"
-               @click.stop="openTrimPopovers('end')">Out: {{ formatSeconds(trimEnd > 0 ? trimEnd : effectiveDuration) }}</div>
+               @click.stop="openTrimPopovers('end')">Out: {{ formatSeconds(trimEnd) }}</div>
           <div class="handle-line"></div>
         </div>
       </template>
 
+      <!-- Active Snap Guideline (Clean Amber Line with Lock Emoji Below) -->
+      <div v-if="activeSnapLineSec !== null"
+           class="active-snap-guideline"
+           :style="{ left: `${Math.max(0, Math.min(100, (activeSnapLineSec / effectiveDuration) * 100))}%` }">
+        <div class="snap-lock-foot"
+             title="Snapped to boundary">🔒</div>
+      </div>
+
       <!-- Playhead Scrub Line -->
       <div v-if="showPlayhead"
            class="playhead-line"
+           :class="{ 'is-snapped': isSnappedToPlayhead }"
            :style="{ left: `${playheadPercent}%` }">
         <div class="playhead-cap"
              @mousedown.stop="onPlayheadMouseDown"
@@ -83,10 +120,58 @@
       </div>
     </div>
 
+    <!-- Segment Boundary Quick Actions Popover -->
+    <div v-if="activeBoundaryMenu"
+         class="boundary-menu-popover"
+         :style="boundaryMenuStyle"
+         @mousedown.stop
+         @click.stop>
+      <div class="boundary-menu-header">
+        <span class="boundary-menu-title">Clip Boundary: {{ formatSeconds(activeBoundaryMenu.sec) }}</span>
+        <button type="button"
+                class="boundary-menu-close"
+                @click="closeBoundaryMenu">✕</button>
+      </div>
+      <div class="boundary-menu-items">
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="selectLeftOfBoundary(activeBoundaryMenu.sec)">
+          <span class="btn-icon">◀</span>
+          Select Left Clip (In ➔ Divider)
+        </button>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="selectRightOfBoundary(activeBoundaryMenu.sec)">
+          <span class="btn-icon">▶</span>
+          Select Right Clip (Divider ➔ Out)
+        </button>
+        <div class="boundary-menu-divider"></div>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="setInAtBoundary(activeBoundaryMenu.sec)">
+          <span class="badge in">IN</span>
+          Set Green Handle (In) Here
+        </button>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="setOutAtBoundary(activeBoundaryMenu.sec)">
+          <span class="badge out">OUT</span>
+          Set Red Handle (Out) Here
+        </button>
+        <div class="boundary-menu-divider"></div>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="seekToBoundary(activeBoundaryMenu.sec)">
+          <span class="btn-icon">⏱</span>
+          Move Playhead Here
+        </button>
+      </div>
+    </div>
+
     <!-- Unified Trim Capsule Popover -->
-    <div v-if="showTrimHandles"
-         class="trim-capsule-card"
-         :class="{ 'is-open': areTrimPopoversOpen, 'is-dragging': isDraggingHandle }"
+    <div v-if="showTrimHandles && areTrimPopoversOpen"
+         class="trim-capsule-card is-open"
+         :class="{ 'is-dragging': isDraggingHandle }"
          :style="capsuleCardStyle"
          @mousedown.stop
          @click.stop>
@@ -141,9 +226,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-
+<script lang="ts">
 // Shared across all WaveformGraph instances so opening one closes all other popovers
 let graphInstanceCounter = 0;
 const globalActiveGraphInstanceId = ref<number | null>(null);
@@ -158,6 +241,9 @@ export interface WaveformTrack {
   /** Custom gradient colors [startColor, endColor] for the bars. */
   colors?: [string, string];
 }
+</script>
+
+<script setup lang="ts">
 
 interface Props {
   audioBuffer: AudioBuffer | null;
@@ -179,6 +265,7 @@ interface Props {
   includeMic?: boolean;
   includeInput?: boolean;
   activeTrack?: 'both' | 'mic' | 'input';
+  segmentBoundaries?: number[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -198,6 +285,7 @@ const props = withDefaults(defineProps<Props>(), {
   includeMic: true,
   includeInput: true,
   activeTrack: 'both',
+  segmentBoundaries: () => [],
 });
 
 const emit = defineEmits<{
@@ -260,9 +348,8 @@ const startPercent = computed(() => {
 });
 
 const endPercent = computed(() => {
-  if (effectiveDuration.value <= 0) return 100;
-  const end = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
-  return Math.max(0, Math.min(100, (end / effectiveDuration.value) * 100));
+  if (effectiveDuration.value <= 0) return 0;
+  return Math.max(0, Math.min(100, (props.trimEnd / effectiveDuration.value) * 100));
 });
 
 const playheadPercent = computed(() => {
@@ -352,16 +439,16 @@ function openTrimPopovers(focusHandle?: 'start' | 'end') {
   areTrimPopoversOpen.value = true;
   focusedPopoverHandle.value = focusHandle ?? null;
   startInputValue.value = formatSeconds(props.trimStart);
-  endInputValue.value = formatSeconds(props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value);
+  endInputValue.value = formatSeconds(props.trimEnd);
 
   if (focusHandle === 'start') {
     nextTick(() => {
-      startInputRef.value?.focus();
+      startInputRef.value?.focus({ preventScroll: true });
       startInputRef.value?.select();
     });
   } else if (focusHandle === 'end') {
     nextTick(() => {
-      endInputRef.value?.focus();
+      endInputRef.value?.focus({ preventScroll: true });
       endInputRef.value?.select();
     });
   }
@@ -389,7 +476,7 @@ watch(
       startInputValue.value = formatSeconds(props.trimStart);
     }
     if (document.activeElement !== endInputRef.value) {
-      const endVal = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
+      const endVal = props.trimEnd;
       endInputValue.value = formatSeconds(endVal);
     }
   },
@@ -402,13 +489,14 @@ function onStartInput(e: Event) {
   const parsed = parseTimeInput(val);
   if (parsed !== null && !isNaN(parsed)) {
     const maxDur = effectiveDuration.value;
-    const minGap = Math.min(0.05, maxDur * 0.02);
-    const end = props.trimEnd > 0 ? props.trimEnd : maxDur;
-    const newStart = Math.max(0, Math.min(parsed, end - minGap));
+    const end = props.trimEnd;
+    const newStart = Math.max(0, Math.min(parsed, maxDur));
+    const newEnd = Math.max(newStart, end);
     emit('update:trimStart', newStart);
+    emit('update:trimEnd', newEnd);
     emit('update:currentTime', newStart);
-    emit('trimChange', { start: newStart, end, handle: 'start' });
-    emit('trimEndChange', { start: newStart, end, handle: 'start' });
+    emit('trimChange', { start: newStart, end: newEnd, handle: 'start' });
+    emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' });
   }
 }
 
@@ -418,22 +506,26 @@ function onEndInput(e: Event) {
   const parsed = parseTimeInput(val);
   if (parsed !== null && !isNaN(parsed)) {
     const maxDur = effectiveDuration.value;
-    const minGap = Math.min(0.05, maxDur * 0.02);
-    const newEnd = Math.min(maxDur, Math.max(parsed, props.trimStart + minGap));
+    const newEnd = Math.max(0, Math.min(maxDur, parsed));
+    const newStart = Math.min(props.trimStart, newEnd);
+    emit('update:trimStart', newStart);
     emit('update:trimEnd', newEnd);
-    emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
-    emit('trimEndChange', { start: props.trimStart, end: newEnd, handle: 'end' });
+    if (props.currentTime > newEnd) {
+      emit('update:currentTime', newStart);
+    }
+    emit('trimChange', { start: newStart, end: newEnd, handle: 'end' });
+    emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' });
   }
 }
 
 function focusStartInput() {
   focusedPopoverHandle.value = 'start';
-  startInputRef.value?.focus();
+  startInputRef.value?.focus({ preventScroll: true });
 }
 
 function focusEndInput() {
   focusedPopoverHandle.value = 'end';
-  endInputRef.value?.focus();
+  endInputRef.value?.focus({ preventScroll: true });
 }
 
 function onInputFocus(handle: 'start' | 'end') {
@@ -442,12 +534,14 @@ function onInputFocus(handle: 'start' | 'end') {
     globalActiveGraphInstanceId.value = instanceId;
     areTrimPopoversOpen.value = true;
     startInputValue.value = formatSeconds(props.trimStart);
-    endInputValue.value = formatSeconds(props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value);
+    endInputValue.value = formatSeconds(props.trimEnd);
   }
   nextTick(() => {
     if (handle === 'start') {
+      startInputRef.value?.focus({ preventScroll: true });
       startInputRef.value?.select();
     } else {
+      endInputRef.value?.focus({ preventScroll: true });
       endInputRef.value?.select();
     }
   });
@@ -488,14 +582,12 @@ function onPopoverKeydown(handle: 'start' | 'end', e: KeyboardEvent) {
     const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05);
     const delta = e.key === 'ArrowUp' ? step : -step;
     const maxDur = effectiveDuration.value;
-    const minGap = Math.min(0.05, maxDur * 0.02);
 
     if (handle === 'start') {
       const current = parseTimeInput(startInputValue.value) ?? props.trimStart;
-      const updated = Math.max(0, current + delta);
-      startInputValue.value = formatSeconds(updated);
-      const end = props.trimEnd > 0 ? props.trimEnd : maxDur;
-      const newStart = Math.max(0, Math.min(updated, end - minGap));
+      const end = props.trimEnd;
+      const newStart = Math.max(0, Math.min(current + delta, end));
+      startInputValue.value = formatSeconds(newStart);
       emit('update:trimStart', newStart);
       emit('update:currentTime', newStart);
       emit('trimChange', { start: newStart, end, handle: 'start' });
@@ -504,14 +596,17 @@ function onPopoverKeydown(handle: 'start' | 'end', e: KeyboardEvent) {
         startInputRef.value?.select();
       });
     } else {
-      const endVal = props.trimEnd > 0 ? props.trimEnd : maxDur;
-      const current = parseTimeInput(endInputValue.value) ?? endVal;
-      const updated = Math.max(0, current + delta);
-      endInputValue.value = formatSeconds(updated);
-      const newEnd = Math.min(maxDur, Math.max(updated, props.trimStart + minGap));
+      const current = parseTimeInput(endInputValue.value) ?? props.trimEnd;
+      const newEnd = Math.max(0, Math.min(maxDur, current + delta));
+      const newStart = Math.min(props.trimStart, newEnd);
+      endInputValue.value = formatSeconds(newEnd);
+      emit('update:trimStart', newStart);
       emit('update:trimEnd', newEnd);
-      emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
-      emit('trimEndChange', { start: props.trimStart, end: newEnd, handle: 'end' });
+      if (props.currentTime > newEnd) {
+        emit('update:currentTime', newStart);
+      }
+      emit('trimChange', { start: newStart, end: newEnd, handle: 'end' });
+      emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' });
       nextTick(() => {
         endInputRef.value?.select();
       });
@@ -539,12 +634,147 @@ const capsuleArrowStyle = computed(() => {
   };
 });
 
+// Interactive Clip Boundary Menu State
+const activeBoundaryMenu = ref<{ sec: number; x: number; y: number; } | null>(null);
+const snappedBoundarySec = ref<number | null>(null);
+const activeSnapLineSec = ref<number | null>(null);
+const snapBadgeText = ref<string>('');
+const isSnappedToStationaryHandle = ref(false);
+const isSnappedToPlayhead = ref(false);
+
+const boundaryMenuStyle = computed(() => {
+  if (!activeBoundaryMenu.value || !containerRef.value) return {};
+  const containerRect = containerRef.value.getBoundingClientRect();
+  const relX = activeBoundaryMenu.value.x - containerRect.left;
+  const clampedX = Math.max(120, Math.min(containerRect.width - 120, relX));
+  return {
+    left: `${clampedX}px`,
+    top: '12px',
+    transform: 'translateX(-50%)',
+  };
+});
+
+function onBoundaryClick(sec: number, e: MouseEvent) {
+  if (isDraggingHandle.value) return;
+  activeBoundaryMenu.value = {
+    sec,
+    x: e.clientX,
+    y: e.clientY,
+  };
+}
+
+function onBoundaryContextMenu(sec: number, e: MouseEvent) {
+  activeBoundaryMenu.value = {
+    sec,
+    x: e.clientX,
+    y: e.clientY,
+  };
+}
+
+function closeBoundaryMenu() {
+  activeBoundaryMenu.value = null;
+}
+
+function selectLeftOfBoundary(boundarySec: number) {
+  const maxDur = effectiveDuration.value;
+  const boundaries = (props.segmentBoundaries && props.segmentBoundaries.length > 0)
+    ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
+    : [0, maxDur];
+
+  let prev = 0;
+  for (const b of boundaries) {
+    if (b < boundarySec - 0.01) {
+      prev = b;
+    } else {
+      break;
+    }
+  }
+
+  startInputValue.value = formatSeconds(prev);
+  endInputValue.value = formatSeconds(boundarySec);
+  emit('update:trimStart', prev);
+  emit('update:trimEnd', boundarySec);
+  emit('update:currentTime', prev);
+  emit('trimChange', { start: prev, end: boundarySec, handle: 'start' });
+  emit('trimEndChange', { start: prev, end: boundarySec, handle: 'start' });
+  closeBoundaryMenu();
+}
+
+function selectRightOfBoundary(boundarySec: number) {
+  const maxDur = effectiveDuration.value;
+  const boundaries = (props.segmentBoundaries && props.segmentBoundaries.length > 0)
+    ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
+    : [0, maxDur];
+
+  let next = maxDur;
+  for (let i = boundaries.length - 1; i >= 0; i--) {
+    const b = boundaries[i];
+    if (b > boundarySec + 0.01) {
+      next = b;
+    } else {
+      break;
+    }
+  }
+
+  startInputValue.value = formatSeconds(boundarySec);
+  endInputValue.value = formatSeconds(next);
+  emit('update:trimStart', boundarySec);
+  emit('update:trimEnd', next);
+  emit('update:currentTime', boundarySec);
+  emit('trimChange', { start: boundarySec, end: next, handle: 'start' });
+  emit('trimEndChange', { start: boundarySec, end: next, handle: 'start' });
+  closeBoundaryMenu();
+}
+
+function setInAtBoundary(boundarySec: number) {
+  let newStart = boundarySec;
+  let newEnd = props.trimEnd;
+  if (newStart > newEnd) {
+    newEnd = newStart;
+  }
+  startInputValue.value = formatSeconds(newStart);
+  endInputValue.value = formatSeconds(newEnd);
+  emit('update:trimStart', newStart);
+  emit('update:trimEnd', newEnd);
+  emit('update:currentTime', newStart);
+  emit('trimChange', { start: newStart, end: newEnd, handle: 'start' });
+  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' });
+  closeBoundaryMenu();
+}
+
+function setOutAtBoundary(boundarySec: number) {
+  let newStart = props.trimStart;
+  let newEnd = boundarySec;
+  if (newEnd < newStart) {
+    newStart = newEnd;
+  }
+  startInputValue.value = formatSeconds(newStart);
+  endInputValue.value = formatSeconds(newEnd);
+  emit('update:trimStart', newStart);
+  emit('update:trimEnd', newEnd);
+  if (props.currentTime > newEnd) {
+    emit('update:currentTime', newStart);
+  }
+  emit('trimChange', { start: newStart, end: newEnd, handle: 'end' });
+  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' });
+  closeBoundaryMenu();
+}
+
+function seekToBoundary(boundarySec: number) {
+  emit('update:currentTime', boundarySec);
+  emit('scrubStart', boundarySec);
+  emit('scrubMove', boundarySec);
+  emit('scrubEnd', boundarySec);
+  closeBoundaryMenu();
+}
+
 function handleDocumentMouseDown(e: MouseEvent) {
   const target = e.target as HTMLElement | null;
   if (target && containerRef.value?.contains(target)) {
     return;
   }
   closePopover();
+  closeBoundaryMenu();
 }
 
 const DOWNSAMPLE_RESOLUTION = 2000;
@@ -825,6 +1055,24 @@ let clickedHandle: 'start' | 'end' | null = null;
 const isDraggingHandle = ref(false);
 let dragInitialStart = 0;
 let dragInitialEnd = 0;
+let dragStationarySec = 0;
+
+let lastHandleDragEvent: MouseEvent | null = null;
+
+function onHandleDragKeyChange(ke: KeyboardEvent) {
+  if (!activeDragHandle.value || !lastHandleDragEvent) return;
+  if (ke.repeat) return;
+  if (ke.key === 'Shift' || ke.key === 'Alt') {
+    const syntheticEvent = new MouseEvent('mousemove', {
+      clientX: lastHandleDragEvent.clientX,
+      clientY: lastHandleDragEvent.clientY,
+      shiftKey: ke.shiftKey,
+      altKey: ke.altKey,
+      buttons: 1,
+    });
+    onHandleMouseMove(syntheticEvent);
+  }
+}
 
 function onStartHandleMouseDown(e: MouseEvent) {
   e.preventDefault();
@@ -834,10 +1082,13 @@ function onStartHandleMouseDown(e: MouseEvent) {
   internalDragStartTime.value = props.trimStart;
   isDraggingHandle.value = false;
   dragInitialStart = props.trimStart;
-  dragInitialEnd = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
-  openTrimPopovers('start');
+  dragInitialEnd = props.trimEnd;
+  dragStationarySec = dragInitialEnd;
+  lastHandleDragEvent = e;
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
+  window.addEventListener('keydown', onHandleDragKeyChange);
+  window.addEventListener('keyup', onHandleDragKeyChange);
 }
 
 function onEndHandleMouseDown(e: MouseEvent) {
@@ -847,10 +1098,13 @@ function onEndHandleMouseDown(e: MouseEvent) {
   activeDragHandle.value = 'end';
   isDraggingHandle.value = false;
   dragInitialStart = props.trimStart;
-  dragInitialEnd = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
-  openTrimPopovers('end');
+  dragInitialEnd = props.trimEnd;
+  dragStationarySec = dragInitialStart;
+  lastHandleDragEvent = e;
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
+  window.addEventListener('keydown', onHandleDragKeyChange);
+  window.addEventListener('keyup', onHandleDragKeyChange);
 }
 
 function onPlayheadMouseDown(e: MouseEvent) {
@@ -858,41 +1112,117 @@ function onPlayheadMouseDown(e: MouseEvent) {
   onWaveformMouseDown(e);
 }
 
+function onWaveformDblClick(e: MouseEvent) {
+  if (!props.showTrimHandles) return;
+  const clickSec = getSecondsFromMouseEvent(e);
+  const maxDur = effectiveDuration.value;
+  if (maxDur <= 0) return;
+
+  const boundaries = props.segmentBoundaries && props.segmentBoundaries.length > 0
+    ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
+    : [0, maxDur];
+
+  let segStart = 0;
+  let segEnd = maxDur;
+
+  for (let i = 0; i < boundaries.length - 1; i++) {
+    const bStart = boundaries[i];
+    const bEnd = boundaries[i + 1];
+    if (clickSec >= bStart - 0.01 && clickSec <= bEnd + 0.01) {
+      segStart = bStart;
+      segEnd = bEnd;
+      break;
+    }
+  }
+
+  const currentEnd = props.trimEnd;
+  if (Math.abs(props.trimStart - segStart) < 0.05 && Math.abs(currentEnd - segEnd) < 0.05) {
+    segStart = 0;
+    segEnd = maxDur;
+  }
+
+  startInputValue.value = formatSeconds(segStart);
+  endInputValue.value = formatSeconds(segEnd);
+  emit('update:trimStart', segStart);
+  emit('update:trimEnd', segEnd);
+  emit('update:currentTime', segStart);
+  emit('trimChange', { start: segStart, end: segEnd, handle: 'start' });
+  emit('trimEndChange', { start: segStart, end: segEnd, handle: 'start' });
+}
+
 function onWaveformMouseDown(e: MouseEvent) {
   if (activeDragHandle.value) return;
   e.preventDefault();
 
+  if (e.shiftKey && props.showTrimHandles) {
+    const clickSec = getSecondsFromMouseEvent(e);
+    const maxDur = effectiveDuration.value;
+    const clamped = Math.max(0, Math.min(maxDur, clickSec));
+    const effectiveEnd = props.trimEnd;
+    const startDist = Math.abs(clamped - props.trimStart);
+    const endDist = Math.abs(clamped - effectiveEnd);
+    let newStart = props.trimStart;
+    let newEnd = effectiveEnd;
+    let handle: 'start' | 'end';
+
+    if (clamped < props.trimStart) {
+      newStart = clamped;
+      handle = 'start';
+    } else if (clamped > effectiveEnd) {
+      newEnd = clamped;
+      handle = 'end';
+    } else if (startDist <= endDist) {
+      newStart = clamped;
+      handle = 'start';
+    } else {
+      newEnd = clamped;
+      handle = 'end';
+    }
+
+    startInputValue.value = formatSeconds(newStart);
+    endInputValue.value = formatSeconds(newEnd);
+    emit('update:trimStart', newStart);
+    emit('update:trimEnd', newEnd);
+    emit('update:currentTime', clamped);
+    emit('trimChange', { start: newStart, end: newEnd, handle });
+    emit('trimEndChange', { start: newStart, end: newEnd, handle });
+    return;
+  }
+
   if (!props.enableScrubbing) {
     if (props.showTrimHandles) {
       const clickSec = getSecondsFromMouseEvent(e);
-      const effectiveEnd = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
+      const effectiveEnd = props.trimEnd;
       const startDist = Math.abs(clickSec - props.trimStart);
       const endDist = Math.abs(clickSec - effectiveEnd);
-      const minGap = Math.min(0.05, effectiveDuration.value * 0.02);
-
       if (startDist <= endDist) {
+        clickedHandle = 'start';
         activeDragHandle.value = 'start';
         handleDownX = e.clientX;
         isDraggingHandle.value = true;
-        dragInitialStart = props.trimStart;
+        const newStart = Math.max(0, Math.min(clickSec, effectiveEnd));
+        dragInitialStart = newStart;
         dragInitialEnd = effectiveEnd;
-        const newStart = Math.max(0, Math.min(clickSec, effectiveEnd - minGap));
+        dragStationarySec = effectiveEnd;
         internalDragStartTime.value = newStart;
-        openTrimPopovers();
         startInputValue.value = formatSeconds(newStart);
         emit('update:trimStart', newStart);
         emit('update:currentTime', newStart);
         emit('trimChange', { start: newStart, end: effectiveEnd, handle: 'start' });
       } else {
+        clickedHandle = 'end';
         activeDragHandle.value = 'end';
         handleDownX = e.clientX;
         isDraggingHandle.value = true;
+        const newEnd = Math.min(effectiveDuration.value, Math.max(clickSec, props.trimStart));
         dragInitialStart = props.trimStart;
-        dragInitialEnd = effectiveEnd;
-        const newEnd = Math.min(effectiveDuration.value, Math.max(clickSec, props.trimStart + minGap));
-        openTrimPopovers();
+        dragInitialEnd = newEnd;
+        dragStationarySec = props.trimStart;
         endInputValue.value = formatSeconds(newEnd);
         emit('update:trimEnd', newEnd);
+        if (props.currentTime > newEnd) {
+          emit('update:currentTime', props.trimStart);
+        }
         emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
       }
 
@@ -949,12 +1279,16 @@ function onHandleMouseMove(e: MouseEvent) {
     return;
   }
 
-  // Deadband threshold: do not update position until mouse has moved at least 4px
+  lastHandleDragEvent = e;
+
+  // Deadband threshold: do not update position until mouse has moved at least 3px or user is holding Shift
   const dist = Math.abs(e.clientX - handleDownX);
-  if (!isDraggingHandle.value && dist < 4) {
+  if (!isDraggingHandle.value && (e.shiftKey || dist >= 3)) {
+    isDraggingHandle.value = true;
+  }
+  if (!isDraggingHandle.value) {
     return;
   }
-  isDraggingHandle.value = true;
 
   if (!waveformWrapperRef.value) return;
   const rect = waveformWrapperRef.value.getBoundingClientRect();
@@ -964,25 +1298,111 @@ function onHandleMouseMove(e: MouseEvent) {
   if (maxDur <= 0) return;
 
   const deltaSec = ((e.clientX - handleDownX) / rect.width) * maxDur;
-  const minGap = Math.min(0.05, maxDur * 0.02);
+  const initialPos = clickedHandle === 'start' ? dragInitialStart : dragInitialEnd;
+  let rawCurrentSec = Math.max(0, Math.min(maxDur, initialPos + deltaSec));
 
-  if (activeDragHandle.value === 'start') {
-    const end = dragInitialEnd;
-    const newStart = Math.max(0, Math.min(dragInitialStart + deltaSec, end - minGap));
-    internalDragStartTime.value = newStart;
-    startInputValue.value = formatSeconds(newStart);
-    emit('update:trimStart', newStart);
-    emit('update:currentTime', newStart);
-    emit('trimChange', { start: newStart, end, handle: 'start' });
-  } else if (activeDragHandle.value === 'end') {
-    const newEnd = Math.min(maxDur, Math.max(dragInitialEnd + deltaSec, dragInitialStart + minGap));
-    endInputValue.value = formatSeconds(newEnd);
-    emit('update:trimEnd', newEnd);
-    emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
+  let snappedBoundary: number | null = null;
+  let activeSnapSec: number | null = null;
+  let activeSnapLabel = '';
+
+  // Shift-Snapping: ONLY snap when holding Shift AND close to a clip boundary handle (or timeline start/end)
+  // Does NOT snap to playhead or arbitrary grid intervals. If too far from a handle, does not snap.
+  if (e.shiftKey) {
+    const snapPixelThreshold = 24; // doubled snapping distance (24px)
+    const snapSecThreshold = (snapPixelThreshold / rect.width) * maxDur;
+
+    interface SnapHandle {
+      sec: number;
+      isBoundary: boolean;
+      boundarySec?: number;
+    }
+
+    const handles: SnapHandle[] = [];
+
+    // Clip boundary divider handles (white divider lines)
+    if (props.segmentBoundaries && props.segmentBoundaries.length > 0) {
+      for (const b of props.segmentBoundaries) {
+        handles.push({ sec: b, isBoundary: true, boundarySec: b });
+      }
+    }
+
+    // Timeline start and end
+    handles.push({ sec: 0, isBoundary: false });
+    handles.push({ sec: maxDur, isBoundary: false });
+
+    let closestDist = Infinity;
+    let closestHandle: SnapHandle | null = null;
+
+    for (const h of handles) {
+      const d = Math.abs(rawCurrentSec - h.sec);
+      if (d <= snapSecThreshold && d < closestDist) {
+        closestDist = d;
+        closestHandle = h;
+      }
+    }
+
+    if (closestHandle) {
+      rawCurrentSec = closestHandle.sec;
+      activeSnapSec = closestHandle.sec;
+      activeSnapLabel = formatSeconds(closestHandle.sec);
+      if (closestHandle.isBoundary && closestHandle.boundarySec !== undefined) {
+        snappedBoundary = closestHandle.boundarySec;
+      }
+    }
   }
+
+  snappedBoundarySec.value = snappedBoundary;
+  activeSnapLineSec.value = activeSnapSec;
+  snapBadgeText.value = activeSnapLabel;
+
+  let newStart: number;
+  let newEnd: number;
+  let activeRole: 'start' | 'end';
+
+  if (rawCurrentSec < dragStationarySec) {
+    newStart = rawCurrentSec;
+    newEnd = dragStationarySec;
+    activeRole = 'start';
+  } else if (rawCurrentSec > dragStationarySec) {
+    newStart = dragStationarySec;
+    newEnd = rawCurrentSec;
+    activeRole = 'end';
+  } else {
+    newStart = rawCurrentSec;
+    newEnd = rawCurrentSec;
+    activeRole = clickedHandle || 'start';
+  }
+
+  activeDragHandle.value = activeRole;
+  focusedPopoverHandle.value = activeRole;
+  startInputValue.value = formatSeconds(newStart);
+  endInputValue.value = formatSeconds(newEnd);
+
+  if (activeRole === 'start') {
+    internalDragStartTime.value = newStart;
+  } else {
+    internalDragStartTime.value = null;
+  }
+
+  emit('update:trimStart', newStart);
+  emit('update:trimEnd', newEnd);
+  if (activeRole === 'start') {
+    emit('update:currentTime', newStart);
+  } else if (activeRole === 'end' && props.currentTime > newEnd) {
+    emit('update:currentTime', newStart);
+  }
+  emit('trimChange', { start: newStart, end: newEnd, handle: activeRole });
 }
 
 function onHandleMouseUp(_e?: MouseEvent) {
+  snappedBoundarySec.value = null;
+  activeSnapLineSec.value = null;
+  snapBadgeText.value = '';
+  isSnappedToStationaryHandle.value = false;
+  isSnappedToPlayhead.value = false;
+  lastHandleDragEvent = null;
+  window.removeEventListener('keydown', onHandleDragKeyChange);
+  window.removeEventListener('keyup', onHandleDragKeyChange);
   if (activeDragHandle.value) {
     const wasDragging = isDraggingHandle.value;
     const targetHandle = clickedHandle;
@@ -996,23 +1416,11 @@ function onHandleMouseUp(_e?: MouseEvent) {
     if (wasDragging) {
       emit('trimEndChange', {
         start: props.trimStart,
-        end: props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value,
+        end: props.trimEnd,
         handle: handleType,
       });
     } else if (targetHandle) {
-      if (targetHandle === 'start') {
-        focusedPopoverHandle.value = 'start';
-        nextTick(() => {
-          startInputRef.value?.focus();
-          startInputRef.value?.select();
-        });
-      } else {
-        focusedPopoverHandle.value = 'end';
-        nextTick(() => {
-          endInputRef.value?.focus();
-          endInputRef.value?.select();
-        });
-      }
+      openTrimPopovers(targetHandle);
     }
     clickedHandle = null;
   }
@@ -1057,6 +1465,8 @@ onUnmounted(() => {
   window.removeEventListener('mousedown', handleDocumentMouseDown, true);
   window.removeEventListener('mousemove', onHandleMouseMove);
   window.removeEventListener('mouseup', onHandleMouseUp);
+  window.removeEventListener('keydown', onHandleDragKeyChange);
+  window.removeEventListener('keyup', onHandleDragKeyChange);
   window.removeEventListener('mousemove', onScrubMouseMove);
   window.removeEventListener('mouseup', onScrubMouseUp);
 });
@@ -1182,7 +1592,7 @@ defineExpose({
   background: #0f0f11;
   border: 1px solid #27272a;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   cursor: crosshair;
   user-select: none;
   width: 100%;
@@ -1273,28 +1683,28 @@ defineExpose({
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 16px;
-  margin-left: -8px;
+  width: 20px;
+  margin-left: -10px;
   cursor: ew-resize;
-  z-index: 10;
+  z-index: 40;
   transition: z-index 0.1s;
   user-select: none;
   -webkit-user-drag: none;
 }
 
 .trim-handle:hover {
-  z-index: 15;
+  z-index: 45;
 }
 
 .trim-handle.active-handle {
-  z-index: 20;
+  z-index: 46;
 }
 
 .handle-line {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 7px;
+  left: 9px;
   width: 2px;
 }
 
@@ -1319,7 +1729,7 @@ defineExpose({
   white-space: nowrap;
   pointer-events: auto;
   cursor: pointer;
-  z-index: 25;
+  z-index: 37;
   transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease;
 }
 
@@ -1368,6 +1778,216 @@ defineExpose({
 
 .playhead-cap:hover {
   transform: scale(1.15);
+}
+
+.segment-boundary-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.25);
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 12;
+  transform: translateX(-50%);
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.segment-boundary-line.is-dragging-handle {
+  pointer-events: none;
+}
+
+.segment-boundary-line:hover {
+  background: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8), 0 0 2px #ffffff;
+}
+
+.segment-boundary-line.is-snapped {
+  background: #f59e0b;
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+}
+
+.segment-boundary-hit-area {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  width: 18px;
+  background: transparent;
+}
+
+.playhead-line.is-snapped {
+  background: #38bdf8;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+}
+
+.playhead-line.is-snapped .playhead-cap {
+  background: #38bdf8;
+}
+
+.trim-handle.is-snapped .handle-line {
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+}
+
+/* Active Snap Guideline: Clean line with lock emoji below */
+.active-snap-guideline {
+  position: absolute;
+  top: 0;
+  bottom: 22px;
+  width: 2px;
+  background: #f59e0b;
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+  z-index: 28;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.snap-lock-foot {
+  position: absolute;
+  top: calc(100% + 1rem);
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 2px;
+  font-size: 14px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95));
+  animation: lockPop 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes lockPop {
+  0% {
+    transform: translateX(-50%) scale(0.4);
+    opacity: 0;
+  }
+
+  70% {
+    transform: translateX(-50%) scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Boundary Quick Actions Popover */
+.boundary-menu-popover {
+  position: absolute;
+  z-index: 50;
+  background: #18181b;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  min-width: 240px;
+  padding: 6px;
+  animation: popoverFadeIn 0.12s ease-out;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.boundary-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 6px 8px;
+  border-bottom: 1px solid #27272a;
+  margin-bottom: 4px;
+}
+
+.boundary-menu-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e4e4e7;
+  font-family: monospace;
+}
+
+.boundary-menu-close {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.boundary-menu-close:hover {
+  color: #f43f5e;
+}
+
+.boundary-menu-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.boundary-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #d4d4d8;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.boundary-menu-btn:hover {
+  background: #27272a;
+  color: #ffffff;
+}
+
+.boundary-menu-btn .btn-icon {
+  font-size: 0.8rem;
+  color: #38bdf8;
+  width: 14px;
+  text-align: center;
+}
+
+.boundary-menu-btn .badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.1;
+}
+
+.boundary-menu-btn .badge.in {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.boundary-menu-btn .badge.out {
+  background: rgba(244, 63, 94, 0.2);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.4);
+}
+
+.boundary-menu-divider {
+  height: 1px;
+  background: #27272a;
+  margin: 3px 0;
 }
 
 .time-ticks {

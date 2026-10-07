@@ -27,6 +27,7 @@ export interface PulseBackClip {
   micGain?: number;
   inputGain?: number;
   partialGains?: AudioGainRegion[];
+  segmentBoundaries?: number[];
   originalBlob?: Blob;
   originalDuration?: number;
   originalFileName?: string;
@@ -51,6 +52,7 @@ export interface PulseBackClipMetadata {
   micGain?: number;
   inputGain?: number;
   partialGains?: AudioGainRegion[];
+  segmentBoundaries?: number[];
   originalDuration?: number;
   originalFileName?: string;
 }
@@ -85,6 +87,10 @@ function toMetadata(clip: PulseBackClip): PulseBackClipMetadata {
       })
     : [];
 
+  const rawSegmentBoundaries = clip.segmentBoundaries
+    ? Array.from(toRaw(clip.segmentBoundaries)).map(b => Number(b))
+    : [];
+
   return {
     id: clip.id,
     title: clip.title,
@@ -103,6 +109,7 @@ function toMetadata(clip: PulseBackClip): PulseBackClipMetadata {
     micGain: clip.micGain,
     inputGain: clip.inputGain,
     partialGains: rawPartialGains,
+    segmentBoundaries: rawSegmentBoundaries,
     originalDuration: clip.originalDuration ?? clip.duration,
     originalFileName: clip.originalFileName ?? clip.fileName,
   };
@@ -280,6 +287,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
                 micGain: raw.micGain !== undefined ? Number(raw.micGain) : undefined,
                 inputGain: raw.inputGain !== undefined ? Number(raw.inputGain) : undefined,
                 partialGains: raw.partialGains && Array.isArray(raw.partialGains) ? Array.from(toRaw(raw.partialGains)) : undefined,
+                segmentBoundaries: raw.segmentBoundaries && Array.isArray(raw.segmentBoundaries) ? Array.from(toRaw(raw.segmentBoundaries)).map(Number) : undefined,
                 originalBlob: origBlob,
                 originalDuration: origDuration,
                 originalFileName: origFileName,
@@ -637,6 +645,15 @@ export const usePulseBackStore = defineStore('pulseBack', {
         color: clip.color !== undefined ? String(clip.color) : '#3b82f6',
         includeMic: clip.includeMic !== undefined ? Boolean(clip.includeMic) : true,
         includeInput: clip.includeInput !== undefined ? Boolean(clip.includeInput) : true,
+        micGain: clip.micGain !== undefined ? Number(clip.micGain) : 1.0,
+        inputGain: clip.inputGain !== undefined ? Number(clip.inputGain) : 1.0,
+        partialGains: clip.partialGains
+          ? JSON.parse(JSON.stringify(toRaw(clip.partialGains))).map((r: any) => ({
+              ...r,
+              id: 'gain-pb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+            }))
+          : [],
+        segmentBoundaries: clip.segmentBoundaries ? [...toRaw(clip.segmentBoundaries)] : [],
         originalBlob: newOrigBlob,
         originalDuration: origDuration,
         originalFileName: newOrigFileName,
