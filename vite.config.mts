@@ -15,7 +15,13 @@ Object.keys(process.env).forEach(key => {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: tag => tag === 'webview',
+        },
+      },
+    }),
     components({
       dts: 'src/components.d.ts',
     }),

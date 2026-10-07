@@ -40,10 +40,19 @@
         <router-link
           @keydown.space.enter="activateRouterLink(2, true)"
           @keyup.space.enter="activateRouterLink(2, false)"
+          @keypress.space.prevent="navigateTo('/youtube')"
+          to="/youtube"
+          title="YouTube"
+          :class="['menu', { keyActive: routerLinkActive[2] }]">
+          <inline-svg :src="YouTubeIcon" />YouTube
+        </router-link>
+        <router-link
+          @keydown.space.enter="activateRouterLink(3, true)"
+          @keyup.space.enter="activateRouterLink(3, false)"
           @keypress.space.prevent="navigateTo('/settings')"
           to="/settings"
           title="Settings"
-          :class="['menu', { keyActive: routerLinkActive[2] }]">
+          :class="['menu', { keyActive: routerLinkActive[3] }]">
           <inline-svg :src="SettingsGear" />Settings
         </router-link>
       </div>
@@ -95,6 +104,7 @@ import InlineSvg from 'vue-inline-svg'
 import SettingsGear from '../assets/images/settings-gear.svg'
 import Speaker from '../assets/images/speaker.svg'
 import PulseBackIcon from '../assets/images/pulse-back.svg'
+import YouTubeIcon from '../assets/images/youtube.svg'
 import StopIcon from '../assets/images/stop.svg'
 import Headphones from '../assets/images/headphones.svg'
 import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp'
@@ -106,7 +116,7 @@ const soundStore = useSoundStore()
 const updateStore = useUpdateStore()
 const pulseBackStore = usePulseBackStore()
 const appVersion = `v${window.electron?.versions.app}`
-const routerLinkActive = ref([false, false, false])
+const routerLinkActive = ref([false, false, false, false])
 const stopAllSoundsActive = ref(false)
 const muteButtonActive = ref(false)
 const loadingErrorMessage = ref<string | null>(null)

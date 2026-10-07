@@ -84,6 +84,14 @@ contextBridge.exposeInMainWorld('electron', {
   deleteSound: sound => ipcRenderer.invoke('delete-sound', sound),
   saveSoundsArray: sounds => ipcRenderer.invoke('save-sounds-array', sounds),
   saveVisibility: visibilityChanges => ipcRenderer.invoke('save-visibility', visibilityChanges),
+  // YouTube / yt-dlp
+  ytCheckStatus: () => ipcRenderer.invoke('yt-check-status'),
+  ytFetchInfo: url => ipcRenderer.invoke('yt-fetch-info', url),
+  ytDownloadClip: options => ipcRenderer.invoke('yt-download-clip', options),
+  onYtDownloadProgress: callback => {
+    ipcRenderer.on('yt-download-progress', (_, progress) => callback(progress))
+  },
+  ytFetchImage: url => ipcRenderer.invoke('yt-fetch-image', url),
   versions: {
     app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,

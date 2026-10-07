@@ -19,6 +19,11 @@ const routes = [
         component: () => import('../components/PulseBackView.vue'),
       },
       {
+        path: '/youtube',
+        name: 'YouTube',
+        component: () => import('../components/YouTubeView.vue'),
+      },
+      {
         path: '/settings',
         name: 'Settings',
         component: () => import('../components/Settings.vue'),

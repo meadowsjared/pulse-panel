@@ -1,0 +1,1299 @@
+<template>
+  <div class="youtube-view-container select-none">
+    <!-- Browser Navigation & Control Bar -->
+    <div class="browser-navbar">
+      <div class="nav-buttons">
+        <button class="nav-btn"
+                :disabled="!canGoBack"
+                @click="goBack"
+                title="Back">
+          <svg class="w-4 h-4"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2.5">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <button class="nav-btn"
+                :disabled="!canGoForward"
+                @click="goForward"
+                title="Forward">
+          <svg class="w-4 h-4"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+        <button class="nav-btn"
+                @click="reloadPage"
+                :title="isLoading ? 'Stop' : 'Reload'">
+          <svg v-if="!isLoading"
+               class="w-4 h-4"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2">
+            <path d="M23 4v6h-6"></path>
+            <path d="M1 20v-6h6"></path>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          <svg v-else
+               class="w-4 h-4 animate-spin"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2">
+            <line x1="12"
+                  y1="2"
+                  x2="12"
+                  y2="6"></line>
+            <line x1="12"
+                  y1="18"
+                  x2="12"
+                  y2="22"></line>
+            <line x1="4.93"
+                  y1="4.93"
+                  x2="7.76"
+                  y2="7.76"></line>
+            <line x1="16.24"
+                  y1="16.24"
+                  x2="19.07"
+                  y2="19.07"></line>
+            <line x1="2"
+                  y1="12"
+                  x2="6"
+                  y2="12"></line>
+            <line x1="18"
+                  y1="12"
+                  x2="22"
+                  y2="12"></line>
+            <line x1="4.93"
+                  y1="19.07"
+                  x2="7.76"
+                  y2="16.24"></line>
+            <line x1="16.24"
+                  y1="7.76"
+                  x2="19.07"
+                  y2="4.93"></line>
+          </svg>
+        </button>
+        <button class="nav-btn"
+                @click="goHome"
+                title="YouTube Home">
+          <svg class="w-4 h-4"
+               viewBox="0 0 24 24"
+               fill="none"
+               stroke="currentColor"
+               stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Address / Search Bar -->
+      <div class="address-bar-wrapper">
+        <svg class="w-4 h-4 search-icon text-zinc-400"
+             viewBox="0 0 24 24"
+             fill="none"
+             stroke="currentColor"
+             stroke-width="2">
+          <circle cx="11"
+                  cy="11"
+                  r="8"></circle>
+          <line x1="21"
+                y1="21"
+                x2="16.65"
+                y2="16.65"></line>
+        </svg>
+        <input ref="addressInputRef"
+               type="text"
+               class="address-input"
+               v-model="inputUrl"
+               @keydown.enter="handleNavigate"
+               placeholder="Search YouTube or paste video URL (Enter to go)..." />
+        <button v-if="inputUrl"
+                class="clear-input-btn"
+                @click="inputUrl = ''"
+                title="Clear">
+          ✕
+        </button>
+        <button class="paste-btn"
+                @click="pasteFromClipboard"
+                title="Paste from clipboard">
+          Paste
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area: Webview and Expandable Bottom Bar/Panel -->
+    <div class="youtube-main-content">
+      <!-- Webview Container -->
+      <div class="webview-wrapper"
+           :class="{ 'has-dock-bar': isVideoPage && activeVideoTitle, 'is-covered': isDrawerOpen }">
+        <webview ref="webviewRef"
+                 src="https://www.youtube.com"
+                 class="youtube-webview"
+                 allowpopups
+                 partition="persist:youtube"></webview>
+      </div>
+
+      <!-- Expandable Bar and Panel Section (Unified Slide-Up Card) -->
+      <div v-if="isVideoPage && activeVideoTitle"
+           class="clip-dock-panel"
+           :class="{ 'is-expanded': isDrawerOpen }">
+        <!-- Active Video Banner / Bar (Card Header: translates from bottom to top) -->
+        <div class="video-info-strip">
+          <span class="live-dot"></span>
+          <span class="video-title-text"
+                :title="activeVideoTitle">
+            {{ activeVideoTitle }}
+          </span>
+
+          <!-- Right Action: Single button that seamlessly morphs between Configure/Add Sound and Collapse -->
+          <button type="button"
+                  class="clip-action-btn"
+                  :class="{
+                    'is-collapse': isDrawerOpen,
+                    'is-active': !isDrawerOpen && !isLoadingAudio,
+                    'is-loading': !isDrawerOpen && isLoadingAudio,
+                    'has-ready': !isDrawerOpen && !isLoadingAudio && !!audioBuffer,
+                    'pulse': !isDrawerOpen && !isLoadingAudio
+                  }"
+                  @click="toggleClipDrawer"
+                  :title="isDrawerOpen ? 'Collapse clip panel (Esc)' : 'Configure and clip sound'">
+            <transition name="btn-morph"
+                        mode="out-in">
+              <!-- When Expanded: Collapse State -->
+              <div v-if="isDrawerOpen"
+                   key="collapse"
+                   class="btn-inner collapse-content">
+                <svg class="w-4 h-4"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2.5">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                <span>Collapse</span>
+              </div>
+
+              <!-- When Collapsed & Preloading Audio -->
+              <div v-else-if="isLoadingAudio"
+                   key="loading"
+                   class="btn-inner loading-content">
+                <div class="clip-preload-strip-fill"
+                     :style="{ width: `${audioLoadProgress}%` }"></div>
+                <div class="clip-preload-strip-content">
+                  <svg class="w-3.5 h-3.5 animate-spin"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor">
+                    <circle cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                            class="opacity-25"></circle>
+                    <path fill="currentColor"
+                          d="M4 12a8 8 0 018-8v8H4z"
+                          class="opacity-75"></path>
+                  </svg>
+                  <span class="clip-preload-strip-title">Preloading Audio: {{ audioLoadProgress }}%</span>
+                </div>
+              </div>
+
+              <!-- When Collapsed & Ready / Normal -->
+              <div v-else
+                   key="configure"
+                   class="btn-inner ready-content">
+                <svg class="w-4 h-4"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <circle cx="6"
+                          cy="6"
+                          r="3"></circle>
+                  <circle cx="6"
+                          cy="18"
+                          r="3"></circle>
+                  <line x1="20"
+                        y1="4"
+                        x2="8.12"
+                        y2="15.88"></line>
+                  <line x1="14.47"
+                        y1="14.48"
+                        x2="20"
+                        y2="20"></line>
+                  <line x1="8.12"
+                        y1="8.12"
+                        x2="12"
+                        y2="12"></line>
+                </svg>
+                <span>Configure & Add Sound</span>
+                <span v-if="audioBuffer"
+                      class="ready-badge">✓ Ready</span>
+              </div>
+            </transition>
+          </button>
+        </div>
+
+        <!-- Revealed Component: YouTubeClipPanel (Card Body + Footer) -->
+        <div class="clip-component-wrapper"
+             :inert="!isDrawerOpen">
+          <YouTubeClipPanel ref="clipPanelRef"
+                            :audio-buffer="audioBuffer"
+                            :audio-duration="audioDuration"
+                            :video-total-duration="videoTotalDuration"
+                            :is-loading-audio="isLoadingAudio"
+                            :audio-load-status="audioLoadStatus"
+                            :audio-load-progress="audioLoadProgress"
+                            :audio-load-error="audioLoadError"
+                            :thumbnail-url="thumbnailUrl"
+                            :is-short-video="isShortVideo"
+                            :video-duration-formatted="videoDurationFormatted"
+                            :is-capturing-frame="isCapturingFrame"
+                            :active-video-title="activeVideoTitle"
+                            :current-url="currentUrl"
+                            :is-open="isDrawerOpen"
+                            @capture-frame="handleCaptureCurrentFrame"
+                            @retry-audio="loadAudioForWaveform"
+                            @close="closeClipDrawer" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, shallowRef, onMounted, onUnmounted, onDeactivated, onActivated, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import YouTubeClipPanel from './YouTubeClipPanel.vue';
+
+const route = useRoute();
+
+const webviewRef = ref<any>(null);
+const clipPanelRef = ref<any>(null);
+
+// Watch route to automatically pause video when navigating away from YouTube
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    if (oldPath === '/youtube' && newPath !== '/youtube') {
+      try {
+        webviewRef.value?.executeJavaScript('document.querySelector("video")?.pause()');
+      } catch (_) { }
+    }
+  }
+);
+
+// Navigation state
+const inputUrl = ref('https://www.youtube.com');
+const currentUrl = ref('https://www.youtube.com');
+const canGoBack = ref(false);
+const canGoForward = ref(false);
+const isLoading = ref(false);
+
+// Video state
+const isVideoPage = ref(false);
+const isShortVideo = ref(false);
+const activeVideoTitle = ref('');
+const thumbnailUrl = ref('');
+const videoTotalDuration = ref<number | null>(null);
+const currentVideoTime = ref(0);
+
+// Drawer state
+const isDrawerOpen = ref(false);
+const isCapturingFrame = ref(false);
+
+// Audio state (for background preloading)
+const audioBuffer = shallowRef<AudioBuffer | null>(null);
+const originalAudioBuffer = shallowRef<AudioBuffer | null>(null);
+const audioDuration = ref(0);
+const isLoadingAudio = ref(false);
+const audioLoadProgress = ref(0);
+const audioLoadStatus = ref('');
+const audioLoadError = ref('');
+
+let currentAudioLoadUrl = '';
+const currentPreloadedVideoId = ref<string | null>(null);
+let videoHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
+let audioContext: AudioContext | null = null;
+
+function formatTime(totalSeconds: number): string {
+  if (Number.isNaN(totalSeconds) || totalSeconds < 0) return '0:00';
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  const secsFormatted = secs % 1 === 0
+    ? (secs < 10 ? `0${secs}` : `${secs}`)
+    : (secs < 10 ? `0${secs.toFixed(1)}` : secs.toFixed(1));
+  return `${mins}:${secsFormatted}`;
+}
+
+const videoDurationFormatted = ref('');
+
+function getVideoId(url: string): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
+      if (parsed.pathname === '/watch') {
+        return parsed.searchParams.get('v');
+      }
+      const shortsMatch = parsed.pathname.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
+      if (shortsMatch) {
+        return shortsMatch[1];
+      }
+      if (parsed.hostname.includes('youtu.be')) {
+        return parsed.pathname.replace(/^\//, '').split('?')[0];
+      }
+    }
+  } catch (_) { }
+  return null;
+}
+
+function checkVideoUrl(url: string) {
+  const isVideo = url.includes('/watch') || url.includes('/shorts/');
+  isVideoPage.value = isVideo;
+  if (isVideo) {
+    const vidId = getVideoId(url);
+    if (vidId && vidId !== currentPreloadedVideoId.value) {
+      loadAudioForWaveform(url);
+    }
+  } else {
+    currentPreloadedVideoId.value = null;
+    audioBuffer.value = null;
+    originalAudioBuffer.value = null;
+    audioDuration.value = 0;
+    isLoadingAudio.value = false;
+  }
+}
+
+// Navigation methods
+function goBack() {
+  const wv = webviewRef.value;
+  if (wv && wv.canGoBack()) wv.goBack();
+}
+
+function goForward() {
+  const wv = webviewRef.value;
+  if (wv && wv.canGoForward()) wv.goForward();
+}
+
+function reloadPage() {
+  const wv = webviewRef.value;
+  if (wv) {
+    if (isLoading.value) wv.stop();
+    else wv.reload();
+  }
+}
+
+function goHome() {
+  const wv = webviewRef.value;
+  if (wv) {
+    wv.loadURL('https://www.youtube.com');
+  }
+}
+
+function handleNavigate() {
+  let target = inputUrl.value.trim();
+  if (!target) return;
+
+  if (target.startsWith('http://') || target.startsWith('https://')) {
+    navigateToUrl(target);
+  } else if (target.includes('.') && !target.includes(' ')) {
+    navigateToUrl(`https://${target}`);
+  } else {
+    navigateToUrl(`https://www.youtube.com/results?search_query=${encodeURIComponent(target)}`);
+  }
+}
+
+function navigateToUrl(url: string) {
+  const wv = webviewRef.value;
+  if (wv) {
+    wv.loadURL(url);
+  }
+}
+
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (text) {
+      inputUrl.value = text.trim();
+      handleNavigate();
+    }
+  } catch (_) { }
+}
+
+async function readVideoState() {
+  const wv = webviewRef.value;
+  if (!wv) return;
+
+  try {
+    const script = `
+      (() => {
+        const video = document.querySelector('video');
+        const titleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, h1.title yt-formatted-string, ytd-reel-player-header-renderer h2, #title h1');
+        return {
+          title: titleEl ? titleEl.textContent?.trim() : document.title.replace(/\\s*-\\s*YouTube$/, '').trim(),
+          currentTime: video ? video.currentTime : 0,
+          duration: video ? video.duration : null,
+          paused: video ? video.paused : true,
+          videoWidth: video ? video.videoWidth : 0,
+          videoHeight: video ? video.videoHeight : 0,
+        };
+      })()
+    `;
+    const res = await wv.executeJavaScript(script);
+    if (res) {
+      if (res.title && (!activeVideoTitle.value || activeVideoTitle.value === 'YouTube')) {
+        activeVideoTitle.value = res.title;
+      }
+      if (res.duration && !Number.isNaN(res.duration)) {
+        videoTotalDuration.value = res.duration;
+        videoDurationFormatted.value = formatTime(res.duration);
+      }
+      if (res.currentTime !== undefined) {
+        currentVideoTime.value = res.currentTime;
+      }
+      if (res.videoWidth && res.videoHeight) {
+        isShortVideo.value = res.videoHeight > res.videoWidth;
+      }
+    }
+  } catch (_) { }
+}
+
+async function captureVideoFrameFromWebview(): Promise<string | null> {
+  const wv = webviewRef.value;
+  if (!wv) return null;
+  try {
+    const script = `
+      (() => {
+        const v = document.querySelector('video');
+        if (!v || !v.videoWidth || !v.videoHeight) return null;
+        const canvas = document.createElement('canvas');
+        canvas.width = v.videoWidth;
+        canvas.height = v.videoHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        ctx.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
+        return canvas.toDataURL('image/jpeg', 0.95);
+      })()
+    `;
+    const dataUrl = await wv.executeJavaScript(script);
+    return dataUrl || null;
+  } catch (err) {
+    console.warn('captureVideoFrameFromWebview failed:', err);
+    return null;
+  }
+}
+
+async function cleanAndCropArtwork(src: string, isShort: boolean): Promise<string> {
+  if (!src) return src;
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const w = img.naturalWidth || img.width;
+        const h = img.naturalHeight || img.height;
+        if (!w || !h) {
+          resolve(src);
+          return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) {
+          resolve(src);
+          return;
+        }
+        ctx.drawImage(img, 0, 0);
+
+        let imgData: ImageData | null = null;
+        try {
+          imgData = ctx.getImageData(0, 0, w, h);
+        } catch (_) { }
+
+        const data = imgData ? imgData.data : null;
+        const getBrightness = (x: number, y: number) => {
+          if (!data) return 128;
+          const idx = (y * w + x) * 4;
+          return data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
+        };
+
+        if (isShort) {
+          let left = 0;
+          let right = w - 1;
+
+          if (data) {
+            while (left < w * 0.35) {
+              let darkCount = 0;
+              const samples = 25;
+              for (let i = 0; i < samples; i++) {
+                const y = Math.floor((h * (i + 1)) / (samples + 1));
+                if (getBrightness(left, y) < 30) darkCount++;
+              }
+              if (darkCount > samples * 0.9) left++;
+              else break;
+            }
+
+            while (right > w * 0.65) {
+              let darkCount = 0;
+              const samples = 25;
+              for (let i = 0; i < samples; i++) {
+                const y = Math.floor((h * (i + 1)) / (samples + 1));
+                if (getBrightness(right, y) < 30) darkCount++;
+              }
+              if (darkCount > samples * 0.9) right--;
+              else break;
+            }
+          }
+
+          const detectedCropWidth = right - left + 1;
+          if (detectedCropWidth < w * 0.95 && detectedCropWidth >= w * 0.3) {
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = detectedCropWidth;
+            cropCanvas.height = h;
+            const cropCtx = cropCanvas.getContext('2d');
+            if (cropCtx) {
+              cropCtx.drawImage(canvas, left, 0, detectedCropWidth, h, 0, 0, detectedCropWidth, h);
+              resolve(cropCanvas.toDataURL('image/jpeg', 0.95));
+              return;
+            }
+          }
+        } else {
+          let top = 0;
+          let bottom = h - 1;
+
+          if (data) {
+            while (top < h * 0.35) {
+              let darkCount = 0;
+              const samples = 25;
+              for (let i = 0; i < samples; i++) {
+                const x = Math.floor((w * (i + 1)) / (samples + 1));
+                if (getBrightness(x, top) < 30) darkCount++;
+              }
+              if (darkCount > samples * 0.9) top++;
+              else break;
+            }
+
+            while (bottom > h * 0.65) {
+              let darkCount = 0;
+              const samples = 25;
+              for (let i = 0; i < samples; i++) {
+                const x = Math.floor((w * (i + 1)) / (samples + 1));
+                if (getBrightness(x, bottom) < 30) darkCount++;
+              }
+              if (darkCount > samples * 0.9) bottom--;
+              else break;
+            }
+          }
+
+          const detectedCropHeight = bottom - top + 1;
+          if (detectedCropHeight < h * 0.95 && detectedCropHeight >= h * 0.5) {
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = w;
+            cropCanvas.height = detectedCropHeight;
+            const cropCtx = cropCanvas.getContext('2d');
+            if (cropCtx) {
+              cropCtx.drawImage(canvas, 0, top, w, detectedCropHeight, 0, 0, w, detectedCropHeight);
+              resolve(cropCanvas.toDataURL('image/jpeg', 0.95));
+              return;
+            }
+          }
+
+          const aspect = w / h;
+          if (aspect >= 1.25 && aspect <= 1.45) {
+            const targetHeight = Math.round(w * (9 / 16));
+            const cropY = Math.floor((h - targetHeight) / 2);
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = w;
+            cropCanvas.height = targetHeight;
+            const cropCtx = cropCanvas.getContext('2d');
+            if (cropCtx) {
+              cropCtx.drawImage(canvas, 0, cropY, w, targetHeight, 0, 0, w, targetHeight);
+              resolve(cropCanvas.toDataURL('image/jpeg', 0.95));
+              return;
+            }
+          }
+        }
+
+        resolve(src);
+      } catch (err) {
+        console.warn('cleanAndCropArtwork error:', err);
+        resolve(src);
+      }
+    };
+    img.onerror = () => resolve(src);
+    img.src = src;
+  });
+}
+
+async function handleCaptureCurrentFrame() {
+  if (isCapturingFrame.value) return;
+  isCapturingFrame.value = true;
+  try {
+    const frame = await captureVideoFrameFromWebview();
+    if (frame) {
+      thumbnailUrl.value = await cleanAndCropArtwork(frame, isShortVideo.value);
+    }
+  } catch (err) {
+    console.warn('Could not capture current frame:', err);
+  } finally {
+    isCapturingFrame.value = false;
+  }
+}
+
+function getAudioContext(): AudioContext {
+  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!audioContext || audioContext.state === 'closed') {
+    audioContext = new AudioContextClass();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => { });
+  }
+  return audioContext;
+}
+
+async function loadAudioForWaveform(targetUrlOverride?: string | unknown) {
+  const targetUrl = typeof targetUrlOverride === 'string' ? targetUrlOverride : currentUrl.value;
+  const vidId = getVideoId(targetUrl);
+  if (!vidId) return;
+
+  if (currentPreloadedVideoId.value === vidId && audioBuffer.value) {
+    return;
+  }
+
+  if (isLoadingAudio.value && currentAudioLoadUrl === targetUrl) {
+    return;
+  }
+
+  currentAudioLoadUrl = targetUrl;
+  currentPreloadedVideoId.value = vidId;
+
+  isLoadingAudio.value = true;
+  audioLoadError.value = '';
+  audioLoadProgress.value = 5;
+  audioLoadStatus.value = 'Preloading audio...';
+  audioBuffer.value = null;
+  originalAudioBuffer.value = null;
+
+  try {
+    const result = await window.electron?.ytDownloadClip({
+      url: targetUrl,
+    });
+
+    if (currentAudioLoadUrl !== targetUrl) return;
+
+    if (!result || !result.success || !result.buffer) {
+      throw new Error('Could not download audio stream from YouTube');
+    }
+
+    audioLoadProgress.value = 90;
+    audioLoadStatus.value = 'Decoding audio waveform...';
+
+    const ctx = getAudioContext();
+    const rawBuffer = result.buffer;
+    const uint8 = rawBuffer instanceof Uint8Array
+      ? rawBuffer
+      : ArrayBuffer.isView(rawBuffer)
+        ? new Uint8Array(rawBuffer.buffer, rawBuffer.byteOffset, rawBuffer.byteLength)
+        : new Uint8Array(rawBuffer);
+
+    const cleanArrayBuffer = new ArrayBuffer(uint8.byteLength);
+    new Uint8Array(cleanArrayBuffer).set(uint8);
+
+    const decoded = await ctx.decodeAudioData(cleanArrayBuffer);
+    if (currentAudioLoadUrl !== targetUrl) return;
+
+    audioBuffer.value = decoded;
+    originalAudioBuffer.value = decoded;
+    audioDuration.value = decoded.duration;
+
+    audioLoadProgress.value = 100;
+    audioLoadStatus.value = 'Ready';
+  } catch (err: any) {
+    if (currentAudioLoadUrl !== targetUrl) return;
+    console.error('Failed to load audio for waveform:', err);
+    audioLoadError.value = err.message || 'Failed to load audio stream';
+    currentPreloadedVideoId.value = null;
+  } finally {
+    if (currentAudioLoadUrl === targetUrl) {
+      isLoadingAudio.value = false;
+    }
+  }
+}
+
+function toggleClipDrawer() {
+  if (isDrawerOpen.value) {
+    closeClipDrawer();
+  } else {
+    openClipDrawer();
+  }
+}
+
+async function openClipDrawer() {
+  // Immediately expand panel and toggle button so it turns into the collapse button with zero lag
+  isDrawerOpen.value = true;
+
+  try {
+    await webviewRef.value?.executeJavaScript('document.querySelector("video")?.pause()');
+  } catch (_) { }
+
+  const isShort = currentUrl.value.includes('/shorts/');
+  isShortVideo.value = isShort;
+
+  readVideoState().catch(() => { });
+
+  // Non-blocking live frame capture
+  captureVideoFrameFromWebview()
+    .then(async (liveFrame) => {
+      if (liveFrame) {
+        thumbnailUrl.value = await cleanAndCropArtwork(liveFrame, isShortVideo.value);
+      }
+    })
+    .catch(() => { });
+
+  // Non-blocking oEmbed metadata fetch
+  if (window.electron?.ytFetchInfo) {
+    window.electron.ytFetchInfo(currentUrl.value)
+      .then(async (info) => {
+        if (info && info.success) {
+          if (info.isShort !== undefined) isShortVideo.value = info.isShort;
+          if (info.title && !activeVideoTitle.value) activeVideoTitle.value = info.title;
+          if (!thumbnailUrl.value && info.thumbnailUrl) {
+            thumbnailUrl.value = await cleanAndCropArtwork(info.thumbnailUrl, isShortVideo.value);
+          }
+        }
+      })
+      .catch(() => { });
+  }
+
+  if (!audioBuffer.value && !isLoadingAudio.value) {
+    loadAudioForWaveform();
+  }
+}
+
+function closeClipDrawer() {
+  clipPanelRef.value?.stopAudio?.();
+  isDrawerOpen.value = false;
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isDrawerOpen.value) {
+    closeClipDrawer();
+  }
+}
+
+// Lifecycle and event listeners
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown);
+
+  const wv = webviewRef.value;
+  if (!wv) return;
+
+  wv.addEventListener('did-start-loading', () => {
+    isLoading.value = true;
+  });
+
+  wv.addEventListener('did-stop-loading', () => {
+    isLoading.value = false;
+    try {
+      canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false;
+      canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false;
+    } catch (_) { }
+  });
+
+  const updateLocation = () => {
+    try {
+      const url = wv.getURL();
+      if (url) {
+        currentUrl.value = url;
+        inputUrl.value = url;
+        checkVideoUrl(url);
+      }
+      canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false;
+      canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false;
+      readVideoState();
+    } catch (_) { }
+  };
+
+  wv.addEventListener('did-navigate', updateLocation);
+  wv.addEventListener('did-navigate-in-page', updateLocation);
+  wv.addEventListener('page-title-updated', (e: any) => {
+    if (e.title) {
+      activeVideoTitle.value = e.title.replace(/\s*-\s*YouTube$/, '').trim();
+    }
+  });
+
+  window.electron?.onYtDownloadProgress(progress => {
+    if (isLoadingAudio.value) {
+      audioLoadProgress.value = Math.min(88, Math.max(5, progress.percent));
+      if (progress.text) audioLoadStatus.value = progress.text;
+    }
+  });
+
+  videoHeartbeatTimer = setInterval(() => {
+    if (isVideoPage.value) {
+      readVideoState();
+    }
+  }, 1000);
+});
+
+onDeactivated(() => {
+  closeClipDrawer();
+  if (videoHeartbeatTimer) {
+    clearInterval(videoHeartbeatTimer);
+    videoHeartbeatTimer = null;
+  }
+  try {
+    webviewRef.value?.executeJavaScript('document.querySelector("video")?.pause()');
+  } catch (_) { }
+});
+
+onActivated(() => {
+  if (!videoHeartbeatTimer) {
+    videoHeartbeatTimer = setInterval(() => {
+      if (isVideoPage.value) {
+        readVideoState();
+      }
+    }, 1000);
+  }
+
+  let attempts = 0;
+  const interval = setInterval(() => {
+    attempts++;
+    try {
+      webviewRef.value?.executeJavaScript(`
+        (() => {
+          const v = document.querySelector('video');
+          if (v && !v.paused) {
+            v.pause();
+          }
+        })()
+      `);
+    } catch (_) { }
+    if (attempts >= 15) {
+      clearInterval(interval);
+    }
+  }, 150);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown);
+  if (videoHeartbeatTimer) {
+    clearInterval(videoHeartbeatTimer);
+    videoHeartbeatTimer = null;
+  }
+  if (audioContext && audioContext.state !== 'closed') {
+    audioContext.close().catch(() => { });
+  }
+});
+</script>
+
+<style scoped>
+.youtube-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  flex: 1;
+  background: var(--background-color);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Browser Navbar */
+.browser-navbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--top-toolbar-color, #2d2d2d);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  color: var(--text-color);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.address-bar-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+  background: var(--input-bg-color, rgba(0, 0, 0, 0.25));
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 0.5rem;
+}
+
+.search-icon {
+  margin-right: 0.375rem;
+  flex-shrink: 0;
+}
+
+.address-input {
+  flex: 1;
+  height: 2rem;
+  background: transparent;
+  border: none;
+  color: var(--text-color);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.clear-input-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.clear-input-btn:hover {
+  color: #fff;
+}
+
+.paste-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-color);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  margin-left: 0.35rem;
+  transition: background 0.15s;
+}
+
+.paste-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/* Main Content Area */
+.youtube-main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  /* Single CSS variable controlling the entire slide-up/down animation duration */
+  --drawer-anim-duration: 0.45s;
+  --dock-bar-height: 46px;
+}
+
+/* Webview Wrapper */
+.webview-wrapper {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  transition: height var(--drawer-anim-duration) ease;
+}
+
+.webview-wrapper.has-dock-bar {
+  height: calc(100% - var(--dock-bar-height));
+}
+
+.webview-wrapper.is-covered {
+  pointer-events: none;
+}
+
+.youtube-webview {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Clip Dock Panel & Bottom Bar: Entire Unified Card */
+.clip-dock-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #18181b;
+  overflow: hidden;
+  z-index: 10;
+  transform: translateY(calc(100% - var(--dock-bar-height)));
+  transition: transform var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.clip-dock-panel.is-expanded {
+  transform: translateY(0);
+}
+
+/* Video Info Strip (the bar: header of the card) */
+.video-info-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.85rem;
+  height: var(--dock-bar-height);
+  background: var(--top-toolbar-color, #27272a);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.85rem;
+  color: var(--text-color, #e0e0e0);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #23a459;
+  box-shadow: 0 0 6px #23a459;
+  flex-shrink: 0;
+}
+
+.video-title-text {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  font-size: 0.88rem;
+  color: #fff;
+}
+
+/* Unified Action / Morphing Button in the Bar */
+.clip-action-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.15rem;
+  border-radius: 0.375rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  transition: width var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
+    background-color var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
+    border-color var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
+    color var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.15s ease;
+}
+
+.btn-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.85rem;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 1. Collapse State (when expanded at the top) */
+.clip-action-btn.is-collapse {
+  width: 7.25rem;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.clip-action-btn.is-collapse:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.clip-action-btn.is-collapse:focus-visible {
+  outline: 2px solid var(--active-color, #38bdf8);
+  outline-offset: 2px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* 2. Active Ready State (when collapsed at the bottom) */
+.clip-action-btn.is-active {
+  width: 14rem;
+  background: #23a459;
+  border-color: #2ea32e;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(35, 164, 89, 0.35);
+}
+
+.clip-action-btn.is-active.has-ready {
+  width: 17.5rem;
+}
+
+.clip-action-btn.is-active:hover {
+  background: #2bb965;
+  border-color: #34c76f;
+  box-shadow: 0 2px 12px rgba(35, 164, 89, 0.55);
+}
+
+.clip-action-btn.is-active:focus-visible {
+  outline: 2px solid var(--active-color, #23a459);
+  outline-offset: 2px;
+  background: #2bb965;
+}
+
+.clip-action-btn.pulse {
+  animation: clipPulse 2s infinite;
+}
+
+@keyframes clipPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(35, 164, 89, 0.6);
+  }
+
+  70% {
+    box-shadow: 0 0 0 8px rgba(35, 164, 89, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(35, 164, 89, 0);
+  }
+}
+
+/* 3. Loading Audio State */
+.clip-action-btn.is-loading {
+  width: 14rem;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.clip-action-btn.is-loading:hover {
+  border-color: rgba(16, 185, 129, 0.6);
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.clip-action-btn.is-loading:focus-visible {
+  outline: 2px solid var(--active-color, #10b981);
+  outline-offset: 2px;
+}
+
+.clip-preload-strip-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(90deg, rgba(35, 164, 89, 0.3), rgba(16, 185, 129, 0.55));
+  transition: width 0.25s ease;
+  pointer-events: none;
+}
+
+.clip-preload-strip-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.75rem;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+
+/* Button Morph Crossfade */
+.btn-morph-enter-active,
+.btn-morph-leave-active {
+  transition: opacity calc(var(--drawer-anim-duration) * 0.35) ease,
+    transform calc(var(--drawer-anim-duration) * 0.35) ease;
+}
+
+.btn-morph-enter-from {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+}
+
+.btn-morph-leave-to {
+  opacity: 0;
+  transform: translateY(4px) scale(0.96);
+}
+
+.ready-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 0.1rem 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-left: 0.25rem;
+}
+
+/* Revealed Component Container (Card Body + Footer) */
+.clip-component-wrapper {
+  flex: 1 1 0px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.clip-dock-panel:not(.is-expanded) .clip-component-wrapper {
+  pointer-events: none;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

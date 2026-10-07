@@ -84,7 +84,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: 'clip-captured', clip: PulseBackClip | null): void;
+  (e: 'clipCaptured', clip: PulseBackClip | null): void;
 }>();
 
 const pulseBackStore = usePulseBackStore();
@@ -130,7 +130,7 @@ async function selectAndExecute(s: number) {
   }
   showClipMenu.value = false;
   const clip = await pulseBackStore.triggerQuickClip(s, continueRecordingLive.value);
-  emit('clip-captured', clip);
+  emit('clipCaptured', clip);
 }
 
 function handleClickOutside(event: MouseEvent) {

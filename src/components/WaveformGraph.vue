@@ -11,10 +11,38 @@
 
       <!-- Dimmed Region Overlays -->
       <template v-if="showTrimHandles">
+        <!-- Dimmed region before Start Handle (spans full height) -->
         <div class="trim-overlay start-overlay"
              :style="{ width: `${startPercent}%` }"></div>
+
+        <!-- Dimmed region after End Handle (spans full height) -->
         <div class="trim-overlay end-overlay"
-             :style="{ left: `${endPercent}%`, width: `${100 - endPercent}%` }"></div>
+             :style="{
+              left: `${endPercent}%`,
+              width: `${100 - endPercent}%`
+            }"></div>
+
+        <!-- Active Selection Range Window (between In and Out points) -->
+        <div class="selection-range-window"
+             :style="{
+              left: `${startPercent}%`,
+              width: `${Math.max(0, endPercent - startPercent)}%`
+            }">
+          <!-- Top dimmed curtain (anchored to top: 0, shrinks/grows as spotlight moves) -->
+          <div v-if="isDualTrackLayout"
+               class="selection-dim-curtain dim-top"
+               :style="topDimStyle"></div>
+
+          <!-- Active Selection Spotlight (glides vertically between tracks) -->
+          <div class="selection-spotlight"
+               :class="['track-' + (activeTrack || 'both')]"
+               :style="selectionLaneStyle"></div>
+
+          <!-- Bottom dimmed curtain (anchored to bottom: 0, shrinks/grows as spotlight moves) -->
+          <div v-if="isDualTrackLayout"
+               class="selection-dim-curtain dim-bottom"
+               :style="bottomDimStyle"></div>
+        </div>
 
         <!-- Start Trim Handle -->
         <div :class="['trim-handle', 'start-handle', { 'active-handle': activeDragHandle === 'start' }]"
@@ -24,7 +52,9 @@
              @contextmenu.prevent.stop="openTrimPopovers('start')"
              :title="`Start: ${formatSeconds(trimStart)} (Click to edit)`">
           <div v-if="showTrimLabels"
-               class="handle-flag start-flag">In: {{ formatSeconds(trimStart) }}</div>
+               class="handle-flag start-flag"
+               @mousedown.stop="onStartHandleMouseDown"
+               @click.stop="openTrimPopovers('start')">In: {{ formatSeconds(trimStart) }}</div>
           <div class="handle-line"></div>
         </div>
 
@@ -36,7 +66,9 @@
              @contextmenu.prevent.stop="openTrimPopovers('end')"
              :title="`End: ${formatSeconds(trimEnd > 0 ? trimEnd : effectiveDuration)} (Click to edit)`">
           <div v-if="showTrimLabels"
-               class="handle-flag end-flag">Out: {{ formatSeconds(trimEnd > 0 ? trimEnd : effectiveDuration) }}</div>
+               class="handle-flag end-flag"
+               @mousedown.stop="onEndHandleMouseDown"
+               @click.stop="openTrimPopovers('end')">Out: {{ formatSeconds(trimEnd > 0 ? trimEnd : effectiveDuration) }}</div>
           <div class="handle-line"></div>
         </div>
       </template>
@@ -91,7 +123,8 @@
                  @keydown="onPopoverKeydown('end', $event)" />
         </div>
       </div>
-      <div class="capsule-arrow" :style="capsuleArrowStyle"></div>
+      <div class="capsule-arrow"
+           :style="capsuleArrowStyle"></div>
     </div>
 
     <!-- Time Ticks along bottom -->
@@ -145,6 +178,7 @@ interface Props {
   height?: number | string;
   includeMic?: boolean;
   includeInput?: boolean;
+  activeTrack?: 'both' | 'mic' | 'input';
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -163,6 +197,7 @@ const props = withDefaults(defineProps<Props>(), {
   enableScrubbing: true,
   includeMic: true,
   includeInput: true,
+  activeTrack: 'both',
 });
 
 const emit = defineEmits<{
@@ -172,8 +207,8 @@ const emit = defineEmits<{
   (e: 'scrubStart', time: number): void;
   (e: 'scrubMove', time: number): void;
   (e: 'scrubEnd', time: number): void;
-  (e: 'trimChange', payload: { start: number; end: number; }): void;
-  (e: 'trimEndChange', payload: { start: number; end: number; }): void;
+  (e: 'trimChange', payload: { start: number; end: number; handle?: 'start' | 'end'; }): void;
+  (e: 'trimEndChange', payload: { start: number; end: number; handle?: 'start' | 'end'; }): void;
 }>();
 
 const instanceId = ++graphInstanceCounter;
@@ -182,6 +217,7 @@ const canvasRef = ref<HTMLCanvasElement | null>(null);
 const waveformWrapperRef = ref<HTMLDivElement | null>(null);
 
 const activeDragHandle = ref<'start' | 'end' | null>(null);
+const internalDragStartTime = ref<number | null>(null);
 const isScrubbing = ref(false);
 const internalScrubTime = ref<number | null>(null);
 let resizeObserver: ResizeObserver | null = null;
@@ -196,15 +232,26 @@ const displayCurrentTime = computed(() => {
   if (isScrubbing.value && internalScrubTime.value !== null) {
     return internalScrubTime.value;
   }
+  if (isDraggingHandle.value && activeDragHandle.value === 'start' && internalDragStartTime.value !== null) {
+    return internalDragStartTime.value;
+  }
   return props.currentTime;
+});
+
+const isAtStartPosition = computed(() => {
+  const t = displayCurrentTime.value;
+  return t <= 0.02 || (props.showTrimHandles && Math.abs(t - props.trimStart) <= 0.02);
 });
 
 const showPlayhead = computed(() => {
   if (!props.showPlayhead) return false;
+  if (!isScrubbing.value && !props.isPlaying && isAtStartPosition.value) {
+    return false;
+  }
   if (props.playheadOnlyWhenActive || props.playheadOnlyOnDrag) {
     return isScrubbing.value || Boolean(props.isPlaying);
   }
-  return isScrubbing.value || props.currentTime > 0;
+  return isScrubbing.value || Boolean(props.isPlaying) || !isAtStartPosition.value;
 });
 
 const startPercent = computed(() => {
@@ -232,6 +279,41 @@ const wrapperStyle = computed(() => {
     style.cursor = props.showTrimHandles ? 'pointer' : 'default';
   }
   return Object.keys(style).length > 0 ? style : undefined;
+});
+
+const isDualTrackLayout = computed(() => {
+  if (props.tracks && props.tracks.length >= 2) return true;
+  if (props.audioBuffer && props.audioBuffer.numberOfChannels >= 2) return true;
+  return false;
+});
+
+const selectionLaneStyle = computed(() => {
+  if (!isDualTrackLayout.value || props.activeTrack === 'both' || !props.activeTrack) {
+    return { top: '0', height: '100%' };
+  }
+  if (props.activeTrack === 'mic') {
+    return { top: '0', height: '50%' };
+  }
+  if (props.activeTrack === 'input') {
+    return { top: '50%', height: '50%' };
+  }
+  return { top: '0', height: '100%' };
+});
+
+// Top dimmed curtain: anchored to top: 0. Grows when spotlight moves down, shrinks when spotlight moves up.
+const topDimStyle = computed(() => {
+  if (!isDualTrackLayout.value || props.activeTrack === 'both' || !props.activeTrack || props.activeTrack === 'mic') {
+    return { height: '0%' };
+  }
+  return { height: '50%' };
+});
+
+// Bottom dimmed curtain: anchored to bottom: 0. Shrinks when spotlight moves down, grows when spotlight moves up.
+const bottomDimStyle = computed(() => {
+  if (!isDualTrackLayout.value || props.activeTrack === 'both' || !props.activeTrack || props.activeTrack === 'input') {
+    return { height: '0%' };
+  }
+  return { height: '50%' };
 });
 
 function formatSeconds(sec: number): string {
@@ -324,8 +406,9 @@ function onStartInput(e: Event) {
     const end = props.trimEnd > 0 ? props.trimEnd : maxDur;
     const newStart = Math.max(0, Math.min(parsed, end - minGap));
     emit('update:trimStart', newStart);
-    emit('trimChange', { start: newStart, end });
-    emit('trimEndChange', { start: newStart, end });
+    emit('update:currentTime', newStart);
+    emit('trimChange', { start: newStart, end, handle: 'start' });
+    emit('trimEndChange', { start: newStart, end, handle: 'start' });
   }
 }
 
@@ -338,8 +421,8 @@ function onEndInput(e: Event) {
     const minGap = Math.min(0.05, maxDur * 0.02);
     const newEnd = Math.min(maxDur, Math.max(parsed, props.trimStart + minGap));
     emit('update:trimEnd', newEnd);
-    emit('trimChange', { start: props.trimStart, end: newEnd });
-    emit('trimEndChange', { start: props.trimStart, end: newEnd });
+    emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
+    emit('trimEndChange', { start: props.trimStart, end: newEnd, handle: 'end' });
   }
 }
 
@@ -414,8 +497,9 @@ function onPopoverKeydown(handle: 'start' | 'end', e: KeyboardEvent) {
       const end = props.trimEnd > 0 ? props.trimEnd : maxDur;
       const newStart = Math.max(0, Math.min(updated, end - minGap));
       emit('update:trimStart', newStart);
-      emit('trimChange', { start: newStart, end });
-      emit('trimEndChange', { start: newStart, end });
+      emit('update:currentTime', newStart);
+      emit('trimChange', { start: newStart, end, handle: 'start' });
+      emit('trimEndChange', { start: newStart, end, handle: 'start' });
       nextTick(() => {
         startInputRef.value?.select();
       });
@@ -426,8 +510,8 @@ function onPopoverKeydown(handle: 'start' | 'end', e: KeyboardEvent) {
       endInputValue.value = formatSeconds(updated);
       const newEnd = Math.min(maxDur, Math.max(updated, props.trimStart + minGap));
       emit('update:trimEnd', newEnd);
-      emit('trimChange', { start: props.trimStart, end: newEnd });
-      emit('trimEndChange', { start: props.trimStart, end: newEnd });
+      emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
+      emit('trimEndChange', { start: props.trimStart, end: newEnd, handle: 'end' });
       nextTick(() => {
         endInputRef.value?.select();
       });
@@ -737,7 +821,6 @@ function getSecondsFromMouseEvent(e: MouseEvent): number {
 }
 
 let handleDownX = 0;
-let handleDownTime = 0;
 let clickedHandle: 'start' | 'end' | null = null;
 const isDraggingHandle = ref(false);
 let dragInitialStart = 0;
@@ -746,13 +829,13 @@ let dragInitialEnd = 0;
 function onStartHandleMouseDown(e: MouseEvent) {
   e.preventDefault();
   handleDownX = e.clientX;
-  handleDownTime = Date.now();
   clickedHandle = 'start';
   activeDragHandle.value = 'start';
+  internalDragStartTime.value = props.trimStart;
   isDraggingHandle.value = false;
   dragInitialStart = props.trimStart;
   dragInitialEnd = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
-  openTrimPopovers();
+  openTrimPopovers('start');
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
 }
@@ -760,13 +843,12 @@ function onStartHandleMouseDown(e: MouseEvent) {
 function onEndHandleMouseDown(e: MouseEvent) {
   e.preventDefault();
   handleDownX = e.clientX;
-  handleDownTime = Date.now();
   clickedHandle = 'end';
   activeDragHandle.value = 'end';
   isDraggingHandle.value = false;
   dragInitialStart = props.trimStart;
   dragInitialEnd = props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value;
-  openTrimPopovers();
+  openTrimPopovers('end');
   window.addEventListener('mousemove', onHandleMouseMove);
   window.addEventListener('mouseup', onHandleMouseUp);
 }
@@ -791,19 +873,19 @@ function onWaveformMouseDown(e: MouseEvent) {
       if (startDist <= endDist) {
         activeDragHandle.value = 'start';
         handleDownX = e.clientX;
-        handleDownTime = Date.now();
         isDraggingHandle.value = true;
         dragInitialStart = props.trimStart;
         dragInitialEnd = effectiveEnd;
         const newStart = Math.max(0, Math.min(clickSec, effectiveEnd - minGap));
+        internalDragStartTime.value = newStart;
         openTrimPopovers();
         startInputValue.value = formatSeconds(newStart);
         emit('update:trimStart', newStart);
-        emit('trimChange', { start: newStart, end: effectiveEnd });
+        emit('update:currentTime', newStart);
+        emit('trimChange', { start: newStart, end: effectiveEnd, handle: 'start' });
       } else {
         activeDragHandle.value = 'end';
         handleDownX = e.clientX;
-        handleDownTime = Date.now();
         isDraggingHandle.value = true;
         dragInitialStart = props.trimStart;
         dragInitialEnd = effectiveEnd;
@@ -811,7 +893,7 @@ function onWaveformMouseDown(e: MouseEvent) {
         openTrimPopovers();
         endInputValue.value = formatSeconds(newEnd);
         emit('update:trimEnd', newEnd);
-        emit('trimChange', { start: props.trimStart, end: newEnd });
+        emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
       }
 
       window.addEventListener('mousemove', onHandleMouseMove);
@@ -887,22 +969,27 @@ function onHandleMouseMove(e: MouseEvent) {
   if (activeDragHandle.value === 'start') {
     const end = dragInitialEnd;
     const newStart = Math.max(0, Math.min(dragInitialStart + deltaSec, end - minGap));
+    internalDragStartTime.value = newStart;
     startInputValue.value = formatSeconds(newStart);
     emit('update:trimStart', newStart);
-    emit('trimChange', { start: newStart, end });
+    emit('update:currentTime', newStart);
+    emit('trimChange', { start: newStart, end, handle: 'start' });
   } else if (activeDragHandle.value === 'end') {
     const newEnd = Math.min(maxDur, Math.max(dragInitialEnd + deltaSec, dragInitialStart + minGap));
     endInputValue.value = formatSeconds(newEnd);
     emit('update:trimEnd', newEnd);
-    emit('trimChange', { start: props.trimStart, end: newEnd });
+    emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
   }
 }
 
-function onHandleMouseUp(e?: MouseEvent) {
+function onHandleMouseUp(_e?: MouseEvent) {
   if (activeDragHandle.value) {
     const wasDragging = isDraggingHandle.value;
+    const targetHandle = clickedHandle;
+    const handleType = activeDragHandle.value;
     activeDragHandle.value = null;
     isDraggingHandle.value = false;
+    internalDragStartTime.value = null;
     window.removeEventListener('mousemove', onHandleMouseMove);
     window.removeEventListener('mouseup', onHandleMouseUp);
 
@@ -910,26 +997,21 @@ function onHandleMouseUp(e?: MouseEvent) {
       emit('trimEndChange', {
         start: props.trimStart,
         end: props.trimEnd > 0 ? props.trimEnd : effectiveDuration.value,
+        handle: handleType,
       });
-    }
-
-    if (e && clickedHandle) {
-      const dist = Math.abs(e.clientX - handleDownX);
-      const elapsed = Date.now() - handleDownTime;
-      if (dist < 4 && elapsed < 350) {
-        if (clickedHandle === 'start') {
-          focusedPopoverHandle.value = 'start';
-          nextTick(() => {
-            startInputRef.value?.focus();
-            startInputRef.value?.select();
-          });
-        } else {
-          focusedPopoverHandle.value = 'end';
-          nextTick(() => {
-            endInputRef.value?.focus();
-            endInputRef.value?.select();
-          });
-        }
+    } else if (targetHandle) {
+      if (targetHandle === 'start') {
+        focusedPopoverHandle.value = 'start';
+        nextTick(() => {
+          startInputRef.value?.focus();
+          startInputRef.value?.select();
+        });
+      } else {
+        focusedPopoverHandle.value = 'end';
+        nextTick(() => {
+          endInputRef.value?.focus();
+          endInputRef.value?.select();
+        });
       }
     }
     clickedHandle = null;
@@ -1124,6 +1206,69 @@ defineExpose({
   left: 0;
 }
 
+.selection-range-window {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+
+.selection-dim-curtain {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.72);
+  pointer-events: none;
+  z-index: 1;
+  transition: height var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.selection-dim-curtain.dim-top {
+  top: 0;
+}
+
+.selection-dim-curtain.dim-bottom {
+  bottom: 0;
+}
+
+.selection-spotlight {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 2;
+  box-sizing: border-box;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
+  transition: top var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    height var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    border-color var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    background-color var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.selection-spotlight.track-mic {
+  background: rgba(56, 189, 248, 0.06);
+  border-top-color: rgba(56, 189, 248, 0.65);
+  border-bottom-color: rgba(56, 189, 248, 0.65);
+  box-shadow: inset 0 0 16px rgba(56, 189, 248, 0.1);
+}
+
+.selection-spotlight.track-input {
+  background: rgba(52, 211, 153, 0.06);
+  border-top-color: rgba(52, 211, 153, 0.65);
+  border-bottom-color: rgba(52, 211, 153, 0.65);
+  box-shadow: inset 0 0 16px rgba(52, 211, 153, 0.1);
+}
+
+.selection-spotlight.track-both {
+  background: rgba(255, 255, 255, 0.02);
+  border-top-color: rgba(255, 255, 255, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
 .trim-handle {
   position: absolute;
   top: 0;
@@ -1172,7 +1317,16 @@ defineExpose({
   border-radius: 4px;
   color: white;
   white-space: nowrap;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 25;
+  transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease;
+}
+
+.handle-flag:hover {
+  filter: brightness(1.2);
+  transform: scale(1.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .start-flag {

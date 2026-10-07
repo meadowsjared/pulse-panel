@@ -43,6 +43,14 @@ jobs:
         if: steps.node-modules-cache.outputs.cache-hit != 'true'
         run: bun install --frozen-lockfile
 
+      - name: Ensure yt-dlp binary
+        shell: pwsh
+        run: |
+          if (!(Test-Path "bin/yt-dlp.exe")) {
+            New-Item -ItemType Directory -Force -Path "bin"
+            Invoke-WebRequest -Uri "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile "bin/yt-dlp.exe"
+          }
+
       - name: Build Electron app with Bun
         run: |
           bun run build -p never

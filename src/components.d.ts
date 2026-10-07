@@ -40,6 +40,9 @@ declare module 'vue' {
     TagInput: typeof import('./components/BaseComponents/TagInput.vue')['default']
     TitleBar: typeof import('./components/TitleBar.vue')['default']
     Toggle: typeof import('./components/BaseComponents/Toggle.vue')['default']
+    TrimSummaryBar: typeof import('./components/TrimSummaryBar.vue')['default']
     WaveformGraph: typeof import('./components/WaveformGraph.vue')['default']
+    YouTubeClipPanel: typeof import('./components/YouTubeClipPanel.vue')['default']
+    YouTubeView: typeof import('./components/YouTubeView.vue')['default']
   }
 }

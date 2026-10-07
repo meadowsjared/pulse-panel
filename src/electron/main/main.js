@@ -2,10 +2,11 @@ const { join } = require('path')
 const fs = require('fs')
 const os = require('os')
 const {
-  app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, nativeImage, protocol,
+  app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, ClipboardItem, nativeImage, protocol,
 } = require('electron')
 const settings = require('../settings')
 const updater = require('./updater')
+const ytdlp = require('./ytdlp')
 const mediaManager = require('./mediaManager')
 
 const isDev = process.env.npm_lifecycle_event === 'app:dev'
@@ -184,7 +185,7 @@ app.whenReady().then(() => {
           if (headerStr.startsWith('<svg') || headerStr.startsWith('<?xml')) {
             contentType = 'image/svg+xml'
           }
-        } catch (_) {}
+        } catch (_) { }
 
         if (request.method === 'HEAD') {
           return new Response(null, {
@@ -394,15 +395,37 @@ app.whenReady().then(() => {
       }
     })
   })
-  ipcMain.handle('write-image-to-clipboard', (_, { buffer, dataUrl, imageKey, imageUrl }) => {
+  ipcMain.handle('write-image-to-clipboard', async (_, { buffer, dataUrl, imageKey, imageUrl }) => {
     try {
+      let pngBuffer = null
+      if (buffer) {
+        pngBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer)
+      } else if (dataUrl) {
+        const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, '')
+        pngBuffer = Buffer.from(base64, 'base64')
+      }
+
+      const htmlContent = `<meta name="pulse-panel-image-key" content="${imageKey || ''}"><meta name="pulse-panel-image-url" content="${imageUrl || ''}">`
+
+      // Modern Electron (44+) ClipboardItem API
+      if (typeof ClipboardItem !== 'undefined' && typeof clipboard.write === 'function') {
+        const itemFormats = {
+          'text/html': new Blob([htmlContent], { type: 'text/html' }),
+        }
+        if (pngBuffer && pngBuffer.length > 0) {
+          itemFormats['image/png'] = new Blob([pngBuffer], { type: 'image/png' })
+        }
+        await clipboard.write([new ClipboardItem(itemFormats)])
+        return true
+      }
+
+      // Legacy Electron fallback
       let img = null
       if (dataUrl) {
         img = nativeImage.createFromDataURL(dataUrl)
       }
-      if ((!img || img.isEmpty()) && buffer) {
-        const buf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer)
-        img = nativeImage.createFromBuffer(buf)
+      if ((!img || img.isEmpty()) && pngBuffer) {
+        img = nativeImage.createFromBuffer(pngBuffer)
       }
       if (!img || img.isEmpty()) {
         console.warn('[Pulse Panel] nativeImage could not be created from provided data')
@@ -410,8 +433,7 @@ app.whenReady().then(() => {
       }
       clipboard.write({
         image: img,
-        html: `<meta name="pulse-panel-image-key" content="${imageKey || ''
-          }"><meta name="pulse-panel-image-url" content="${imageUrl || ''}">`,
+        html: htmlContent,
       })
       return true
     } catch (err) {
@@ -419,9 +441,60 @@ app.whenReady().then(() => {
       return false
     }
   })
-  ipcMain.handle('read-image-from-clipboard', () => {
+  ipcMain.handle('read-image-from-clipboard', async () => {
     try {
-      const html = clipboard.readHTML()
+      // Modern Electron (44+) ClipboardItem API
+      if (typeof clipboard.read === 'function') {
+        const items = await clipboard.read()
+        let html = ''
+        let imageBlob = null
+        for (const item of items) {
+          if (!html && item.types && item.types.includes('text/html')) {
+            const b = await item.getType('text/html')
+            html = await b.text()
+          }
+          if (!imageBlob && item.types) {
+            for (const t of item.types) {
+              if (t.startsWith('image/')) {
+                imageBlob = await item.getType(t)
+                break
+              }
+            }
+          }
+        }
+
+        let imageKey = null
+        let imageUrl = null
+        if (html) {
+          const keyMatch = html.match(/name="pulse-panel-image-key"\s+content="([^"]*)"/)
+          if (keyMatch && keyMatch[1]) {
+            imageKey = keyMatch[1]
+          }
+          const urlMatch = html.match(/name="pulse-panel-image-url"\s+content="([^"]*)"/)
+          if (urlMatch && urlMatch[1]) {
+            imageUrl = urlMatch[1]
+          }
+        }
+
+        if (imageKey) {
+          return { imageKey, imageUrl }
+        }
+
+        if (imageBlob) {
+          const arrayBuf = await imageBlob.arrayBuffer()
+          const buf = Buffer.from(arrayBuf)
+          return {
+            imageKey: null,
+            buffer: buf,
+            dataUrl: `data:${imageBlob.type || 'image/png'};base64,${buf.toString('base64')}`,
+          }
+        }
+
+        return null
+      }
+
+      // Legacy Electron fallback
+      const html = clipboard.readHTML ? clipboard.readHTML() : null
       let imageKey = null
       let imageUrl = null
 
@@ -439,18 +512,20 @@ app.whenReady().then(() => {
       let img = null
       // Check for raw PNG clipboard format first (preserves alpha and lossless fidelity from Paint.net, browsers, etc.)
       try {
-        const pngBuf = clipboard.readBuffer('PNG')
-        if (pngBuf && pngBuf.length > 0) {
-          const nativeFromPng = nativeImage.createFromBuffer(pngBuf)
-          if (nativeFromPng && !nativeFromPng.isEmpty()) {
-            img = nativeFromPng
+        if (clipboard.readBuffer) {
+          const pngBuf = clipboard.readBuffer('PNG')
+          if (pngBuf && pngBuf.length > 0) {
+            const nativeFromPng = nativeImage.createFromBuffer(pngBuf)
+            if (nativeFromPng && !nativeFromPng.isEmpty()) {
+              img = nativeFromPng
+            }
           }
         }
       } catch {
         // fallback
       }
 
-      if (!img) {
+      if (!img && clipboard.readImage) {
         img = clipboard.readImage()
       }
 
@@ -478,24 +553,69 @@ app.whenReady().then(() => {
       return null
     }
   })
-  ipcMain.handle('has-image-in-clipboard', () => {
+  ipcMain.handle('has-image-in-clipboard', async () => {
     try {
-      const html = clipboard.readHTML()
+      // Modern Electron (44+) ClipboardItem API
+      if (typeof clipboard.read === 'function') {
+        const items = await clipboard.read()
+        for (const item of items) {
+          if (item.types && item.types.includes('text/html')) {
+            const b = await item.getType('text/html')
+            const text = await b.text()
+            if (text && text.includes('pulse-panel-image-key')) {
+              return true
+            }
+          }
+          if (item.types) {
+            for (const t of item.types) {
+              if (t.startsWith('image/')) return true
+            }
+          }
+        }
+        return false
+      }
+
+      // Legacy Electron fallback
+      const html = clipboard.readHTML ? clipboard.readHTML() : null
       if (html && html.includes('pulse-panel-image-key')) {
         return true
       }
       try {
-        const pngBuf = clipboard.readBuffer('PNG')
-        if (pngBuf && pngBuf.length > 0) return true
+        if (clipboard.readBuffer) {
+          const pngBuf = clipboard.readBuffer('PNG')
+          if (pngBuf && pngBuf.length > 0) return true
+        }
       } catch {
         // ignore
       }
-      const img = clipboard.readImage()
-      return !img.isEmpty()
+      if (clipboard.readImage) {
+        const img = clipboard.readImage()
+        return !img.isEmpty()
+      }
+      return false
     } catch {
       return false
     }
   })
+
+  // yt-dlp / YouTube integration
+  ipcMain.handle('yt-check-status', () => {
+    return ytdlp.checkYtDlpStatus(settings.getConfigDirectoryAndAppName().configDirectory)
+  })
+  ipcMain.handle('yt-fetch-info', (_, url) => ytdlp.fetchVideoQuickInfo(url))
+  ipcMain.handle('yt-download-clip', async (_, options) => {
+    return ytdlp.downloadAudioClip(
+      settings.getConfigDirectoryAndAppName().configDirectory,
+      options,
+      progress => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('yt-download-progress', progress)
+        }
+      }
+    )
+  })
+  ipcMain.handle('yt-fetch-image', (_, url) => ytdlp.fetchImageBuffer(url))
+
   createWindow()
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -523,6 +643,7 @@ function createWindow() {
       preload: join(__dirname, '../preload/preload.js'),
       nodeIntegration: true,
       backgroundThrottling: false,
+      webviewTag: true,
     },
     icon: iconPath,
   })

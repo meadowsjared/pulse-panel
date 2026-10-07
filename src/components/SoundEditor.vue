@@ -147,7 +147,7 @@
                               :show-time-ticks="false"
                               :playhead-only-when-active="true"
                               :is-playing="isSegmentPlaying(segment)"
-                              :current-time="currentTime"
+                              v-model:current-time="currentTime"
                               :trim-start="segment.start"
                               :trim-end="segment.end"
                               @update:trim-start="val => handleSegmentTrimStart(val, segment)"
@@ -1046,6 +1046,7 @@ function handlePreviewButtonClick() {
 function handleSegmentTrimStart(val: number, segment: SoundSegment) {
   const mult = Math.pow(10, precision.value);
   segment.start = Math.round(val * mult) / mult;
+  currentTime.value = segment.start;
   emit('update:modelValue', props.modelValue);
 }
 

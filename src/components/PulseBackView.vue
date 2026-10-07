@@ -70,7 +70,7 @@
             <div class="clip-card-main">
               <div class="clip-card-title">{{ clip.title }}</div>
               <div class="clip-card-meta">
-                <span>{{ formatTime(clip.createdAt) }}</span>
+                <span class="time">{{ formatTime(clip.createdAt) }}</span>
                 <span class="duration-badge">{{ formatSeconds(clip.duration) }}</span>
               </div>
             </div>
@@ -193,32 +193,77 @@
                         height="12"></rect>
                 </svg>
               </button>
-              <span class="time-readout">
+              <span class="time-readout clickable"
+                    role="button"
+                    tabindex="0"
+                    title="Click to reset selection to full waveform extents"
+                    @click="resetSelectionToExtents"
+                    @keydown.enter.prevent="resetSelectionToExtents"
+                    @keydown.space.prevent="resetSelectionToExtents">
                 {{ formatSeconds(relativeCurrentTime) }} / {{ formatSeconds(trimmedDuration) }}
               </span>
             </span>
 
-            <!-- Audio Tracks Selector (Mic & Input Device Mute/Unmute) -->
+            <!-- Audio Tracks Selector & Target Mode -->
             <div v-if="hasDualChannels"
                  class="audio-tracks-bar">
-              <span>Waveform Trimmer</span>
-              <button :class="['track-toggle-btn', 'mic-track-btn', { active: includeMic, muted: !includeMic }]"
-                      @click="toggleMicTrack"
-                      :title="includeMic ? 'Mute Microphone in this clip' : 'Unmute Microphone in this clip'">
-                <inline-svg :src="includeMic ? MicrophoneIcon : MicrophoneSlashIcon"
-                            class="w-4 h-4" />
-                <span class="track-name">Microphone</span>
-                <span class="track-badge">{{ includeMic ? 'ON' : 'OFF' }}</span>
-              </button>
+              <div class="track-selector-wrapper">
+                <span class="track-selector-label">Selection</span>
+                <div class="track-segmented-group"
+                     ref="segmentedGroupRef"
+                     :class="'target-' + activeTrackTarget"
+                     role="group"
+                     aria-label="Track audio selection target">
+                  <!-- Sliding Animated Indicator Pill -->
+                  <div class="segment-indicator"
+                       :style="segmentIndicatorStyle"></div>
 
-              <button :class="['track-toggle-btn', 'input-track-btn', { active: includeInput, muted: !includeInput }]"
-                      @click="toggleInputTrack"
-                      :title="includeInput ? 'Mute Input Device in this clip' : 'Unmute Input Device in this clip'">
-                <inline-svg :src="includeInput ? SpeakerIcon : HeadphonesIcon"
-                            class="w-4 h-4" />
-                <span class="track-name">Input</span>
-                <span class="track-badge">{{ includeInput ? 'ON' : 'OFF' }}</span>
-              </button>
+                  <button ref="btnBothRef"
+                          type="button"
+                          class="segment-btn"
+                          :class="{ active: activeTrackTarget === 'both' }"
+                          title="Select both tracks"
+                          @click="activeTrackTarget = 'both'">
+                    Both
+                  </button>
+                  <button ref="btnMicRef"
+                          type="button"
+                          class="segment-btn mic-segment"
+                          :class="{ active: activeTrackTarget === 'mic' }"
+                          title="Select Microphone track only"
+                          @click="activeTrackTarget = 'mic'">
+                    🎤 Mic
+                  </button>
+                  <button ref="btnInputRef"
+                          type="button"
+                          class="segment-btn input-segment"
+                          :class="{ active: activeTrackTarget === 'input' }"
+                          title="Select Input Device track only"
+                          @click="activeTrackTarget = 'input'">
+                    🔊 Input
+                  </button>
+                </div>
+              </div>
+
+              <div class="track-mutes-group">
+                <button :class="['track-toggle-btn', 'mic-track-btn', { active: includeMic, muted: !includeMic }]"
+                        @click="toggleMicTrack"
+                        :title="includeMic ? 'Mute Microphone in this clip' : 'Unmute Microphone in this clip'">
+                  <inline-svg :src="includeMic ? MicrophoneIcon : MicrophoneSlashIcon"
+                              class="w-4 h-4" />
+                  <span class="track-name">Microphone</span>
+                  <span class="track-badge">{{ includeMic ? 'ON' : 'OFF' }}</span>
+                </button>
+
+                <button :class="['track-toggle-btn', 'input-track-btn', { active: includeInput, muted: !includeInput }]"
+                        @click="toggleInputTrack"
+                        :title="includeInput ? 'Mute Input Device in this clip' : 'Unmute Input Device in this clip'">
+                  <inline-svg :src="includeInput ? SpeakerIcon : HeadphonesIcon"
+                              class="w-4 h-4" />
+                  <span class="track-name">Input</span>
+                  <span class="track-badge">{{ includeInput ? 'ON' : 'OFF' }}</span>
+                </button>
+              </div>
             </div>
 
 
@@ -227,6 +272,7 @@
           <waveform-graph :audio-buffer="audioBuffer"
                           :duration="audioDuration"
                           :tracks="pulseBackTracks"
+                          :active-track="activeTrackTarget"
                           :include-mic="includeMic"
                           :include-input="includeInput"
                           v-model:current-time="currentTime"
@@ -254,25 +300,31 @@
                style="display: none"></audio>
 
 
-        <!-- Trim Range Summary Bar -->
-        <div class="trim-summary-bar">
-          <div class="trim-stats">
-            <span class="stat-pill"><strong>Selected:</strong> {{ formatSeconds(trimmedDuration) }}</span>
-            <span class="stat-pill"><strong>Start:</strong> {{ formatSeconds(trimStart) }}</span>
-            <span class="stat-pill"><strong>End:</strong> {{ formatSeconds(trimEnd) }}</span>
-          </div>
-
-          <div class="trim-quick-actions">
-            <button v-if="canTrimToSelection"
-                    class="secondary-btn"
-                    title="Discard audio outside In and Out points to refine selection"
-                    @click="trimToSelection">Trim to Selection</button>
-            <button class="secondary-btn"
-                    @click="resetTrim">Reset Trim</button>
-            <button class="secondary-btn"
-                    @click="playTrimmedOnly">Play Trimmed</button>
-          </div>
-        </div>
+        <trim-summary-bar v-model:trim-start="trimStart"
+                          v-model:trim-end="trimEnd"
+                          :duration="audioDuration"
+                          :is-playing="isPlaying"
+                          :show-trim-to-selection="true"
+                          :can-trim-to-selection="canTrimToSelection"
+                          :has-dual-tracks="hasDualChannels"
+                          v-model:active-track-target="activeTrackTarget"
+                          :mic-gain="micGainMultiplier"
+                          :input-gain="inputGainMultiplier"
+                          :has-partial-gains="appliedGainRegions.length > 0"
+                          :gain-regions="appliedGainRegions"
+                          @change-gain="onPulseBackChangeGain"
+                          @auto-level="onPulseBackAutoLevel"
+                          @reset-gain="onPulseBackResetGain"
+                          @select-region="onSelectGainRegion"
+                          @delete-region="onDeleteGainRegion"
+                          @clear-all-gain-regions="onClearAllGainRegions"
+                          @reset-all-gain-regions="onResetAllGainRegions"
+                          @resetStart="resetTrimStart"
+                          @resetEnd="resetTrimEnd"
+                          @resetSelection="resetSelectionToExtents"
+                          @reset="resetTrim"
+                          @play-trimmed="playTrimmedOnly"
+                          @trim-to-selection="trimToSelection" />
 
         <!-- Soundboard Publish Card -->
         <div class="publish-card">
@@ -392,13 +444,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, shallowRef, watch, onUnmounted } from 'vue';
+import { ref, computed, shallowRef, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import InlineSvg from 'vue-inline-svg';
 import { usePulseBackStore, PulseBackClip } from '../store/pulseBack';
 import { useSettingsStore } from '../store/settings';
 import { TagInputRef } from './BaseComponents/TagInputTypes';
 import { encodeWAV, encodeMP3, encodeOGG } from '../services/pulseBackBuffer';
 import WaveformGraph, { WaveformTrack } from './WaveformGraph.vue';
+import TrimSummaryBar from './TrimSummaryBar.vue';
+import { calculateAutoGainMultiplier, applyGainToAudioBuffer, AudioGainRegion } from '../utils/audioGain';
 import MicrophoneIcon from '../assets/images/microphone.svg';
 import MicrophoneSlashIcon from '../assets/images/microphone-slash.svg';
 import SpeakerIcon from '../assets/images/speaker.svg';
@@ -454,13 +508,92 @@ const micAudioElRef = ref<HTMLAudioElement | null>(null);
 const inputAudioElRef = ref<HTMLAudioElement | null>(null);
 const micPreviewUrl = ref<string>('');
 const inputPreviewUrl = ref<string>('');
+const cleanBaseAudioBuffer = shallowRef<AudioBuffer | null>(null);
 const audioBuffer = shallowRef<AudioBuffer | null>(null);
+const originalAudioBuffer = shallowRef<AudioBuffer | null>(null);
+const appliedGainRegions = ref<AudioGainRegion[]>([]);
+const globalMicGain = ref(1.0);
+const globalInputGain = ref(1.0);
+const micGainMultiplier = ref(1.0);
+const inputGainMultiplier = ref(1.0);
 let audioContext: AudioContext | null = null;
 
 // Dual-Track State
 const includeMic = ref(true);
 const includeInput = ref(true);
 const hasDualChannels = ref(false);
+const activeTrackTarget = ref<'both' | 'mic' | 'input'>('both');
+
+// Segmented Track Selector Animated Sliding Indicator
+const segmentedGroupRef = ref<HTMLElement | null>(null);
+const btnBothRef = ref<HTMLButtonElement | null>(null);
+const btnMicRef = ref<HTMLButtonElement | null>(null);
+const btnInputRef = ref<HTMLButtonElement | null>(null);
+
+const indicatorPos = ref<{ x: number; y: number; width: number; height: number; visible: boolean; }>({
+  x: 0,
+  y: 0,
+  width: 0,
+  height: 0,
+  visible: false,
+});
+
+function updateSegmentIndicator() {
+  const activeBtn = activeTrackTarget.value === 'both'
+    ? btnBothRef.value
+    : activeTrackTarget.value === 'mic'
+      ? btnMicRef.value
+      : btnInputRef.value;
+
+  if (activeBtn && activeBtn.offsetWidth > 0) {
+    indicatorPos.value = {
+      x: activeBtn.offsetLeft,
+      y: activeBtn.offsetTop,
+      width: activeBtn.offsetWidth,
+      height: activeBtn.offsetHeight,
+      visible: true,
+    };
+  }
+}
+
+const segmentIndicatorStyle = computed(() => {
+  if (!indicatorPos.value.visible) {
+    return { opacity: 0 };
+  }
+  return {
+    transform: `translate3d(${indicatorPos.value.x}px, ${indicatorPos.value.y}px, 0)`,
+    width: `${indicatorPos.value.width}px`,
+    height: `${indicatorPos.value.height}px`,
+    opacity: 1,
+  };
+});
+
+let segmentedResizeObserver: ResizeObserver | null = null;
+
+onMounted(() => {
+  nextTick(() => {
+    updateSegmentIndicator();
+    if (segmentedGroupRef.value && typeof ResizeObserver !== 'undefined') {
+      segmentedResizeObserver = new ResizeObserver(() => updateSegmentIndicator());
+      segmentedResizeObserver.observe(segmentedGroupRef.value);
+    }
+  });
+});
+
+onUnmounted(() => {
+  segmentedResizeObserver?.disconnect();
+});
+
+watch(activeTrackTarget, () => {
+  nextTick(updateSegmentIndicator);
+});
+
+watch(hasDualChannels, (hasDual) => {
+  if (!hasDual) {
+    activeTrackTarget.value = 'both';
+  }
+  nextTick(updateSegmentIndicator);
+});
 
 const pulseBackTracks = computed<WaveformTrack[]>(() => {
   if (!hasDualChannels.value) {
@@ -584,10 +717,297 @@ function updatePreviewUrls() {
   }
 }
 
+function getAudioContext(): AudioContext {
+  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  if (!audioContext || audioContext.state === 'closed') {
+    audioContext = new AudioContextClass();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => { });
+  }
+  return audioContext;
+}
+
+function updateActiveGainDisplay() {
+  const totalDur = audioDuration.value;
+  const startSec = trimStart.value;
+  const endSec = trimEnd.value > 0 ? trimEnd.value : totalDur;
+  const isPartial = startSec > 0.05 || (endSec < totalDur - 0.05 && endSec > 0);
+
+  if (isPartial) {
+    const micRegion = appliedGainRegions.value.find(
+      r => (r.channel === undefined || r.channel === 0) &&
+        ((Math.abs(r.startSec - startSec) < 0.25 && Math.abs(r.endSec - endSec) < 0.25) ||
+          (startSec >= r.startSec - 0.08 && endSec <= r.endSec + 0.08))
+    );
+    micGainMultiplier.value = micRegion && micRegion.multiplier !== undefined ? micRegion.multiplier : globalMicGain.value;
+
+    const inputRegion = appliedGainRegions.value.find(
+      r => (r.channel === undefined || r.channel === 1) &&
+        ((Math.abs(r.startSec - startSec) < 0.25 && Math.abs(r.endSec - endSec) < 0.25) ||
+          (startSec >= r.startSec - 0.08 && endSec <= r.endSec + 0.08))
+    );
+    inputGainMultiplier.value = inputRegion && inputRegion.multiplier !== undefined ? inputRegion.multiplier : globalInputGain.value;
+  } else {
+    const fullMicRegion = appliedGainRegions.value.find(
+      r => (r.channel === undefined || r.channel === 0) &&
+        r.startSec <= startSec + 0.1 && r.endSec >= endSec - 0.1
+    );
+    micGainMultiplier.value = fullMicRegion && fullMicRegion.multiplier !== undefined ? fullMicRegion.multiplier : globalMicGain.value;
+
+    const fullInputRegion = appliedGainRegions.value.find(
+      r => (r.channel === undefined || r.channel === 1) &&
+        r.startSec <= startSec + 0.1 && r.endSec >= endSec - 0.1
+    );
+    inputGainMultiplier.value = fullInputRegion && fullInputRegion.multiplier !== undefined ? fullInputRegion.multiplier : globalInputGain.value;
+  }
+}
+
+function applyPulseBackGain() {
+  const base = cleanBaseAudioBuffer.value;
+  if (!base) return;
+  const ctx = getAudioContext();
+  const hasDual = base.numberOfChannels >= 2;
+  hasDualChannels.value = hasDual;
+
+  audioBuffer.value = applyGainToAudioBuffer(
+    ctx,
+    base,
+    hasDual ? [globalMicGain.value, globalInputGain.value] : globalMicGain.value,
+    appliedGainRegions.value
+  );
+
+  updatePreviewUrls();
+  updateTrackVolumes();
+  syncAudioCurrentTime(currentTime.value);
+  saveCurrentClipState();
+}
+
+function onPulseBackChangeGain(payload: { target: 'both' | 'mic' | 'input'; multiplier: number; }) {
+  const totalDur = audioDuration.value;
+  const startSec = Math.max(0, trimStart.value);
+  const endSec = Math.min(totalDur, trimEnd.value > 0 ? trimEnd.value : totalDur);
+  const isPartial = startSec > 0.05 || (endSec < totalDur - 0.05 && endSec > 0);
+
+  if (payload.target === 'mic' || payload.target === 'both') {
+    micGainMultiplier.value = payload.multiplier;
+    if (isPartial) {
+      appliedGainRegions.value = appliedGainRegions.value.filter(
+        r => !(r.channel === 0 && Math.abs(r.startSec - startSec) < 0.1 && Math.abs(r.endSec - endSec) < 0.1)
+      );
+      appliedGainRegions.value.push({
+        id: 'gain-pb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        startSec,
+        endSec,
+        channel: 0,
+        multiplier: payload.multiplier,
+      });
+    } else {
+      appliedGainRegions.value = appliedGainRegions.value.filter(r => r.channel !== 0);
+      globalMicGain.value = payload.multiplier;
+    }
+  }
+
+  if (payload.target === 'input' || payload.target === 'both') {
+    inputGainMultiplier.value = payload.multiplier;
+    if (isPartial) {
+      appliedGainRegions.value = appliedGainRegions.value.filter(
+        r => !(r.channel === 1 && Math.abs(r.startSec - startSec) < 0.1 && Math.abs(r.endSec - endSec) < 0.1)
+      );
+      appliedGainRegions.value.push({
+        id: 'gain-pb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        startSec,
+        endSec,
+        channel: 1,
+        multiplier: payload.multiplier,
+      });
+    } else {
+      appliedGainRegions.value = appliedGainRegions.value.filter(r => r.channel !== 1);
+      globalInputGain.value = payload.multiplier;
+    }
+  }
+
+  applyPulseBackGain();
+  updateActiveGainDisplay();
+}
+
+function onPulseBackAutoLevel(target: 'both' | 'mic' | 'input') {
+  const base = cleanBaseAudioBuffer.value;
+  if (!base) return;
+
+  const sampleRate = base.sampleRate;
+  const totalDur = audioDuration.value;
+  const startSec = Math.max(0, trimStart.value);
+  const endSec = Math.min(totalDur, trimEnd.value > 0 ? trimEnd.value : totalDur);
+  const isPartial = startSec > 0.05 || (endSec < totalDur - 0.05 && endSec > 0);
+
+  const startSample = Math.max(0, Math.floor(startSec * sampleRate));
+  const endSample = Math.min(base.length, Math.floor(endSec * sampleRate));
+
+  if (target === 'mic' || target === 'both') {
+    const ch0 = base.getChannelData(0);
+    const mult0 = calculateAutoGainMultiplier(ch0, 0.944, undefined, startSample, endSample);
+    micGainMultiplier.value = mult0;
+
+    if (isPartial) {
+      appliedGainRegions.value = appliedGainRegions.value.filter(
+        r => !(r.channel === 0 && Math.abs(r.startSec - startSec) < 0.1 && Math.abs(r.endSec - endSec) < 0.1)
+      );
+      appliedGainRegions.value.push({
+        id: 'gain-pb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        startSec,
+        endSec,
+        channel: 0,
+        multiplier: mult0,
+      });
+    } else {
+      appliedGainRegions.value = appliedGainRegions.value.filter(r => r.channel !== 0);
+      globalMicGain.value = mult0;
+    }
+  }
+
+  if ((target === 'input' || target === 'both') && base.numberOfChannels >= 2) {
+    const ch1 = base.getChannelData(1);
+    const mult1 = calculateAutoGainMultiplier(ch1, 0.944, undefined, startSample, endSample);
+    inputGainMultiplier.value = mult1;
+
+    if (isPartial) {
+      appliedGainRegions.value = appliedGainRegions.value.filter(
+        r => !(r.channel === 1 && Math.abs(r.startSec - startSec) < 0.1 && Math.abs(r.endSec - endSec) < 0.1)
+      );
+      appliedGainRegions.value.push({
+        id: 'gain-pb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+        startSec,
+        endSec,
+        channel: 1,
+        multiplier: mult1,
+      });
+    } else {
+      appliedGainRegions.value = appliedGainRegions.value.filter(r => r.channel !== 1);
+      globalInputGain.value = mult1;
+    }
+  }
+
+  applyPulseBackGain();
+  updateActiveGainDisplay();
+}
+
+function onPulseBackResetGain(target: 'both' | 'mic' | 'input') {
+  const totalDur = audioDuration.value;
+  const startSec = Math.max(0, trimStart.value);
+  const endSec = Math.min(totalDur, trimEnd.value > 0 ? trimEnd.value : totalDur);
+
+  if (target === 'mic' || target === 'both') {
+    micGainMultiplier.value = 1.0;
+    appliedGainRegions.value = appliedGainRegions.value.filter(
+      r => !((r.channel === 0 || r.channel === undefined) && r.startSec < endSec && r.endSec > startSec)
+    );
+    globalMicGain.value = 1.0;
+  }
+
+  if (target === 'input' || target === 'both') {
+    inputGainMultiplier.value = 1.0;
+    appliedGainRegions.value = appliedGainRegions.value.filter(
+      r => !((r.channel === 1 || r.channel === undefined) && r.startSec < endSec && r.endSec > startSec)
+    );
+    globalInputGain.value = 1.0;
+  }
+
+  applyPulseBackGain();
+  updateActiveGainDisplay();
+  saveCurrentClipState();
+}
+
+function onSelectGainRegion(region: AudioGainRegion) {
+  trimStart.value = region.startSec;
+  trimEnd.value = region.endSec;
+  currentTime.value = region.startSec;
+  syncAudioCurrentTime(region.startSec);
+  if (hasDualChannels.value) {
+    if (region.channel === 0) {
+      micGainMultiplier.value = region.multiplier;
+    } else if (region.channel === 1) {
+      inputGainMultiplier.value = region.multiplier;
+    } else {
+      micGainMultiplier.value = region.multiplier;
+      inputGainMultiplier.value = region.multiplier;
+    }
+  } else {
+    micGainMultiplier.value = region.multiplier;
+  }
+}
+
+function onDeleteGainRegion(region: AudioGainRegion) {
+  appliedGainRegions.value = appliedGainRegions.value.filter(r => {
+    if (region.id && r.id) return r.id !== region.id;
+    return !(
+      (r.channel === region.channel || r.channel === undefined || region.channel === undefined) &&
+      Math.abs(r.startSec - region.startSec) < 0.1 &&
+      Math.abs(r.endSec - region.endSec) < 0.1
+    );
+  });
+  applyPulseBackGain();
+  updateActiveGainDisplay();
+  saveCurrentClipState();
+}
+
+function onClearAllGainRegions() {
+  appliedGainRegions.value = [];
+  applyPulseBackGain();
+  updateActiveGainDisplay();
+  saveCurrentClipState();
+}
+
+function onResetAllGainRegions() {
+  appliedGainRegions.value = appliedGainRegions.value.map(r => ({ ...r, multiplier: 1.0 }));
+  applyPulseBackGain();
+  updateActiveGainDisplay();
+  saveCurrentClipState();
+}
+
+function resetTrimStart() {
+  trimStart.value = 0;
+  currentTime.value = 0;
+  syncAudioCurrentTime(0);
+  updateActiveGainDisplay();
+  saveCurrentClipState();
+}
+
+function resetTrimEnd() {
+  const dur = audioDuration.value;
+  trimEnd.value = dur;
+  if (currentTime.value > dur) {
+    currentTime.value = dur;
+    syncAudioCurrentTime(dur);
+  }
+  updateActiveGainDisplay();
+  saveCurrentClipState();
+}
+
+function resetSelectionToExtents() {
+  const dur = audioDuration.value;
+  trimStart.value = 0;
+  trimEnd.value = dur;
+  currentTime.value = 0;
+  syncAudioCurrentTime(0);
+  updateActiveGainDisplay();
+  saveCurrentClipState();
+}
+
+let isSwitchingClip = false;
+
+watch(trimStart, (newStart, oldStart) => {
+  if (!isSwitchingClip && oldStart !== undefined && newStart !== oldStart) {
+    currentTime.value = newStart;
+    syncAudioCurrentTime(newStart);
+  }
+});
+
 watch(
   () => selectedClip.value?.id,
   async (_newId, oldId) => {
     stopPreview();
+    isSwitchingClip = true;
     if (oldId) {
       const oldClip = pulseBackStore.clips.find(c => c.id === oldId);
       if (oldClip) {
@@ -604,7 +1024,10 @@ watch(
         });
       }
     }
-    if (!selectedClip.value) return;
+    if (!selectedClip.value) {
+      isSwitchingClip = false;
+      return;
+    }
 
     const clip = selectedClip.value;
     clipTitle.value = clip.title;
@@ -616,11 +1039,36 @@ watch(
     clipColor.value = clip.color ?? '#3b82f6';
     includeMic.value = clip.includeMic ?? true;
     includeInput.value = clip.includeInput ?? true;
+    appliedGainRegions.value = clip.partialGains ? [...clip.partialGains] : [];
+    globalMicGain.value = clip.micGain ?? 1.0;
+    globalInputGain.value = clip.inputGain ?? 1.0;
+    micGainMultiplier.value = clip.micGain ?? 1.0;
+    inputGainMultiplier.value = clip.inputGain ?? 1.0;
+
+    if (!clip.originalBlob && clip.blob) {
+      clip.originalBlob = clip.blob;
+    }
+    if (clip.originalDuration === undefined) {
+      clip.originalDuration = clip.duration;
+    }
+    if (!clip.originalFileName && clip.fileName) {
+      clip.originalFileName = clip.fileName;
+    }
+    if (!clip.originalAudioUrl && clip.audioUrl) {
+      clip.originalAudioUrl = clip.audioUrl;
+    }
+    originalAudioBuffer.value = null;
 
     syncAudioCurrentTime(currentTime.value);
     updateTrackVolumes();
 
     await loadAudioData(clip.blob);
+    if (!clip.originalDuration || Math.abs(clip.duration - clip.originalDuration) < 0.05) {
+      originalAudioBuffer.value = cleanBaseAudioBuffer.value;
+    }
+    nextTick(() => {
+      isSwitchingClip = false;
+    });
   },
   { immediate: true }
 );
@@ -628,12 +1076,18 @@ watch(
 async function loadAudioData(blob: Blob) {
   try {
     const arrayBuffer = await blob.arrayBuffer();
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!audioContext) {
-      audioContext = new AudioContextClass();
-    }
-    audioBuffer.value = await audioContext.decodeAudioData(arrayBuffer.slice(0));
-    hasDualChannels.value = audioBuffer.value.numberOfChannels >= 2;
+    const ctx = getAudioContext();
+    const decoded = await ctx.decodeAudioData(arrayBuffer.slice(0));
+    cleanBaseAudioBuffer.value = decoded;
+    hasDualChannels.value = decoded.numberOfChannels >= 2;
+
+    audioBuffer.value = applyGainToAudioBuffer(
+      ctx,
+      decoded,
+      hasDualChannels.value ? [globalMicGain.value, globalInputGain.value] : globalMicGain.value,
+      appliedGainRegions.value
+    );
+
     if (selectedClip.value?.trimEnd !== undefined && selectedClip.value.trimEnd > 0) {
       trimEnd.value = Math.min(audioBuffer.value.duration, selectedClip.value.trimEnd);
     } else {
@@ -647,6 +1101,7 @@ async function loadAudioData(blob: Blob) {
       syncAudioCurrentTime(currentTime.value);
     }
 
+    updateActiveGainDisplay();
     updatePreviewUrls();
     updateTrackVolumes();
   } catch (err) {
@@ -666,6 +1121,11 @@ function saveCurrentClipState() {
     color: clipColor.value,
     includeMic: includeMic.value,
     includeInput: includeInput.value,
+    micGain: globalMicGain.value,
+    inputGain: globalInputGain.value,
+    partialGains: appliedGainRegions.value ? [...appliedGainRegions.value] : [],
+    originalDuration: selectedClip.value.originalDuration,
+    originalFileName: selectedClip.value.originalFileName,
   });
 }
 
@@ -733,12 +1193,109 @@ async function duplicateClip(id: string) {
   await pulseBackStore.duplicateClip(id);
 }
 
-function resetTrim() {
+async function resetTrim() {
   if (!selectedClip.value) return;
+
+  stopPreview();
+  stopScrubSnippet();
+
+  const clip = selectedClip.value;
+
+  // Determine if this clip has been trimmed down from its original audio
+  const hasOriginal = !!clip.originalBlob || (clip.originalDuration !== undefined && clip.originalDuration > 0);
+  const isTrimmed = hasOriginal && (
+    (clip.originalDuration !== undefined && Math.abs(clip.duration - clip.originalDuration) > 0.05) ||
+    (clip.originalBlob && clip.originalBlob !== clip.blob)
+  );
+
+  if (isTrimmed) {
+    // If the trimmed file on disk was different from the original file, clean up the trimmed file
+    if (clip.fileName && clip.originalFileName && clip.fileName !== clip.originalFileName && window.electron?.deleteClipFile) {
+      try {
+        await window.electron.deleteClipFile(clip.fileName);
+      } catch (e) {
+        console.warn('[PulseBack] Failed to cleanup trimmed clip file:', e);
+      }
+    }
+
+    let origBlob = clip.originalBlob;
+    if (!origBlob && clip.originalFileName && window.electron?.readClipFile) {
+      try {
+        const buffer = await window.electron.readClipFile(clip.originalFileName);
+        if (buffer) {
+          origBlob = new Blob([buffer], { type: 'audio/wav' });
+          clip.originalBlob = origBlob;
+        }
+      } catch (e) {
+        console.warn('[PulseBack] Failed to read original clip file:', e);
+      }
+    }
+
+    if (origBlob) {
+      if (clip.audioUrl && clip.audioUrl.startsWith('blob:') && clip.audioUrl !== clip.originalAudioUrl) {
+        try {
+          URL.revokeObjectURL(clip.audioUrl);
+        } catch { }
+      }
+
+      clip.blob = origBlob;
+      clip.duration = clip.originalDuration || clip.duration;
+      if (clip.originalFileName) {
+        clip.fileName = clip.originalFileName;
+      }
+      if (clip.originalAudioUrl) {
+        clip.audioUrl = clip.originalAudioUrl;
+      } else {
+        clip.audioUrl = URL.createObjectURL(origBlob);
+        clip.originalAudioUrl = clip.audioUrl;
+      }
+
+      clip.trimStart = 0;
+      clip.trimEnd = clip.duration;
+      clip.currentTime = 0;
+
+      if (originalAudioBuffer.value) {
+        cleanBaseAudioBuffer.value = originalAudioBuffer.value;
+        hasDualChannels.value = originalAudioBuffer.value.numberOfChannels >= 2;
+        applyPulseBackGain();
+        trimStart.value = 0;
+        trimEnd.value = originalAudioBuffer.value.duration;
+        currentTime.value = 0;
+        updatePreviewUrls();
+        updateTrackVolumes();
+        syncAudioCurrentTime(0);
+      } else {
+        await loadAudioData(origBlob);
+        originalAudioBuffer.value = cleanBaseAudioBuffer.value;
+      }
+
+      await pulseBackStore.updateClip(clip.id, {
+        duration: clip.duration,
+        blob: origBlob,
+        fileName: clip.fileName,
+        audioUrl: clip.audioUrl,
+        trimStart: 0,
+        trimEnd: clip.duration,
+        currentTime: 0,
+        originalDuration: clip.originalDuration,
+        originalFileName: clip.originalFileName,
+        micGain: globalMicGain.value,
+        inputGain: globalInputGain.value,
+        partialGains: appliedGainRegions.value ? [...appliedGainRegions.value] : [],
+      });
+    }
+  } else {
+    // Untrimmed clip: re-apply gains to cleanBaseAudioBuffer (preserving appliedGainRegions)
+    applyPulseBackGain();
+  }
+
   const duration = audioDuration.value;
   trimStart.value = 0;
   trimEnd.value = duration;
   currentTime.value = 0;
+  updateActiveGainDisplay();
+  updatePreviewUrls();
+  updateTrackVolumes();
   syncAudioCurrentTime(0);
   saveCurrentClipState();
 }
@@ -753,44 +1310,81 @@ async function trimToSelection() {
   if (!audioBuffer.value || !selectedClip.value || !canTrimToSelection.value) return;
 
   stopPreview();
-  const buffer = audioBuffer.value;
-  const sampleRate = buffer.sampleRate;
-  const startSample = Math.max(0, Math.floor(trimStart.value * sampleRate));
-  const endSample = Math.min(buffer.length, Math.floor(trimEnd.value * sampleRate));
+  stopScrubSnippet();
+
+  const sampleRate = audioBuffer.value.sampleRate;
+  const startSec = trimStart.value;
+  const endSec = trimEnd.value;
+  const startSample = Math.max(0, Math.floor(startSec * sampleRate));
+  const endSample = Math.min(audioBuffer.value.length, Math.floor(endSec * sampleRate));
   const newLength = Math.max(0, endSample - startSample);
   if (newLength <= 0) return;
 
   const newDuration = newLength / sampleRate;
-  const hasDual = buffer.numberOfChannels >= 2;
+
+  const clip = selectedClip.value;
+  const clipId = clip.id;
+
+  // Preserve original audio properties before first trim
+  if (!clip.originalBlob) {
+    clip.originalBlob = clip.blob;
+  }
+  if (clip.originalDuration === undefined) {
+    clip.originalDuration = clip.duration;
+  }
+  if (!clip.originalFileName) {
+    clip.originalFileName = clip.fileName;
+  }
+  if (!clip.originalAudioUrl) {
+    clip.originalAudioUrl = clip.audioUrl;
+  }
+  if (!originalAudioBuffer.value) {
+    originalAudioBuffer.value = cleanBaseAudioBuffer.value || audioBuffer.value;
+  }
+
+  // Create new AudioBuffer for the trimmed selection from clean base audio (raw un-gained audio)
+  const ctx = getAudioContext();
+  const cleanBase = cleanBaseAudioBuffer.value || originalAudioBuffer.value || audioBuffer.value;
+  const newCleanBuf = ctx.createBuffer(cleanBase.numberOfChannels, newLength, sampleRate);
+  for (let ch = 0; ch < cleanBase.numberOfChannels; ch++) {
+    newCleanBuf.getChannelData(ch).set(cleanBase.getChannelData(ch).subarray(startSample, endSample));
+  }
+  cleanBaseAudioBuffer.value = newCleanBuf;
+  const hasDual = newCleanBuf.numberOfChannels >= 2;
+  hasDualChannels.value = hasDual;
+
+  // appliedGainRegions is globally defined: NO modification needed!
 
   let newBlob: Blob;
   if (hasDual) {
-    const micSlice = buffer.getChannelData(0).slice(startSample, endSample);
-    const inputSlice = buffer.getChannelData(1).slice(startSample, endSample);
+    const micSlice = newCleanBuf.getChannelData(0);
+    const inputSlice = newCleanBuf.getChannelData(1);
     newBlob = encodeWAV(micSlice, sampleRate, inputSlice);
   } else {
-    const micSlice = buffer.getChannelData(0).slice(startSample, endSample);
+    const micSlice = newCleanBuf.getChannelData(0);
     newBlob = encodeWAV(micSlice, sampleRate);
   }
 
-  const clipId = selectedClip.value.id;
-  selectedClip.value.duration = newDuration;
-  selectedClip.value.blob = newBlob;
-  if (selectedClip.value.audioUrl) {
+  clip.duration = newDuration;
+  clip.blob = newBlob;
+  if (clip.audioUrl && clip.audioUrl.startsWith('blob:')) {
     try {
-      URL.revokeObjectURL(selectedClip.value.audioUrl);
+      URL.revokeObjectURL(clip.audioUrl);
     } catch { }
   }
-  selectedClip.value.audioUrl = URL.createObjectURL(newBlob);
-  selectedClip.value.trimStart = 0;
-  selectedClip.value.trimEnd = newDuration;
-  selectedClip.value.currentTime = 0;
+  clip.audioUrl = URL.createObjectURL(newBlob);
+  clip.trimStart = 0;
+  clip.trimEnd = newDuration;
+  clip.currentTime = 0;
 
   trimStart.value = 0;
   trimEnd.value = newDuration;
   currentTime.value = 0;
 
-  await loadAudioData(newBlob);
+  // Apply gains to the clean trimmed buffer and update preview players
+  applyPulseBackGain();
+  updateActiveGainDisplay();
+  syncAudioCurrentTime(0);
 
   await pulseBackStore.updateClip(clipId, {
     duration: newDuration,
@@ -798,11 +1392,21 @@ async function trimToSelection() {
     trimStart: 0,
     trimEnd: newDuration,
     currentTime: 0,
+    originalDuration: clip.originalDuration,
+    originalFileName: clip.originalFileName,
+    originalBlob: clip.originalBlob,
+    originalAudioUrl: clip.originalAudioUrl,
+    micGain: globalMicGain.value,
+    inputGain: globalInputGain.value,
+    partialGains: appliedGainRegions.value ? [...appliedGainRegions.value] : [],
   });
 }
 
 function playTrimmedOnly() {
-  stopPreview();
+  if (isPlaying.value) {
+    stopPreview();
+    return;
+  }
   startPlayback(trimStart.value, trimEnd.value);
 }
 
@@ -1057,15 +1661,28 @@ function onScrubEnd(sec: number) {
   }
 }
 
-function onTrimChange(payload: { start: number; end: number; }) {
-  if (currentTime.value < payload.start) {
+function onTrimChange(payload: { start: number; end: number; handle?: 'start' | 'end'; }) {
+  if (isPlaying.value) {
+    stopPreview();
+  }
+  const isStartChange = payload.handle === 'start' || trimStart.value !== payload.start;
+  trimStart.value = payload.start;
+  trimEnd.value = payload.end;
+  if (isStartChange) {
     currentTime.value = payload.start;
+    syncAudioCurrentTime(payload.start);
+  } else if (currentTime.value < payload.start) {
+    currentTime.value = payload.start;
+    syncAudioCurrentTime(payload.start);
   } else if (currentTime.value > payload.end) {
     currentTime.value = payload.end;
+    syncAudioCurrentTime(payload.end);
   }
+  updateActiveGainDisplay();
 }
 
 function onTrimEndChange() {
+  updateActiveGainDisplay();
   saveCurrentClipState();
 }
 
@@ -1303,6 +1920,7 @@ onUnmounted(() => {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
+  flex-wrap: wrap;
 }
 
 .clip-card:hover {
@@ -1314,14 +1932,17 @@ onUnmounted(() => {
   border-color: #3b82f6;
 }
 
+.clip-card-main {
+  max-width: 100%;
+}
+
 .clip-card-title {
   font-size: 0.85rem;
   font-weight: 600;
   color: white;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 180px;
+  max-width: 100%;
+  word-wrap: break-word;
 }
 
 .clip-card-meta {
@@ -1331,6 +1952,10 @@ onUnmounted(() => {
   font-size: 0.72rem;
   color: #a1a1aa;
   margin-top: 0.2rem;
+}
+
+.clip-card-meta>.time {
+  min-width: max-content;
 }
 
 .duration-badge {
@@ -1377,6 +2002,7 @@ onUnmounted(() => {
   padding: 1.25rem;
   gap: 1rem;
   overflow-y: auto;
+  min-width: min-content;
 }
 
 .clip-info-bar {
@@ -1387,6 +2013,9 @@ onUnmounted(() => {
   padding: 0.85rem 1.25rem;
   border-radius: 10px;
   border: 1px solid #2e2e34;
+  flex-wrap: wrap;
+  min-width: min-content;
+  gap: 0.5rem;
 }
 
 .title-input-group {
@@ -1438,7 +2067,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 .play-btn {
@@ -1460,8 +2090,18 @@ onUnmounted(() => {
   transform: scale(1.05);
 }
 
+.play-btn:focus-visible {
+  outline: 2px solid var(--active-color, #10b981);
+  outline-offset: 3px;
+  transform: scale(1.05);
+}
+
 .play-btn.playing {
   background: #f59e0b;
+}
+
+.play-btn.playing:focus-visible {
+  outline-color: #f59e0b;
 }
 
 .stop-btn {
@@ -1482,6 +2122,13 @@ onUnmounted(() => {
   color: white;
 }
 
+.stop-btn:focus-visible {
+  outline: 2px solid var(--active-color, #38bdf8);
+  outline-offset: 3px;
+  background: #3f3f46;
+  color: white;
+}
+
 .time-readout {
   font-family: monospace;
   font-size: 0.85rem;
@@ -1489,15 +2136,39 @@ onUnmounted(() => {
   min-width: 100px;
 }
 
+.time-readout.clickable {
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.time-readout.clickable:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #38bdf8;
+}
+
+.time-readout.clickable:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+.time-readout.clickable:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.14);
+}
+
 /* Waveform Container */
 .waveform-container {
+  --slide-duration: 0.28s;
   background: #18181b;
   border: 1px solid #27272a;
   border-radius: 12px;
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.85rem;
   min-width: min-content;
 }
 
@@ -1509,6 +2180,7 @@ onUnmounted(() => {
   font-weight: 600;
   color: #e4e4e7;
   gap: 0.25rem;
+  flex-wrap: wrap;
 }
 
 
@@ -1573,6 +2245,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  min-width: min-content;
 }
 
 .publish-heading {
@@ -1720,6 +2393,14 @@ onUnmounted(() => {
   transform: translateY(-1px);
 }
 
+.save-file-btn:focus-visible:not(:disabled) {
+  outline: 2px solid var(--active-color, #38bdf8);
+  outline-offset: 2px;
+  background: #3f3f46;
+  color: #ffffff;
+  border-color: #52525b;
+}
+
 .save-file-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -1745,6 +2426,13 @@ onUnmounted(() => {
   transform: translateY(-1px);
 }
 
+.publish-btn:focus-visible:not(:disabled) {
+  outline: 2px solid var(--active-color, #10b981);
+  outline-offset: 3px;
+  background: #059669;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
+}
+
 .publish-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -1757,37 +2445,143 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-/* Audio Tracks Bar */
 .audio-tracks-bar {
   display: flex;
-  gap: 0.25rem 0.5rem;
+  align-items: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.track-selector-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.track-selector-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #71717a;
+  line-height: 1;
+  padding-left: 2px;
+}
+
+.track-mutes-group {
+  display: flex;
   align-items: center;
+  gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: end;
 }
 
-.tracks-heading {
+.track-segmented-group {
+  position: relative;
   display: flex;
-  gap: 0.2rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+  background: #09090b;
+  border: 1px solid #27272a;
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+  width: 100%;
+  transition: border-color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.tracks-title {
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #e4e4e7;
+.segment-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 4px;
+  pointer-events: none;
+  z-index: 1;
+  box-sizing: border-box;
+  transition: transform var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+    width var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+    height var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+    background-color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+    border-color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.15s ease;
 }
 
-.tracks-subtitle {
-  font-size: 0.75rem;
-  color: #71717a;
+.track-segmented-group.target-both {
+  border-color: #3f3f46;
 }
 
-.tracks-buttons {
-  display: flex;
+.track-segmented-group.target-both .segment-indicator {
+  background: #3f3f46;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.track-segmented-group.target-mic {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.1);
+}
+
+.track-segmented-group.target-mic .segment-indicator {
+  background: rgba(56, 189, 248, 0.22);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25), 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.track-segmented-group.target-input {
+  border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.1);
+}
+
+.track-segmented-group.target-input .segment-indicator {
+  background: rgba(52, 211, 153, 0.22);
+  border: 1px solid rgba(52, 211, 153, 0.55);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.25), 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.segment-btn {
+  position: relative;
+  z-index: 2;
+  flex: 1 1 auto;
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  text-align: center;
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #a1a1aa;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.12s ease;
+}
+
+.segment-btn:hover:not(.active) {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.segment-btn:active {
+  transform: scale(0.96);
+}
+
+.segment-btn.active {
+  color: #ffffff;
+}
+
+.segment-btn.mic-segment.active {
+  color: #38bdf8;
+}
+
+.segment-btn.input-segment.active {
+  color: #34d399;
 }
 
 .track-toggle-btn {

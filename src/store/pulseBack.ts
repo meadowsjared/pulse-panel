@@ -5,6 +5,7 @@ import { pulseBackBuffer } from '../services/pulseBackBuffer';
 import { useSettingsStore } from './settings';
 import { Sound } from '../@types/sound';
 import Router from '../router';
+import { AudioGainRegion } from '../utils/audioGain';
 
 export interface PulseBackClip {
   id: string;
@@ -23,6 +24,13 @@ export interface PulseBackClip {
   color?: string;
   includeMic?: boolean;
   includeInput?: boolean;
+  micGain?: number;
+  inputGain?: number;
+  partialGains?: AudioGainRegion[];
+  originalBlob?: Blob;
+  originalDuration?: number;
+  originalFileName?: string;
+  originalAudioUrl?: string;
 }
 
 export interface PulseBackClipMetadata {
@@ -40,6 +48,11 @@ export interface PulseBackClipMetadata {
   color?: string;
   includeMic?: boolean;
   includeInput?: boolean;
+  micGain?: number;
+  inputGain?: number;
+  partialGains?: AudioGainRegion[];
+  originalDuration?: number;
+  originalFileName?: string;
 }
 
 interface PulseBackState {
@@ -58,6 +71,20 @@ const DB_NAME = 'pulse-back-clips';
 const STORE_NAME = 'clips';
 
 function toMetadata(clip: PulseBackClip): PulseBackClipMetadata {
+  const rawTags = clip.tags ? Array.from(toRaw(clip.tags)).map(t => String(t)) : [];
+  const rawPartialGains = clip.partialGains
+    ? Array.from(toRaw(clip.partialGains)).map(r => {
+        const rawR = toRaw(r);
+        return {
+          id: String(rawR.id || ''),
+          startSec: Number(rawR.startSec || 0),
+          endSec: Number(rawR.endSec || 0),
+          channel: rawR.channel !== undefined ? Number(rawR.channel) : undefined,
+          multiplier: Number(rawR.multiplier !== undefined && rawR.multiplier !== null ? rawR.multiplier : 1.0),
+        };
+      })
+    : [];
+
   return {
     id: clip.id,
     title: clip.title,
@@ -65,7 +92,7 @@ function toMetadata(clip: PulseBackClip): PulseBackClipMetadata {
     fileName: clip.fileName || `${clip.id}.wav`,
     createdAt: clip.createdAt,
     hasDualTracks: clip.hasDualTracks,
-    tags: clip.tags ? Array.from(toRaw(clip.tags)) : [],
+    tags: rawTags,
     trimStart: clip.trimStart,
     trimEnd: clip.trimEnd,
     currentTime: clip.currentTime,
@@ -73,6 +100,11 @@ function toMetadata(clip: PulseBackClip): PulseBackClipMetadata {
     color: clip.color,
     includeMic: clip.includeMic,
     includeInput: clip.includeInput,
+    micGain: clip.micGain,
+    inputGain: clip.inputGain,
+    partialGains: rawPartialGains,
+    originalDuration: clip.originalDuration ?? clip.duration,
+    originalFileName: clip.originalFileName ?? clip.fileName,
   };
 }
 
@@ -80,7 +112,7 @@ async function persistClipsMetadata(clips: PulseBackClip[]): Promise<void> {
   const electron = window.electron;
   if (!electron?.saveDBSetting) return;
   try {
-    const list = clips.map(toMetadata);
+    const list = JSON.parse(JSON.stringify(clips.map(toMetadata)));
     await electron.saveDBSetting('pulse_back_clips', list);
   } catch (err) {
     console.warn('[PulseBack] Failed to persist clips to SQLite:', err);
@@ -211,6 +243,23 @@ export const usePulseBackStore = defineStore('pulseBack', {
                 }
               }
 
+              const origFileName = raw.originalFileName || fileName;
+              const origDuration = raw.originalDuration !== undefined ? Number(raw.originalDuration) : (raw.duration || 0);
+              let origBlob: Blob = blob;
+              let origAudioUrl: string = audioUrl;
+
+              if (raw.originalFileName && raw.originalFileName !== fileName && electron.readClipFile) {
+                try {
+                  const origBuffer = await electron.readClipFile(raw.originalFileName);
+                  if (origBuffer) {
+                    origBlob = new Blob([origBuffer], { type: 'audio/wav' });
+                    origAudioUrl = `pulse-media://clips/${encodeURIComponent(raw.originalFileName).replace(/'/g, '%27')}`;
+                  }
+                } catch (e) {
+                  console.warn(`[PulseBack] Failed to load original clip file ${raw.originalFileName}:`, e);
+                }
+              }
+
               loadedClips.push({
                 id: raw.id,
                 title: raw.title || 'Untitled Clip',
@@ -228,6 +277,13 @@ export const usePulseBackStore = defineStore('pulseBack', {
                 color: raw.color !== undefined ? String(raw.color) : undefined,
                 includeMic: raw.includeMic !== undefined ? Boolean(raw.includeMic) : undefined,
                 includeInput: raw.includeInput !== undefined ? Boolean(raw.includeInput) : undefined,
+                micGain: raw.micGain !== undefined ? Number(raw.micGain) : undefined,
+                inputGain: raw.inputGain !== undefined ? Number(raw.inputGain) : undefined,
+                partialGains: raw.partialGains && Array.isArray(raw.partialGains) ? Array.from(toRaw(raw.partialGains)) : undefined,
+                originalBlob: origBlob,
+                originalDuration: origDuration,
+                originalFileName: origFileName,
+                originalAudioUrl: origAudioUrl,
               });
             }
 
@@ -395,6 +451,10 @@ export const usePulseBackStore = defineStore('pulseBack', {
         color: '#ffffff',
         includeMic: true,
         includeInput: true,
+        originalBlob: blob,
+        originalDuration: duration,
+        originalFileName: fileName,
+        originalAudioUrl: audioUrl,
       };
 
       this.clips.unshift(clip);
@@ -423,11 +483,23 @@ export const usePulseBackStore = defineStore('pulseBack', {
         if (clip.audioUrl && clip.audioUrl.startsWith('blob:')) {
           try { URL.revokeObjectURL(clip.audioUrl); } catch { }
         }
-        if (clip.fileName && window.electron?.deleteClipFile) {
-          try {
-            await window.electron.deleteClipFile(clip.fileName);
-          } catch (e) {
-            console.warn('[PulseBack] Failed to delete clip file from disk:', e);
+        if (clip.originalAudioUrl && clip.originalAudioUrl.startsWith('blob:')) {
+          try { URL.revokeObjectURL(clip.originalAudioUrl); } catch { }
+        }
+        if (window.electron?.deleteClipFile) {
+          if (clip.fileName) {
+            try {
+              await window.electron.deleteClipFile(clip.fileName);
+            } catch (e) {
+              console.warn('[PulseBack] Failed to delete clip file from disk:', e);
+            }
+          }
+          if (clip.originalFileName && clip.originalFileName !== clip.fileName) {
+            try {
+              await window.electron.deleteClipFile(clip.originalFileName);
+            } catch (e) {
+              console.warn('[PulseBack] Failed to delete original clip file from disk:', e);
+            }
           }
         }
         this.clips.splice(idx, 1);
@@ -451,10 +523,11 @@ export const usePulseBackStore = defineStore('pulseBack', {
       const clip = this.clips.find(c => c.id === clipId);
       if (!clip) return;
 
+      const oldFileName = clip.fileName;
       Object.assign(clip, updates);
 
-      // If updates contain a new blob, re-save to disk
-      if (updates.blob && window.electron?.saveClipFile) {
+      // If updates contain a new blob, re-save to disk (unless restoring to existing original file)
+      if (updates.blob && window.electron?.saveClipFile && (!updates.fileName || updates.fileName !== clip.originalFileName)) {
         try {
           const buffer = await updates.blob.arrayBuffer();
           const res = await window.electron.saveClipFile({
@@ -463,6 +536,11 @@ export const usePulseBackStore = defineStore('pulseBack', {
             buffer,
           });
           if (res?.fileName) {
+            if (oldFileName && oldFileName !== clip.originalFileName && oldFileName !== res.fileName && window.electron?.deleteClipFile) {
+              try {
+                await window.electron.deleteClipFile(oldFileName);
+              } catch (_) {}
+            }
             clip.fileName = res.fileName;
             clip.audioUrl = res.relativeUrl;
           }
@@ -512,6 +590,36 @@ export const usePulseBackStore = defineStore('pulseBack', {
         }
       }
 
+      let newOrigBlob = newBlob;
+      let newOrigFileName = newFileName;
+      let newOrigAudioUrl = newAudioUrl;
+      const origDuration = clip.originalDuration ?? clip.duration;
+
+      if (clip.originalFileName && clip.originalFileName !== clip.fileName && electron?.saveClipFile) {
+        try {
+          let origBuffer: ArrayBuffer | null = null;
+          if (clip.originalBlob) {
+            origBuffer = await clip.originalBlob.arrayBuffer();
+          } else if (electron.readClipFile) {
+            origBuffer = await electron.readClipFile(clip.originalFileName);
+          }
+          if (origBuffer) {
+            newOrigBlob = new Blob([origBuffer], { type: 'audio/wav' });
+            const origRes = await electron.saveClipFile({
+              preferredName: `${duplicatedTitle} (Original)`,
+              extension: '.wav',
+              buffer: origBuffer,
+            });
+            if (origRes?.fileName) {
+              newOrigFileName = origRes.fileName;
+              newOrigAudioUrl = origRes.relativeUrl;
+            }
+          }
+        } catch (e) {
+          console.warn('[PulseBack] Failed to duplicate original clip file on disk:', e);
+        }
+      }
+
       const newClip: PulseBackClip = {
         id: newId,
         title: duplicatedTitle,
@@ -529,6 +637,10 @@ export const usePulseBackStore = defineStore('pulseBack', {
         color: clip.color !== undefined ? String(clip.color) : '#3b82f6',
         includeMic: clip.includeMic !== undefined ? Boolean(clip.includeMic) : true,
         includeInput: clip.includeInput !== undefined ? Boolean(clip.includeInput) : true,
+        originalBlob: newOrigBlob,
+        originalDuration: origDuration,
+        originalFileName: newOrigFileName,
+        originalAudioUrl: newOrigAudioUrl,
       };
 
       // Insert right after original clip in list
