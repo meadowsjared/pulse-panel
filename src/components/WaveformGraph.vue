@@ -114,9 +114,14 @@
            class="playhead-line"
            :class="{ 'is-snapped': isSnappedToPlayhead }"
            :style="{ left: `${playheadPercent}%` }">
+        <div class="playhead-hit-area"
+             @mousedown.stop="onPlayheadMouseDown"
+             @contextmenu.prevent.stop="onPlayheadContextMenu"
+             title="Left-click to edit time, Right-click for options, Drag to scrub"></div>
         <div class="playhead-cap"
              @mousedown.stop="onPlayheadMouseDown"
-             title="Drag to Scrub Playhead"></div>
+             @contextmenu.prevent.stop="onPlayheadContextMenu"
+             title="Left-click to edit time, Right-click for options, Drag to scrub"></div>
       </div>
     </div>
 
@@ -212,6 +217,90 @@
            :style="capsuleArrowStyle"></div>
     </div>
 
+    <!-- Playhead Quick Actions Context Menu Popover (Right-click) -->
+    <div v-if="activePlayheadMenu"
+         class="boundary-menu-popover playhead-menu-popover"
+         :style="playheadMenuStyle"
+         @mousedown.stop
+         @click.stop>
+      <div class="boundary-menu-header">
+        <span class="boundary-menu-title">Cursor: {{ formatSeconds(activePlayheadMenu.sec) }}</span>
+        <button type="button"
+                class="boundary-menu-close"
+                @click="closePlayheadMenu">✕</button>
+      </div>
+      <div class="boundary-menu-items">
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="setInAtPlayhead(activePlayheadMenu.sec)">
+          <span class="badge in">IN</span>
+          Set In to Cursor
+        </button>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="setOutAtPlayhead(activePlayheadMenu.sec)">
+          <span class="badge out">OUT</span>
+          Set Out to Cursor
+        </button>
+        <div class="boundary-menu-divider"></div>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="splitAtPlayhead(activePlayheadMenu.sec)">
+          <span class="btn-icon">✂</span>
+          Split Clip at Cursor
+        </button>
+        <div class="boundary-menu-divider"></div>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="openTimeInputFromMenu(activePlayheadMenu.sec)">
+          <span class="btn-icon">⌨</span>
+          Type Cursor Time...
+        </button>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="togglePlayFromPlayhead(activePlayheadMenu.sec)">
+          <span class="btn-icon">{{ isPlaying ? '⏸' : '▶' }}</span>
+          {{ isPlaying ? 'Pause Playback' : 'Play from Cursor' }}
+        </button>
+        <button v-if="canPaste"
+                type="button"
+                class="boundary-menu-btn"
+                @click="pasteAtPlayhead(activePlayheadMenu.sec)">
+          <span class="btn-icon">📋</span>
+          Paste Audio at Cursor
+        </button>
+        <button type="button"
+                class="boundary-menu-btn"
+                @click="jumpCursorToIn">
+          <span class="btn-icon">⏮</span>
+          Jump Cursor to In Point
+        </button>
+      </div>
+    </div>
+
+    <!-- Playhead Time Capsule Card (Left-click to edit cursor location) -->
+    <div v-if="isPlayheadPopoverOpen"
+         class="trim-capsule-card playhead-capsule-card is-open"
+         :style="playheadCapsuleStyle"
+         @mousedown.stop
+         @click.stop>
+      <div class="capsule-content">
+        <div class="capsule-field playhead-field is-focused"
+             @click="focusPlayheadInput">
+          <span class="capsule-badge playhead-badge">CURSOR</span>
+          <input ref="playheadInputRef"
+                 v-model="playheadInputValue"
+                 class="capsule-time-input playhead"
+                 placeholder="0:00.00"
+                 @focus="onPlayheadInputFocus"
+                 @input="onPlayheadInput"
+                 @blur="onPlayheadBlur($event)"
+                 @keydown="onPlayheadKeydown($event)" />
+        </div>
+      </div>
+      <div class="capsule-arrow playhead-arrow"></div>
+    </div>
+
     <!-- Time Ticks along bottom -->
     <div v-if="showTimeTicks"
          class="time-ticks">
@@ -266,6 +355,7 @@ interface Props {
   includeInput?: boolean;
   activeTrack?: 'both' | 'mic' | 'input';
   segmentBoundaries?: number[];
+  canPaste?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -286,6 +376,7 @@ const props = withDefaults(defineProps<Props>(), {
   includeInput: true,
   activeTrack: 'both',
   segmentBoundaries: () => [],
+  canPaste: false,
 });
 
 const emit = defineEmits<{
@@ -297,6 +388,9 @@ const emit = defineEmits<{
   (e: 'scrubEnd', time: number): void;
   (e: 'trimChange', payload: { start: number; end: number; handle?: 'start' | 'end'; }): void;
   (e: 'trimEndChange', payload: { start: number; end: number; handle?: 'start' | 'end'; }): void;
+  (e: 'splitAt', sec: number): void;
+  (e: 'playFromCursor', sec: number): void;
+  (e: 'pasteAtCursor', sec: number): void;
 }>();
 
 const instanceId = ++graphInstanceCounter;
@@ -436,6 +530,8 @@ const endInputRef = ref<HTMLInputElement | null>(null);
 
 function openTrimPopovers(focusHandle?: 'start' | 'end') {
   globalActiveGraphInstanceId.value = instanceId;
+  closePlayheadPopover();
+  closePlayheadMenu();
   areTrimPopoversOpen.value = true;
   focusedPopoverHandle.value = focusHandle ?? null;
   startInputValue.value = formatSeconds(props.trimStart);
@@ -463,9 +559,17 @@ function closePopover() {
 }
 
 watch(globalActiveGraphInstanceId, (activeId) => {
-  if (activeId !== instanceId && areTrimPopoversOpen.value) {
-    areTrimPopoversOpen.value = false;
-    focusedPopoverHandle.value = null;
+  if (activeId !== instanceId) {
+    if (areTrimPopoversOpen.value) {
+      areTrimPopoversOpen.value = false;
+      focusedPopoverHandle.value = null;
+    }
+    if (isPlayheadPopoverOpen.value) {
+      isPlayheadPopoverOpen.value = false;
+    }
+    if (activePlayheadMenu.value) {
+      activePlayheadMenu.value = null;
+    }
   }
 });
 
@@ -768,6 +872,202 @@ function seekToBoundary(boundarySec: number) {
   closeBoundaryMenu();
 }
 
+// Playhead Time Capsule & Context Menu State
+const isPlayheadPopoverOpen = ref(false);
+const playheadInputValue = ref('');
+const playheadInputRef = ref<HTMLInputElement | null>(null);
+const activePlayheadMenu = ref<{ sec: number; x: number; y: number; } | null>(null);
+
+const playheadCapsuleStyle = computed(() => {
+  return {
+    left: `clamp(65px, ${playheadPercent.value}%, calc(100% - 65px))`,
+    transform: 'translateX(-50%)',
+  };
+});
+
+const playheadMenuStyle = computed(() => {
+  if (!activePlayheadMenu.value || !containerRef.value) return {};
+  const containerRect = containerRef.value.getBoundingClientRect();
+  const relX = activePlayheadMenu.value.x - containerRect.left;
+  const clampedX = Math.max(120, Math.min(containerRect.width - 120, relX));
+  return {
+    left: `${clampedX}px`,
+    top: '12px',
+    transform: 'translateX(-50%)',
+  };
+});
+
+function openPlayheadPopover() {
+  globalActiveGraphInstanceId.value = instanceId;
+  closePopover();
+  closeBoundaryMenu();
+  closePlayheadMenu();
+  isPlayheadPopoverOpen.value = true;
+  playheadInputValue.value = formatSeconds(displayCurrentTime.value);
+  nextTick(() => {
+    playheadInputRef.value?.focus({ preventScroll: true });
+    playheadInputRef.value?.select();
+  });
+}
+
+function closePlayheadPopover() {
+  if (globalActiveGraphInstanceId.value === instanceId) {
+    globalActiveGraphInstanceId.value = null;
+  }
+  isPlayheadPopoverOpen.value = false;
+}
+
+function focusPlayheadInput() {
+  playheadInputRef.value?.focus({ preventScroll: true });
+}
+
+function onPlayheadInputFocus() {
+  playheadInputRef.value?.select();
+}
+
+function onPlayheadBlur(e: FocusEvent) {
+  const related = e.relatedTarget as HTMLElement | null;
+  if (
+    related &&
+    (related === playheadInputRef.value ||
+      related.closest?.('.playhead-capsule-card'))
+  ) {
+    return;
+  }
+
+  requestAnimationFrame(() => {
+    const active = document.activeElement;
+    if (active === playheadInputRef.value) {
+      return;
+    }
+    closePlayheadPopover();
+  });
+}
+
+function onPlayheadInput(e: Event) {
+  const val = (e.target as HTMLInputElement).value;
+  playheadInputValue.value = val;
+  const parsed = parseTimeInput(val);
+  if (parsed !== null && !isNaN(parsed)) {
+    const maxDur = effectiveDuration.value;
+    const clamped = Math.max(0, Math.min(maxDur, parsed));
+    emit('update:currentTime', clamped);
+    emit('scrubStart', clamped);
+    emit('scrubMove', clamped);
+    emit('scrubEnd', clamped);
+  }
+}
+
+function onPlayheadKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' || e.key === 'Escape') {
+    closePlayheadPopover();
+    (e.target as HTMLInputElement).blur();
+    return;
+  }
+
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05);
+    const delta = e.key === 'ArrowUp' ? step : -step;
+    const maxDur = effectiveDuration.value;
+    const current = parseTimeInput(playheadInputValue.value) ?? props.currentTime;
+    const newTime = Math.max(0, Math.min(maxDur, current + delta));
+    playheadInputValue.value = formatSeconds(newTime);
+    emit('update:currentTime', newTime);
+    emit('scrubStart', newTime);
+    emit('scrubMove', newTime);
+    emit('scrubEnd', newTime);
+    nextTick(() => {
+      playheadInputRef.value?.select();
+    });
+  }
+}
+
+watch(
+  () => props.currentTime,
+  (newTime) => {
+    if (isPlayheadPopoverOpen.value && document.activeElement !== playheadInputRef.value) {
+      playheadInputValue.value = formatSeconds(newTime);
+    }
+  }
+);
+
+function onPlayheadContextMenu(e: MouseEvent) {
+  e.preventDefault();
+  closePopover();
+  closeBoundaryMenu();
+  closePlayheadPopover();
+  const sec = displayCurrentTime.value;
+  activePlayheadMenu.value = {
+    sec,
+    x: e.clientX,
+    y: e.clientY,
+  };
+}
+
+function closePlayheadMenu() {
+  activePlayheadMenu.value = null;
+}
+
+function setInAtPlayhead(sec: number) {
+  let newStart = sec;
+  let newEnd = props.trimEnd;
+  if (newStart > newEnd) {
+    newEnd = newStart;
+  }
+  startInputValue.value = formatSeconds(newStart);
+  endInputValue.value = formatSeconds(newEnd);
+  emit('update:trimStart', newStart);
+  emit('update:trimEnd', newEnd);
+  emit('trimChange', { start: newStart, end: newEnd, handle: 'start' });
+  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' });
+  closePlayheadMenu();
+}
+
+function setOutAtPlayhead(sec: number) {
+  let newStart = props.trimStart;
+  let newEnd = sec;
+  if (newEnd < newStart) {
+    newStart = newEnd;
+  }
+  startInputValue.value = formatSeconds(newStart);
+  endInputValue.value = formatSeconds(newEnd);
+  emit('update:trimStart', newStart);
+  emit('update:trimEnd', newEnd);
+  emit('trimChange', { start: newStart, end: newEnd, handle: 'end' });
+  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' });
+  closePlayheadMenu();
+}
+
+function splitAtPlayhead(sec: number) {
+  emit('splitAt', sec);
+  closePlayheadMenu();
+}
+
+function openTimeInputFromMenu(_sec: number) {
+  closePlayheadMenu();
+  openPlayheadPopover();
+}
+
+function togglePlayFromPlayhead(sec: number) {
+  emit('playFromCursor', sec);
+  closePlayheadMenu();
+}
+
+function pasteAtPlayhead(sec: number) {
+  emit('pasteAtCursor', sec);
+  closePlayheadMenu();
+}
+
+function jumpCursorToIn() {
+  const inSec = props.trimStart;
+  emit('update:currentTime', inSec);
+  emit('scrubStart', inSec);
+  emit('scrubMove', inSec);
+  emit('scrubEnd', inSec);
+  closePlayheadMenu();
+}
+
 function handleDocumentMouseDown(e: MouseEvent) {
   const target = e.target as HTMLElement | null;
   if (target && containerRef.value?.contains(target)) {
@@ -775,6 +1075,8 @@ function handleDocumentMouseDown(e: MouseEvent) {
   }
   closePopover();
   closeBoundaryMenu();
+  closePlayheadPopover();
+  closePlayheadMenu();
 }
 
 const DOWNSAMPLE_RESOLUTION = 2000;
@@ -1107,12 +1409,99 @@ function onEndHandleMouseDown(e: MouseEvent) {
   window.addEventListener('keyup', onHandleDragKeyChange);
 }
 
+let playheadDownX = 0;
+let playheadDownY = 0;
+let isPlayheadDragging = false;
+let playheadClickTimer: ReturnType<typeof setTimeout> | null = null;
+
+function cancelPlayheadClickTimer() {
+  if (playheadClickTimer !== null) {
+    clearTimeout(playheadClickTimer);
+    playheadClickTimer = null;
+  }
+}
+
 function onPlayheadMouseDown(e: MouseEvent) {
+  if (e.button !== 0) return;
+  cancelPlayheadClickTimer();
+
+  // If this is part of a double-click gesture (detail >= 2), keep cursor input box closed
+  if (e.detail >= 2) {
+    closePlayheadPopover();
+    return;
+  }
+
   e.preventDefault();
-  onWaveformMouseDown(e);
+  closeBoundaryMenu();
+  closePlayheadMenu();
+
+  playheadDownX = e.clientX;
+  playheadDownY = e.clientY;
+  isPlayheadDragging = false;
+
+  window.addEventListener('mousemove', onPlayheadMouseMove);
+  window.addEventListener('mouseup', onPlayheadMouseUp);
+}
+
+function onPlayheadMouseMove(e: MouseEvent) {
+  if (e.clientX === 0 && e.clientY === 0) return;
+  if (e.buttons === 0) {
+    onPlayheadMouseUp(e);
+    return;
+  }
+
+  const dist = Math.hypot(e.clientX - playheadDownX, e.clientY - playheadDownY);
+  if (!isPlayheadDragging && dist >= 3) {
+    isPlayheadDragging = true;
+    cancelPlayheadClickTimer();
+    closePlayheadPopover();
+    isScrubbing.value = true;
+    const sec = getSecondsFromMouseEvent(e);
+    const clamped = Math.max(0, Math.min(effectiveDuration.value, sec));
+    internalScrubTime.value = clamped;
+    emit('update:currentTime', clamped);
+    emit('scrubStart', clamped);
+    emit('scrubMove', clamped);
+  } else if (isPlayheadDragging) {
+    const sec = getSecondsFromMouseEvent(e);
+    const clamped = Math.max(0, Math.min(effectiveDuration.value, sec));
+    internalScrubTime.value = clamped;
+    emit('update:currentTime', clamped);
+    emit('scrubMove', clamped);
+  }
+}
+
+function onPlayheadMouseUp(e: MouseEvent) {
+  window.removeEventListener('mousemove', onPlayheadMouseMove);
+  window.removeEventListener('mouseup', onPlayheadMouseUp);
+
+  if (isPlayheadDragging) {
+    cancelPlayheadClickTimer();
+    const finalTime = internalScrubTime.value ?? props.currentTime;
+    isScrubbing.value = false;
+    internalScrubTime.value = null;
+    isPlayheadDragging = false;
+    emit('scrubEnd', finalTime);
+  } else if (e.detail <= 1) {
+    // Single Left-Click! Use a small delay so a subsequent double-click cancels opening the popover
+    cancelPlayheadClickTimer();
+    playheadClickTimer = setTimeout(() => {
+      playheadClickTimer = null;
+      openPlayheadPopover();
+    }, 220);
+  } else {
+    // Double click / multi-click: cancel timer and ensure popover stays closed
+    cancelPlayheadClickTimer();
+    closePlayheadPopover();
+  }
 }
 
 function onWaveformDblClick(e: MouseEvent) {
+  cancelPlayheadClickTimer();
+  closePlayheadPopover();
+  closePlayheadMenu();
+  closeBoundaryMenu();
+
   if (!props.showTrimHandles) return;
   const clickSec = getSecondsFromMouseEvent(e);
   const maxDur = effectiveDuration.value;
@@ -1151,7 +1540,11 @@ function onWaveformDblClick(e: MouseEvent) {
 }
 
 function onWaveformMouseDown(e: MouseEvent) {
+  cancelPlayheadClickTimer();
   if (activeDragHandle.value) return;
+  closePlayheadPopover();
+  closePlayheadMenu();
+  closeBoundaryMenu();
   e.preventDefault();
 
   if (e.shiftKey && props.showTrimHandles) {
@@ -1469,6 +1862,9 @@ onUnmounted(() => {
   window.removeEventListener('keyup', onHandleDragKeyChange);
   window.removeEventListener('mousemove', onScrubMouseMove);
   window.removeEventListener('mouseup', onScrubMouseUp);
+  window.removeEventListener('mousemove', onPlayheadMouseMove);
+  window.removeEventListener('mouseup', onPlayheadMouseUp);
+  cancelPlayheadClickTimer();
 });
 
 defineExpose({
@@ -1553,6 +1949,20 @@ defineExpose({
 
 .capsule-badge.end-badge {
   color: #ef4444;
+}
+
+.capsule-badge.playhead-badge {
+  color: #38bdf8;
+}
+
+.capsule-field.playhead-field.is-focused {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 1px #38bdf8, 0 0 8px rgba(56, 189, 248, 0.35);
+}
+
+.capsule-arrow.playhead-arrow {
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .capsule-time-input {
@@ -1776,8 +2186,21 @@ defineExpose({
   -webkit-user-drag: none;
 }
 
-.playhead-cap:hover {
-  transform: scale(1.15);
+.playhead-hit-area {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  width: 18px;
+  background: transparent;
+  cursor: ew-resize;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.playhead-capsule-card {
+  top: -34px;
+  z-index: 100;
 }
 
 .segment-boundary-line {

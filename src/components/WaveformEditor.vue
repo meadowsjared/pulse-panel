@@ -61,22 +61,20 @@
           </span>
 
           <!-- Audio Clipboard & Edit Actions Group -->
-          <audio-clipboard-group
-            :can-undo="canUndo"
-            :can-redo="canRedo"
-            :can-cut="canCut"
-            :can-copy="canCopy"
-            :can-paste="canPaste"
-            :paste-tooltip="pasteTooltip"
-            @undo="onUndo"
-            @redo="onRedo"
-            @cut="onCutAudio"
-            @copy="onCopyAudio"
-            @paste="onPasteAudio"
-            @delete="onDeleteAudio"
-            @set-in="setInToCurrentTime"
-            @set-out="setOutToCurrentTime"
-          />
+          <audio-clipboard-group :can-undo="canUndo"
+                                 :can-redo="canRedo"
+                                 :can-cut="canCut"
+                                 :can-copy="canCopy"
+                                 :can-paste="canPaste"
+                                 :paste-tooltip="pasteTooltip"
+                                 @undo="onUndo"
+                                 @redo="onRedo"
+                                 @cut="onCutAudio"
+                                 @copy="onCopyAudio"
+                                 @paste="onPasteAudio"
+                                 @delete="onDeleteAudio"
+                                 @set-in="setInToCurrentTime"
+                                 @set-out="setOutToCurrentTime" />
         </span>
 
         <!-- Audio Tracks Selector & Target Mode (Dual Tracks Mode Only) -->
@@ -161,8 +159,14 @@
                    stroke-linejoin="round">
                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
+                <line x1="12"
+                      y1="19"
+                      x2="12"
+                      y2="23"></line>
+                <line x1="8"
+                      y1="23"
+                      x2="16"
+                      y2="23"></line>
               </svg>
               <svg v-else
                    class="w-4 h-4"
@@ -172,11 +176,20 @@
                    stroke-width="2"
                    stroke-linecap="round"
                    stroke-linejoin="round">
-                <line x1="1" y1="1" x2="23" y2="23"></line>
+                <line x1="1"
+                      y1="1"
+                      x2="23"
+                      y2="23"></line>
                 <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
                 <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
+                <line x1="12"
+                      y1="19"
+                      x2="12"
+                      y2="23"></line>
+                <line x1="8"
+                      y1="23"
+                      x2="16"
+                      y2="23"></line>
               </svg>
             </button>
           </div>
@@ -211,8 +224,14 @@
                    stroke-linecap="round"
                    stroke-linejoin="round">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <line x1="22" y1="9" x2="16" y2="15"></line>
-                <line x1="16" y1="9" x2="22" y2="15"></line>
+                <line x1="22"
+                      y1="9"
+                      x2="16"
+                      y2="15"></line>
+                <line x1="16"
+                      y1="9"
+                      x2="22"
+                      y2="15"></line>
               </svg>
             </button>
           </div>
@@ -277,11 +296,15 @@
                         :show-time-ticks="true"
                         :show-playhead="true"
                         :is-playing="isPlaying"
+                        :can-paste="canPaste"
                         @scrub-start="onScrubStart"
                         @scrub-move="onScrubMove"
                         @scrub-end="onScrubEnd"
                         @trim-change="onTrimChange"
-                        @trim-end-change="onTrimEndChange" />
+                        @trim-end-change="onTrimEndChange"
+                        @split-at="onSplitAt"
+                        @play-from-cursor="onPlayFromCursor"
+                        @paste-at-cursor="onPasteAudio" />
       </div>
     </div>
 
@@ -1431,6 +1454,31 @@ function onPasteAudio() {
   pulseBackStore.showToast(`${actionLabel} ${(pasteBuf.duration).toFixed(2)}s audio${segsLabel}`);
 }
 
+function onSplitAt(sec: number) {
+  if (!cleanBaseAudioBuffer.value) return;
+  const dur = effectiveDuration.value;
+  if (sec <= 0.05 || sec >= dur - 0.05) {
+    pulseBackStore.showToast('Cannot split at the very beginning or end of clip');
+    return;
+  }
+  pushUndoState();
+  const ctx = getAudioContext();
+  const newSegments = splitTimelineAt(ctx, timelineSegments.value, sec);
+  commitTimelineChange(newSegments, trimStart.value, trimEnd.value, sec);
+  pulseBackStore.showToast(`✂ Split clip at ${formatSeconds(sec)} (B)`);
+}
+
+function onPlayFromCursor(sec: number) {
+  if (isPlaying.value) {
+    stopPreview();
+  } else {
+    currentTime.value = sec;
+    syncAudioCurrentTime(sec);
+    const end = sec < trimEnd.value ? trimEnd.value : effectiveDuration.value;
+    startPlayback(sec, end);
+  }
+}
+
 function onUndo() {
   if (!canUndo.value) return;
   const prev = undoStack.value.pop()!;
@@ -2029,11 +2077,17 @@ function onKeyDown(e: KeyboardEvent) {
       } else {
         snapNearestHandleToBoundary();
       }
+    } else if (key === 'b') {
+      e.preventDefault();
+      onSplitAt(currentTime.value);
     }
     return;
   }
 
-  if (key === 'a') {
+  if (key === 'b' || key === 'k') {
+    e.preventDefault();
+    onSplitAt(currentTime.value);
+  } else if (key === 'a') {
     e.preventDefault();
     resetSelectionToExtents();
   } else if (key === 'c' && !e.shiftKey) {
