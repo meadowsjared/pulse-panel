@@ -114,6 +114,7 @@
                class="address-input"
                v-model="inputUrl"
                @keydown.enter="handleNavigate"
+               @focus="focusAddressBar"
                placeholder="Search YouTube or paste video URL (Enter to go)..." />
         <button v-if="inputUrl"
                 class="clear-input-btn"
@@ -278,6 +279,7 @@ const route = useRoute();
 
 const webviewRef = ref<any>(null);
 const clipPanelRef = ref<any>(null);
+const addressInputRef = ref<HTMLInputElement | null>(null);
 
 // Watch route to automatically pause video when navigating away from YouTube
 watch(
@@ -790,6 +792,10 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape' && isDrawerOpen.value) {
     closeClipDrawer();
   }
+}
+
+function focusAddressBar() {
+  addressInputRef.value?.select();
 }
 
 // Lifecycle and event listeners
