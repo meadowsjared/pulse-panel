@@ -115,6 +115,7 @@
                v-model="inputUrl"
                @keydown.enter="handleNavigate"
                @focus="focusAddressBar"
+               @keydown.escape="restoreAddressBar"
                placeholder="Search YouTube or paste video URL (Enter to go)..." />
         <button v-if="inputUrl"
                 class="clear-input-btn"
@@ -798,6 +799,11 @@ function focusAddressBar() {
   addressInputRef.value?.select();
 }
 
+function restoreAddressBar() {
+  addressInputRef.value?.blur();
+  inputUrl.value = currentUrl.value;
+}
+
 // Lifecycle and event listeners
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown);
@@ -1012,6 +1018,10 @@ onUnmounted(() => {
 .paste-btn:hover {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--primary-color);
 }
 
 /* Main Content Area */

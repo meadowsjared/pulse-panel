@@ -35,7 +35,11 @@
   --text-color: #c0c0c0;
   --text-placeholder-color: #6C7280;
   --active-color: #23a459;
-  --negated-color: #fbbf24;
+  --primary-color: #23a459;
+  --accent-color: #fbbf24;
+  --accent-secondary-color: #3b82f6;
+  --accent-tertiary-color: #a855f7;
+  --negated-color: #d946ef;
   --link-color: #42b983;
   --accent-text-color: #abffab;
   --heavy-light-mode-font: normal;
