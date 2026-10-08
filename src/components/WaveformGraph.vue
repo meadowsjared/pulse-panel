@@ -140,6 +140,13 @@
       <div class="boundary-menu-items">
         <button type="button"
                 class="boundary-menu-btn"
+                @click="joinAtBoundary(activeBoundaryMenu.sec)">
+          <span class="btn-icon">🔗</span>
+          Join Audio Clips Here
+        </button>
+        <div class="boundary-menu-divider"></div>
+        <button type="button"
+                class="boundary-menu-btn"
                 @click="selectLeftOfBoundary(activeBoundaryMenu.sec)">
           <span class="btn-icon">◀</span>
           Select Left Clip (In ➔ Divider)
@@ -248,6 +255,13 @@
                 @click="splitAtPlayhead(activePlayheadMenu.sec)">
           <span class="btn-icon">✂</span>
           Split Clip at Cursor
+        </button>
+        <button v-if="playheadNearBoundary !== null"
+                type="button"
+                class="boundary-menu-btn"
+                @click="joinAtBoundary(playheadNearBoundary)">
+          <span class="btn-icon">🔗</span>
+          Join Audio Clips at Boundary
         </button>
         <div class="boundary-menu-divider"></div>
         <button type="button"
@@ -389,6 +403,7 @@ const emit = defineEmits<{
   (e: 'trimChange', payload: { start: number; end: number; handle?: 'start' | 'end'; }): void;
   (e: 'trimEndChange', payload: { start: number; end: number; handle?: 'start' | 'end'; }): void;
   (e: 'splitAt', sec: number): void;
+  (e: 'joinAt', sec: number): void;
   (e: 'playFromCursor', sec: number): void;
   (e: 'pasteAtCursor', sec: number): void;
 }>();
@@ -864,6 +879,12 @@ function setOutAtBoundary(boundarySec: number) {
   closeBoundaryMenu();
 }
 
+function joinAtBoundary(boundarySec: number) {
+  emit('joinAt', boundarySec);
+  closeBoundaryMenu();
+  closePlayheadMenu();
+}
+
 function seekToBoundary(boundarySec: number) {
   emit('update:currentTime', boundarySec);
   emit('scrubStart', boundarySec);
@@ -877,6 +898,13 @@ const isPlayheadPopoverOpen = ref(false);
 const playheadInputValue = ref('');
 const playheadInputRef = ref<HTMLInputElement | null>(null);
 const activePlayheadMenu = ref<{ sec: number; x: number; y: number; } | null>(null);
+
+const playheadNearBoundary = computed(() => {
+  if (!activePlayheadMenu.value || !props.segmentBoundaries || props.segmentBoundaries.length === 0) return null;
+  const sec = activePlayheadMenu.value.sec;
+  const match = props.segmentBoundaries.find(b => Math.abs(b - sec) <= 0.05);
+  return match !== undefined ? match : null;
+});
 
 const playheadCapsuleStyle = computed(() => {
   return {

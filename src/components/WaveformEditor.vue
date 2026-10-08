@@ -263,6 +263,7 @@
                         @trim-change="onTrimChange"
                         @trim-end-change="onTrimEndChange"
                         @split-at="onSplitAt"
+                        @join-at="onJoinAt"
                         @play-from-cursor="onPlayFromCursor"
                         @paste-at-cursor="onPasteAudio" />
       </div>
@@ -340,6 +341,7 @@ import {
   compositeSegments,
   copyAudioSelection,
   splitTimelineAt,
+  joinTimelineAt,
   spliceTimelineSegments,
   cutTimelineSegments,
   deleteTimelineSegments,
@@ -649,8 +651,17 @@ function pushUndoState() {
 }
 
 // Audio Context Helper
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+
 function getAudioContext(): AudioContext {
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    throw new Error('Web Audio API is not supported in this browser environment');
+  }
   if (!audioContext || audioContext.state === 'closed') {
     audioContext = new AudioContextClass();
   }
@@ -1245,6 +1256,7 @@ async function commitTimelineChange(
   lastEmittedBlob = newBlob;
   lastEmittedBuffer = composite;
 
+  emit('update:segmentBoundaries', segmentBoundaries.value);
   emit('timelineChange', {
     buffer: composite,
     blob: newBlob,
@@ -1252,6 +1264,7 @@ async function commitTimelineChange(
     segments: timelineSegments.value,
     boundaries: segmentBoundaries.value,
   });
+  emit('change');
 }
 
 // Clipboard Actions
@@ -1436,6 +1449,42 @@ function onSplitAt(sec: number) {
   const newSegments = splitTimelineAt(ctx, timelineSegments.value, sec);
   commitTimelineChange(newSegments, trimStart.value, trimEnd.value, sec);
   pulseBackStore.showToast(`✂ Split clip at ${formatSeconds(sec)} (B)`);
+}
+
+function onJoinAt(sec: number) {
+  if (!cleanBaseAudioBuffer.value) return;
+  const currentCount = timelineSegments.value.length;
+  if (currentCount <= 1) {
+    pulseBackStore.showToast('No adjacent clips to join at this boundary');
+    return;
+  }
+  const ctx = getAudioContext();
+  const newSegments = joinTimelineAt(ctx, timelineSegments.value, sec);
+  if (newSegments.length === currentCount) {
+    pulseBackStore.showToast('No adjacent clips found at this boundary');
+    return;
+  }
+  pushUndoState();
+  commitTimelineChange(newSegments, trimStart.value, trimEnd.value, currentTime.value);
+  pulseBackStore.showToast(`🔗 Joined audio clips at ${formatSeconds(sec)}`);
+}
+
+function joinAtNearestBoundary() {
+  const boundaries = segmentBoundaries.value;
+  if (!boundaries || boundaries.length === 0) {
+    pulseBackStore.showToast('No clip boundaries to join');
+    return;
+  }
+  let bestB = boundaries[0];
+  let minDiff = Math.abs(currentTime.value - bestB);
+  for (const b of boundaries) {
+    const diff = Math.abs(currentTime.value - b);
+    if (diff < minDiff) {
+      minDiff = diff;
+      bestB = b;
+    }
+  }
+  onJoinAt(bestB);
 }
 
 function onPlayFromCursor(sec: number) {
@@ -1999,7 +2048,8 @@ function onTrimEndChange() {
 function onKeyDown(e: KeyboardEvent) {
   const activeEl = document.activeElement;
   const tagName = activeEl?.tagName.toLowerCase();
-  if (tagName === 'input' || tagName === 'textarea' || (activeEl as HTMLElement)?.isContentEditable) {
+  const isEditable = activeEl instanceof HTMLElement && activeEl.isContentEditable;
+  if (tagName === 'input' || tagName === 'textarea' || isEditable) {
     return;
   }
 
@@ -2050,6 +2100,9 @@ function onKeyDown(e: KeyboardEvent) {
     } else if (key === 'b') {
       e.preventDefault();
       onSplitAt(currentTime.value);
+    } else if (key === 'j') {
+      e.preventDefault();
+      joinAtNearestBoundary();
     }
     return;
   }
@@ -2057,6 +2110,9 @@ function onKeyDown(e: KeyboardEvent) {
   if (key === 'b' || key === 'k') {
     e.preventDefault();
     onSplitAt(currentTime.value);
+  } else if (key === 'j') {
+    e.preventDefault();
+    joinAtNearestBoundary();
   } else if (key === 'a') {
     e.preventDefault();
     resetSelectionToExtents();

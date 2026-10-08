@@ -554,3 +554,85 @@ export function deleteTimelineSegments(
 
   return newSegments;
 }
+
+/**
+ * Strips '(Part X)' numbering suffixes from a segment label for clean display when joining clips.
+ */
+function cleanSegmentLabel(label?: string): string {
+  if (!label) return 'Joined Audio';
+  return label.replace(/\s*\(Part\s*\d+\)$/i, '').trim() || 'Joined Audio';
+}
+
+/**
+ * Joins two adjacent AudioTimelineSegments meeting at a specified boundary timestamp (in seconds).
+ * The two segments on either side of the boundary are composited into a single continuous segment,
+ * removing the boundary divider line while preserving sample-accurate audio content.
+ */
+export function joinTimelineAt(
+  ctx: AudioContext,
+  segments: AudioTimelineSegment[],
+  boundarySec: number
+): AudioTimelineSegment[] {
+  if (segments.length <= 1) return segments;
+
+  const EPSILON = 0.02; // 20ms tolerance
+  let accum = 0;
+  let boundaryIndex = -1;
+
+  for (let i = 0; i < segments.length - 1; i++) {
+    accum += segments[i].duration;
+    if (Math.abs(accum - boundarySec) <= EPSILON) {
+      boundaryIndex = i;
+      break;
+    }
+  }
+
+  // Fallback: If not found within 20ms, search for closest internal boundary within 80ms
+  if (boundaryIndex === -1) {
+    let minDiff = Infinity;
+    let closestIndex = -1;
+    let testAccum = 0;
+    for (let i = 0; i < segments.length - 1; i++) {
+      testAccum += segments[i].duration;
+      const diff = Math.abs(testAccum - boundarySec);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIndex = i;
+      }
+    }
+    if (closestIndex !== -1 && minDiff <= 0.08) {
+      boundaryIndex = closestIndex;
+    } else {
+      return segments;
+    }
+  }
+
+  const leftSeg = segments[boundaryIndex];
+  const rightSeg = segments[boundaryIndex + 1];
+  const mergedBuffer = compositeSegments(ctx, [leftSeg, rightSeg]);
+
+  const leftBase = cleanSegmentLabel(leftSeg.label);
+  const rightBase = cleanSegmentLabel(rightSeg.label);
+  const label = leftBase === rightBase ? leftBase : `${leftBase} + ${rightBase}`;
+
+  const mergedSeg: AudioTimelineSegment = {
+    id: 'seg-joined-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+    buffer: mergedBuffer,
+    duration: mergedBuffer.duration,
+    label,
+    isPasted: Boolean(leftSeg.isPasted || rightSeg.isPasted),
+  };
+
+  const result: AudioTimelineSegment[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    if (i === boundaryIndex) {
+      result.push(mergedSeg);
+    } else if (i === boundaryIndex + 1) {
+      continue;
+    } else {
+      result.push(segments[i]);
+    }
+  }
+
+  return result;
+}
