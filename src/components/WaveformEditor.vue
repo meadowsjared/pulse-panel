@@ -1533,6 +1533,31 @@ function jumpCursorToBoundary(direction: 'next' | 'prev') {
   pulseBackStore.showToast(`⏱ Cursor moved to ${label} (Ctrl+${direction === 'next' ? 'Right' : 'Left'})`);
 }
 
+function jumpCursorToExtremity(target: 'start' | 'end') {
+  if (!effectiveAudioBuffer.value) return;
+  const maxDur = effectiveDuration.value;
+  const destination = target === 'start' ? 0 : maxDur;
+
+  currentTime.value = destination;
+  emit('update:currentTime', destination);
+  syncAudioCurrentTime(destination);
+
+  const label = target === 'start' ? 'Start boundary (0:00)' : `End boundary (${formatSeconds(maxDur)})`;
+  pulseBackStore.showToast(`⏱ Cursor moved to ${label}`);
+}
+
+function jumpCursorToTrimHandle(handle: 'start' | 'end') {
+  if (!effectiveAudioBuffer.value) return;
+  const destination = handle === 'start' ? trimStart.value : trimEnd.value;
+
+  currentTime.value = destination;
+  emit('update:currentTime', destination);
+  syncAudioCurrentTime(destination);
+
+  const handleName = handle === 'start' ? 'In Handle' : 'Out Handle';
+  pulseBackStore.showToast(`⏱ Cursor moved to ${handleName} (${formatSeconds(destination)})`);
+}
+
 function onPlayFromCursor(sec: number) {
   if (isPlaying.value) {
     stopPreview();
@@ -2101,15 +2126,19 @@ function onKeyDown(e: KeyboardEvent) {
 
   if (e.key === 'Home') {
     e.preventDefault();
-    currentTime.value = 0;
-    emit('update:currentTime', 0);
-    syncAudioCurrentTime(0);
+    if (e.shiftKey) {
+      jumpCursorToTrimHandle('start');
+    } else {
+      jumpCursorToExtremity('start');
+    }
     return;
   } else if (e.key === 'End') {
     e.preventDefault();
-    currentTime.value = effectiveDuration.value;
-    emit('update:currentTime', effectiveDuration.value);
-    syncAudioCurrentTime(effectiveDuration.value);
+    if (e.shiftKey) {
+      jumpCursorToTrimHandle('end');
+    } else {
+      jumpCursorToExtremity('end');
+    }
     return;
   } else if (e.key === 'PageDown') {
     e.preventDefault();
@@ -2126,13 +2155,37 @@ function onKeyDown(e: KeyboardEvent) {
 
   // Move cursor between clip boundaries (Ctrl+Arrow or Alt+Arrow)
   if (isCtrl || e.altKey) {
-    if (e.key === 'ArrowRight') {
+    if (e.key === 'ArrowUp') {
       e.preventDefault();
-      jumpCursorToBoundary('next');
+      jumpCursorToExtremity('start');
+      return;
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      jumpCursorToExtremity('end');
+      return;
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        jumpCursorToExtremity('end');
+      } else {
+        jumpCursorToBoundary('next');
+      }
       return;
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      jumpCursorToBoundary('prev');
+      if (e.shiftKey) {
+        jumpCursorToExtremity('start');
+      } else {
+        jumpCursorToBoundary('prev');
+      }
+      return;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      jumpCursorToExtremity('start');
+      return;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      jumpCursorToExtremity('end');
       return;
     }
   }
@@ -2481,6 +2534,8 @@ defineExpose({
   stopPreview,
   togglePlayPreview,
   jumpCursorToBoundary,
+  jumpCursorToExtremity,
+  jumpCursorToTrimHandle,
 });
 </script>
 
