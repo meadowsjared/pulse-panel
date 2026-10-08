@@ -1441,11 +1441,93 @@ let playheadDownX = 0;
 let playheadDownY = 0;
 let isPlayheadDragging = false;
 let playheadClickTimer: ReturnType<typeof setTimeout> | null = null;
+let lastPlayheadDragEvent: MouseEvent | null = null;
 
 function cancelPlayheadClickTimer() {
   if (playheadClickTimer !== null) {
     clearTimeout(playheadClickTimer);
     playheadClickTimer = null;
+  }
+}
+
+function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): { snappedSec: number; snapTarget: number | null; boundarySec: number | null } {
+  if (!shiftHeld || !waveformWrapperRef.value) {
+    return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
+  }
+
+  const rect = waveformWrapperRef.value.getBoundingClientRect();
+  if (rect.width <= 0) return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
+
+  const maxDur = effectiveDuration.value;
+  if (maxDur <= 0) return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
+
+  const snapPixelThreshold = 24;
+  const snapSecThreshold = (snapPixelThreshold / rect.width) * maxDur;
+
+  interface SnapTarget {
+    sec: number;
+    isBoundary: boolean;
+    boundarySec?: number;
+  }
+
+  const targets: SnapTarget[] = [];
+
+  // Segment boundaries (divider lines)
+  if (props.segmentBoundaries && props.segmentBoundaries.length > 0) {
+    for (const b of props.segmentBoundaries) {
+      targets.push({ sec: b, isBoundary: true, boundarySec: b });
+    }
+  }
+
+  // Trim handles
+  if (props.showTrimHandles) {
+    targets.push({ sec: props.trimStart, isBoundary: false });
+    targets.push({ sec: props.trimEnd, isBoundary: false });
+  }
+
+  // Timeline start and end
+  targets.push({ sec: 0, isBoundary: false });
+  targets.push({ sec: maxDur, isBoundary: false });
+
+  let closestDist = Infinity;
+  let closestTarget: SnapTarget | null = null;
+
+  for (const t of targets) {
+    const d = Math.abs(rawSec - t.sec);
+    if (d <= snapSecThreshold && d < closestDist) {
+      closestDist = d;
+      closestTarget = t;
+    }
+  }
+
+  if (closestTarget) {
+    return {
+      snappedSec: closestTarget.sec,
+      snapTarget: closestTarget.sec,
+      boundarySec: closestTarget.isBoundary && closestTarget.boundarySec !== undefined ? closestTarget.boundarySec : null,
+    };
+  }
+
+  return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
+}
+
+function onPlayheadDragKeyChange(ke: KeyboardEvent) {
+  if (!isPlayheadDragging && !isScrubbing.value) return;
+  if (!lastPlayheadDragEvent) return;
+  if (ke.repeat) return;
+  if (ke.key === 'Shift' || ke.key === 'Alt') {
+    const syntheticEvent = new MouseEvent('mousemove', {
+      clientX: lastPlayheadDragEvent.clientX,
+      clientY: lastPlayheadDragEvent.clientY,
+      shiftKey: ke.shiftKey,
+      altKey: ke.altKey,
+      buttons: 1,
+    });
+    if (isPlayheadDragging) {
+      onPlayheadMouseMove(syntheticEvent);
+    } else if (isScrubbing.value) {
+      onScrubMouseMove(syntheticEvent);
+    }
   }
 }
 
@@ -1466,9 +1548,12 @@ function onPlayheadMouseDown(e: MouseEvent) {
   playheadDownX = e.clientX;
   playheadDownY = e.clientY;
   isPlayheadDragging = false;
+  lastPlayheadDragEvent = e;
 
   window.addEventListener('mousemove', onPlayheadMouseMove);
   window.addEventListener('mouseup', onPlayheadMouseUp);
+  window.addEventListener('keydown', onPlayheadDragKeyChange);
+  window.addEventListener('keyup', onPlayheadDragKeyChange);
 }
 
 function onPlayheadMouseMove(e: MouseEvent) {
@@ -1478,30 +1563,56 @@ function onPlayheadMouseMove(e: MouseEvent) {
     return;
   }
 
+  lastPlayheadDragEvent = e;
+
   const dist = Math.hypot(e.clientX - playheadDownX, e.clientY - playheadDownY);
-  if (!isPlayheadDragging && dist >= 3) {
+  if (!isPlayheadDragging && (e.shiftKey || dist >= 3)) {
     isPlayheadDragging = true;
     cancelPlayheadClickTimer();
     closePlayheadPopover();
     isScrubbing.value = true;
     const sec = getSecondsFromMouseEvent(e);
     const clamped = Math.max(0, Math.min(effectiveDuration.value, sec));
-    internalScrubTime.value = clamped;
-    emit('update:currentTime', clamped);
-    emit('scrubStart', clamped);
-    emit('scrubMove', clamped);
+    const snap = calculatePlayheadSnap(clamped, e.shiftKey);
+    const finalSec = snap.snappedSec;
+
+    activeSnapLineSec.value = snap.snapTarget;
+    snappedBoundarySec.value = snap.boundarySec;
+    isSnappedToPlayhead.value = snap.snapTarget !== null;
+    snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : '';
+
+    internalScrubTime.value = finalSec;
+    emit('update:currentTime', finalSec);
+    emit('scrubStart', finalSec);
+    emit('scrubMove', finalSec);
   } else if (isPlayheadDragging) {
     const sec = getSecondsFromMouseEvent(e);
     const clamped = Math.max(0, Math.min(effectiveDuration.value, sec));
-    internalScrubTime.value = clamped;
-    emit('update:currentTime', clamped);
-    emit('scrubMove', clamped);
+    const snap = calculatePlayheadSnap(clamped, e.shiftKey);
+    const finalSec = snap.snappedSec;
+
+    activeSnapLineSec.value = snap.snapTarget;
+    snappedBoundarySec.value = snap.boundarySec;
+    isSnappedToPlayhead.value = snap.snapTarget !== null;
+    snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : '';
+
+    internalScrubTime.value = finalSec;
+    emit('update:currentTime', finalSec);
+    emit('scrubMove', finalSec);
   }
 }
 
 function onPlayheadMouseUp(e: MouseEvent) {
   window.removeEventListener('mousemove', onPlayheadMouseMove);
   window.removeEventListener('mouseup', onPlayheadMouseUp);
+  window.removeEventListener('keydown', onPlayheadDragKeyChange);
+  window.removeEventListener('keyup', onPlayheadDragKeyChange);
+
+  activeSnapLineSec.value = null;
+  snappedBoundarySec.value = null;
+  isSnappedToPlayhead.value = false;
+  snapBadgeText.value = '';
+  lastPlayheadDragEvent = null;
 
   if (isPlayheadDragging) {
     cancelPlayheadClickTimer();
@@ -1657,13 +1768,24 @@ function onWaveformMouseDown(e: MouseEvent) {
 
   const clickSec = getSecondsFromMouseEvent(e);
   const clamped = Math.max(0, Math.min(effectiveDuration.value, clickSec));
-  internalScrubTime.value = clamped;
-  emit('update:currentTime', clamped);
-  emit('scrubStart', clamped);
-  emit('scrubMove', clamped);
+  const snap = calculatePlayheadSnap(clamped, e.shiftKey);
+  const finalSec = snap.snappedSec;
 
+  activeSnapLineSec.value = snap.snapTarget;
+  snappedBoundarySec.value = snap.boundarySec;
+  isSnappedToPlayhead.value = snap.snapTarget !== null;
+  snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : '';
+
+  internalScrubTime.value = finalSec;
+  emit('update:currentTime', finalSec);
+  emit('scrubStart', finalSec);
+  emit('scrubMove', finalSec);
+
+  lastPlayheadDragEvent = e;
   window.addEventListener('mousemove', onScrubMouseMove);
   window.addEventListener('mouseup', onScrubMouseUp);
+  window.addEventListener('keydown', onPlayheadDragKeyChange);
+  window.addEventListener('keyup', onPlayheadDragKeyChange);
 }
 
 function onScrubMouseMove(e: MouseEvent) {
@@ -1674,15 +1796,31 @@ function onScrubMouseMove(e: MouseEvent) {
     onScrubMouseUp();
     return;
   }
+  lastPlayheadDragEvent = e;
   const sec = getSecondsFromMouseEvent(e);
   const clamped = Math.max(0, Math.min(effectiveDuration.value, sec));
-  internalScrubTime.value = clamped;
-  emit('update:currentTime', clamped);
-  emit('scrubMove', clamped);
+  const snap = calculatePlayheadSnap(clamped, e.shiftKey);
+  const finalSec = snap.snappedSec;
+
+  activeSnapLineSec.value = snap.snapTarget;
+  snappedBoundarySec.value = snap.boundarySec;
+  isSnappedToPlayhead.value = snap.snapTarget !== null;
+  snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : '';
+
+  internalScrubTime.value = finalSec;
+  emit('update:currentTime', finalSec);
+  emit('scrubMove', finalSec);
 }
 
 function onScrubMouseUp() {
   if (isScrubbing.value) {
+    activeSnapLineSec.value = null;
+    snappedBoundarySec.value = null;
+    isSnappedToPlayhead.value = false;
+    snapBadgeText.value = '';
+    lastPlayheadDragEvent = null;
+    window.removeEventListener('keydown', onPlayheadDragKeyChange);
+    window.removeEventListener('keyup', onPlayheadDragKeyChange);
     const finalTime = internalScrubTime.value ?? props.currentTime;
     isScrubbing.value = false;
     internalScrubTime.value = null;
@@ -1736,6 +1874,8 @@ function onHandleMouseMove(e: MouseEvent) {
       sec: number;
       isBoundary: boolean;
       boundarySec?: number;
+      isStationary?: boolean;
+      isPlayhead?: boolean;
     }
 
     const handles: SnapHandle[] = [];
@@ -1746,6 +1886,12 @@ function onHandleMouseMove(e: MouseEvent) {
         handles.push({ sec: b, isBoundary: true, boundarySec: b });
       }
     }
+
+    // Opposite trim handle
+    handles.push({ sec: dragStationarySec, isBoundary: false, isStationary: true });
+
+    // Playhead cursor
+    handles.push({ sec: props.currentTime, isBoundary: false, isPlayhead: true });
 
     // Timeline start and end
     handles.push({ sec: 0, isBoundary: false });
@@ -1769,7 +1915,15 @@ function onHandleMouseMove(e: MouseEvent) {
       if (closestHandle.isBoundary && closestHandle.boundarySec !== undefined) {
         snappedBoundary = closestHandle.boundarySec;
       }
+      isSnappedToStationaryHandle.value = !!closestHandle.isStationary;
+      isSnappedToPlayhead.value = !!closestHandle.isPlayhead;
+    } else {
+      isSnappedToStationaryHandle.value = false;
+      isSnappedToPlayhead.value = false;
     }
+  } else {
+    isSnappedToStationaryHandle.value = false;
+    isSnappedToPlayhead.value = false;
   }
 
   snappedBoundarySec.value = snappedBoundary;
@@ -1888,6 +2042,8 @@ onUnmounted(() => {
   window.removeEventListener('mouseup', onHandleMouseUp);
   window.removeEventListener('keydown', onHandleDragKeyChange);
   window.removeEventListener('keyup', onHandleDragKeyChange);
+  window.removeEventListener('keydown', onPlayheadDragKeyChange);
+  window.removeEventListener('keyup', onPlayheadDragKeyChange);
   window.removeEventListener('mousemove', onScrubMouseMove);
   window.removeEventListener('mouseup', onScrubMouseUp);
   window.removeEventListener('mousemove', onPlayheadMouseMove);
