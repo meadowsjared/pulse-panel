@@ -1487,6 +1487,52 @@ function joinAtNearestBoundary() {
   onJoinAt(bestB);
 }
 
+function jumpCursorToBoundary(direction: 'next' | 'prev') {
+  if (!effectiveAudioBuffer.value) return;
+  const boundaries = segmentBoundaries.value;
+  const maxDur = effectiveDuration.value;
+  const targets = Array.from(new Set([0, ...(boundaries || []), maxDur])).sort((a, b) => a - b);
+  const current = currentTime.value;
+  const EPSILON = 0.015;
+
+  let target: number | null = null;
+  if (direction === 'next') {
+    for (const t of targets) {
+      if (t > current + EPSILON) {
+        target = t;
+        break;
+      }
+    }
+    if (target === null) {
+      pulseBackStore.showToast(`Already at the end of audio (${formatSeconds(maxDur)})`);
+      return;
+    }
+  } else {
+    for (let i = targets.length - 1; i >= 0; i--) {
+      const t = targets[i];
+      if (t < current - EPSILON) {
+        target = t;
+        break;
+      }
+    }
+    if (target === null) {
+      pulseBackStore.showToast('Already at the start of audio (0:00)');
+      return;
+    }
+  }
+
+  currentTime.value = target;
+  emit('update:currentTime', target);
+  syncAudioCurrentTime(target);
+
+  const label = target === 0
+    ? '0:00 (Start)'
+    : Math.abs(target - maxDur) < EPSILON
+      ? `${formatSeconds(target)} (End)`
+      : `${formatSeconds(target)} (Boundary)`;
+  pulseBackStore.showToast(`⏱ Cursor moved to ${label} (Ctrl+${direction === 'next' ? 'Right' : 'Left'})`);
+}
+
 function onPlayFromCursor(sec: number) {
   if (isPlaying.value) {
     stopPreview();
@@ -2065,10 +2111,31 @@ function onKeyDown(e: KeyboardEvent) {
     emit('update:currentTime', effectiveDuration.value);
     syncAudioCurrentTime(effectiveDuration.value);
     return;
+  } else if (e.key === 'PageDown') {
+    e.preventDefault();
+    jumpCursorToBoundary('next');
+    return;
+  } else if (e.key === 'PageUp') {
+    e.preventDefault();
+    jumpCursorToBoundary('prev');
+    return;
   }
 
   const isCtrl = e.ctrlKey || e.metaKey;
   const key = e.key.toLowerCase();
+
+  // Move cursor between clip boundaries (Ctrl+Arrow or Alt+Arrow)
+  if (isCtrl || e.altKey) {
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      jumpCursorToBoundary('next');
+      return;
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      jumpCursorToBoundary('prev');
+      return;
+    }
+  }
 
   if (!isCtrl) {
     if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -2413,6 +2480,7 @@ defineExpose({
   resetSelectionToExtents,
   stopPreview,
   togglePlayPreview,
+  jumpCursorToBoundary,
 });
 </script>
 
