@@ -2387,6 +2387,7 @@ defineExpose({
 /* Waveform Container */
 .waveform-container {
   --slide-duration: 0.28s;
+  --border-radius: 8px;
   background: #18181b;
   border: 1px solid #27272a;
   border-radius: 12px;
@@ -2667,7 +2668,6 @@ defineExpose({
 .waveform-body-row {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
   width: 100%;
 }
 
@@ -2679,7 +2679,7 @@ defineExpose({
   flex-shrink: 0;
   background: #0f0f11;
   border: 1px solid #27272a;
-  border-radius: 8px;
+  border-radius: var(--border-radius) 0 0 var(--border-radius);
   overflow: hidden;
   box-sizing: border-box;
 }

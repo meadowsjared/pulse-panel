@@ -2001,7 +2001,7 @@ defineExpose({
   height: 140px;
   background: #0f0f11;
   border: 1px solid #27272a;
-  border-radius: 8px;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
   overflow: visible;
   cursor: crosshair;
   user-select: none;
@@ -2012,6 +2012,7 @@ defineExpose({
   width: 100%;
   height: 100%;
   display: block;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
 .trim-overlay {
@@ -2024,6 +2025,11 @@ defineExpose({
 
 .trim-overlay.start-overlay {
   left: 0;
+  border-radius: 0;
+}
+
+.trim-overlay.end-overlay {
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
 .selection-range-window {
@@ -2039,6 +2045,7 @@ defineExpose({
   position: absolute;
   left: 0;
   width: 100%;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
   background: rgba(0, 0, 0, 0.72);
   pointer-events: none;
   z-index: 1;
