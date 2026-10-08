@@ -63,6 +63,27 @@ async function checkYtDlpStatus(configDirectory) {
   })
 }
 
+function isDirectMediaUrl(url) {
+  if (!url) return false
+  try {
+    const parsed = new URL(url)
+    const pathname = parsed.pathname.toLowerCase()
+    return /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i.test(pathname)
+  } catch {
+    return false
+  }
+}
+
+function getExtensionFromUrl(url) {
+  try {
+    const parsed = new URL(url)
+    const ext = parsed.pathname.split('.').pop()
+    return ext ? ext.toLowerCase() : 'mp3'
+  } catch {
+    return 'mp3'
+  }
+}
+
 /**
  * Fast metadata fetch using YouTube oEmbed and URL parsing
  */
@@ -77,6 +98,18 @@ async function fetchVideoQuickInfo(videoUrl) {
       videoId = urlObj.searchParams.get('v')
     } else if (isShort) {
       videoId = urlObj.pathname.split('/shorts/')[1].split('/')[0].split('?')[0]
+    } else if (isDirectMediaUrl(videoUrl)) {
+      const filename = urlObj.pathname.split('/').filter(Boolean).pop() || ''
+      const nameWithoutExt = filename.replace(/\.[a-zA-Z0-9]+$/, '')
+      const title = decodeURIComponent(nameWithoutExt).replace(/[-_]+/g, ' ').trim() || decodeURIComponent(filename)
+      return {
+        success: true,
+        videoId: videoUrl,
+        title,
+        author: urlObj.hostname,
+        thumbnailUrl: '',
+        isShort: false,
+      }
     }
 
     // Try oEmbed for clean title and author
@@ -92,7 +125,7 @@ async function fetchVideoQuickInfo(videoUrl) {
         author = data.author_name || ''
         thumbnailUrl = data.thumbnail_url || ''
       }
-    } catch (_) {}
+    } catch (_) { }
 
     if (videoId) {
       // For standard 16:9 videos, check if maxresdefault exists (1280x720, crystal clear without letterboxing)
@@ -103,7 +136,7 @@ async function fetchVideoQuickInfo(videoUrl) {
           if (headRes.ok) {
             thumbnailUrl = maxresUrl
           }
-        } catch (_) {}
+        } catch (_) { }
       }
 
       if (!thumbnailUrl || thumbnailUrl.includes('hqdefault')) {
@@ -136,6 +169,35 @@ async function fetchVideoQuickInfo(videoUrl) {
 let activeDownloadProc = null
 
 async function downloadAudioClip(configDirectory, options, onProgress) {
+  const hasSection =
+    typeof options.startTime === 'number' &&
+    typeof options.endTime === 'number' &&
+    options.endTime > options.startTime
+
+  // Fast path for direct audio files if full download without section trimming
+  if (isDirectMediaUrl(options.url) && !hasSection) {
+    try {
+      if (onProgress) {
+        onProgress({ percent: 15, text: 'Downloading audio file...' })
+      }
+      const res = await fetch(options.url, { signal: AbortSignal.timeout(20000) })
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+      const arrayBuf = await res.arrayBuffer()
+      const ext = getExtensionFromUrl(options.url)
+      if (onProgress) {
+        onProgress({ percent: 100, text: 'Download complete' })
+      }
+      return {
+        success: true,
+        buffer: Buffer.from(arrayBuf),
+        extension: ext,
+        mimeType: ext === 'mp3' ? 'audio/mpeg' : ext === 'wav' ? 'audio/wav' : ext === 'ogg' ? 'audio/ogg' : 'audio/mp4',
+      }
+    } catch (directErr) {
+      console.warn('Direct fetch failed, falling back to yt-dlp:', directErr.message)
+    }
+  }
+
   const status = await checkYtDlpStatus(configDirectory)
   const ytDlpPath = status.path
   if (!status.installed || !ytDlpPath) {
@@ -146,7 +208,7 @@ async function downloadAudioClip(configDirectory, options, onProgress) {
   if (activeDownloadProc) {
     try {
       activeDownloadProc.kill()
-    } catch (_) {}
+    } catch (_) { }
     activeDownloadProc = null
   }
 
@@ -161,11 +223,6 @@ async function downloadAudioClip(configDirectory, options, onProgress) {
     '-o',
     outputTemplate,
   ]
-
-  const hasSection =
-    typeof options.startTime === 'number' &&
-    typeof options.endTime === 'number' &&
-    options.endTime > options.startTime
 
   if (hasSection) {
     args.push('--download-sections', `*${options.startTime}-${options.endTime}`)
@@ -232,7 +289,7 @@ async function downloadAudioClip(configDirectory, options, onProgress) {
         // Clean up temp file
         try {
           fs.unlinkSync(fullPath)
-        } catch (_) {}
+        } catch (_) { }
 
         resolve({
           success: true,

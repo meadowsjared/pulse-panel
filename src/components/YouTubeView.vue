@@ -118,7 +118,7 @@
                @focus="focusAddressBar"
                @keydown.escape="handleAddressBarEscape"
                @contextmenu.prevent.stop="openAddressContextMenu($event)"
-               placeholder="Search YouTube or paste video URL (Enter to go)..." />
+               placeholder="Search YouTube or paste video / audio URL (Enter to go)..." />
         <button v-if="inputUrl"
                 class="clear-input-btn"
                 @click="inputUrl = ''"
@@ -1313,7 +1313,7 @@ watch(
   (newPath, oldPath) => {
     if (oldPath === '/youtube' && newPath !== '/youtube') {
       try {
-        webviewRef.value?.executeJavaScript('document.querySelector("video")?.pause()');
+        webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()');
       } catch (_) { }
     }
   }
@@ -1364,6 +1364,28 @@ function formatTime(totalSeconds: number): string {
 
 const videoDurationFormatted = ref('');
 
+function isDirectMediaUrl(url: string): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname.toLowerCase();
+    return /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
+function extractMediaTitle(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const filename = parsed.pathname.split('/').filter(Boolean).pop() || '';
+    const nameWithoutExt = filename.replace(/\.[a-zA-Z0-9]+$/, '');
+    return decodeURIComponent(nameWithoutExt).replace(/[-_]+/g, ' ').trim() || decodeURIComponent(filename) || 'Audio Track';
+  } catch {
+    return 'Audio Track';
+  }
+}
+
 function getVideoId(url: string): string | null {
   if (!url) return null;
   try {
@@ -1380,14 +1402,21 @@ function getVideoId(url: string): string | null {
         return parsed.pathname.replace(/^\//, '').split('?')[0];
       }
     }
+    if (isDirectMediaUrl(url)) {
+      return url;
+    }
   } catch (_) { }
   return null;
 }
 
 function checkVideoUrl(url: string) {
-  const isVideo = url.includes('/watch') || url.includes('/shorts/');
+  const isDirect = isDirectMediaUrl(url);
+  const isVideo = url.includes('/watch') || url.includes('/shorts/') || isDirect;
   isVideoPage.value = isVideo;
   if (isVideo) {
+    if (isDirect && (!activeVideoTitle.value || activeVideoTitle.value === 'YouTube')) {
+      activeVideoTitle.value = extractMediaTitle(url);
+    }
     const vidId = getVideoId(url);
     if (vidId && vidId !== currentPreloadedVideoId.value) {
       loadAudioForWaveform(url);
@@ -1464,15 +1493,17 @@ async function readVideoState() {
   try {
     const script = `
       (() => {
-        const video = document.querySelector('video');
+        const video = document.querySelector('video, audio');
         const titleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, h1.title yt-formatted-string, ytd-reel-player-header-renderer h2, #title h1');
+        const rawDocTitle = document.title ? document.title.replace(/\\s*-\\s*YouTube$/, '').trim() : '';
+        const cleanedTitle = rawDocTitle.replace(/\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '').trim();
         return {
-          title: titleEl ? titleEl.textContent?.trim() : document.title.replace(/\\s*-\\s*YouTube$/, '').trim(),
+          title: titleEl ? titleEl.textContent?.trim() : cleanedTitle,
           currentTime: video ? video.currentTime : 0,
           duration: video ? video.duration : null,
           paused: video ? video.paused : true,
-          videoWidth: video ? video.videoWidth : 0,
-          videoHeight: video ? video.videoHeight : 0,
+          videoWidth: video ? (video.videoWidth || 0) : 0,
+          videoHeight: video ? (video.videoHeight || 0) : 0,
         };
       })()
     `;
@@ -1721,7 +1752,7 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown) {
     if (currentAudioLoadUrl !== targetUrl) return;
 
     if (!result || !result.success || !result.buffer) {
-      throw new Error('Could not download audio stream from YouTube');
+      throw new Error('Could not download audio stream from URL');
     }
 
     audioLoadProgress.value = 90;
@@ -1772,8 +1803,12 @@ async function openClipDrawer() {
   isDrawerOpen.value = true;
 
   try {
-    await webviewRef.value?.executeJavaScript('document.querySelector("video")?.pause()');
+    await webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()');
   } catch (_) { }
+
+  if (isDirectMediaUrl(currentUrl.value) && (!activeVideoTitle.value || activeVideoTitle.value === 'YouTube')) {
+    activeVideoTitle.value = extractMediaTitle(currentUrl.value);
+  }
 
   const isShort = currentUrl.value.includes('/shorts/');
   isShortVideo.value = isShort;
@@ -1918,7 +1953,13 @@ onMounted(() => {
   wv.addEventListener('did-navigate-in-page', updateLocation);
   wv.addEventListener('page-title-updated', (e: any) => {
     if (e.title) {
-      activeVideoTitle.value = e.title.replace(/\s*-\s*YouTube$/, '').trim();
+      const clean = e.title
+        .replace(/\s*-\s*YouTube$/, '')
+        .replace(/\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '')
+        .trim();
+      if (clean && clean !== 'YouTube') {
+        activeVideoTitle.value = clean;
+      }
     }
   });
 
@@ -1944,7 +1985,7 @@ onDeactivated(() => {
     videoHeartbeatTimer = null;
   }
   try {
-    webviewRef.value?.executeJavaScript('document.querySelector("video")?.pause()');
+    webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()');
   } catch (_) { }
 });
 
@@ -1963,7 +2004,7 @@ onActivated(() => {
     try {
       webviewRef.value?.executeJavaScript(`
         (() => {
-          const v = document.querySelector('video');
+          const v = document.querySelector('video, audio');
           if (v && !v.paused) {
             v.pause();
           }
