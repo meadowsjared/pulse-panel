@@ -7,7 +7,7 @@
         <span class="playback-controls">
           <!-- Play / Pause Preview Button -->
           <button type="button"
-                  class="play-btn"
+                  class="play-btn menu"
                   :class="{ playing: isPlaying }"
                   :disabled="!effectiveAudioBuffer || isLoading"
                   @click="togglePlayPreview"
@@ -35,7 +35,7 @@
 
           <!-- Stop Preview Button -->
           <button type="button"
-                  class="stop-btn"
+                  class="stop-btn menu"
                   :disabled="!effectiveAudioBuffer || isLoading"
                   @click="onStopBtnClick"
                   title="Stop">
@@ -145,7 +145,7 @@
           <!-- Top Track: Microphone (Channel 1) -->
           <div class="track-gutter-slot top-slot">
             <button type="button"
-                    :class="['track-icon-btn', 'mic-icon-btn', { active: includeMic, muted: !includeMic }]"
+                    :class="['track-icon-btn', 'menu', 'mic-icon-btn', { active: includeMic, muted: !includeMic }]"
                     @click="toggleMicTrack"
                     :title="includeMic ? 'Mute Microphone track in this clip' : 'Unmute Microphone track in this clip'"
                     :aria-label="includeMic ? 'Mute Microphone track' : 'Unmute Microphone track'">
@@ -178,7 +178,7 @@
           <!-- Bottom Track: Input Device (Channel 2) -->
           <div class="track-gutter-slot bottom-slot">
             <button type="button"
-                    :class="['track-icon-btn', 'input-icon-btn', { active: includeInput, muted: !includeInput }]"
+                    :class="['track-icon-btn', 'menu', 'input-icon-btn', { active: includeInput, muted: !includeInput }]"
                     @click="toggleInputTrack"
                     :title="includeInput ? 'Mute Input Device track in this clip' : 'Unmute Input Device track in this clip'"
                     :aria-label="includeInput ? 'Mute Input Device track' : 'Unmute Input Device track'">
@@ -2675,7 +2675,7 @@ defineExpose({
 }
 
 .time-readout.clickable:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--primary-color);
   outline-offset: 1px;
 }
 

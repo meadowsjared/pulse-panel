@@ -26,6 +26,7 @@
   --top-toolbar-color: #414141;
   --top-toolbar-color-light: #5e5e5e;
   --background-color: hsl(0, 0%, 20%);
+  --button-border-color: #4e4e52;
   --input-bg-color: hsl(0, 0%, 13%);
   --button-color: hsl(153, 47%, 30%);
   --button-color: hsl(235, 86%, 65%); /* discord buttons */
@@ -36,6 +37,8 @@
   --text-placeholder-color: #6C7280;
   --active-color: #23a459;
   --primary-color: #23a459;
+  --primary-color-50: color-mix(in oklch, var(--primary-color), black 50%);
+  --primary-red: oklch(from var(--primary-color) l c 25);
   --accent-color: #fbbf24;
   --accent-secondary-color: #3b82f6;
   --accent-tertiary-color: #a855f7;
@@ -65,6 +68,14 @@ select {
   font-family: 'Roboto', sans-serif;
 }
 
+input:where([type='checkbox']), input:where([type='radio']) {
+  color: var(--primary-color)
+}
+
+input:where([type='range']) {
+  accent-color: var(--primary-color);
+}
+
 html, body, div#app {
   height: 100vh;
   overflow: hidden;
@@ -74,6 +85,40 @@ div#app {
   display: flex;
   flex-direction: column;
   --scrollbar-width: 14px;
+}
+
+button {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--button-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0.45rem 0.85rem;
+  background: #27272a;
+}
+
+button:not(.menu) {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+button.menu {
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+button.center {
+  justify-content: center;
+}
+
+button:hover {
+  color: var(--primary-color);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--primary-color);
 }
 
 button.danger.danger {
@@ -95,10 +140,6 @@ button.danger.danger:focus-visible {
   outline: 2px solid var(--active-color);
   box-shadow: none;
   border: none;
-}
-
-button:focus {
-  outline: none;
 }
 
 /** light and dark button styling */
@@ -167,8 +208,8 @@ input[type="text"], .tag-input {
   background: var(--active-color);
 }
 
-input[type="text"]:focus, .tag-input:focus,
-input[type="text"]:focus-visible, .tag-input:focus-visible {
+input:focus, .tag-input:focus,
+input:focus-visible, .tag-input:focus-visible {
   --tw-ring-color: none;
   outline: 1px solid var(--active-color);
 }

@@ -1,18 +1,35 @@
 <template>
-  <div class="sideBar" :class="{ opened: sideBarOpen }">
-    <button
-      class="menu-button select-none"
-      :class="{ active: hamburgerActive }"
-      aria-controls="primary-navigation"
-      title="Show main menu"
-      :aria-expanded="sideBarOpen"
-      @keydown.enter.space.prevent="hamburgerActive = true"
-      @keyup.space.enter="toggleSidebar"
-      @click="toggleSidebar">
-      <svg fill="var(--button-color)" class="hamburger" viewBox="10 10 80 80">
-        <rect class="line middle" width="80" height="10" x="10" y="45" rx="5"></rect>
-        <rect class="line top" width="80" height="10" x="10" y="25" rx="5"></rect>
-        <rect class="line bottom" width="80" height="10" x="10" y="65" rx="5"></rect>
+  <div class="sideBar"
+       :class="{ opened: sideBarOpen }">
+    <button class="menu-button select-none menu"
+            :class="{ active: hamburgerActive }"
+            aria-controls="primary-navigation"
+            title="Show main menu"
+            :aria-expanded="sideBarOpen"
+            @keydown.enter.space.prevent="hamburgerActive = true"
+            @keyup.space.enter="toggleSidebar"
+            @click="toggleSidebar">
+      <svg fill="var(--button-color)"
+           class="hamburger"
+           viewBox="10 10 80 80">
+        <rect class="line middle"
+              width="80"
+              height="10"
+              x="10"
+              y="45"
+              rx="5"></rect>
+        <rect class="line top"
+              width="80"
+              height="10"
+              x="10"
+              y="25"
+              rx="5"></rect>
+        <rect class="line bottom"
+              width="80"
+              height="10"
+              x="10"
+              y="65"
+              rx="5"></rect>
       </svg>
       Menu
     </button>
@@ -23,14 +40,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
 
-const sideBarOpen = ref(false)
-const hamburgerActive = ref(false)
+const sideBarOpen = ref(false);
+const hamburgerActive = ref(false);
 
 function toggleSidebar() {
-  sideBarOpen.value = !sideBarOpen.value
-  hamburgerActive.value = false
+  sideBarOpen.value = !sideBarOpen.value;
+  hamburgerActive.value = false;
 }
 </script>
 
@@ -64,8 +81,8 @@ function toggleSidebar() {
   color: var(--link-color);
 }
 
-.menu-button:active > svg,
-.menu-button.active > svg {
+.menu-button:active>svg,
+.menu-button.active>svg {
   fill: var(--link-color);
 }
 
@@ -74,12 +91,12 @@ function toggleSidebar() {
   outline-offset: -4px;
 }
 
-.menu-button > svg {
+.menu-button>svg {
   transition: rotate var(--animation-time) linear;
   rotate: 0deg;
 }
 
-.menu-button[aria-expanded='true'] > svg {
+.menu-button[aria-expanded='true']>svg {
   rotate: 360deg;
 }
 

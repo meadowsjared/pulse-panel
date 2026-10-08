@@ -3,7 +3,7 @@
     <!-- Browser Navigation & Control Bar -->
     <div class="browser-navbar">
       <div class="nav-buttons">
-        <button class="nav-btn"
+        <button class="nav-btn menu"
                 :disabled="!canGoBack"
                 @click="goBack"
                 title="Back">
@@ -15,7 +15,7 @@
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
         </button>
-        <button class="nav-btn"
+        <button class="nav-btn menu"
                 :disabled="!canGoForward"
                 @click="goForward"
                 title="Forward">
@@ -27,7 +27,7 @@
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </button>
-        <button class="nav-btn"
+        <button class="nav-btn menu"
                 @click="reloadPage"
                 :title="isLoading ? 'Stop' : 'Reload'">
           <svg v-if="!isLoading"
@@ -80,7 +80,7 @@
                   y2="4.93"></line>
           </svg>
         </button>
-        <button class="nav-btn"
+        <button class="nav-btn menu"
                 @click="goHome"
                 title="YouTube Home">
           <svg class="w-4 h-4"
@@ -297,12 +297,29 @@
                     class="context-menu-item"
                     :disabled="!inputUrl"
                     @click="handleAddressCut">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="6" cy="6" r="3"></circle>
-                <circle cx="6" cy="18" r="3"></circle>
-                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
-                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
-                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <circle cx="6"
+                        cy="6"
+                        r="3"></circle>
+                <circle cx="6"
+                        cy="18"
+                        r="3"></circle>
+                <line x1="20"
+                      y1="4"
+                      x2="8.12"
+                      y2="15.88"></line>
+                <line x1="14.47"
+                      y1="14.48"
+                      x2="20"
+                      y2="20"></line>
+                <line x1="8.12"
+                      y1="8.12"
+                      x2="12"
+                      y2="12"></line>
               </svg>
               <span>Cut</span>
               <span class="item-shortcut">Ctrl+X</span>
@@ -312,8 +329,17 @@
                     class="context-menu-item"
                     :disabled="!inputUrl"
                     @click="handleAddressCopy">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <rect x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
               <span>Copy</span>
@@ -324,12 +350,22 @@
                     class="context-menu-item"
                     :disabled="!clipboardHasText"
                     @click="handleAddressPaste">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <rect x="8"
+                      y="2"
+                      width="8"
+                      height="4"
+                      rx="1"
+                      ry="1"></rect>
               </svg>
               <span>Paste</span>
-              <span v-if="clipboardIsAddress" class="item-badge">Address</span>
+              <span v-if="clipboardIsAddress"
+                    class="item-badge">Address</span>
               <span class="item-shortcut">Ctrl+V</span>
             </button>
 
@@ -337,7 +373,11 @@
                     class="context-menu-item"
                     :disabled="!clipboardHasText"
                     @click="handleAddressPasteAndGo">
-              <svg class="item-icon text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="item-icon text-emerald-400"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
                 <path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"></path>
                 <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"></path>
                 <path d="m13 14 3-3-3-3"></path>
@@ -353,14 +393,22 @@
                     class="context-menu-item"
                     :disabled="!inputUrl"
                     @click="handleAddressSelectAll">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
                 <path d="M3 3h4"></path>
                 <path d="M17 3h4"></path>
                 <path d="M3 21h4"></path>
                 <path d="M17 21h4"></path>
                 <path d="M3 7v10"></path>
                 <path d="M21 7v10"></path>
-                <rect x="8" y="8" width="8" height="8" rx="1"></rect>
+                <rect x="8"
+                      y="8"
+                      width="8"
+                      height="8"
+                      rx="1"></rect>
               </svg>
               <span>Select All</span>
               <span class="item-shortcut">Ctrl+A</span>
@@ -370,7 +418,11 @@
                     class="context-menu-item"
                     :disabled="!inputUrl"
                     @click="handleAddressClear">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
@@ -382,8 +434,13 @@
           <template v-else-if="activeMenu === 'webview'">
             <!-- Link Context Group -->
             <template v-if="webviewMenuContext.linkUrl">
-              <div class="menu-preview-header" :title="webviewMenuContext.linkUrl">
-                <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <div class="menu-preview-header"
+                   :title="webviewMenuContext.linkUrl">
+                <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
@@ -393,10 +450,17 @@
               <button type="button"
                       class="context-menu-item"
                       @click="handleOpenLink">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                   <polyline points="15 3 21 3 21 9"></polyline>
-                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                  <line x1="10"
+                        y1="14"
+                        x2="21"
+                        y2="3"></line>
                 </svg>
                 <span>Open Link</span>
               </button>
@@ -404,10 +468,25 @@
               <button type="button"
                       class="context-menu-item"
                       @click="handleOpenLinkInNewWindow">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                  <line x1="8" y1="21" x2="16" y2="21"></line>
-                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <rect x="2"
+                        y="3"
+                        width="20"
+                        height="14"
+                        rx="2"
+                        ry="2"></rect>
+                  <line x1="8"
+                        y1="21"
+                        x2="16"
+                        y2="21"></line>
+                  <line x1="12"
+                        y1="17"
+                        x2="12"
+                        y2="21"></line>
                 </svg>
                 <span>Open Link in New Window</span>
               </button>
@@ -415,7 +494,11 @@
               <button type="button"
                       class="context-menu-item"
                       @click="handleCopyLinkAddress">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
@@ -430,8 +513,17 @@
               <button type="button"
                       class="context-menu-item"
                       @click="handleCopySelectionText">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <rect x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
                 <span>Copy Text</span>
@@ -441,9 +533,18 @@
               <button type="button"
                       class="context-menu-item"
                       @click="handleSearchSelection">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <circle cx="11"
+                          cy="11"
+                          r="8"></circle>
+                  <line x1="21"
+                        y1="21"
+                        x2="16.65"
+                        y2="16.65"></line>
                 </svg>
                 <span class="truncate">Search YouTube for "{{ webviewMenuContext.selectionText.slice(0, 18) }}..."</span>
               </button>
@@ -457,12 +558,29 @@
                       class="context-menu-item"
                       :disabled="!webviewMenuContext.canCut"
                       @click="handleWebviewCut">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="6" cy="6" r="3"></circle>
-                  <circle cx="6" cy="18" r="3"></circle>
-                  <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
-                  <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
-                  <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <circle cx="6"
+                          cy="6"
+                          r="3"></circle>
+                  <circle cx="6"
+                          cy="18"
+                          r="3"></circle>
+                  <line x1="20"
+                        y1="4"
+                        x2="8.12"
+                        y2="15.88"></line>
+                  <line x1="14.47"
+                        y1="14.48"
+                        x2="20"
+                        y2="20"></line>
+                  <line x1="8.12"
+                        y1="8.12"
+                        x2="12"
+                        y2="12"></line>
                 </svg>
                 <span>Cut</span>
                 <span class="item-shortcut">Ctrl+X</span>
@@ -472,8 +590,17 @@
                       class="context-menu-item"
                       :disabled="!webviewMenuContext.canCopy"
                       @click="handleCopySelectionText">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <rect x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
                 <span>Copy</span>
@@ -484,9 +611,18 @@
                       class="context-menu-item"
                       :disabled="!webviewMenuContext.canPaste && !clipboardHasText"
                       @click="handleWebviewPaste">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
                   <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                  <rect x="8"
+                        y="2"
+                        width="8"
+                        height="4"
+                        rx="1"
+                        ry="1"></rect>
                 </svg>
                 <span>Paste</span>
                 <span class="item-shortcut">Ctrl+V</span>
@@ -495,14 +631,22 @@
               <button type="button"
                       class="context-menu-item"
                       @click="handleWebviewSelectAll">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
                   <path d="M3 3h4"></path>
                   <path d="M17 3h4"></path>
                   <path d="M3 21h4"></path>
                   <path d="M17 21h4"></path>
                   <path d="M3 7v10"></path>
                   <path d="M21 7v10"></path>
-                  <rect x="8" y="8" width="8" height="8" rx="1"></rect>
+                  <rect x="8"
+                        y="8"
+                        width="8"
+                        height="8"
+                        rx="1"></rect>
                 </svg>
                 <span>Select All</span>
                 <span class="item-shortcut">Ctrl+A</span>
@@ -516,9 +660,20 @@
               <button type="button"
                       class="context-menu-item"
                       @click="handleCopyImageAddress">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <rect x="3"
+                        y="3"
+                        width="18"
+                        height="18"
+                        rx="2"
+                        ry="2"></rect>
+                  <circle cx="8.5"
+                          cy="8.5"
+                          r="1.5"></circle>
                   <polyline points="21 15 16 10 5 21"></polyline>
                 </svg>
                 <span>Copy Image Address</span>
@@ -527,10 +682,25 @@
               <button type="button"
                       class="context-menu-item"
                       @click="handleOpenImageInNewWindow">
-                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                  <line x1="8" y1="21" x2="16" y2="21"></line>
-                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <rect x="2"
+                        y="3"
+                        width="20"
+                        height="14"
+                        rx="2"
+                        ry="2"></rect>
+                  <line x1="8"
+                        y1="21"
+                        x2="16"
+                        y2="21"></line>
+                  <line x1="12"
+                        y1="17"
+                        x2="12"
+                        y2="21"></line>
                 </svg>
                 <span>Open Image in New Window</span>
               </button>
@@ -543,7 +713,11 @@
                     class="context-menu-item"
                     :disabled="!canGoBack"
                     @click="handleMenuBack">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2.5">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
               <span>Back</span>
@@ -554,7 +728,11 @@
                     class="context-menu-item"
                     :disabled="!canGoForward"
                     @click="handleMenuForward">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2.5">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
               <span>Forward</span>
@@ -564,7 +742,11 @@
             <button type="button"
                     class="context-menu-item"
                     @click="handleMenuReload">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
                 <path d="M23 4v6h-6"></path>
                 <path d="M1 20v-6h6"></path>
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
@@ -579,7 +761,11 @@
             <button type="button"
                     class="context-menu-item"
                     @click="handleCopyPageUrl">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
@@ -590,8 +776,14 @@
                     type="button"
                     class="context-menu-item"
                     @click="handleCopyTimestampedVideoUrl">
-              <svg class="item-icon text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
+              <svg class="item-icon text-amber-400"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <circle cx="12"
+                        cy="12"
+                        r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
               <span>Copy Video URL at {{ formatTime(currentVideoTime) }}</span>
@@ -600,10 +792,25 @@
             <button type="button"
                     class="context-menu-item"
                     @click="handleOpenPageInNewWindow">
-              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                <line x1="8" y1="21" x2="16" y2="21"></line>
-                <line x1="12" y1="17" x2="12" y2="21"></line>
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <rect x="2"
+                      y="3"
+                      width="20"
+                      height="14"
+                      rx="2"
+                      ry="2"></rect>
+                <line x1="8"
+                      y1="21"
+                      x2="16"
+                      y2="21"></line>
+                <line x1="12"
+                      y1="17"
+                      x2="12"
+                      y2="21"></line>
               </svg>
               <span>Open Page in New Window</span>
             </button>

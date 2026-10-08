@@ -559,7 +559,7 @@ button.stat-pill {
 }
 
 .stat-pill.clickable:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid var(--primary-color);
   outline-offset: 1px;
 }
 
@@ -664,7 +664,7 @@ button.stat-pill {
 }
 
 .gain-box:focus-within {
-  border-color: #38bdf8;
+  outline: 1px solid var(--primary-color);
 }
 
 .gain-input {
@@ -716,9 +716,8 @@ button.stat-pill {
   gap: 0.25rem;
   padding: 0.28rem 0.55rem;
   background: #27272a;
-  border: 1px solid var(--negated-color);
+  border: 1px solid #3f3f46;
   border-radius: 5px;
-  color: var(--negated-color);
   font-size: 0.74rem;
   font-weight: 700;
   cursor: pointer;
@@ -727,12 +726,11 @@ button.stat-pill {
 
 .auto-level-btn:hover {
   background: #3f3f46;
-  border-color: #f59e0b;
-  color: #ffffff;
+  color: var(--primary-color);
 }
 
 .auto-level-btn:focus-visible {
-  outline: 2px solid #f59e0b;
+  outline: 2px solid var(--primary-color);
   outline-offset: 1px;
 }
 

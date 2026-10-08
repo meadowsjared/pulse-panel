@@ -2154,8 +2154,8 @@ defineExpose({
 }
 
 .start-handle .handle-line {
-  background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
+  background: var(--primary-color);
+  box-shadow: 0 0 8px var(--primary-color);
 }
 
 .end-handle .handle-line {
@@ -2304,7 +2304,7 @@ defineExpose({
 
 .snap-lock-foot {
   position: absolute;
-  top: calc(100% + 1rem);
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
   margin-top: 2px;

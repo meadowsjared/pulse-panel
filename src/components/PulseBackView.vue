@@ -153,27 +153,25 @@
         </div>
 
         <!-- Waveform Studio Editor -->
-        <waveform-editor
-          ref="waveformEditorRef"
-          :blob="selectedClip?.blob"
-          :original-blob="selectedClip?.originalBlob || selectedClip?.blob"
-          :clip-id="selectedClip?.id"
-          :duration="selectedClip?.duration || 1"
-          v-model:trim-start="trimStart"
-          v-model:trim-end="trimEnd"
-          v-model:current-time="currentTime"
-          :enable-dual-tracks="true"
-          v-model:include-mic="includeMic"
-          v-model:include-input="includeInput"
-          v-model:active-track-target="activeTrackTarget"
-          v-model:mic-gain="micGainMultiplier"
-          v-model:input-gain="inputGainMultiplier"
-          v-model:applied-gain-regions="appliedGainRegions"
-          v-model:segment-boundaries="segmentBoundaries"
-          :volume="clipVolume"
-          @timeline-change="onTimelineChange"
-          @change="saveCurrentClipState"
-        />
+        <waveform-editor ref="waveformEditorRef"
+                         :blob="selectedClip?.blob"
+                         :original-blob="selectedClip?.originalBlob || selectedClip?.blob"
+                         :clip-id="selectedClip?.id"
+                         :duration="selectedClip?.duration || 1"
+                         v-model:trim-start="trimStart"
+                         v-model:trim-end="trimEnd"
+                         v-model:current-time="currentTime"
+                         :enable-dual-tracks="true"
+                         v-model:include-mic="includeMic"
+                         v-model:include-input="includeInput"
+                         v-model:active-track-target="activeTrackTarget"
+                         v-model:mic-gain="micGainMultiplier"
+                         v-model:input-gain="inputGainMultiplier"
+                         v-model:applied-gain-regions="appliedGainRegions"
+                         v-model:segment-boundaries="segmentBoundaries"
+                         :volume="clipVolume"
+                         @timeline-change="onTimelineChange"
+                         @change="saveCurrentClipState" />
 
         <!-- Soundboard Publish Card -->
         <div class="publish-card">
@@ -710,8 +708,8 @@ onUnmounted(() => {
 }
 
 .clip-card.active {
-  background: #1e3a8a;
-  border-color: #3b82f6;
+  background: var(--primary-color-50);
+  border-color: var(--primary-color);
 }
 
 .clip-card-main {
@@ -807,7 +805,6 @@ onUnmounted(() => {
   align-items: center;
   gap: 0.75rem;
   flex: 1;
-  max-width: 450px;
 }
 
 .title-input-group label {
@@ -826,26 +823,6 @@ onUnmounted(() => {
   font-size: 0.9rem;
 }
 
-.duplicate-toolbar-btn {
-  display: flex;
-  align-items: center;
-  padding: 0.45rem 0.85rem;
-  background: #27272a;
-  color: #d4d4d8;
-  border: 1px solid #3f3f46;
-  font-size: 0.82rem;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.duplicate-toolbar-btn:hover {
-  background: #3f3f46;
-  color: #ffffff;
-  border-color: #38bdf8;
-}
 
 /* Publish Card */
 .publish-card {
@@ -901,7 +878,7 @@ onUnmounted(() => {
 }
 
 .publish-field :deep(.tag-input:focus-within) {
-  border-color: #3b82f6;
+  border-color: var(--primary-color);
   outline: none;
 }
 
@@ -935,7 +912,7 @@ onUnmounted(() => {
 }
 
 .format-toggle-btn.active {
-  background: #3b82f6;
+  background: var(--primary-color);
   color: white;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
@@ -972,7 +949,7 @@ onUnmounted(() => {
 .publish-checkbox {
   width: 1rem;
   height: 1rem;
-  accent-color: #3b82f6;
+  accent-color: var(--primary-color);
   cursor: pointer;
   border-radius: 4px;
 }
@@ -1021,7 +998,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   padding: 0.65rem 1.5rem;
-  background: #10b981;
+  background: var(--primary-color);
   color: white;
   font-size: 0.9rem;
   font-weight: 700;
