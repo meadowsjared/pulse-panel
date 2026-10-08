@@ -2179,18 +2179,19 @@ defineExpose({
 
 .playhead-cap {
   position: absolute;
-  top: 0;
+  bottom: -16px;
   left: -7px;
   width: 16px;
   height: 16px;
   background: #ffffff;
-  clip-path: polygon(0% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%);
+  clip-path: polygon(50% 0%, 100% 60%, 100% 100%, 0% 100%, 0% 60%);
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
   cursor: ew-resize;
   pointer-events: auto;
   transition: transform 0.1s ease;
   user-select: none;
   -webkit-user-drag: none;
+  z-index: 41;
 }
 
 .playhead-hit-area {
