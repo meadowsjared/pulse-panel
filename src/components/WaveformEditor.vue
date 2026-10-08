@@ -2127,17 +2127,17 @@ function onKeyDown(e: KeyboardEvent) {
   if (e.key === 'Home') {
     e.preventDefault();
     if (e.shiftKey) {
-      jumpCursorToTrimHandle('start');
-    } else {
       jumpCursorToExtremity('start');
+    } else {
+      jumpCursorToTrimHandle('start');
     }
     return;
   } else if (e.key === 'End') {
     e.preventDefault();
     if (e.shiftKey) {
-      jumpCursorToTrimHandle('end');
-    } else {
       jumpCursorToExtremity('end');
+    } else {
+      jumpCursorToTrimHandle('end');
     }
     return;
   } else if (e.key === 'PageDown') {
