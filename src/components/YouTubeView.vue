@@ -95,7 +95,8 @@
       </div>
 
       <!-- Address / Search Bar -->
-      <div class="address-bar-wrapper">
+      <div class="address-bar-wrapper"
+           @contextmenu.prevent.stop="openAddressContextMenu($event)">
         <svg class="w-4 h-4 search-icon text-zinc-400"
              viewBox="0 0 24 24"
              fill="none"
@@ -115,7 +116,8 @@
                v-model="inputUrl"
                @keydown.enter="handleNavigate"
                @focus="focusAddressBar"
-               @keydown.escape="restoreAddressBar"
+               @keydown.escape="handleAddressBarEscape"
+               @contextmenu.prevent.stop="openAddressContextMenu($event)"
                placeholder="Search YouTube or paste video URL (Enter to go)..." />
         <button v-if="inputUrl"
                 class="clear-input-btn"
@@ -132,7 +134,8 @@
     </div>
 
     <!-- Main Content Area: Webview and Expandable Bottom Bar/Panel -->
-    <div class="youtube-main-content">
+    <div class="youtube-main-content"
+         @contextmenu="handleMainContentDomContextMenu($event)">
       <!-- Webview Container -->
       <div class="webview-wrapper"
            :class="{ 'has-dock-bar': isVideoPage && activeVideoTitle, 'is-covered': isDrawerOpen }">
@@ -268,19 +271,834 @@
         </div>
       </div>
     </div>
+
+    <!-- Context Menu Portal -->
+    <teleport to="body">
+      <!-- Backdrop for closing on outside click / right-click -->
+      <div v-if="activeMenu"
+           class="pulse-context-backdrop"
+           @mousedown="closeContextMenu"
+           @contextmenu.prevent="closeContextMenu"
+           @wheel="closeContextMenu"></div>
+
+      <!-- Context Menu Popup -->
+      <transition name="context-menu-fade">
+        <div v-if="activeMenu"
+             ref="contextMenuRef"
+             class="pulse-context-menu"
+             :style="{ top: `${menuPosition.y}px`, left: `${menuPosition.x}px` }"
+             @contextmenu.prevent.stop>
+
+          <!-- ADDRESS BAR CONTEXT MENU -->
+          <template v-if="activeMenu === 'address'">
+            <div class="menu-section-header">Address Bar</div>
+
+            <button type="button"
+                    class="context-menu-item"
+                    :disabled="!inputUrl"
+                    @click="handleAddressCut">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="6" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+              </svg>
+              <span>Cut</span>
+              <span class="item-shortcut">Ctrl+X</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    :disabled="!inputUrl"
+                    @click="handleAddressCopy">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy</span>
+              <span class="item-shortcut">Ctrl+C</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    :disabled="!clipboardHasText"
+                    @click="handleAddressPaste">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              <span>Paste</span>
+              <span v-if="clipboardIsAddress" class="item-badge">Address</span>
+              <span class="item-shortcut">Ctrl+V</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    :disabled="!clipboardHasText"
+                    @click="handleAddressPasteAndGo">
+              <svg class="item-icon text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"></path>
+                <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"></path>
+                <path d="m13 14 3-3-3-3"></path>
+                <path d="M9 11h7"></path>
+              </svg>
+              <span>{{ clipboardIsAddress ? 'Paste & Go' : 'Paste & Search' }}</span>
+              <span class="item-shortcut">↵</span>
+            </button>
+
+            <div class="menu-divider"></div>
+
+            <button type="button"
+                    class="context-menu-item"
+                    :disabled="!inputUrl"
+                    @click="handleAddressSelectAll">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3h4"></path>
+                <path d="M17 3h4"></path>
+                <path d="M3 21h4"></path>
+                <path d="M17 21h4"></path>
+                <path d="M3 7v10"></path>
+                <path d="M21 7v10"></path>
+                <rect x="8" y="8" width="8" height="8" rx="1"></rect>
+              </svg>
+              <span>Select All</span>
+              <span class="item-shortcut">Ctrl+A</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    :disabled="!inputUrl"
+                    @click="handleAddressClear">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Clear</span>
+            </button>
+          </template>
+
+          <!-- MAIN CONTENT / WEBVIEW CONTEXT MENU -->
+          <template v-else-if="activeMenu === 'webview'">
+            <!-- Link Context Group -->
+            <template v-if="webviewMenuContext.linkUrl">
+              <div class="menu-preview-header" :title="webviewMenuContext.linkUrl">
+                <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span class="truncate">{{ truncateUrl(webviewMenuContext.linkUrl) }}</span>
+              </div>
+
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleOpenLink">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span>Open Link</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleOpenLinkInNewWindow">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                <span>Open Link in New Window</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleCopyLinkAddress">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span>Copy Link Address</span>
+              </button>
+
+              <div class="menu-divider"></div>
+            </template>
+
+            <!-- Selection Context Group -->
+            <template v-if="webviewMenuContext.selectionText">
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleCopySelectionText">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy Text</span>
+                <span class="item-shortcut">Ctrl+C</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleSearchSelection">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span class="truncate">Search YouTube for "{{ webviewMenuContext.selectionText.slice(0, 18) }}..."</span>
+              </button>
+
+              <div class="menu-divider"></div>
+            </template>
+
+            <!-- Editable Fields inside Guest Page -->
+            <template v-else-if="webviewMenuContext.isEditable">
+              <button type="button"
+                      class="context-menu-item"
+                      :disabled="!webviewMenuContext.canCut"
+                      @click="handleWebviewCut">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="6" cy="6" r="3"></circle>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                  <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                  <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                </svg>
+                <span>Cut</span>
+                <span class="item-shortcut">Ctrl+X</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      :disabled="!webviewMenuContext.canCopy"
+                      @click="handleCopySelectionText">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy</span>
+                <span class="item-shortcut">Ctrl+C</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      :disabled="!webviewMenuContext.canPaste && !clipboardHasText"
+                      @click="handleWebviewPaste">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                </svg>
+                <span>Paste</span>
+                <span class="item-shortcut">Ctrl+V</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleWebviewSelectAll">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3h4"></path>
+                  <path d="M17 3h4"></path>
+                  <path d="M3 21h4"></path>
+                  <path d="M17 21h4"></path>
+                  <path d="M3 7v10"></path>
+                  <path d="M21 7v10"></path>
+                  <rect x="8" y="8" width="8" height="8" rx="1"></rect>
+                </svg>
+                <span>Select All</span>
+                <span class="item-shortcut">Ctrl+A</span>
+              </button>
+
+              <div class="menu-divider"></div>
+            </template>
+
+            <!-- Image Media Actions -->
+            <template v-if="webviewMenuContext.srcUrl && (webviewMenuContext.mediaType === 'image' || webviewMenuContext.srcUrl.includes('ytimg') || webviewMenuContext.srcUrl.includes('googleusercontent'))">
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleCopyImageAddress">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                <span>Copy Image Address</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleOpenImageInNewWindow">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                <span>Open Image in New Window</span>
+              </button>
+
+              <div class="menu-divider"></div>
+            </template>
+
+            <!-- Navigation Controls (Always present and prominent!) -->
+            <button type="button"
+                    class="context-menu-item"
+                    :disabled="!canGoBack"
+                    @click="handleMenuBack">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+              <span>Back</span>
+              <span class="item-shortcut">Alt+Left</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    :disabled="!canGoForward"
+                    @click="handleMenuForward">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+              <span>Forward</span>
+              <span class="item-shortcut">Alt+Right</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="handleMenuReload">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>{{ isLoading ? 'Stop' : 'Reload' }}</span>
+              <span class="item-shortcut">Ctrl+R</span>
+            </button>
+
+            <div class="menu-divider"></div>
+
+            <!-- Page Level Actions -->
+            <button type="button"
+                    class="context-menu-item"
+                    @click="handleCopyPageUrl">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              <span>Copy Page URL</span>
+            </button>
+
+            <button v-if="isVideoPage"
+                    type="button"
+                    class="context-menu-item"
+                    @click="handleCopyTimestampedVideoUrl">
+              <svg class="item-icon text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Copy Video URL at {{ formatTime(currentVideoTime) }}</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="handleOpenPageInNewWindow">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+              <span>Open Page in New Window</span>
+            </button>
+          </template>
+
+        </div>
+      </transition>
+    </teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, onUnmounted, onDeactivated, onActivated, watch } from 'vue';
+import { ref, shallowRef, onMounted, onUnmounted, onDeactivated, onActivated, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import YouTubeClipPanel from './YouTubeClipPanel.vue';
+import { usePulseBackStore } from '../store/pulseBack';
 
 const route = useRoute();
+const pulseBackStore = usePulseBackStore();
 
 const webviewRef = ref<any>(null);
 const clipPanelRef = ref<any>(null);
 const addressInputRef = ref<HTMLInputElement | null>(null);
+
+// Context menu state
+type MenuType = 'address' | 'webview' | null;
+
+interface MenuPosition {
+  x: number;
+  y: number;
+}
+
+interface WebviewMenuContext {
+  linkUrl: string;
+  linkText: string;
+  selectionText: string;
+  srcUrl: string;
+  mediaType: string;
+  isEditable: boolean;
+  canCut: boolean;
+  canCopy: boolean;
+  canPaste: boolean;
+  canSelectAll: boolean;
+}
+
+const activeMenu = ref<MenuType>(null);
+const menuPosition = ref<MenuPosition>({ x: 0, y: 0 });
+const contextMenuRef = ref<HTMLElement | null>(null);
+
+const clipboardText = ref('');
+const clipboardHasText = ref(false);
+const clipboardIsAddress = ref(false);
+
+const addressSelection = ref({
+  start: 0,
+  end: 0,
+  hasSelection: false,
+  selectedText: '',
+});
+
+const webviewMenuContext = ref<WebviewMenuContext>({
+  linkUrl: '',
+  linkText: '',
+  selectionText: '',
+  srcUrl: '',
+  mediaType: 'none',
+  isEditable: false,
+  canCut: false,
+  canCopy: false,
+  canPaste: false,
+  canSelectAll: false,
+});
+
+let lastMousePos = { x: 100, y: 100 };
+function updateMousePos(e: MouseEvent) {
+  lastMousePos = { x: e.clientX, y: e.clientY };
+}
+
+function isLikelyAddress(str: string): boolean {
+  if (!str) return false;
+  const s = str.trim();
+  if (/^(https?:\/\/|www\.)/i.test(s)) return true;
+  if (s.includes('youtube.com') || s.includes('youtu.be')) return true;
+  if (!s.includes(' ') && /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(s)) return true;
+  return false;
+}
+
+function truncateUrl(url: string, maxLen = 34): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    const display = parsed.hostname.replace(/^www\./, '') + parsed.pathname + (parsed.search ? parsed.search : '');
+    return display.length > maxLen ? display.substring(0, maxLen - 1) + '…' : display;
+  } catch (_) {
+    return url.length > maxLen ? url.substring(0, maxLen - 1) + '…' : url;
+  }
+}
+
+async function refreshClipboardState() {
+  try {
+    const text = (await navigator.clipboard.readText()) || '';
+    const trimmed = text.trim();
+    clipboardText.value = trimmed;
+    clipboardHasText.value = trimmed.length > 0;
+    clipboardIsAddress.value = isLikelyAddress(trimmed);
+  } catch (_) {
+    clipboardText.value = '';
+    clipboardHasText.value = false;
+    clipboardIsAddress.value = false;
+  }
+}
+
+async function showMenuAt(type: MenuType, x: number, y: number) {
+  activeMenu.value = type;
+  menuPosition.value = { x, y };
+
+  await nextTick();
+  if (contextMenuRef.value) {
+    const rect = contextMenuRef.value.getBoundingClientRect();
+    const menuWidth = rect.width || 220;
+    const menuHeight = rect.height || 260;
+    const padding = 10;
+    let finalX = x;
+    let finalY = y;
+
+    if (finalX + menuWidth > window.innerWidth - padding) {
+      finalX = Math.max(padding, window.innerWidth - menuWidth - padding);
+    }
+    if (finalY + menuHeight > window.innerHeight - padding) {
+      finalY = Math.max(padding, window.innerHeight - menuHeight - padding);
+    }
+    menuPosition.value = { x: Math.max(padding, finalX), y: Math.max(padding, finalY) };
+  }
+}
+
+function closeContextMenu() {
+  activeMenu.value = null;
+}
+
+// Address Bar Context Menu
+async function openAddressContextMenu(event: MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  await refreshClipboardState();
+
+  const inputEl = addressInputRef.value;
+  if (inputEl) {
+    const start = inputEl.selectionStart ?? 0;
+    const end = inputEl.selectionEnd ?? 0;
+    const val = inputEl.value;
+    const hasSelection = start !== end && start >= 0 && end <= val.length;
+    const selectedText = hasSelection ? val.substring(start, end) : '';
+
+    addressSelection.value = {
+      start,
+      end,
+      hasSelection,
+      selectedText,
+    };
+  } else {
+    addressSelection.value = {
+      start: 0,
+      end: 0,
+      hasSelection: false,
+      selectedText: '',
+    };
+  }
+
+  await showMenuAt('address', event.clientX, event.clientY);
+}
+
+async function handleAddressCut() {
+  closeContextMenu();
+  const inputEl = addressInputRef.value;
+  const current = inputUrl.value;
+  if (!current) return;
+
+  let textToCut = current;
+  if (addressSelection.value.hasSelection && addressSelection.value.selectedText) {
+    textToCut = addressSelection.value.selectedText;
+    const { start, end } = addressSelection.value;
+    inputUrl.value = current.substring(0, start) + current.substring(end);
+    nextTick(() => {
+      inputEl?.focus();
+      inputEl?.setSelectionRange(start, start);
+    });
+  } else {
+    inputUrl.value = '';
+    nextTick(() => {
+      inputEl?.focus();
+    });
+  }
+
+  try {
+    await navigator.clipboard.writeText(textToCut);
+    pulseBackStore.showToast('Cut to clipboard');
+  } catch (_) { }
+}
+
+async function handleAddressCopy() {
+  closeContextMenu();
+  const current = inputUrl.value;
+  if (!current) return;
+
+  const textToCopy = addressSelection.value.hasSelection && addressSelection.value.selectedText
+    ? addressSelection.value.selectedText
+    : current;
+
+  try {
+    await navigator.clipboard.writeText(textToCopy);
+    pulseBackStore.showToast('Copied to clipboard');
+  } catch (_) { }
+}
+
+async function handleAddressPaste() {
+  closeContextMenu();
+  if (!clipboardHasText.value || !clipboardText.value) return;
+
+  const pasteVal = clipboardText.value;
+  const inputEl = addressInputRef.value;
+  const current = inputUrl.value;
+
+  if (addressSelection.value.hasSelection) {
+    const { start, end } = addressSelection.value;
+    inputUrl.value = current.substring(0, start) + pasteVal + current.substring(end);
+    const newPos = start + pasteVal.length;
+    nextTick(() => {
+      inputEl?.focus();
+      inputEl?.setSelectionRange(newPos, newPos);
+    });
+  } else {
+    inputUrl.value = pasteVal;
+    nextTick(() => {
+      inputEl?.focus();
+      inputEl?.select();
+    });
+  }
+
+  pulseBackStore.showToast('Pasted from clipboard');
+}
+
+async function handleAddressPasteAndGo() {
+  closeContextMenu();
+  if (!clipboardHasText.value || !clipboardText.value) return;
+
+  inputUrl.value = clipboardText.value;
+  handleNavigate();
+  pulseBackStore.showToast(clipboardIsAddress.value ? 'Navigating to address...' : 'Searching YouTube...');
+}
+
+function handleAddressSelectAll() {
+  closeContextMenu();
+  nextTick(() => {
+    addressInputRef.value?.focus();
+    addressInputRef.value?.select();
+  });
+}
+
+function handleAddressClear() {
+  closeContextMenu();
+  inputUrl.value = '';
+  nextTick(() => {
+    addressInputRef.value?.focus();
+  });
+}
+
+// Main Content / Webview Context Menu
+function openMainContextMenu(params: {
+  x: number;
+  y: number;
+  linkUrl?: string;
+  linkText?: string;
+  selectionText?: string;
+  srcUrl?: string;
+  mediaType?: string;
+  isEditable?: boolean;
+  editFlags?: any;
+}) {
+  let linkUrl = params.linkUrl || '';
+  if (linkUrl && linkUrl.startsWith('/')) {
+    try {
+      linkUrl = new URL(linkUrl, 'https://www.youtube.com').href;
+    } catch (_) { }
+  }
+
+  const editFlags = params.editFlags || {};
+  webviewMenuContext.value = {
+    linkUrl,
+    linkText: params.linkText || '',
+    selectionText: params.selectionText || '',
+    srcUrl: params.srcUrl || '',
+    mediaType: params.mediaType || 'none',
+    isEditable: !!params.isEditable,
+    canCut: !!editFlags.canCut,
+    canCopy: !!editFlags.canCopy || !!params.selectionText,
+    canPaste: !!editFlags.canPaste || clipboardHasText.value,
+    canSelectAll: !!editFlags.canSelectAll,
+  };
+
+  showMenuAt('webview', params.x, params.y);
+}
+
+async function handleWebviewContextMenu(event: any) {
+  event?.preventDefault?.();
+  await refreshClipboardState();
+
+  const wv = webviewRef.value;
+  const params = event.params || event || {};
+  const rect = wv?.getBoundingClientRect();
+
+  const rawX = rect ? rect.left + (typeof params.x === 'number' ? params.x : 20) : lastMousePos.x;
+  const rawY = rect ? rect.top + (typeof params.y === 'number' ? params.y : 20) : lastMousePos.y;
+
+  openMainContextMenu({
+    x: rawX,
+    y: rawY,
+    linkUrl: params.linkURL || params.linkUrl || '',
+    linkText: params.linkText || '',
+    selectionText: params.selectionText || '',
+    srcUrl: params.srcURL || params.srcUrl || '',
+    mediaType: params.mediaType || 'none',
+    isEditable: !!params.isEditable,
+    editFlags: params.editFlags,
+  });
+}
+
+async function handleMainContentDomContextMenu(event: MouseEvent) {
+  if ((event.target as HTMLElement)?.closest?.('.clip-dock-panel')) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+
+  await refreshClipboardState();
+
+  openMainContextMenu({
+    x: event.clientX,
+    y: event.clientY,
+    linkUrl: '',
+    linkText: '',
+    selectionText: window.getSelection()?.toString()?.trim() || '',
+    srcUrl: '',
+    mediaType: 'none',
+    isEditable: false,
+  });
+}
+
+function handleOpenLink() {
+  closeContextMenu();
+  const url = webviewMenuContext.value.linkUrl;
+  if (url) {
+    navigateToUrl(url);
+  }
+}
+
+function handleOpenLinkInNewWindow() {
+  closeContextMenu();
+  const url = webviewMenuContext.value.linkUrl;
+  if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+    window.electron?.openExternalLink(url);
+    pulseBackStore.showToast('Opened link in default browser');
+  }
+}
+
+async function handleCopyLinkAddress() {
+  closeContextMenu();
+  const url = webviewMenuContext.value.linkUrl;
+  if (url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      pulseBackStore.showToast('Link address copied to clipboard');
+    } catch (_) { }
+  }
+}
+
+async function handleCopySelectionText() {
+  closeContextMenu();
+  const text = webviewMenuContext.value.selectionText;
+  if (text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      webviewRef.value?.copy?.();
+      pulseBackStore.showToast('Text copied to clipboard');
+    } catch (_) { }
+  } else {
+    try {
+      webviewRef.value?.copy?.();
+      pulseBackStore.showToast('Copied to clipboard');
+    } catch (_) { }
+  }
+}
+
+function handleSearchSelection() {
+  closeContextMenu();
+  const text = webviewMenuContext.value.selectionText;
+  if (text) {
+    navigateToUrl(`https://www.youtube.com/results?search_query=${encodeURIComponent(text)}`);
+  }
+}
+
+function handleWebviewCut() {
+  closeContextMenu();
+  try {
+    webviewRef.value?.cut?.();
+  } catch (_) { }
+}
+
+function handleWebviewPaste() {
+  closeContextMenu();
+  try {
+    webviewRef.value?.paste?.();
+  } catch (_) { }
+}
+
+function handleWebviewSelectAll() {
+  closeContextMenu();
+  try {
+    webviewRef.value?.selectAll?.();
+  } catch (_) { }
+}
+
+function handleMenuBack() {
+  closeContextMenu();
+  goBack();
+}
+
+function handleMenuForward() {
+  closeContextMenu();
+  goForward();
+}
+
+function handleMenuReload() {
+  closeContextMenu();
+  reloadPage();
+}
+
+async function handleCopyPageUrl() {
+  closeContextMenu();
+  const url = currentUrl.value;
+  if (url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      pulseBackStore.showToast('Page URL copied to clipboard');
+    } catch (_) { }
+  }
+}
+
+async function handleCopyTimestampedVideoUrl() {
+  closeContextMenu();
+  const url = currentUrl.value;
+  const timeSec = Math.floor(currentVideoTime.value);
+  let finalUrl = url;
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set('t', `${timeSec}s`);
+    finalUrl = parsed.toString();
+  } catch (_) {
+    const sep = url.includes('?') ? '&' : '?';
+    finalUrl = `${url}${sep}t=${timeSec}s`;
+  }
+  try {
+    await navigator.clipboard.writeText(finalUrl);
+    pulseBackStore.showToast(`Copied video URL at ${formatTime(timeSec)}`);
+  } catch (_) { }
+}
+
+function handleOpenPageInNewWindow() {
+  closeContextMenu();
+  const url = currentUrl.value;
+  if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+    window.electron?.openExternalLink(url);
+    pulseBackStore.showToast('Opened in default browser');
+  }
+}
+
+async function handleCopyImageAddress() {
+  closeContextMenu();
+  const url = webviewMenuContext.value.srcUrl;
+  if (url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      pulseBackStore.showToast('Image address copied to clipboard');
+    } catch (_) { }
+  }
+}
+
+function handleOpenImageInNewWindow() {
+  closeContextMenu();
+  const url = webviewMenuContext.value.srcUrl;
+  if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+    window.electron?.openExternalLink(url);
+    pulseBackStore.showToast('Opened image in default browser');
+  }
+}
 
 // Watch route to automatically pause video when navigating away from YouTube
 watch(
@@ -785,13 +1603,20 @@ async function openClipDrawer() {
 }
 
 function closeClipDrawer() {
+  closeContextMenu();
   clipPanelRef.value?.stopAudio?.();
   isDrawerOpen.value = false;
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isDrawerOpen.value) {
-    closeClipDrawer();
+  if (e.key === 'Escape') {
+    if (activeMenu.value) {
+      closeContextMenu();
+      return;
+    }
+    if (isDrawerOpen.value) {
+      closeClipDrawer();
+    }
   }
 }
 
@@ -799,20 +1624,64 @@ function focusAddressBar() {
   addressInputRef.value?.select();
 }
 
-function restoreAddressBar() {
-  addressInputRef.value?.blur();
-  inputUrl.value = currentUrl.value;
+function handleAddressBarEscape(e: KeyboardEvent) {
+  if (activeMenu.value) {
+    closeContextMenu();
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
+  const inputEl = addressInputRef.value;
+  if (!inputEl) return;
+
+  const start = inputEl.selectionStart ?? 0;
+  const end = inputEl.selectionEnd ?? 0;
+  const hasSelection = start !== end;
+  const isModified = inputUrl.value !== currentUrl.value;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  // 1. First Escape: if text is currently selected, deselect/collapse the selection while keeping focus
+  if (hasSelection) {
+    inputEl.setSelectionRange(end, end);
+    return;
+  }
+
+  // 2. Second Escape: if URL was modified, reset back to current page URL while keeping focus
+  if (isModified) {
+    inputUrl.value = currentUrl.value;
+    nextTick(() => {
+      inputEl.focus();
+      const len = inputUrl.value.length;
+      inputEl.setSelectionRange(len, len);
+    });
+    return;
+  }
+
+  // 3. Subsequent Escape: unmodified and unselected -> blur address bar and return focus to page
+  inputEl.blur();
+  try {
+    webviewRef.value?.focus?.();
+  } catch (_) { }
 }
 
 // Lifecycle and event listeners
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown);
+  window.addEventListener('resize', closeContextMenu);
+  window.addEventListener('blur', closeContextMenu);
+  window.addEventListener('mousemove', updateMousePos, { passive: true });
 
   const wv = webviewRef.value;
   if (!wv) return;
 
+  wv.addEventListener('context-menu', handleWebviewContextMenu);
+
   wv.addEventListener('did-start-loading', () => {
     isLoading.value = true;
+    closeContextMenu();
   });
 
   wv.addEventListener('did-stop-loading', () => {
@@ -824,6 +1693,7 @@ onMounted(() => {
   });
 
   const updateLocation = () => {
+    closeContextMenu();
     try {
       const url = wv.getURL();
       if (url) {
@@ -860,6 +1730,7 @@ onMounted(() => {
 });
 
 onDeactivated(() => {
+  closeContextMenu();
   closeClipDrawer();
   if (videoHeartbeatTimer) {
     clearInterval(videoHeartbeatTimer);
@@ -899,7 +1770,19 @@ onActivated(() => {
 });
 
 onUnmounted(() => {
+  closeContextMenu();
   window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('resize', closeContextMenu);
+  window.removeEventListener('blur', closeContextMenu);
+  window.removeEventListener('mousemove', updateMousePos);
+
+  const wv = webviewRef.value;
+  if (wv) {
+    try {
+      wv.removeEventListener('context-menu', handleWebviewContextMenu);
+    } catch (_) { }
+  }
+
   if (videoHeartbeatTimer) {
     clearInterval(videoHeartbeatTimer);
     videoHeartbeatTimer = null;
@@ -1311,5 +2194,139 @@ button:focus-visible {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Context Menu Styles */
+.pulse-context-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: transparent;
+  cursor: default;
+}
+
+.pulse-context-menu {
+  position: fixed;
+  z-index: 99999;
+  min-width: 215px;
+  max-width: 320px;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 0.35rem;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transform-origin: top left;
+}
+
+.context-menu-fade-enter-active,
+.context-menu-fade-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.context-menu-fade-enter-from {
+  opacity: 0;
+  transform: scale(0.96) translateY(-3px);
+}
+
+.context-menu-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
+.menu-section-header {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a1a1aa;
+  padding: 0.25rem 0.5rem 0.15rem;
+}
+
+.menu-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  color: #a1a1aa;
+  padding: 0.35rem 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 5px;
+  margin-bottom: 0.2rem;
+  max-width: 100%;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.42rem 0.6rem;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: #f4f4f5;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.1s ease, color 0.1s ease;
+  white-space: nowrap;
+}
+
+.context-menu-item:hover:not(:disabled) {
+  background-color: #27272a;
+  color: #ffffff;
+}
+
+.context-menu-item:active:not(:disabled) {
+  background-color: #23a459;
+  color: #ffffff;
+}
+
+.context-menu-item:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.item-icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  color: #a1a1aa;
+  transition: color 0.1s ease;
+}
+
+.context-menu-item:hover:not(:disabled) .item-icon {
+  color: #ffffff;
+}
+
+.item-shortcut {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: #71717a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.item-badge {
+  margin-left: auto;
+  margin-right: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: rgba(35, 164, 89, 0.2);
+  color: #abffab;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.menu-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0.2rem 0.3rem;
 }
 </style>
