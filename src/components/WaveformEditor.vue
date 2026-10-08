@@ -629,6 +629,9 @@ const pasteTooltip = computed(() => {
   return `Paste at cursor (${formatSeconds(currentTime.value)}) (Ctrl+V)`;
 });
 
+let lastEmittedBlob: Blob | null = null;
+let lastEmittedBuffer: AudioBuffer | null = null;
+
 function pushUndoState() {
   if (!cleanBaseAudioBuffer.value) return;
   undoStack.value.push({
@@ -819,6 +822,7 @@ function applyGain() {
     appliedGainRegions.value
   );
 
+  lastEmittedBuffer = effectiveAudioBuffer.value;
   emit('update:audioBuffer', effectiveAudioBuffer.value);
   updatePreviewUrls();
   updateTrackVolumes();
@@ -1195,6 +1199,9 @@ function trimToSelection() {
     ? encodeWAV(newBuf.getChannelData(0), sampleRate, newBuf.getChannelData(1))
     : encodeWAV(newBuf.getChannelData(0), sampleRate, numChannels >= 2 ? newBuf.getChannelData(1) : undefined);
 
+  lastEmittedBlob = newBlob;
+  lastEmittedBuffer = newBuf;
+
   emit('timelineChange', {
     buffer: newBuf,
     blob: newBlob,
@@ -1234,6 +1241,9 @@ async function commitTimelineChange(
   const newBlob = isDualTrackActive.value && composite.numberOfChannels >= 2
     ? encodeWAV(composite.getChannelData(0), sampleRate, composite.getChannelData(1))
     : encodeWAV(composite.getChannelData(0), sampleRate, composite.numberOfChannels >= 2 ? composite.getChannelData(1) : undefined);
+
+  lastEmittedBlob = newBlob;
+  lastEmittedBuffer = composite;
 
   emit('timelineChange', {
     buffer: composite,
@@ -2163,14 +2173,28 @@ async function loadAudioData(source: AudioBuffer | Blob, savedBoundaries?: numbe
 
 // Watchers
 watch(
-  () => [props.audioBuffer, props.blob, props.clipId],
-  async ([newBuf, newBlob]) => {
+  [() => props.audioBuffer, () => props.blob, () => props.clipId],
+  async ([newBuf, newBlob, newClipId], [_oldBuf, _oldBlob, oldClipId]) => {
+    // If switching to a different clip, reset our tracking so it loads freshly
+    if (newClipId && oldClipId && newClipId !== oldClipId) {
+      lastEmittedBlob = null;
+      lastEmittedBuffer = null;
+    }
+
+    // If this blob or buffer was generated internally by this editor instance, ignore the echo prop update
+    if (newBlob && newBlob === lastEmittedBlob) {
+      return;
+    }
+    if (newBuf && newBuf === lastEmittedBuffer) {
+      return;
+    }
+
     stopPreview();
     stopScrubSnippet();
     if (newBlob) {
-      await loadAudioData(newBlob as Blob, props.segmentBoundaries);
+      await loadAudioData(newBlob, props.segmentBoundaries);
     } else if (newBuf) {
-      await loadAudioData(newBuf as AudioBuffer, props.segmentBoundaries);
+      await loadAudioData(newBuf, props.segmentBoundaries);
     } else {
       cleanBaseAudioBuffer.value = null;
       effectiveAudioBuffer.value = null;

@@ -1,81 +1,71 @@
 <template>
-  <ConfirmDialog
-    v-if="loadingErrorMessage || updateStore.errorMessage"
-    :show-dialog="!!loadingErrorMessage || !!updateStore.errorMessage"
-    :title="'Error'"
-    :message="loadingErrorMessage || updateStore.errorMessage || ''"
-    :confirm-text="'Ok'"
-    :cancel-text="''"
-    @update:show-dialog="clearErrorMessages" />
-  <title-bar class="select-none"
-    >{{ settingsStore.appName
-    }}<img
-      class="pulse-panel-icon shrink-0"
-      @click="openLink"
-      :src="PulsePanelIcon"
-      :title="appVersion"
-      :alt="`${settingsStore.appName} icon`"
-  /></title-bar>
+  <ConfirmDialog v-if="loadingErrorMessage || updateStore.errorMessage"
+                 :show-dialog="!!loadingErrorMessage || !!updateStore.errorMessage"
+                 :title="'Error'"
+                 :message="loadingErrorMessage || updateStore.errorMessage || ''"
+                 :confirm-text="'Ok'"
+                 :cancel-text="''"
+                 @update:show-dialog="clearErrorMessages" />
+  <title-bar class="select-none">{{ settingsStore.appName
+  }}<img class="pulse-panel-icon shrink-0"
+         @click="openLink"
+         :src="PulsePanelIcon"
+         :title="appVersion"
+         :alt="`${settingsStore.appName} icon`" /></title-bar>
   <div :class="['e-nuxt-container', { darkMode: settingsStore.darkMode }]">
     <side-bar>
       <div class="top-buttons">
-        <router-link
-          @keydown.space.enter="activateRouterLink(0, true)"
-          @keyup.space.enter="activateRouterLink(0, false)"
-          @keypress.space.prevent="navigateTo('/soundboard')"
-          to="/soundboard"
-          title="Soundboard"
-          :class="['menu', { keyActive: routerLinkActive[0] }]">
+        <router-link @keydown.space.enter="activateRouterLink(0, true)"
+                     @keyup.space.enter="activateRouterLink(0, false)"
+                     @keypress.space.prevent="navigateTo('/soundboard')"
+                     to="/soundboard"
+                     title="Soundboard"
+                     :class="['menu', { keyActive: routerLinkActive[0] }]">
           <inline-svg :src="Speaker" />Soundbar
         </router-link>
-        <router-link
-          @keydown.space.enter="activateRouterLink(1, true)"
-          @keyup.space.enter="activateRouterLink(1, false)"
-          @keypress.space.prevent="navigateTo('/pulse-back')"
-          to="/pulse-back"
-          title="Pulse Back"
-          :class="['menu', { keyActive: routerLinkActive[1] }]">
+        <router-link @keydown.space.enter="activateRouterLink(1, true)"
+                     @keyup.space.enter="activateRouterLink(1, false)"
+                     @keypress.space.prevent="navigateTo('/pulse-back')"
+                     to="/pulse-back"
+                     title="Pulse Back"
+                     :class="['menu', { keyActive: routerLinkActive[1] }]">
           <inline-svg :src="PulseBackIcon" />Pulse Back
         </router-link>
-        <router-link
-          @keydown.space.enter="activateRouterLink(2, true)"
-          @keyup.space.enter="activateRouterLink(2, false)"
-          @keypress.space.prevent="navigateTo('/youtube')"
-          to="/youtube"
-          title="YouTube"
-          :class="['menu', { keyActive: routerLinkActive[2] }]">
+        <router-link @keydown.space.enter="activateRouterLink(2, true)"
+                     @keyup.space.enter="activateRouterLink(2, false)"
+                     @keypress.space.prevent="navigateTo('/youtube')"
+                     to="/youtube"
+                     title="YouTube"
+                     :class="['menu', { keyActive: routerLinkActive[2] }]">
           <inline-svg :src="YouTubeIcon" />YouTube
         </router-link>
-        <router-link
-          @keydown.space.enter="activateRouterLink(3, true)"
-          @keyup.space.enter="activateRouterLink(3, false)"
-          @keypress.space.prevent="navigateTo('/settings')"
-          to="/settings"
-          title="Settings"
-          :class="['menu', { keyActive: routerLinkActive[3] }]">
+        <router-link @keydown.space.enter="activateRouterLink(3, true)"
+                     @keyup.space.enter="activateRouterLink(3, false)"
+                     @keypress.space.prevent="navigateTo('/settings')"
+                     to="/settings"
+                     title="Settings"
+                     :class="['menu', { keyActive: routerLinkActive[3] }]">
           <inline-svg :src="SettingsGear" />Settings
         </router-link>
       </div>
       <div class="bottom-buttons">
-        <button
-          :class="[
-            'menu',
-            'stop-button',
-            { active: soundStore.playingSoundIds.length > 0, keyActive: stopAllSoundsActive },
-          ]"
-          @keydown.space.enter.prevent="stopAllSoundsActive = true"
-          @keyup.space.enter="stopAllSoundsActive = false"
-          @click="soundStore.stopAllSounds"
-          title="Click to stop the current sound">
+        <button :class="[
+          'menu',
+          'stop-button',
+          { active: soundStore.playingSoundIds.length > 0, keyActive: stopAllSoundsActive },
+        ]"
+                @keydown.space.enter.prevent="stopAllSoundsActive = true"
+                @keyup.space.enter="stopAllSoundsActive = false"
+                @click="soundStore.stopAllSounds"
+                title="Click to stop the current sound">
           <inline-svg :src="StopIcon" />
           Stop
         </button>
-        <button
-          :class="['menu', 'mute-button', { muted: settingsStore.muted, keyActive: muteButtonActive }]"
-          @keydown.space.enter.prevent="muteButtonActive = true"
-          @keyup.space.enter=";(muteButtonActive = false) || settingsStore.toggleMute()"
-          @click="settingsStore.toggleMute"
-          :title="settingsStore.muted ? 'Click to unmute soundboard' : 'Click to mute soundboard'">
+        <button :class="['menu', 'mute-button', { muted: settingsStore.muted, keyActive: muteButtonActive }]"
+                @keydown.space.enter.prevent="muteButtonActive = true"
+                @keyup.space.enter="; (muteButtonActive = false) || settingsStore.toggleMute()"
+                @click="settingsStore.toggleMute"
+                :title="settingsStore.muted ? 'Click to unmute soundboard' : 'Click to mute soundboard'">
           <inline-svg :src="Headphones" />
           {{ settingsStore.muted ? 'Muted' : 'Unmuted' }}
         </button>
@@ -87,7 +77,8 @@
       </keep-alive>
     </router-view>
     <transition name="toast-fade">
-      <div v-if="pulseBackStore.toastMessage" class="pulse-back-toast">
+      <div v-if="pulseBackStore.toastMessage"
+           class="pulse-back-toast">
         {{ pulseBackStore.toastMessage }}
       </div>
     </transition>
@@ -95,46 +86,46 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useSettingsStore } from '../store/settings'
-import { useSoundStore } from '../store/sound'
-import { useUpdateStore } from '../store/update'
-import { usePulseBackStore } from '../store/pulseBack'
-import InlineSvg from 'vue-inline-svg'
-import SettingsGear from '../assets/images/settings-gear.svg'
-import Speaker from '../assets/images/speaker.svg'
-import PulseBackIcon from '../assets/images/pulse-back.svg'
-import YouTubeIcon from '../assets/images/youtube.svg'
-import StopIcon from '../assets/images/stop.svg'
-import Headphones from '../assets/images/headphones.svg'
-import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp'
-import Router from '../router'
+import { ref, onMounted } from 'vue';
+import { useSettingsStore } from '../store/settings';
+import { useSoundStore } from '../store/sound';
+import { useUpdateStore } from '../store/update';
+import { usePulseBackStore } from '../store/pulseBack';
+import InlineSvg from 'vue-inline-svg';
+import SettingsGear from '../assets/images/settings-gear.svg';
+import Speaker from '../assets/images/speaker.svg';
+import PulseBackIcon from '../assets/images/pulse-back.svg';
+import YouTubeIcon from '../assets/images/youtube.svg';
+import StopIcon from '../assets/images/stop.svg';
+import Headphones from '../assets/images/headphones.svg';
+import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp';
+import Router from '../router';
 
-const darkMode = ref(true)
-const settingsStore = useSettingsStore()
-const soundStore = useSoundStore()
-const updateStore = useUpdateStore()
-const pulseBackStore = usePulseBackStore()
-const appVersion = `v${window.electron?.versions.app}`
-const routerLinkActive = ref([false, false, false, false])
-const stopAllSoundsActive = ref(false)
-const muteButtonActive = ref(false)
-const loadingErrorMessage = ref<string | null>(null)
+const darkMode = ref(true);
+const settingsStore = useSettingsStore();
+const soundStore = useSoundStore();
+const updateStore = useUpdateStore();
+const pulseBackStore = usePulseBackStore();
+const appVersion = `v${window.electron?.versions.app}`;
+const routerLinkActive = ref([false, false, false, false]);
+const stopAllSoundsActive = ref(false);
+const muteButtonActive = ref(false);
+const loadingErrorMessage = ref<string | null>(null);
 
 onMounted(() => {
-  pulseBackStore.init()
+  pulseBackStore.init();
   setTimeout(() => {
-    updateStore.checkForUpdates()
-  }, 1500)
-})
+    updateStore.checkForUpdates();
+  }, 1500);
+});
 
 function clearErrorMessages() {
-  loadingErrorMessage.value = null
-  updateStore.errorMessage = null
+  loadingErrorMessage.value = null;
+  updateStore.errorMessage = null;
 }
 
 function activateRouterLink(index: number, activate: boolean) {
-  routerLinkActive.value[index] = activate
+  routerLinkActive.value[index] = activate;
 }
 
 /**
@@ -142,43 +133,43 @@ function activateRouterLink(index: number, activate: boolean) {
  * @param path path to navigate to
  */
 function navigateTo(path: string) {
-  Router.push(path)
+  Router.push(path);
 }
 
 function openLink() {
-  window.electron?.openExternalLink('https://github.com/meadowsjared/pulse-panel')
+  window.electron?.openExternalLink('https://github.com/meadowsjared/pulse-panel');
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
-  if (settingsStore.darkMode === value) return
-  darkMode.value = value
-  settingsStore.darkMode = value
-})
+  if (settingsStore.darkMode === value) return;
+  darkMode.value = value;
+  settingsStore.darkMode = value;
+});
 async function initializeSettings() {
   const [settingsResult, soundsResult] = await Promise.allSettled([
     settingsStore.fetchSounds().then(() => {
-      settingsStore.registerHotkeys()
+      settingsStore.registerHotkeys();
     }),
     settingsStore.fetchSettings().then(() => {
-      darkMode.value = settingsStore.darkMode
+      darkMode.value = settingsStore.darkMode;
     }),
-  ])
+  ]);
   if (settingsResult.status !== 'fulfilled' || soundsResult.status !== 'fulfilled') {
     if (settingsResult.status === 'rejected' && soundsResult.status === 'rejected') {
-      loadingErrorMessage.value = `Failed to fetch settings and sounds: ${settingsResult.reason}, ${soundsResult.reason}`
-      console.error(settingsResult.reason)
-      console.trace(soundsResult.reason)
+      loadingErrorMessage.value = `Failed to fetch settings and sounds: ${settingsResult.reason}, ${soundsResult.reason}`;
+      console.error(settingsResult.reason);
+      console.trace(soundsResult.reason);
     } else if (settingsResult.status === 'rejected') {
-      loadingErrorMessage.value = `Failed to fetch settings: ${settingsResult.reason}`
-      console.trace(settingsResult.reason)
+      loadingErrorMessage.value = `Failed to fetch settings: ${settingsResult.reason}`;
+      console.trace(settingsResult.reason);
     } else if (soundsResult.status === 'rejected') {
-      loadingErrorMessage.value = `Failed to fetch sounds: ${soundsResult.reason}`
-      console.trace(soundsResult.reason)
+      loadingErrorMessage.value = `Failed to fetch sounds: ${soundsResult.reason}`;
+      console.trace(soundsResult.reason);
     }
   }
 }
 
-initializeSettings()
+initializeSettings();
 </script>
 
 <style scoped>
@@ -203,34 +194,40 @@ initializeSettings()
   font-weight: bold;
   white-space: nowrap;
 }
+
 .menu:focus-visible {
   outline: 2px solid var(--active-color);
   outline-offset: 4px;
 }
+
 .menu:active {
   color: var(--link-color);
 }
-.menu:active > svg {
+
+.menu:active>svg {
   fill: var(--link-color);
 }
+
 .menu.keyActive {
   color: var(--link-color);
 }
-.menu.keyActive > svg {
+
+.menu.keyActive>svg {
   fill: var(--link-color);
 }
 
-.menu > svg {
+.menu>svg {
   fill: var(--text-color);
 }
 
-.change-mode.edit > svg {
+.change-mode.edit>svg {
   stroke: var(--text-color);
 }
 
-.menu.edit > svg {
+.menu.edit>svg {
   fill: transparent;
 }
+
 .menu svg {
   flex-shrink: 0;
   width: 34px;
@@ -244,6 +241,7 @@ initializeSettings()
   flex-direction: column;
   gap: 1rem;
 }
+
 .bottom-buttons svg {
   stroke: none;
 }
@@ -251,7 +249,8 @@ initializeSettings()
 .router-link-active {
   color: var(--active-color);
 }
-.router-link-active > svg {
+
+.router-link-active>svg {
   fill: var(--active-color);
 }
 
@@ -259,7 +258,7 @@ initializeSettings()
   color: var(--active-color);
 }
 
-.stop-button.active > svg {
+.stop-button.active>svg {
   fill: var(--active-color);
   color: var(--active-color);
 }
@@ -269,13 +268,14 @@ initializeSettings()
   overflow: hidden;
 }
 
-.mute-button > svg {
+.mute-button>svg {
   fill: var(--text-color);
   transition: fill 300ms ease-in-out;
 }
 
-.mute-button.muted > svg {
-  fill: red; /* sets the color of the headphones */
+.mute-button.muted>svg {
+  fill: red;
+  /* sets the color of the headphones */
 }
 
 .mute-button::after {
@@ -292,7 +292,8 @@ initializeSettings()
 }
 
 .mute-button.muted::after {
-  background: red; /* sets the color of the slash */
+  background: red;
+  /* sets the color of the slash */
   transform: translate(0, 0) rotate(135deg);
 }
 
