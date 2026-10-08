@@ -1450,7 +1450,7 @@ function cancelPlayheadClickTimer() {
   }
 }
 
-function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): { snappedSec: number; snapTarget: number | null; boundarySec: number | null } {
+function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): { snappedSec: number; snapTarget: number | null; boundarySec: number | null; } {
   if (!shiftHeld || !waveformWrapperRef.value) {
     return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
   }
@@ -2110,13 +2110,13 @@ defineExpose({
 }
 
 .capsule-field.start-field.is-focused {
-  border-color: #22c55e;
-  box-shadow: 0 0 0 1px #22c55e, 0 0 8px rgba(34, 197, 94, 0.25);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 1px var(--primary-color), 0 0 8px rgba(34, 197, 94, 0.25);
 }
 
 .capsule-field.end-field.is-focused {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 1px #ef4444, 0 0 8px rgba(239, 68, 68, 0.25);
+  border-color: var(--primary-red);
+  box-shadow: 0 0 0 1px var(--primary-red), 0 0 8px rgba(239, 68, 68, 0.25);
 }
 
 .capsule-badge {
@@ -2128,11 +2128,11 @@ defineExpose({
 }
 
 .capsule-badge.start-badge {
-  color: #22c55e;
+  color: var(--primary-color);
 }
 
 .capsule-badge.end-badge {
-  color: #ef4444;
+  color: var(--primary-red);
 }
 
 .capsule-badge.playhead-badge {
@@ -2315,8 +2315,8 @@ defineExpose({
 }
 
 .end-handle .handle-line {
-  background: #ef4444;
-  box-shadow: 0 0 8px #ef4444;
+  background: var(--primary-red);
+  box-shadow: 0 0 8px var(--primary-red);
 }
 
 .handle-flag {
@@ -2342,12 +2342,12 @@ defineExpose({
 
 .start-flag {
   left: 8px;
-  background: #15803d;
+  background: var(--primary-color);
 }
 
 .end-flag {
   right: 8px;
-  background: #b91c1c;
+  background: var(--primary-red);
 }
 
 .playhead-line {
@@ -2355,6 +2355,7 @@ defineExpose({
   top: 0;
   bottom: 0;
   width: 2px;
+  transform: translateX(-50%);
   background: #ffffff;
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 12px rgba(56, 189, 248, 0.6);
   pointer-events: none;
@@ -2433,7 +2434,7 @@ defineExpose({
 }
 
 .playhead-line.is-snapped {
-  background: #38bdf8;
+  background: transparent;
   box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
 }
 

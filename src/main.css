@@ -38,7 +38,7 @@
   --active-color: #23a459;
   --primary-color: #23a459;
   --primary-color-50: color-mix(in oklch, var(--primary-color), black 50%);
-  --primary-red: oklch(from var(--primary-color) l c 25);
+  --primary-red: color-mix(in oklch, oklch(from var(--primary-color) l c 25), red 50%);
   --accent-color: #fbbf24;
   --accent-secondary-color: #3b82f6;
   --accent-tertiary-color: #a855f7;
