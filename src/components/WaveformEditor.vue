@@ -149,39 +149,17 @@
                     @click="toggleMicTrack"
                     :title="includeMic ? 'Mute Microphone track in this clip' : 'Unmute Microphone track in this clip'"
                     :aria-label="includeMic ? 'Mute Microphone track' : 'Unmute Microphone track'">
-              <svg v-if="includeMic"
-                   class="w-4 h-4"
+              <svg class="w-4 h-4"
                    viewBox="0 0 24 24"
                    fill="none"
                    stroke="currentColor"
                    stroke-width="2"
                    stroke-linecap="round"
                    stroke-linejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12"
-                      y1="19"
-                      x2="12"
-                      y2="23"></line>
-                <line x1="8"
-                      y1="23"
-                      x2="16"
-                      y2="23"></line>
-              </svg>
-              <svg v-else
-                   class="w-4 h-4"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
-                <line x1="1"
-                      y1="1"
-                      x2="23"
-                      y2="23"></line>
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
-                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                <path class="mic-capsule"
+                      d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path class="mic-cradle"
+                      d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                 <line x1="12"
                       y1="19"
                       x2="12"
@@ -204,8 +182,7 @@
                     @click="toggleInputTrack"
                     :title="includeInput ? 'Mute Input Device track in this clip' : 'Unmute Input Device track in this clip'"
                     :aria-label="includeInput ? 'Mute Input Device track' : 'Unmute Input Device track'">
-              <svg v-if="includeInput"
-                   class="w-4 h-4"
+              <svg class="w-4 h-4"
                    viewBox="0 0 24 24"
                    fill="none"
                    stroke="currentColor"
@@ -213,25 +190,8 @@
                    stroke-linecap="round"
                    stroke-linejoin="round">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-              </svg>
-              <svg v-else
-                   class="w-4 h-4"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
-                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <line x1="22"
-                      y1="9"
-                      x2="16"
-                      y2="15"></line>
-                <line x1="16"
-                      y1="9"
-                      x2="22"
-                      y2="15"></line>
+                <path class="speaker-sound-waves"
+                      d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
               </svg>
             </button>
           </div>
@@ -2388,6 +2348,10 @@ defineExpose({
 .waveform-container {
   --slide-duration: 0.28s;
   --border-radius: 8px;
+  --speaker-sound-in-duration: 0.98s;
+  --speaker-sound-out-duration: 0.68s;
+  --mic-sound-in-duration: 0.35s;
+  --mic-sound-out-duration: 0.3s;
   background: #18181b;
   border: 1px solid #27272a;
   border-radius: 12px;
@@ -2711,6 +2675,8 @@ defineExpose({
   cursor: pointer;
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   color: #a1a1aa;
+  position: relative;
+  overflow: hidden;
 }
 
 .track-icon-btn:hover {
@@ -2726,6 +2692,34 @@ defineExpose({
   outline-offset: 2px;
 }
 
+.track-icon-btn>svg {
+  transition: stroke 300ms ease-in-out, color 300ms ease-in-out;
+}
+
+.track-icon-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 2px;
+  margin-top: -1px;
+  margin-left: -12px;
+  border-radius: 1px;
+  transform: translate(22px, -22px) rotate(135deg);
+  background: var(--text-color, #a1a1aa);
+  pointer-events: none;
+  transition:
+    transform 300ms ease-in-out,
+    background 300ms ease-in-out 300ms;
+}
+
+.track-icon-btn.muted::after {
+  background: #ef4444;
+  /* sets the color of the slash */
+  transform: translate(0, 0) rotate(135deg);
+}
+
 .mic-icon-btn.active {
   color: #38bdf8;
   background: rgba(56, 189, 248, 0.15);
@@ -2739,6 +2733,80 @@ defineExpose({
   box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
 }
 
+.mic-cradle {
+  transform-box: view-box;
+  transform-origin: 12px 19px;
+}
+
+.mic-capsule {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
+}
+
+.mic-icon-btn.active .mic-cradle {
+  animation: mic-cradle-release var(--mic-sound-in-duration) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.mic-icon-btn.muted .mic-cradle {
+  animation: mic-cradle-clamp var(--mic-sound-out-duration) ease-in-out forwards;
+}
+
+.mic-icon-btn.active .mic-capsule {
+  animation: mic-capsule-rise var(--mic-sound-in-duration) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.mic-icon-btn.muted .mic-capsule {
+  animation: mic-capsule-dip var(--mic-sound-out-duration) ease-in-out forwards;
+}
+
+@keyframes mic-cradle-clamp {
+  0% {
+    transform: scaleX(1);
+  }
+
+  100% {
+    transform: scaleX(0.7);
+  }
+}
+
+@keyframes mic-cradle-release {
+  0% {
+    transform: scaleX(0.7);
+  }
+
+  70% {
+    transform: scaleX(1.12);
+  }
+
+  100% {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes mic-capsule-dip {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    transform: translateY(1.5px) scale(0.95);
+  }
+}
+
+@keyframes mic-capsule-rise {
+  0% {
+    transform: translateY(1.5px) scale(0.95);
+  }
+
+  70% {
+    transform: translateY(-0.8px) scale(1.02);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
 .input-icon-btn.active {
   color: #34d399;
   background: rgba(52, 211, 153, 0.15);
@@ -2750,6 +2818,48 @@ defineExpose({
   background: rgba(52, 211, 153, 0.25);
   border-color: #34d399;
   box-shadow: 0 0 14px rgba(52, 211, 153, 0.35);
+}
+
+.speaker-sound-waves {
+  transform-box: view-box;
+  transform-origin: 11px 12px;
+}
+
+.input-icon-btn.active .speaker-sound-waves {
+  animation: speaker-waves-unmute var(--speaker-sound-in-duration) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.input-icon-btn.muted .speaker-sound-waves {
+  animation: speaker-waves-mute var(--speaker-sound-out-duration) ease-in forwards;
+}
+
+@keyframes speaker-waves-mute {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1) translateX(5px);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(2) translateX(15px);
+  }
+}
+
+@keyframes speaker-waves-unmute {
+  0% {
+    opacity: 0;
+    transform: scale(0.1) translateX(-12px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
 }
 
 .track-icon-btn.muted {
