@@ -685,6 +685,68 @@
               <div class="menu-divider"></div>
             </template>
 
+            <!-- Audio Media Actions (Detected Audio Element) -->
+            <template v-if="webviewMenuContext.isAudio && webviewMenuContext.audioSrc">
+              <div v-if="webviewMenuContext.audioTitle" class="menu-preview-header">
+                <svg class="item-icon text-emerald-400"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <path d="M9 18V5l12-2v13"></path>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+                <span class="truncate">{{ webviewMenuContext.audioTitle }}</span>
+              </div>
+
+              <button type="button"
+                      class="context-menu-item audio-highlight-item"
+                      @click="handleClipAudioFromPage">
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2.5">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+                <span>Add Sound to Pulse Panel</span>
+                <span class="item-badge">Clip</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleCopyAudioAddress">
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span>Copy Audio URL</span>
+              </button>
+
+              <button type="button"
+                      class="context-menu-item"
+                      @click="handleOpenAudioInNewWindow">
+                <svg class="item-icon"
+                     viewBox="0 0 24 24"
+                     fill="none"
+                     stroke="currentColor"
+                     stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                <span>Open Audio in New Window</span>
+              </button>
+
+              <div class="menu-divider"></div>
+            </template>
+
             <!-- Image Media Actions -->
             <template v-if="webviewMenuContext.srcUrl && (webviewMenuContext.mediaType === 'image' || webviewMenuContext.srcUrl.includes('ytimg') || webviewMenuContext.srcUrl.includes('googleusercontent'))">
               <button type="button"
@@ -990,6 +1052,10 @@ interface WebviewMenuContext {
   selectionText: string;
   srcUrl: string;
   mediaType: string;
+  isAudio?: boolean;
+  audioSrc?: string;
+  audioTitle?: string;
+  audioDuration?: number;
   isEditable: boolean;
   canCut: boolean;
   canCopy: boolean;
@@ -1018,6 +1084,10 @@ const webviewMenuContext = ref<WebviewMenuContext>({
   selectionText: '',
   srcUrl: '',
   mediaType: 'none',
+  isAudio: false,
+  audioSrc: '',
+  audioTitle: '',
+  audioDuration: 0,
   isEditable: false,
   canCut: false,
   canCopy: false,
@@ -1228,6 +1298,10 @@ function openMainContextMenu(params: {
   selectionText?: string;
   srcUrl?: string;
   mediaType?: string;
+  isAudio?: boolean;
+  audioSrc?: string;
+  audioTitle?: string;
+  audioDuration?: number;
   isEditable?: boolean;
   editFlags?: any;
 }) {
@@ -1245,6 +1319,10 @@ function openMainContextMenu(params: {
     selectionText: params.selectionText || '',
     srcUrl: params.srcUrl || '',
     mediaType: params.mediaType || 'none',
+    isAudio: !!params.isAudio,
+    audioSrc: params.audioSrc || '',
+    audioTitle: params.audioTitle || '',
+    audioDuration: params.audioDuration || 0,
     isEditable: !!params.isEditable,
     canCut: !!editFlags.canCut,
     canCopy: !!editFlags.canCopy || !!params.selectionText,
@@ -1266,14 +1344,151 @@ async function handleWebviewContextMenu(event: any) {
   const rawX = rect ? rect.left + (typeof params.x === 'number' ? params.x : 20) : lastMousePos.x;
   const rawY = rect ? rect.top + (typeof params.y === 'number' ? params.y : 20) : lastMousePos.y;
 
+  let detectedAudio: { src: string; title: string; duration: number } | null = null;
+  if (wv && typeof params.x === 'number' && typeof params.y === 'number') {
+    try {
+      const detectScript = `
+        (() => {
+          try {
+            const x = ${params.x};
+            const y = ${params.y};
+            const knownSrc = ${JSON.stringify(params.srcURL || '')};
+
+            const allAudios = Array.from(document.querySelectorAll('audio'));
+            let audioEl = null;
+
+            // 1. If Chromium already provided the exact clicked media srcURL, find that specific element
+            if (knownSrc) {
+              audioEl = allAudios.find(a => {
+                const s = a.currentSrc || a.src || a.querySelector('source')?.src || '';
+                return s === knownSrc || (s && knownSrc.includes(s)) || (s && s.includes(knownSrc));
+              });
+            }
+
+            // 2. Direct hit or closest inside container (table row tr or list item li)
+            if (!audioEl) {
+              let el = document.elementFromPoint(x, y);
+              if (el) {
+                audioEl = el.closest('audio') || (el.tagName === 'AUDIO' ? el : null);
+                if (!audioEl) {
+                  const tr = el.closest('tr, li, .audio-row, .voice-line, .sound-row');
+                  if (tr) {
+                    audioEl = tr.querySelector('audio');
+                  }
+                }
+              }
+            }
+
+            // 3. Proximity check: find the audio whose bounding rectangle is closest to (x, y)
+            if (!audioEl && allAudios.length > 0) {
+              let closestAudio = null;
+              let minDistance = Infinity;
+
+              for (const a of allAudios) {
+                const r = a.getBoundingClientRect();
+                const dx = Math.max(r.left - x, 0, x - r.right);
+                const dy = Math.max(r.top - y, 0, y - r.bottom);
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < minDistance) {
+                  minDistance = dist;
+                  closestAudio = a;
+                }
+              }
+
+              // Accept only if within 120px of cursor
+              if (minDistance < 120) {
+                audioEl = closestAudio;
+              }
+            }
+
+            // 4. Anchor tag pointing to an audio file
+            if (!audioEl) {
+              let el = document.elementFromPoint(x, y);
+              const anchor = el?.closest('a');
+              if (anchor && anchor.href && /\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)($|\\?)/i.test(anchor.href)) {
+                return {
+                  src: anchor.href,
+                  title: anchor.textContent?.trim() || '',
+                  duration: 0
+                };
+              }
+              return null;
+            }
+
+            const src = audioEl.currentSrc || audioEl.src || audioEl.querySelector('source')?.src || knownSrc || '';
+            if (!src) return null;
+
+            // Smart title extraction from adjacent table cell, list item, or container
+            let title = '';
+            const tr = audioEl.closest('tr');
+            if (tr) {
+              const cells = Array.from(tr.querySelectorAll('td, th'));
+              for (const cell of cells) {
+                if (!cell.contains(audioEl) && cell.textContent?.trim()) {
+                  title = cell.textContent.trim();
+                  break;
+                }
+              }
+            }
+            if (!title) {
+              const li = audioEl.closest('li');
+              if (li) {
+                const clone = li.cloneNode(true);
+                clone.querySelectorAll('audio, script, style, button, svg').forEach(n => n.remove());
+                title = clone.textContent?.trim() || '';
+              }
+            }
+            if (!title) {
+              const container = audioEl.closest('.audio-item, .voice-line, .sound-row, p');
+              if (container) {
+                const clone = container.cloneNode(true);
+                clone.querySelectorAll('audio, script, style, button, svg').forEach(n => n.remove());
+                title = clone.textContent?.trim() || '';
+              }
+            }
+            if (!title && audioEl.title) title = audioEl.title;
+            if (!title && audioEl.getAttribute('aria-label')) title = audioEl.getAttribute('aria-label');
+
+            return {
+              src,
+              title: title.replace(/\\s+/g, ' ').slice(0, 100).trim(),
+              duration: audioEl.duration || 0
+            };
+          } catch (_) {
+            return null;
+          }
+        })()
+      `;
+      detectedAudio = await wv.executeJavaScript(detectScript);
+    } catch (_) { }
+  }
+
+  const isAudioMedia = !!(
+    (params.mediaType === 'audio' && params.srcURL) ||
+    detectedAudio?.src ||
+    (params.srcURL && isDirectMediaUrl(params.srcURL))
+  );
+
+  // If Chromium's native hit-test provided a mediaType: 'audio' srcURL, prioritize it!
+  const finalAudioSrc = (params.mediaType === 'audio' && params.srcURL)
+    ? params.srcURL
+    : (detectedAudio?.src || (isDirectMediaUrl(params.srcURL) ? params.srcURL : ''));
+
+  const finalAudioTitle = detectedAudio?.title || (finalAudioSrc ? extractMediaTitle(finalAudioSrc) : '');
+
   openMainContextMenu({
     x: rawX,
     y: rawY,
     linkUrl: params.linkURL || params.linkUrl || '',
     linkText: params.linkText || '',
     selectionText: params.selectionText || '',
-    srcUrl: params.srcURL || params.srcUrl || '',
-    mediaType: params.mediaType || 'none',
+    srcUrl: params.srcURL || params.srcUrl || finalAudioSrc || '',
+    mediaType: isAudioMedia ? 'audio' : (params.mediaType || 'none'),
+    isAudio: isAudioMedia && !!finalAudioSrc,
+    audioSrc: finalAudioSrc,
+    audioTitle: finalAudioTitle,
+    audioDuration: detectedAudio?.duration || 0,
     isEditable: !!params.isEditable,
     editFlags: params.editFlags,
   });
@@ -1448,6 +1663,66 @@ function handleOpenImageInNewWindow() {
   }
 }
 
+// Audio Element Actions from Context Menu
+async function handleClipAudioFromPage() {
+  const audioSrc = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl;
+  const audioTitle = webviewMenuContext.value.audioTitle || extractMediaTitle(audioSrc || '');
+  closeContextMenu();
+
+  if (!audioSrc) return;
+
+  // 1. Pause any playing media on the guest web page so it doesn't clash with editor playback
+  try {
+    webviewRef.value?.executeJavaScript('document.querySelectorAll("audio, video").forEach(el => el.pause())');
+  } catch (_) { }
+
+  // 2. Clear out any previous audio buffer/state so it doesn't display stale data
+  currentPreloadedVideoId.value = null;
+  currentAudioLoadUrl = '';
+  audioBuffer.value = null;
+  originalAudioBuffer.value = null;
+  audioDuration.value = 0;
+
+  // 3. Set title and flags
+  activeVideoTitle.value = audioTitle;
+  isVideoPage.value = true;
+  if (webviewMenuContext.value.audioDuration) {
+    videoTotalDuration.value = webviewMenuContext.value.audioDuration;
+    videoDurationFormatted.value = formatTime(webviewMenuContext.value.audioDuration);
+  } else {
+    videoTotalDuration.value = null;
+    videoDurationFormatted.value = '';
+  }
+
+  // 4. Open the clip drawer immediately (dock expands with smooth animation)
+  isDrawerOpen.value = true;
+
+  // 5. Load the audio into the waveform editor
+  await loadAudioForWaveform(audioSrc);
+
+  pulseBackStore.showToast(`Loaded "${audioTitle}" into sound editor`);
+}
+
+async function handleCopyAudioAddress() {
+  closeContextMenu();
+  const url = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl;
+  if (url) {
+    try {
+      await navigator.clipboard.writeText(url);
+      pulseBackStore.showToast('Audio URL copied to clipboard');
+    } catch (_) { }
+  }
+}
+
+function handleOpenAudioInNewWindow() {
+  closeContextMenu();
+  const url = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl;
+  if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+    window.electron?.openExternalLink(url);
+    pulseBackStore.showToast('Opened audio in default browser');
+  }
+}
+
 // Address Bar Overflow Menu & Find in Page
 function toggleAddressOverflowMenu(event: MouseEvent) {
   if (activeMenu.value === 'address-overflow') {
@@ -1594,9 +1869,7 @@ function getVideoId(url: string): string | null {
         return parsed.pathname.replace(/^\//, '').split('?')[0];
       }
     }
-    if (isDirectMediaUrl(url)) {
-      return url;
-    }
+    return url;
   } catch (_) { }
   return null;
 }
@@ -1937,9 +2210,52 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown) {
   originalAudioBuffer.value = null;
 
   try {
-    const result = await window.electron?.ytDownloadClip({
-      url: targetUrl,
-    });
+    let result: any = null;
+    try {
+      result = await window.electron?.ytDownloadClip({
+        url: targetUrl,
+      });
+    } catch (e) {
+      console.warn('ytDownloadClip direct download failed, trying webview fallback:', e);
+    }
+
+    if (currentAudioLoadUrl !== targetUrl) return;
+
+    // Webview fallback for site-authenticated or session-dependent media
+    if (!result || !result.success || !result.buffer) {
+      try {
+        const base64Data = await webviewRef.value?.executeJavaScript(`
+          (async () => {
+            try {
+              const res = await fetch(${JSON.stringify(targetUrl)});
+              if (!res.ok) return null;
+              const buf = await res.arrayBuffer();
+              const u8 = new Uint8Array(buf);
+              let bin = '';
+              const chunk = 8192;
+              for (let i = 0; i < u8.length; i += chunk) {
+                bin += String.fromCharCode.apply(null, u8.subarray(i, Math.min(i + chunk, u8.length)));
+              }
+              return btoa(bin);
+            } catch (_) {
+              return null;
+            }
+          })()
+        `);
+        if (base64Data) {
+          const binaryStr = atob(base64Data);
+          const len = binaryStr.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+          result = {
+            success: true,
+            buffer: bytes,
+          };
+        }
+      } catch (_) { }
+    }
 
     if (currentAudioLoadUrl !== targetUrl) return;
 
@@ -2905,5 +3221,21 @@ button:focus-visible {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
   margin: 0.2rem 0.3rem;
+}
+
+.context-menu-item.audio-highlight-item {
+  background: rgba(35, 164, 89, 0.12);
+  border: 1px solid rgba(35, 164, 89, 0.22);
+  color: #abffab;
+  padding: 0.45rem 0.65rem;
+}
+
+.context-menu-item.audio-highlight-item:hover {
+  background: rgba(35, 164, 89, 0.24);
+  color: #ffffff;
+}
+
+.context-menu-item.audio-highlight-item .item-icon {
+  color: #34d399;
 }
 </style>
