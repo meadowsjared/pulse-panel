@@ -125,17 +125,47 @@
                 title="Clear">
           ✕
         </button>
-        <button class="paste-btn"
-                @click="pasteFromClipboard"
-                title="Paste from clipboard">
-          Paste
-        </button>
+        <div class="address-actions-group">
+          <button type="button"
+                  class="paste-btn"
+                  @click="pasteFromClipboard"
+                  title="Paste from clipboard">
+            Paste
+          </button>
+          <button ref="overflowBtnRef"
+                  type="button"
+                  class="overflow-btn"
+                  :class="{ 'is-active': activeMenu === 'address-overflow' }"
+                  @click.stop="toggleAddressOverflowMenu($event)"
+                  title="More options">
+            <svg class="overflow-icon"
+                 viewBox="0 0 24 24"
+                 fill="currentColor">
+              <circle cx="12"
+                      cy="5"
+                      r="1.75" />
+              <circle cx="12"
+                      cy="12"
+                      r="1.75" />
+              <circle cx="12"
+                      cy="19"
+                      r="1.75" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Main Content Area: Webview and Expandable Bottom Bar/Panel -->
     <div class="youtube-main-content"
          @contextmenu="handleMainContentDomContextMenu($event)">
+      <!-- Find in Page Floating Bar -->
+      <FindInPageBar v-if="isFindBarOpen"
+                     ref="findBarRef"
+                     :webview="webviewRef"
+                     :initial-query="findInitialQuery"
+                     @close="closeFindBar" />
+
       <!-- Webview Container -->
       <div class="webview-wrapper"
            :class="{ 'has-dock-bar': isVideoPage && activeVideoTitle, 'is-covered': isDrawerOpen }">
@@ -760,6 +790,26 @@
             <!-- Page Level Actions -->
             <button type="button"
                     class="context-menu-item"
+                    @click="handleMenuFindInPage">
+              <svg class="item-icon text-blue-400"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <circle cx="11"
+                        cy="11"
+                        r="8"></circle>
+                <line x1="21"
+                      y1="21"
+                      x2="16.65"
+                      y2="16.65"></line>
+              </svg>
+              <span>Find in Page</span>
+              <span class="item-shortcut">Ctrl+F</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
                     @click="handleCopyPageUrl">
               <svg class="item-icon"
                    viewBox="0 0 24 24"
@@ -816,6 +866,89 @@
             </button>
           </template>
 
+          <!-- ADDRESS OVERFLOW CONTEXT MENU -->
+          <template v-else-if="activeMenu === 'address-overflow'">
+            <div class="menu-section-header">Options</div>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="handleMenuFindInPage">
+              <svg class="item-icon text-blue-400"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <circle cx="11"
+                        cy="11"
+                        r="8"></circle>
+                <line x1="21"
+                      y1="21"
+                      x2="16.65"
+                      y2="16.65"></line>
+              </svg>
+              <span>Find in Page</span>
+              <span class="item-shortcut">Ctrl+F</span>
+            </button>
+
+            <div class="menu-divider"></div>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="handleMenuReload">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>Reload</span>
+              <span class="item-shortcut">Ctrl+R</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="handleCopyPageUrl">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              <span>Copy Page URL</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="handleOpenPageInNewWindow">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <rect x="2"
+                      y="3"
+                      width="20"
+                      height="14"
+                      rx="2"
+                      ry="2"></rect>
+                <line x1="8"
+                      y1="21"
+                      x2="16"
+                      y2="21"></line>
+                <line x1="12"
+                      y1="17"
+                      x2="12"
+                      y2="21"></line>
+              </svg>
+              <span>Open in External Browser</span>
+            </button>
+          </template>
+
         </div>
       </transition>
     </teleport>
@@ -826,6 +959,7 @@
 import { ref, shallowRef, onMounted, onUnmounted, onDeactivated, onActivated, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import YouTubeClipPanel from './YouTubeClipPanel.vue';
+import FindInPageBar from './FindInPageBar.vue';
 import { usePulseBackStore } from '../store/pulseBack';
 
 const route = useRoute();
@@ -834,9 +968,16 @@ const pulseBackStore = usePulseBackStore();
 const webviewRef = ref<any>(null);
 const clipPanelRef = ref<any>(null);
 const addressInputRef = ref<HTMLInputElement | null>(null);
+const overflowBtnRef = ref<HTMLElement | null>(null);
+const findBarRef = ref<any>(null);
+
+// Find in Page state
+const isFindBarOpen = ref(false);
+const findInitialQuery = ref('');
+const isViewActive = ref(true);
 
 // Context menu state
-type MenuType = 'address' | 'webview' | null;
+type MenuType = 'address' | 'webview' | 'address-overflow' | null;
 
 interface MenuPosition {
   x: number;
@@ -1305,6 +1446,57 @@ function handleOpenImageInNewWindow() {
     window.electron?.openExternalLink(url);
     pulseBackStore.showToast('Opened image in default browser');
   }
+}
+
+// Address Bar Overflow Menu & Find in Page
+function toggleAddressOverflowMenu(event: MouseEvent) {
+  if (activeMenu.value === 'address-overflow') {
+    closeContextMenu();
+    return;
+  }
+  const btn = (event.currentTarget as HTMLElement) || overflowBtnRef.value;
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    showMenuAt('address-overflow', rect.right - 215, rect.bottom + 6);
+  } else {
+    showMenuAt('address-overflow', event.clientX - 200, event.clientY + 10);
+  }
+}
+
+function handleMenuFindInPage() {
+  const initial = webviewMenuContext.value.selectionText || '';
+  closeContextMenu();
+  openFindBar(initial);
+}
+
+async function openFindBar(initialQuery?: string) {
+  isFindBarOpen.value = true;
+  if (typeof initialQuery === 'string' && initialQuery.trim()) {
+    findInitialQuery.value = initialQuery.trim();
+  } else {
+    try {
+      const selected = await webviewRef.value?.executeJavaScript('window.getSelection()?.toString() || ""');
+      if (selected && selected.trim() && !selected.includes('\n') && selected.trim().length < 80) {
+        findInitialQuery.value = selected.trim();
+      } else {
+        findInitialQuery.value = '';
+      }
+    } catch (_) {
+      findInitialQuery.value = '';
+    }
+  }
+
+  nextTick(() => {
+    findBarRef.value?.focus();
+  });
+}
+
+function closeFindBar() {
+  isFindBarOpen.value = false;
+  findInitialQuery.value = '';
+  try {
+    webviewRef.value?.focus();
+  } catch (_) { }
 }
 
 // Watch route to automatically pause video when navigating away from YouTube
@@ -1851,7 +2043,22 @@ function closeClipDrawer() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  if (route.path !== '/youtube') return;
+
+  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'f' || e.code === 'KeyF')) {
+    e.preventDefault();
+    e.stopPropagation();
+    openFindBar();
+    return;
+  }
+
   if (e.key === 'Escape') {
+    if (isFindBarOpen.value) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeFindBar();
+      return;
+    }
     if (activeMenu.value) {
       closeContextMenu();
       return;
@@ -1909,16 +2116,86 @@ function handleAddressBarEscape(e: KeyboardEvent) {
   } catch (_) { }
 }
 
+let handleWebviewBeforeInputFn: ((e: any) => void) | null = null;
+let handleConsoleMessageFn: ((e: any) => void) | null = null;
+let injectWebviewKeydownListener: (() => void) | null = null;
+
 // Lifecycle and event listeners
 onMounted(() => {
-  window.addEventListener('keydown', handleKeydown);
+  window.addEventListener('keydown', handleKeydown, true);
   window.addEventListener('resize', closeContextMenu);
   window.addEventListener('blur', closeContextMenu);
   window.addEventListener('mousemove', updateMousePos, { passive: true });
 
+  // Native Electron main process IPC hook (guaranteed to catch Ctrl+F inside webview)
+  window.electron?.onTriggerFindInPage?.(() => {
+    if (route.path === '/youtube') {
+      openFindBar();
+    }
+  });
+
+  window.electron?.onWebviewEscape?.(() => {
+    if (route.path === '/youtube' && isFindBarOpen.value) {
+      closeFindBar();
+    }
+  });
+
   const wv = webviewRef.value;
   if (!wv) return;
 
+  handleWebviewBeforeInputFn = (e: any) => {
+    const isKeyDown = e.type === 'keyDown' || e.type === 'keydown';
+    if (!isKeyDown) return;
+
+    const isCtrlOrMeta = !!(e.control || e.meta);
+    const key = (e.key || '').toLowerCase();
+    const isF = key === 'f' || e.code === 'KeyF';
+
+    if (isCtrlOrMeta && isF) {
+      e.preventDefault?.();
+      openFindBar();
+    } else if ((key === 'escape' || e.code === 'Escape') && isFindBarOpen.value) {
+      e.preventDefault?.();
+      closeFindBar();
+    }
+  };
+
+  // Injected client script fallback for inside YouTube webview
+  injectWebviewKeydownListener = () => {
+    try {
+      wv.executeJavaScript(`
+        (() => {
+          if (window.__pulseFindInPageInstalled) return;
+          window.__pulseFindInPageInstalled = true;
+          window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F' || e.code === 'KeyF')) {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('__PULSE_ACTION_FIND__');
+            } else if (e.key === 'Escape') {
+              console.log('__PULSE_ACTION_ESCAPE__');
+            }
+          }, true);
+        })()
+      `).catch(() => { });
+    } catch (_) { }
+  };
+
+  handleConsoleMessageFn = (e: any) => {
+    if (e.message === '__PULSE_ACTION_FIND__') {
+      openFindBar();
+    } else if (e.message === '__PULSE_ACTION_ESCAPE__') {
+      if (isFindBarOpen.value) {
+        closeFindBar();
+      }
+    }
+  };
+
+  wv.addEventListener('before-input-event', handleWebviewBeforeInputFn);
+  wv.addEventListener('console-message', handleConsoleMessageFn);
+  wv.addEventListener('dom-ready', injectWebviewKeydownListener);
+  wv.addEventListener('did-navigate', injectWebviewKeydownListener);
+  wv.addEventListener('did-navigate-in-page', injectWebviewKeydownListener);
   wv.addEventListener('context-menu', handleWebviewContextMenu);
 
   wv.addEventListener('did-start-loading', () => {
@@ -1928,6 +2205,7 @@ onMounted(() => {
 
   wv.addEventListener('did-stop-loading', () => {
     isLoading.value = false;
+    injectWebviewKeydownListener?.();
     try {
       canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false;
       canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false;
@@ -1936,6 +2214,7 @@ onMounted(() => {
 
   const updateLocation = () => {
     closeContextMenu();
+    injectWebviewKeydownListener?.();
     try {
       const url = wv.getURL();
       if (url) {
@@ -1978,8 +2257,10 @@ onMounted(() => {
 });
 
 onDeactivated(() => {
+  isViewActive.value = false;
   closeContextMenu();
   closeClipDrawer();
+  closeFindBar();
   if (videoHeartbeatTimer) {
     clearInterval(videoHeartbeatTimer);
     videoHeartbeatTimer = null;
@@ -1990,6 +2271,8 @@ onDeactivated(() => {
 });
 
 onActivated(() => {
+  isViewActive.value = true;
+  injectWebviewKeydownListener?.();
   if (!videoHeartbeatTimer) {
     videoHeartbeatTimer = setInterval(() => {
       if (isVideoPage.value) {
@@ -2019,7 +2302,7 @@ onActivated(() => {
 
 onUnmounted(() => {
   closeContextMenu();
-  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('keydown', handleKeydown, true);
   window.removeEventListener('resize', closeContextMenu);
   window.removeEventListener('blur', closeContextMenu);
   window.removeEventListener('mousemove', updateMousePos);
@@ -2027,6 +2310,13 @@ onUnmounted(() => {
   const wv = webviewRef.value;
   if (wv) {
     try {
+      if (handleWebviewBeforeInputFn) wv.removeEventListener('before-input-event', handleWebviewBeforeInputFn);
+      if (handleConsoleMessageFn) wv.removeEventListener('console-message', handleConsoleMessageFn);
+      if (injectWebviewKeydownListener) {
+        wv.removeEventListener('dom-ready', injectWebviewKeydownListener);
+        wv.removeEventListener('did-navigate', injectWebviewKeydownListener);
+        wv.removeEventListener('did-navigate-in-page', injectWebviewKeydownListener);
+      }
       wv.removeEventListener('context-menu', handleWebviewContextMenu);
     } catch (_) { }
   }
@@ -2133,23 +2423,62 @@ onUnmounted(() => {
   color: #fff;
 }
 
-.paste-btn {
+/* Address Bar Actions (Paste & Overflow 3-dots) */
+.address-actions-group {
+  display: inline-flex;
+  align-items: center;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.25rem;
+  margin-left: 0.35rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.address-actions-group .paste-btn {
+  background: transparent;
+  border: none;
   color: var(--text-color);
   font-size: 0.75rem;
   font-weight: 500;
   padding: 0.15rem 0.5rem;
-  border-radius: 0.25rem;
+  border-radius: 0;
+  margin: 0;
   cursor: pointer;
-  margin-left: 0.35rem;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
 
-.paste-btn:hover {
+.address-actions-group .paste-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.address-actions-group .overflow-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-color);
+  padding: 0.2rem 0.35rem;
+  border-radius: 0;
+  margin: 0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.address-actions-group .overflow-btn:hover,
+.address-actions-group .overflow-btn.is-active {
   background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
+
+.overflow-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
 
 button:focus-visible {
   outline: 2px solid var(--primary-color);

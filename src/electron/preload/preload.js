@@ -92,6 +92,12 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('yt-download-progress', (_, progress) => callback(progress))
   },
   ytFetchImage: url => ipcRenderer.invoke('yt-fetch-image', url),
+  onTriggerFindInPage: callback => {
+    ipcRenderer.on('trigger-find-in-page', () => callback())
+  },
+  onWebviewEscape: callback => {
+    ipcRenderer.on('webview-escape-pressed', () => callback())
+  },
   versions: {
     app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,

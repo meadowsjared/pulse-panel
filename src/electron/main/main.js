@@ -616,6 +616,27 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('yt-fetch-image', (_, url) => ytdlp.fetchImageBuffer(url))
 
+  app.on('web-contents-created', (_, contents) => {
+    if (contents.getType() === 'webview') {
+      contents.on('before-input-event', (event, input) => {
+        if (input.type === 'keyDown') {
+          const isCtrlOrMeta = !!(input.control || input.meta)
+          const isF = (input.key && input.key.toLowerCase() === 'f') || input.code === 'KeyF'
+          if (isCtrlOrMeta && isF) {
+            event.preventDefault()
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('trigger-find-in-page')
+            }
+          } else if (input.key === 'Escape' || input.code === 'Escape') {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('webview-escape-pressed')
+            }
+          }
+        }
+      })
+    }
+  })
+
   createWindow()
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

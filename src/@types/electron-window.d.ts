@@ -119,6 +119,8 @@ export interface Settings {
   ytDownloadClip: (options: { url: string; startTime?: number; endTime?: number }) => Promise<{ success: boolean; buffer: any; extension: string; mimeType: string }>
   onYtDownloadProgress: (callback: (progress: { percent: number; text?: string }) => void) => void
   ytFetchImage: (url: string) => Promise<any>
+  onTriggerFindInPage?: (callback: () => void) => void
+  onWebviewEscape?: (callback: () => void) => void
 }
 
 declare global {

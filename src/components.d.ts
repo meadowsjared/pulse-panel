@@ -17,6 +17,7 @@ declare module 'vue' {
     ColorPicker: typeof import('./components/ColorPicker.vue')['default']
     ConfirmDialog: typeof import('./components/ConfirmDialog.vue')['default']
     Counter: typeof import('./components/Counter.vue')['default']
+    FindInPageBar: typeof import('./components/FindInPageBar.vue')['default']
     Header: typeof import('./components/Header.vue')['default']
     Home: typeof import('./components/Home.vue')['default']
     HotkeyPicker: typeof import('./components/HotkeyPicker.vue')['default']
