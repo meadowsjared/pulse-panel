@@ -37,8 +37,15 @@
   --text-placeholder-color: #6C7280;
   --active-color: #23a459;
   --primary-color: #23a459;
+  --primary-color-gradient-light: oklch(from var(--primary-color) calc(l + 0.16) calc(c * 1) h);
+  --primary-color-gradient-dark: color-mix(in oklch, var(--primary-color), black 50%);
   --primary-color-50: color-mix(in oklch, var(--primary-color), black 50%);
   --primary-red: color-mix(in oklch, oklch(from var(--primary-color) l c 25), red 50%);
+  --primary-blue: #3a85ff;
+  --primary-color-blue-gradient-light: oklch(from var(--primary-blue) calc(l + 0.08) c h);
+  --primary-color-blue-gradient-dark: color-mix(in oklch, var(--primary-blue), black 50%);
+  --primary-blue-50: color-mix(in oklch, var(--primary-blue), black 40%);
+  --primary-blue-light: color-mix(in oklch, var(--primary-blue), lightblue 60%);
   --accent-color: #fbbf24;
   --accent-secondary-color: #3b82f6;
   --accent-tertiary-color: #a855f7;

@@ -1158,7 +1158,8 @@ function renderWaveformBars(
   width: number,
   height: number,
   activeTracks: WaveformTrack[],
-  dpr: number
+  dpr: number,
+  themeColors: { blue: [string, string]; green: [string, string]; }
 ) {
   const numTracks = activeTracks.length;
   const trackLaneHeight = height / numTracks;
@@ -1230,7 +1231,7 @@ function renderWaveformBars(
     // Independent track normalization with a floor to avoid boosting background noise
     const normFactor = Math.max(0.06, maxPeak);
     const isEnabled = track.enabled !== false;
-    const colors = track.colors || (t % 2 === 0 ? ['#38bdf8', '#0284c7'] : ['#34d399', '#059669']);
+    const colors = track.colors || (t % 2 === 0 ? themeColors.blue : themeColors.green);
 
     // Draw bars
     for (let i = 0; i < numBars; i++) {
@@ -1278,6 +1279,24 @@ function renderWaveformBars(
   }
 }
 
+function getResolvedThemeColor(varName: string): string {
+  if (typeof window === 'undefined') return '';
+  const el = waveformWrapperRef.value || document.documentElement;
+
+  // Resolve any nested var() or relative color expressions (oklch, color-mix) via computed style
+  const dummy = document.createElement('span');
+  dummy.style.color = `var(${varName})`;
+  el.appendChild(dummy);
+  const resolved = getComputedStyle(dummy).color;
+  dummy.remove();
+
+  if (!resolved) {
+    console.error(`[WaveformGraph] Missing or invalid CSS variable: ${varName}`);
+  }
+
+  return resolved;
+}
+
 function drawWaveform() {
   const canvas = canvasRef.value;
   const buffer = props.audioBuffer;
@@ -1319,13 +1338,11 @@ function drawWaveform() {
         label: '🎤 MIC (VOICE)',
         channelIndex: 0,
         enabled: props.includeMic,
-        colors: ['#38bdf8', '#0284c7'],
       },
       {
         label: '🔊 INPUT DEVICE (AUDIO)',
         channelIndex: 1,
         enabled: props.includeInput,
-        colors: ['#34d399', '#059669'],
       },
     ];
   } else {
@@ -1335,10 +1352,19 @@ function drawWaveform() {
         label: '',
         channelIndex: buffer.numberOfChannels >= 2 ? [0, 1] : 0,
         enabled: true,
-        colors: ['#38bdf8', '#0284c7'],
       },
     ];
   }
+
+  const primaryGreen = getResolvedThemeColor('--primary-color-gradient-light');
+  const primaryGreenDark = getResolvedThemeColor('--primary-color-gradient-dark');
+  const primaryBlue = getResolvedThemeColor('--primary-color-blue-gradient-light');
+  const primaryBlueDark = getResolvedThemeColor('--primary-color-blue-gradient-dark');
+  const themeKey = `${primaryBlue}_${primaryBlueDark}_${primaryGreen}_${primaryGreenDark}`;
+  const themeColors = {
+    blue: [primaryBlue, primaryBlueDark] as [string, string],
+    green: [primaryGreen, primaryGreenDark] as [string, string],
+  };
 
   const trackKey = activeTracks
     .map(
@@ -1346,7 +1372,7 @@ function drawWaveform() {
         `${Array.isArray(t.channelIndex) ? t.channelIndex.join(',') : t.channelIndex}:${t.enabled !== false}:${t.label || ''}:${(t.colors || []).join(',')}`
     )
     .join(';');
-  const cacheKey = `${width}x${height}_${trackKey}`;
+  const cacheKey = `${width}x${height}_${trackKey}_${themeKey}`;
 
   let bufferCache = renderedWaveformCache.get(buffer);
   if (!bufferCache) {
@@ -1361,7 +1387,7 @@ function drawWaveform() {
     cachedCanvas.height = height;
     const offCtx = cachedCanvas.getContext('2d');
     if (offCtx) {
-      renderWaveformBars(offCtx, buffer, width, height, activeTracks, dpr);
+      renderWaveformBars(offCtx, buffer, width, height, activeTracks, dpr, themeColors);
       bufferCache.set(cacheKey, cachedCanvas);
     }
   }
@@ -2262,15 +2288,15 @@ defineExpose({
 
 .selection-spotlight.track-mic {
   background: rgba(56, 189, 248, 0.06);
-  border-top-color: rgba(56, 189, 248, 0.65);
-  border-bottom-color: rgba(56, 189, 248, 0.65);
+  border-top-color: var(--primary-blue);
+  border-bottom-color: var(--primary-blue);
   box-shadow: inset 0 0 16px rgba(56, 189, 248, 0.1);
 }
 
 .selection-spotlight.track-input {
   background: rgba(52, 211, 153, 0.06);
-  border-top-color: rgba(52, 211, 153, 0.65);
-  border-bottom-color: rgba(52, 211, 153, 0.65);
+  border-top-color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
   box-shadow: inset 0 0 16px rgba(52, 211, 153, 0.1);
 }
 
@@ -2401,7 +2427,7 @@ defineExpose({
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(255, 255, 255, 0.45);
+  background: var(--text-color);
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.25);
   pointer-events: auto;
   cursor: pointer;

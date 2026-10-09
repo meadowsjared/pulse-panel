@@ -4,7 +4,7 @@
       <button @click="handlePreviewButtonClick"
               title="preview sound"
               :class="{ 'playing-sound': playingThisSound }"
-              class="light preview-button">
+              class="light preview-button menu">
         <inline-svg class="w-8 h-8"
                     :src="Listen" />
       </button>
@@ -12,7 +12,7 @@
           class="cursor-pointer select-none"
           title="Scroll sound into view">Edit Sound</h1>
       <button @click="close"
-              class="close-button">
+              class="close-button menu">
         <inline-svg class="w-8 h-8 rotate-45"
                     :src="Plus" />
       </button>
@@ -59,7 +59,7 @@
           <label class="volume-label"
                  for="volume-display">Volume:</label>
           <button @click="handlePlayButtonClick"
-                  :class="['play-sound-button', { focusVisible }, { 'sound-is-playing': playingThisSound }]"
+                  :class="['play-sound-button', 'menu', { focusVisible }, { 'sound-is-playing': playingThisSound }]"
                   @blur="focusVisible = false"
                   @keyup="handleKeyup">
             <inline-svg :src="PlayIcon"
@@ -100,7 +100,7 @@
                    placeholder="Segment label (optional)"
                    class="segment-label-input flex-1 min-w-0 text-xs py-0.5" />
             <button @click="removeSegment(segment)"
-                    class="close-button flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-white flex-shrink-0"
+                    class="close-button menu flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-white flex-shrink-0"
                     title="Remove segment">
               <inline-svg class="w-4 h-4 rotate-45"
                           :src="Plus" />
@@ -111,7 +111,7 @@
           <div class="flex items-center gap-1.5 w-full">
             <button @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
                     :class="[
-                      'play-sound-button flex items-center justify-center flex-shrink-0',
+                      'play-sound-button menu flex items-center justify-center flex-shrink-0',
                       { focusVisible },
                       {
                         'sound-is-playing':
@@ -134,7 +134,7 @@
                         playingThisSound &&
                         soundStore.currentSound?.activeSegment?.isSoundPreview === true,
                     }"
-                    class="light preview-button flex items-center justify-center flex-shrink-0">
+                    class="light preview-button menu flex items-center justify-center flex-shrink-0">
               <inline-svg class="w-5 h-5"
                           :src="Listen" />
             </button>
@@ -170,9 +170,9 @@
            @contextmenu.prevent.stop="openImageContextMenu($event)">
         <div class="absolute top-2 right-2 flex items-center gap-1.5 z-10">
           <button @click="handleCopyImage"
-                  class="image-action-button w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
+                  class="image-action-button menu w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
                   title="Copy image">
-            <svg class="w-4 h-4 text-black"
+            <svg class="w-8 h-8 text-black"
                  viewBox="0 0 24 24"
                  fill="none"
                  stroke="currentColor"
@@ -189,14 +189,14 @@
             </svg>
           </button>
           <button @click="exportImage"
-                  class="image-action-button w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
+                  class="image-action-button menu w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
                   title="Save / export image">
             <inline-svg :src="DownloadIcon"
                         class="w-full h-full text-black" />
           </button>
           <button v-if="modelValue.imageKey"
                   @click="removeImage"
-                  class="remove-image-button image-action-button w-8 h-8 bg-white flex items-center justify-center p-1 rounded cursor-pointer"
+                  class="remove-image-button menu image-action-button w-8 h-8 bg-white flex items-center justify-center p-1 rounded cursor-pointer"
                   title="Remove custom image override">
             <inline-svg :src="Plus"
                         alt="remove image"
@@ -222,11 +222,11 @@
            @mouseenter="updateCanPaste">
         <button @click="imageFileInput?.click()"
                 @contextmenu.prevent.stop="openImageContextMenu($event)"
-                class="light flex-1">Browse Image...</button>
+                class="light menu flex-1">Browse Image...</button>
         <button v-if="canPasteImage"
                 @click="handlePasteImage"
                 type="button"
-                class="light flex items-center justify-center gap-1 px-3"
+                class="light menu flex items-center justify-center gap-1 px-3"
                 title="Paste copied image">
           <svg class="w-3.5 h-3.5"
                viewBox="0 0 24 24"
@@ -257,7 +257,7 @@
             <button v-if="hasCurrentImage"
                     @click="handleCopyImage"
                     type="button"
-                    class="image-menu-item">
+                    class="image-menu-item menu">
               <svg class="w-3.5 h-3.5 text-zinc-300"
                    viewBox="0 0 24 24"
                    fill="none"
@@ -302,7 +302,7 @@
                       :key="tag"
                       @click="handleSetTagImage(tag)"
                       type="button"
-                      class="image-menu-item text-emerald-400 hover:text-emerald-300"
+                      class="image-menu-item menu text-emerald-400 hover:text-emerald-300"
                       :title="`Set this image as the default for all sounds tagged #${tag}`">
                 <svg class="w-3.5 h-3.5 flex-shrink-0"
                      viewBox="0 0 24 24"
@@ -325,7 +325,7 @@
             <button v-if="hasCurrentImage"
                     @click="handleExportImageFromMenu"
                     type="button"
-                    class="image-menu-item">
+                    class="image-menu-item menu">
               <inline-svg :src="DownloadIcon"
                           class="w-3.5 h-3.5 text-zinc-300" />
               <span>Export Image</span>
@@ -333,7 +333,7 @@
             <button v-if="modelValue.imageKey"
                     @click="handleRemoveImageFromMenu"
                     type="button"
-                    class="image-menu-item text-red-400 hover:text-red-300">
+                    class="image-menu-item menu text-red-400 hover:text-red-300">
               <inline-svg :src="Plus"
                           class="w-3.5 h-3.5 rotate-45 text-red-400" />
               <span>Remove Image Override</span>
@@ -357,12 +357,12 @@
               <span class="export-menu-title">Export Audio</span>
               <button @click.stop="showExportMenu = false"
                       type="button"
-                      class="export-menu-close"
+                      class="export-menu-close menu"
                       title="Close">✕</button>
             </div>
             <button @click="exportOriginalAudio"
                     type="button"
-                    class="export-menu-item">
+                    class="export-menu-item menu">
               <div class="export-item-info">
                 <inline-svg :src="DownloadIcon"
                             class="export-item-icon" />
@@ -376,7 +376,7 @@
                       :key="seg.id"
                       @click="exportTrimmedSegment(seg, idx)"
                       type="button"
-                      class="export-menu-item">
+                      class="export-menu-item menu">
                 <div class="export-item-info">
                   <span class="segment-num-badge">{{ idx + 1 }}</span>
                   <span class="export-item-label truncate">{{ seg.label || `Segment ${idx + 1}` }}</span>
@@ -388,7 +388,7 @@
               <button v-if="soundSegments.length > 1"
                       @click="exportAllSegments"
                       type="button"
-                      class="export-menu-item export-all-btn">
+                      class="export-menu-item menu export-all-btn">
                 <div class="export-item-info">
                   <inline-svg :src="DownloadIcon"
                               class="export-item-icon" />
@@ -402,7 +402,7 @@
         <button :disabled="!hasAudio || isExporting"
                 @click="handleExportClick"
                 type="button"
-                class="light flex items-center justify-center gap-1.5 w-full"
+                class="light menu flex items-center justify-center gap-1.5 w-full"
                 :title="hasAudio ? 'Save or export audio file' : 'No audio file loaded'">
           <inline-svg class="w-4 h-4"
                       :src="DownloadIcon" />
@@ -412,7 +412,7 @@
         </button>
       </div>
       <button @click="emit('deleteSound', modelValue)"
-              class="light danger">DELETE</button>
+              class="light menu center danger">DELETE</button>
     </div>
   </div>
 </template>

@@ -577,7 +577,6 @@ const waveformTracks = computed<WaveformTrack[]>(() => {
         label: '',
         channelIndex: 0,
         enabled: true,
-        colors: ['#38bdf8', '#0284c7'],
       },
     ];
   }
@@ -586,13 +585,11 @@ const waveformTracks = computed<WaveformTrack[]>(() => {
       label: '🎤 MIC (VOICE)',
       channelIndex: 0,
       enabled: includeMic.value,
-      colors: ['#38bdf8', '#0284c7'],
     },
     {
       label: '🔊 INPUT DEVICE (AUDIO)',
       channelIndex: 1,
       enabled: includeInput.value,
-      colors: ['#34d399', '#059669'],
     },
   ];
 });
