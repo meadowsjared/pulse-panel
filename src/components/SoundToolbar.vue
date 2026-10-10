@@ -11,6 +11,7 @@
                v-model="settingsStore.searchText"
                placeholder="Search sounds (Ctrl+F)..."
                @focus="handleFocus"
+               @blur="handleBlur"
                @keydown.esc="clearSearch(true)"
                @keydown.enter="handleEnter" />
         <div class="input-actions">
@@ -125,7 +126,7 @@
               v-model="editMode"
               @update:modelValue="handleDisplayModeChange">{{
                 editMode ? 'Play Mode' : 'Edit Mode'
-        }}</toggle>
+              }}</toggle>
     </div>
   </div>
 </template>
@@ -178,6 +179,10 @@ const matchCountText = computed(() => {
 
 function handleFocus() {
   isFocused.value = true;
+}
+
+function handleBlur() {
+  isFocused.value = false;
 }
 
 function toggleTips() {
