@@ -1,5 +1,13 @@
 import { createWebHistory, createRouter } from 'vue-router'
+import { h, defineComponent } from 'vue'
 import Main from '../components/Main.vue'
+
+const YouTubeRoutePlaceholder = defineComponent({
+  name: 'YouTubeRoute',
+  render() {
+    return h('div', { style: 'display: none;' });
+  },
+});
 
 const routes = [
   {
@@ -21,7 +29,8 @@ const routes = [
       {
         path: '/youtube',
         name: 'YouTube',
-        component: () => import('../components/YouTubeView.vue'),
+        // YouTubeView is rendered persistently in Main.vue to prevent Electron webview from reloading
+        component: YouTubeRoutePlaceholder,
       },
       {
         path: '/settings',

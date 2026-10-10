@@ -72,10 +72,15 @@
       </div>
     </side-bar>
     <router-view v-slot="{ Component }">
-      <keep-alive>
-        <component :is="Component" />
+      <keep-alive :exclude="['YouTubeRoute', 'YouTube']">
+        <component :is="Component" :key="route.path" />
       </keep-alive>
     </router-view>
+    <YouTubeView
+      v-if="hasVisitedYouTube"
+      v-show="route.path === '/youtube'"
+      :active="route.path === '/youtube'"
+    />
     <transition name="toast-fade">
       <div v-if="pulseBackStore.toastMessage"
            class="pulse-back-toast"
@@ -108,7 +113,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, defineAsyncComponent, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useSettingsStore } from '../store/settings';
 import { useSoundStore } from '../store/sound';
 import { useUpdateStore } from '../store/update';
@@ -122,6 +128,20 @@ import StopIcon from '../assets/images/stop.svg';
 import Headphones from '../assets/images/headphones.svg';
 import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp';
 import Router from '../router';
+
+const route = useRoute();
+const YouTubeView = defineAsyncComponent(() => import('./YouTubeView.vue'));
+const hasVisitedYouTube = ref(false);
+
+watch(
+  () => route.path,
+  (path) => {
+    if (path === '/youtube') {
+      hasVisitedYouTube.value = true;
+    }
+  },
+  { immediate: true }
+);
 
 const darkMode = ref(true);
 const settingsStore = useSettingsStore();

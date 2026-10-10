@@ -1018,11 +1018,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, onUnmounted, onDeactivated, onActivated, watch, nextTick } from 'vue';
+import { ref, shallowRef, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRoute } from 'vue-router';
 import YouTubeClipPanel from './YouTubeClipPanel.vue';
 import FindInPageBar from './FindInPageBar.vue';
 import { usePulseBackStore } from '../store/pulseBack';
+
+const props = withDefaults(
+  defineProps<{
+    active?: boolean;
+  }>(),
+  {
+    active: true,
+  }
+);
 
 const route = useRoute();
 const pulseBackStore = usePulseBackStore();
@@ -1774,17 +1783,7 @@ function closeFindBar() {
   } catch (_) { }
 }
 
-// Watch route to automatically pause video when navigating away from YouTube
-watch(
-  () => route.path,
-  (newPath, oldPath) => {
-    if (oldPath === '/youtube' && newPath !== '/youtube') {
-      try {
-        webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()');
-      } catch (_) { }
-    }
-  }
-);
+
 
 // Navigation state
 const inputUrl = ref('https://www.youtube.com');
@@ -2572,7 +2571,7 @@ onMounted(() => {
   }, 1000);
 });
 
-onDeactivated(() => {
+function handleDeactivate() {
   isViewActive.value = false;
   closeContextMenu();
   closeClipDrawer();
@@ -2584,9 +2583,9 @@ onDeactivated(() => {
   try {
     webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()');
   } catch (_) { }
-});
+}
 
-onActivated(() => {
+function handleActivate() {
   isViewActive.value = true;
   injectWebviewKeydownListener?.();
   if (!videoHeartbeatTimer) {
@@ -2596,25 +2595,20 @@ onActivated(() => {
       }
     }, 1000);
   }
+}
 
-  let attempts = 0;
-  const interval = setInterval(() => {
-    attempts++;
-    try {
-      webviewRef.value?.executeJavaScript(`
-        (() => {
-          const v = document.querySelector('video, audio');
-          if (v && !v.paused) {
-            v.pause();
-          }
-        })()
-      `);
-    } catch (_) { }
-    if (attempts >= 15) {
-      clearInterval(interval);
+watch(
+  () => props.active,
+  (isActive) => {
+    if (isActive) {
+      handleActivate();
+    } else {
+      handleDeactivate();
     }
-  }, 150);
-});
+  }
+);
+
+
 
 onUnmounted(() => {
   closeContextMenu();
