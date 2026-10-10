@@ -78,15 +78,37 @@
     </router-view>
     <transition name="toast-fade">
       <div v-if="pulseBackStore.toastMessage"
-           class="pulse-back-toast">
-        {{ pulseBackStore.toastMessage }}
+           class="pulse-back-toast"
+           :class="{ 'is-clickable': isToastActionable }"
+           @click="handleToastClick"
+           @mouseenter="handleToastMouseEnter"
+           @mouseleave="handleToastMouseLeave"
+           :title="isToastActionable ? 'Reveal in Windows Explorer' : undefined">
+        <span class="toast-text">{{ pulseBackStore.toastMessage }}</span>
+        <button v-if="isToastActionable"
+                type="button"
+                class="toast-action-btn"
+                @click.stop="handleToastAction"
+                title="Reveal in Windows Explorer">
+          <svg class="toast-action-icon" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+          </svg>
+          <span>{{ pulseBackStore.toastActionLabel || 'Show in folder' }}</span>
+        </button>
+        <button v-if="isToastActionable"
+                type="button"
+                class="toast-close-btn"
+                @click.stop="pulseBackStore.dismissToast()"
+                title="Dismiss">
+          &times;
+        </button>
       </div>
     </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useSettingsStore } from '../store/settings';
 import { useSoundStore } from '../store/sound';
 import { useUpdateStore } from '../store/update';
@@ -111,6 +133,32 @@ const routerLinkActive = ref([false, false, false, false]);
 const stopAllSoundsActive = ref(false);
 const muteButtonActive = ref(false);
 const loadingErrorMessage = ref<string | null>(null);
+
+const isToastActionable = computed(() => {
+  return Boolean(pulseBackStore.toastFilePath || pulseBackStore.toastAction);
+});
+
+function handleToastClick() {
+  if (isToastActionable.value) {
+    pulseBackStore.triggerToastAction();
+  }
+}
+
+function handleToastAction() {
+  pulseBackStore.triggerToastAction();
+}
+
+function handleToastMouseEnter() {
+  if (isToastActionable.value) {
+    pulseBackStore.pauseToastTimer();
+  }
+}
+
+function handleToastMouseLeave() {
+  if (isToastActionable.value) {
+    pulseBackStore.resumeToastTimer();
+  }
+}
 
 onMounted(() => {
   pulseBackStore.init();
@@ -352,13 +400,89 @@ initializeSettings();
   background: #1e3a8a;
   color: white;
   border: 1px solid #3b82f6;
-  padding: 0.65rem 1.25rem;
+  padding: 0.65rem 1.15rem;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 600;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
   z-index: 9999;
   pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  max-width: calc(100vw - 3rem);
+  box-sizing: border-box;
+}
+
+.pulse-back-toast.is-clickable {
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.pulse-back-toast.is-clickable:hover {
+  background: #1d4ed8;
+  border-color: #60a5fa;
+  box-shadow: 0 12px 28px -4px rgba(37, 99, 235, 0.45);
+}
+
+.pulse-back-toast .toast-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+.toast-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  padding: 0.25rem 0.55rem;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.toast-action-btn:hover {
+  background: #ffffff;
+  color: #1e3a8a;
+  border-color: #ffffff;
+}
+
+.toast-action-btn .toast-action-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.toast-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 1.15rem;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  margin-left: -0.2rem;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.toast-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .toast-fade-enter-active,

@@ -565,7 +565,9 @@ async function saveToFile() {
 
       const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
       if (saved) {
-        pulseBackStore.showToast(`Saved "${defaultFilename}"`);
+        pulseBackStore.showToast(`Saved "${defaultFilename}"`, {
+          filePath: typeof saved === 'string' ? saved : undefined,
+        });
       }
     } else {
       const url = URL.createObjectURL(trimmed.blob);

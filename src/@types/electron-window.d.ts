@@ -63,7 +63,8 @@ export interface Settings {
     defaultName: string,
     buffer: ArrayBuffer,
     filters?: Array<{ name: string; extensions: string[] }>
-  ) => Promise<boolean>
+  ) => Promise<string | boolean>
+  showItemInFolder?: (fullPath: string) => Promise<boolean>
   writeImageToClipboard?: (payload: {
     buffer?: ArrayBuffer
     dataUrl?: string

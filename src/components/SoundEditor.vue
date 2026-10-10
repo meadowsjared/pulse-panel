@@ -511,7 +511,9 @@ async function exportOriginalAudio() {
     if (window.electron?.saveFileDialog) {
       const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
       if (saved) {
-        pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+        pulseBackStore.showToast(`Exported "${defaultFilename}"`, {
+          filePath: typeof saved === 'string' ? saved : undefined,
+        });
       }
     } else {
       const downloadUrl = URL.createObjectURL(blob);
@@ -532,7 +534,7 @@ async function exportOriginalAudio() {
   }
 }
 
-async function exportSegmentAudio(segment: SoundSegment, segmentIndex?: number, notify = true): Promise<boolean> {
+async function exportSegmentAudio(segment: SoundSegment, segmentIndex?: number, notify = true): Promise<string | boolean> {
   if (!audioBuffer.value) {
     await loadAudioBuffer();
     if (!audioBuffer.value) return false;
@@ -570,9 +572,11 @@ async function exportSegmentAudio(segment: SoundSegment, segmentIndex?: number, 
   if (window.electron?.saveFileDialog) {
     const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
     if (saved && notify) {
-      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`, {
+        filePath: typeof saved === 'string' ? saved : undefined,
+      });
     }
-    return Boolean(saved);
+    return saved || false;
   } else {
     const downloadUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -608,17 +612,23 @@ async function exportAllSegments() {
   try {
     const segs = soundSegments.value;
     let savedCount = 0;
+    let lastSavedPath: string | undefined;
     for (let i = 0; i < segs.length; i++) {
       const saved = await exportSegmentAudio(segs[i], i, false);
       if (saved) {
         savedCount++;
+        if (typeof saved === 'string') {
+          lastSavedPath = saved;
+        }
       } else {
         // User cancelled the save dialog, stop asking for remaining files
         break;
       }
     }
     if (savedCount > 0) {
-      pulseBackStore.showToast(`Exported ${savedCount} segment${savedCount > 1 ? 's' : ''}`);
+      pulseBackStore.showToast(`Exported ${savedCount} segment${savedCount > 1 ? 's' : ''}`, {
+        filePath: lastSavedPath,
+      });
     }
   } catch (err) {
     console.error('Failed to export all segments:', err);
@@ -847,7 +857,9 @@ async function exportImage() {
     if (window.electron?.saveFileDialog) {
       const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
       if (saved) {
-        pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+        pulseBackStore.showToast(`Exported "${defaultFilename}"`, {
+          filePath: typeof saved === 'string' ? saved : undefined,
+        });
       }
     } else {
       const downloadUrl = URL.createObjectURL(blob);

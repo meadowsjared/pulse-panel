@@ -53,6 +53,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
   saveFileDialog: (defaultName, buffer, filters) =>
     ipcRenderer.invoke('save-file-dialog', { defaultName, buffer, filters }),
+  showItemInFolder: fullPath => ipcRenderer.invoke('show-item-in-folder', fullPath),
   writeImageToClipboard: data => ipcRenderer.invoke('write-image-to-clipboard', data),
   readImageFromClipboard: () => ipcRenderer.invoke('read-image-from-clipboard'),
   hasImageInClipboard: () => ipcRenderer.invoke('has-image-in-clipboard'),

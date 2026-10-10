@@ -57,6 +57,13 @@ export interface PulseBackClipMetadata {
   originalFileName?: string;
 }
 
+export interface ToastOptions {
+  filePath?: string | null;
+  action?: (() => void) | null;
+  actionLabel?: string | null;
+  duration?: number;
+}
+
 interface PulseBackState {
   isBufferEnabled: boolean;
   isBufferRunning: boolean;
@@ -66,6 +73,9 @@ interface PulseBackState {
   clips: PulseBackClip[];
   selectedClipId: string | null;
   toastMessage: string | null;
+  toastFilePath: string | null;
+  toastAction: (() => void) | null;
+  toastActionLabel: string | null;
   toastTimeout: ReturnType<typeof setTimeout> | null;
 }
 
@@ -138,6 +148,9 @@ export const usePulseBackStore = defineStore('pulseBack', {
     clips: [],
     selectedClipId: null,
     toastMessage: null,
+    toastFilePath: null,
+    toastAction: null,
+    toastActionLabel: null,
     toastTimeout: null,
   }),
 
@@ -738,15 +751,68 @@ export const usePulseBackStore = defineStore('pulseBack', {
       }
     },
 
-    showToast(message: string): void {
+    showToast(message: string, optionsOrFilePath?: string | ToastOptions): void {
       this.toastMessage = message;
+      if (typeof optionsOrFilePath === 'string') {
+        this.toastFilePath = optionsOrFilePath;
+        this.toastAction = null;
+        this.toastActionLabel = null;
+      } else if (optionsOrFilePath && typeof optionsOrFilePath === 'object') {
+        this.toastFilePath = optionsOrFilePath.filePath || null;
+        this.toastAction = optionsOrFilePath.action || null;
+        this.toastActionLabel = optionsOrFilePath.actionLabel || null;
+      } else {
+        this.toastFilePath = null;
+        this.toastAction = null;
+        this.toastActionLabel = null;
+      }
+
       if (this.toastTimeout) {
         clearTimeout(this.toastTimeout);
       }
+      const duration = (typeof optionsOrFilePath === 'object' && optionsOrFilePath?.duration)
+        ? optionsOrFilePath.duration
+        : (this.toastFilePath || this.toastAction ? 5500 : 3500);
+
       this.toastTimeout = setTimeout(() => {
-        this.toastMessage = null;
+        this.dismissToast();
+      }, duration);
+    },
+
+    pauseToastTimer(): void {
+      if (this.toastTimeout) {
+        clearTimeout(this.toastTimeout);
         this.toastTimeout = null;
-      }, 3500);
+      }
+    },
+
+    resumeToastTimer(delay = 2500): void {
+      if (this.toastMessage && !this.toastTimeout) {
+        this.toastTimeout = setTimeout(() => {
+          this.dismissToast();
+        }, delay);
+      }
+    },
+
+    dismissToast(): void {
+      this.toastMessage = null;
+      this.toastFilePath = null;
+      this.toastAction = null;
+      this.toastActionLabel = null;
+      if (this.toastTimeout) {
+        clearTimeout(this.toastTimeout);
+        this.toastTimeout = null;
+      }
+    },
+
+    triggerToastAction(): void {
+      if (this.toastAction) {
+        this.toastAction();
+        this.dismissToast();
+      } else if (this.toastFilePath && window.electron?.showItemInFolder) {
+        window.electron.showItemInFolder(this.toastFilePath);
+        this.dismissToast();
+      }
     },
   },
 });

@@ -1,4 +1,4 @@
-const { join } = require('path')
+const { join, normalize } = require('path')
 const fs = require('fs')
 const os = require('os')
 const {
@@ -355,6 +355,19 @@ app.whenReady().then(() => {
     mainWindow.setContentSize(currentWidth + widthChange, currentHeight + heightChange)
   })
   ipcMain.handle('open-external-link', (_, url) => shell.openExternal(url))
+  ipcMain.handle('show-item-in-folder', (_, fullPath) => {
+    if (fullPath) {
+      try {
+        const normalized = normalize(fullPath)
+        shell.showItemInFolder(normalized)
+        return true
+      } catch (err) {
+        console.error('Failed to show item in folder:', err)
+        return false
+      }
+    }
+    return false
+  })
   ipcMain.handle('download-vb-cable', (_, appName) => settings.downloadVBCable(appName))
   ipcMain.handle('check-virtual-cable-installed', () => settings.checkVirtualCableInstalled())
 
@@ -386,7 +399,7 @@ app.whenReady().then(() => {
       return false
     }
     await fs.promises.writeFile(result.filePath, Buffer.from(buffer))
-    return true
+    return result.filePath
   })
   ipcMain.handle('download-and-install-update', async (_, downloadUrl) => {
     return updater.downloadAndInstallUpdate(downloadUrl, progress => {
