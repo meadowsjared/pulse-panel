@@ -1,48 +1,50 @@
 <template>
   <div class="toolbar select-none">
     <div class="left-buttons">
-      <div class="search-input-wrapper" ref="searchContainerRef">
-        <inline-svg class="search-icon" :src="SearchIcon" />
-        <input
-          ref="searchInputRef"
-          type="text"
-          class="search-input"
-          v-model="settingsStore.searchText"
-          placeholder="Search sounds (Ctrl+F)..."
-          @focus="handleFocus"
-          @keydown.esc="clearSearch(true)"
-          @keydown.enter="handleEnter"
-        />
+      <div class="search-input-wrapper"
+           ref="searchContainerRef">
+        <inline-svg class="search-icon"
+                    :src="SearchIcon" />
+        <input ref="searchInputRef"
+               type="text"
+               class="search-input"
+               v-model="settingsStore.searchText"
+               placeholder="Search sounds (Ctrl+F)..."
+               @focus="handleFocus"
+               @keydown.esc="clearSearch(true)"
+               @keydown.enter="handleEnter" />
         <div class="input-actions">
-          <button
-            v-if="settingsStore.searchText.length > 0"
-            class="clear-button"
-            @mousedown.prevent="clearSearch(false)"
-            @click="clearSearch(false)"
-            title="Clear search (Esc)"
-            tabindex="-1">
-            <inline-svg class="w-3 h-3" :src="CloseIcon" />
+          <button v-if="settingsStore.searchText.length > 0"
+                  class="clear-button"
+                  @mousedown.prevent="clearSearch(false)"
+                  @click="clearSearch(false)"
+                  title="Clear search (Esc)"
+                  tabindex="-1">
+            <inline-svg class="w-3 h-3"
+                        :src="CloseIcon" />
           </button>
-          <button
-            class="help-button"
-            :class="{ active: showTips }"
-            @mousedown.prevent="toggleTips"
-            title="Search syntax guide"
-            tabindex="-1">
+          <button class="help-button"
+                  :class="{ active: showTips }"
+                  @mousedown.prevent="toggleTips"
+                  title="Search syntax guide"
+                  tabindex="-1">
             ?
           </button>
         </div>
 
         <!-- Floating Search Tips Dropdown -->
         <transition name="tips-fade">
-          <div v-if="showTips" class="search-tips-dropdown" @mousedown.prevent>
+          <div v-if="showTips"
+               class="search-tips-dropdown"
+               @mousedown.prevent>
             <div class="tips-header">
               <span class="tips-title">Search Syntax</span>
               <span class="tips-subtitle">Click a filter to insert</span>
             </div>
 
             <div class="tips-list">
-              <div class="tip-row" @click="insertFilter('#')">
+              <div class="tip-row"
+                   @click="insertFilter('#')">
                 <div class="tip-badges">
                   <span class="tip-badge">#tag</span>
                   <span class="tip-badge sub">tag:</span>
@@ -53,7 +55,8 @@
                 </div>
               </div>
 
-              <div class="tip-row" @click="insertFilter('@')">
+              <div class="tip-row"
+                   @click="insertFilter('@')">
                 <div class="tip-badges">
                   <span class="tip-badge">@segment</span>
                   <span class="tip-badge sub">seg:</span>
@@ -64,7 +67,8 @@
                 </div>
               </div>
 
-              <div class="tip-row" @click="insertFilter('-')">
+              <div class="tip-row"
+                   @click="insertFilter('-')">
                 <div class="tip-badges">
                   <span class="tip-badge">-word</span>
                 </div>
@@ -74,7 +78,8 @@
                 </div>
               </div>
 
-              <div class="tip-row" @click="insertFilter('quotes')">
+              <div class="tip-row"
+                   @click="insertFilter('quotes')">
                 <div class="tip-badges">
                   <span class="tip-badge">"phrase"</span>
                 </div>
@@ -95,7 +100,8 @@
       </div>
 
       <transition name="fade">
-        <div v-if="settingsStore.searchText.trim().length > 0" class="search-stats">
+        <div v-if="settingsStore.searchText.trim().length > 0"
+             class="search-stats">
           {{ matchCountText }}
         </div>
       </transition>
@@ -105,10 +111,9 @@
       <QuickClipButton />
 
       <!-- Pulse Back Buffer Toggle -->
-      <toggle
-        class="pulseBackToggle"
-        :modelValue="pulseBackStore.isBufferEnabled"
-        @update:modelValue="pulseBackStore.toggleBuffer">
+      <toggle class="pulseBackToggle"
+              :modelValue="pulseBackStore.isBufferEnabled"
+              @update:modelValue="pulseBackStore.toggleBuffer">
         <span class="flex items-center gap-1.5">
           <span :class="['status-dot', { online: pulseBackStore.isBufferRunning }]"></span>
           Pulse Back
@@ -116,36 +121,38 @@
       </toggle>
 
       <!-- Play / Edit Mode Toggle -->
-      <toggle class="displayMode" v-model="editMode" @update:modelValue="handleDisplayModeChange">{{
-        editMode ? 'Play Mode' : 'Edit Mode'
-      }}</toggle>
+      <toggle class="displayMode"
+              v-model="editMode"
+              @update:modelValue="handleDisplayModeChange">{{
+                editMode ? 'Play Mode' : 'Edit Mode'
+        }}</toggle>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import InlineSvg from 'vue-inline-svg'
-import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue'
-import SearchIcon from '../assets/images/search.svg'
-import CloseIcon from '../assets/images/close.svg'
-import { useSettingsStore } from '../store/settings'
-import { useSoundStore } from '../store/sound'
-import { usePulseBackStore } from '../store/pulseBack'
+import InlineSvg from 'vue-inline-svg';
+import { computed, ref, onMounted, onUnmounted, nextTick } from 'vue';
+import SearchIcon from '../assets/images/search.svg';
+import CloseIcon from '../assets/images/close.svg';
+import { useSettingsStore } from '../store/settings';
+import { useSoundStore } from '../store/sound';
+import { usePulseBackStore } from '../store/pulseBack';
 
-const settingsStore = useSettingsStore()
-const soundStore = useSoundStore()
-const pulseBackStore = usePulseBackStore()
-const searchInputRef = ref<HTMLInputElement | null>(null)
-const searchContainerRef = ref<HTMLDivElement | null>(null)
+const settingsStore = useSettingsStore();
+const soundStore = useSoundStore();
+const pulseBackStore = usePulseBackStore();
+const searchInputRef = ref<HTMLInputElement | null>(null);
+const searchContainerRef = ref<HTMLDivElement | null>(null);
 
 
-const isFocused = ref(false)
-const manualTipsOpen = ref(false)
+const isFocused = ref(false);
+const manualTipsOpen = ref(false);
 
 const showTips = computed(() => {
-  if (manualTipsOpen.value) return true
-  return isFocused.value && settingsStore.searchText.trim().length === 0
-})
+  if (manualTipsOpen.value) return true;
+  return isFocused.value && settingsStore.searchText.trim().length === 0;
+});
 
 /**
  * This computed translates the displayMode from the settings store to a boolean
@@ -155,110 +162,110 @@ const showTips = computed(() => {
 const editMode = computed<boolean>({
   get: () => settingsStore.displayMode === 'play',
   set: value => {
-    settingsStore.displayMode = value ? 'play' : 'edit'
+    settingsStore.displayMode = value ? 'play' : 'edit';
   },
-})
+});
 
 const matchCount = computed(() => {
-  if (!settingsStore.searchText.trim()) return 0
-  return settingsStore.soundsFiltered().filter(s => s.title !== undefined).length
-})
+  if (!settingsStore.searchText.trim()) return 0;
+  return settingsStore.soundsFiltered().filter(s => s.title !== undefined).length;
+});
 
 const matchCountText = computed(() => {
-  const count = matchCount.value
-  return count === 1 ? '1 match' : `${count} matches`
-})
+  const count = matchCount.value;
+  return count === 1 ? '1 match' : `${count} matches`;
+});
 
 function handleFocus() {
-  isFocused.value = true
+  isFocused.value = true;
 }
 
 function toggleTips() {
-  manualTipsOpen.value = !manualTipsOpen.value
+  manualTipsOpen.value = !manualTipsOpen.value;
   if (manualTipsOpen.value) {
     nextTick(() => {
-      searchInputRef.value?.focus()
-    })
+      searchInputRef.value?.focus();
+    });
   }
 }
 
 
 function insertFilter(prefix: string) {
-  const current = settingsStore.searchText.trim()
-  let cursorPos = 0
+  const current = settingsStore.searchText.trim();
+  let cursorPos = 0;
 
   if (prefix === 'quotes') {
-    const newText = current ? `${current} ""` : '""'
-    settingsStore.searchText = newText
-    cursorPos = newText.length - 1
+    const newText = current ? `${current} ""` : '""';
+    settingsStore.searchText = newText;
+    cursorPos = newText.length - 1;
   } else {
-    const newText = current ? `${current} ${prefix}` : prefix
-    settingsStore.searchText = newText
-    cursorPos = newText.length
+    const newText = current ? `${current} ${prefix}` : prefix;
+    settingsStore.searchText = newText;
+    cursorPos = newText.length;
   }
 
   nextTick(() => {
     if (searchInputRef.value) {
-      searchInputRef.value.focus()
-      searchInputRef.value.setSelectionRange(cursorPos, cursorPos)
+      searchInputRef.value.focus();
+      searchInputRef.value.setSelectionRange(cursorPos, cursorPos);
     }
-  })
+  });
 }
 
 function handleDisplayModeChange() {
-  settingsStore.displayMode = editMode.value ? 'play' : 'edit'
+  settingsStore.displayMode = editMode.value ? 'play' : 'edit';
 }
 
 function clearSearch(blur = false) {
-  settingsStore.searchText = ''
-  manualTipsOpen.value = false
+  settingsStore.searchText = '';
+  manualTipsOpen.value = false;
   if (blur) {
-    isFocused.value = false
-    searchInputRef.value?.blur()
+    isFocused.value = false;
+    searchInputRef.value?.blur();
   } else {
-    searchInputRef.value?.focus()
+    searchInputRef.value?.focus();
   }
 }
 
 function handleEnter() {
-  const filtered = settingsStore.soundsFiltered()
-  if (filtered.length === 0) return
+  const filtered = settingsStore.soundsFiltered();
+  if (filtered.length === 0) return;
 
-  const topSound = filtered.find(s => s.title !== undefined)
-  if (!topSound) return
+  const topSound = filtered.find(s => s.title !== undefined);
+  if (!topSound) return;
 
   if (settingsStore.displayMode === 'play') {
-    soundStore.playSound(topSound, null, null, undefined, true)
+    soundStore.playSound(topSound, null, null, undefined, true);
   } else {
-    settingsStore.currentEditingSound = topSound
-    settingsStore.soundEditorOpen = true
+    settingsStore.currentEditingSound = topSound;
+    settingsStore.soundEditorOpen = true;
   }
 }
 
 function handleGlobalKeyDown(event: KeyboardEvent) {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
-    event.preventDefault()
-    searchInputRef.value?.focus()
-    searchInputRef.value?.select()
+    event.preventDefault();
+    searchInputRef.value?.focus();
+    searchInputRef.value?.select();
   }
 }
 
 function handleClickOutside(event: MouseEvent) {
   if (searchContainerRef.value && !searchContainerRef.value.contains(event.target as Node)) {
-    isFocused.value = false
-    manualTipsOpen.value = false
+    isFocused.value = false;
+    manualTipsOpen.value = false;
   }
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', handleGlobalKeyDown)
-  document.addEventListener('pointerdown', handleClickOutside)
-})
+  window.addEventListener('keydown', handleGlobalKeyDown);
+  document.addEventListener('pointerdown', handleClickOutside);
+});
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleGlobalKeyDown)
-  document.removeEventListener('pointerdown', handleClickOutside)
-})
+  window.removeEventListener('keydown', handleGlobalKeyDown);
+  document.removeEventListener('pointerdown', handleClickOutside);
+});
 </script>
 
 <style scoped>
