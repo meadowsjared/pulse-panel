@@ -99,6 +99,9 @@ contextBridge.exposeInMainWorld('electron', {
   onWebviewEscape: callback => {
     ipcRenderer.on('webview-escape-pressed', () => callback())
   },
+  onWebviewReload: callback => {
+    ipcRenderer.on('webview-reload-pressed', () => callback())
+  },
   versions: {
     app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,

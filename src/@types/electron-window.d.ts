@@ -122,6 +122,7 @@ export interface Settings {
   ytFetchImage: (url: string) => Promise<any>
   onTriggerFindInPage?: (callback: () => void) => void
   onWebviewEscape?: (callback: () => void) => void
+  onWebviewReload?: (callback: () => void) => void
 }
 
 declare global {

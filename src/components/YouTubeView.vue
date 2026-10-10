@@ -687,15 +687,20 @@
 
             <!-- Audio Media Actions (Detected Audio Element) -->
             <template v-if="webviewMenuContext.isAudio && webviewMenuContext.audioSrc">
-              <div v-if="webviewMenuContext.audioTitle" class="menu-preview-header">
+              <div v-if="webviewMenuContext.audioTitle"
+                   class="menu-preview-header">
                 <svg class="item-icon text-emerald-400"
                      viewBox="0 0 24 24"
                      fill="none"
                      stroke="currentColor"
                      stroke-width="2">
                   <path d="M9 18V5l12-2v13"></path>
-                  <circle cx="6" cy="18" r="3"></circle>
-                  <circle cx="18" cy="16" r="3"></circle>
+                  <circle cx="6"
+                          cy="18"
+                          r="3"></circle>
+                  <circle cx="18"
+                          cy="16"
+                          r="3"></circle>
                 </svg>
                 <span class="truncate">{{ webviewMenuContext.audioTitle }}</span>
               </div>
@@ -737,9 +742,20 @@
                      fill="none"
                      stroke="currentColor"
                      stroke-width="2">
-                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-                  <line x1="8" y1="21" x2="16" y2="21"></line>
-                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                  <rect x="2"
+                        y="3"
+                        width="20"
+                        height="14"
+                        rx="2"
+                        ry="2"></rect>
+                  <line x1="8"
+                        y1="21"
+                        x2="16"
+                        y2="21"></line>
+                  <line x1="12"
+                        y1="17"
+                        x2="12"
+                        y2="21"></line>
                 </svg>
                 <span>Open Audio in New Window</span>
               </button>
@@ -1353,7 +1369,7 @@ async function handleWebviewContextMenu(event: any) {
   const rawX = rect ? rect.left + (typeof params.x === 'number' ? params.x : 20) : lastMousePos.x;
   const rawY = rect ? rect.top + (typeof params.y === 'number' ? params.y : 20) : lastMousePos.y;
 
-  let detectedAudio: { src: string; title: string; duration: number } | null = null;
+  let detectedAudio: { src: string; title: string; duration: number; } | null = null;
   if (wv && typeof params.x === 'number' && typeof params.y === 'number') {
     try {
       const detectScript = `
@@ -1814,6 +1830,7 @@ const audioLoadStatus = ref('');
 const audioLoadError = ref('');
 
 let currentAudioLoadUrl = '';
+let currentAudioLoadRequestId = 0;
 const currentPreloadedVideoId = ref<string | null>(null);
 let videoHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let audioContext: AudioContext | null = null;
@@ -1912,8 +1929,19 @@ function reloadPage() {
   closeClipDrawer();
   const wv = webviewRef.value;
   if (wv) {
-    if (isLoading.value) wv.stop();
-    else wv.reload();
+    if (isLoading.value) {
+      wv.stop();
+    } else {
+      currentPreloadedVideoId.value = null;
+      audioBuffer.value = null;
+      originalAudioBuffer.value = null;
+      audioDuration.value = 0;
+      wv.reload();
+      const targetUrl = currentUrl.value;
+      if (getVideoId(targetUrl)) {
+        loadAudioForWaveform(targetUrl, true);
+      }
+    }
   }
 }
 
@@ -2191,19 +2219,20 @@ function getAudioContext(): AudioContext {
   return audioContext;
 }
 
-async function loadAudioForWaveform(targetUrlOverride?: string | unknown) {
+async function loadAudioForWaveform(targetUrlOverride?: string | unknown, forceReload = false) {
   const targetUrl = typeof targetUrlOverride === 'string' ? targetUrlOverride : currentUrl.value;
   const vidId = getVideoId(targetUrl);
   if (!vidId) return;
 
-  if (currentPreloadedVideoId.value === vidId && audioBuffer.value) {
+  if (!forceReload && currentPreloadedVideoId.value === vidId && audioBuffer.value) {
     return;
   }
 
-  if (isLoadingAudio.value && currentAudioLoadUrl === targetUrl) {
+  if (!forceReload && isLoadingAudio.value && currentAudioLoadUrl === targetUrl) {
     return;
   }
 
+  const requestId = ++currentAudioLoadRequestId;
   currentAudioLoadUrl = targetUrl;
   currentPreloadedVideoId.value = vidId;
 
@@ -2224,7 +2253,7 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown) {
       console.warn('ytDownloadClip direct download failed, trying webview fallback:', e);
     }
 
-    if (currentAudioLoadUrl !== targetUrl) return;
+    if (requestId !== currentAudioLoadRequestId) return;
 
     // Webview fallback for site-authenticated or session-dependent media
     if (!result || !result.success || !result.buffer) {
@@ -2262,7 +2291,7 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown) {
       } catch (_) { }
     }
 
-    if (currentAudioLoadUrl !== targetUrl) return;
+    if (requestId !== currentAudioLoadRequestId) return;
 
     if (!result || !result.success || !result.buffer) {
       throw new Error('Could not download audio stream from URL');
@@ -2283,7 +2312,7 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown) {
     new Uint8Array(cleanArrayBuffer).set(uint8);
 
     const decoded = await ctx.decodeAudioData(cleanArrayBuffer);
-    if (currentAudioLoadUrl !== targetUrl) return;
+    if (requestId !== currentAudioLoadRequestId) return;
 
     audioBuffer.value = decoded;
     originalAudioBuffer.value = decoded;
@@ -2292,12 +2321,12 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown) {
     audioLoadProgress.value = 100;
     audioLoadStatus.value = 'Ready';
   } catch (err: any) {
-    if (currentAudioLoadUrl !== targetUrl) return;
+    if (requestId !== currentAudioLoadRequestId) return;
     console.error('Failed to load audio for waveform:', err);
     audioLoadError.value = err.message || 'Failed to load audio stream';
     currentPreloadedVideoId.value = null;
   } finally {
-    if (currentAudioLoadUrl === targetUrl) {
+    if (requestId === currentAudioLoadRequestId) {
       isLoadingAudio.value = false;
     }
   }
@@ -2366,10 +2395,22 @@ function closeClipDrawer() {
 function handleKeydown(e: KeyboardEvent) {
   if (route.path !== '/youtube') return;
 
-  if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'f' || e.code === 'KeyF')) {
+  const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+  const isF = e.key.toLowerCase() === 'f' || e.code === 'KeyF';
+  const isR = e.key.toLowerCase() === 'r' || e.code === 'KeyR';
+  const isF5 = e.key === 'F5' || e.code === 'F5';
+
+  if (isCtrlOrMeta && isF) {
     e.preventDefault();
     e.stopPropagation();
     openFindBar();
+    return;
+  }
+
+  if ((isCtrlOrMeta && isR) || isF5) {
+    e.preventDefault();
+    e.stopPropagation();
+    reloadPage();
     return;
   }
 
@@ -2461,23 +2502,35 @@ onMounted(() => {
     }
   });
 
+  window.electron?.onWebviewReload?.(() => {
+    if (route.path === '/youtube') {
+      reloadPage();
+    }
+  });
+
   const wv = webviewRef.value;
   if (!wv) return;
 
   handleWebviewBeforeInputFn = (e: any) => {
-    const isKeyDown = e.type === 'keyDown' || e.type === 'keydown';
+    const input = e.input || e;
+    const isKeyDown = input.type === 'keyDown' || input.type === 'keydown';
     if (!isKeyDown) return;
 
-    const isCtrlOrMeta = !!(e.control || e.meta);
-    const key = (e.key || '').toLowerCase();
-    const isF = key === 'f' || e.code === 'KeyF';
+    const isCtrlOrMeta = !!(input.control || input.meta);
+    const key = (input.key || '').toLowerCase();
+    const isF = key === 'f' || input.code === 'KeyF';
+    const isR = key === 'r' || input.code === 'KeyR';
+    const isF5 = key === 'f5' || input.code === 'F5';
 
     if (isCtrlOrMeta && isF) {
       e.preventDefault?.();
       openFindBar();
-    } else if ((key === 'escape' || e.code === 'Escape') && isFindBarOpen.value) {
+    } else if ((key === 'escape' || input.code === 'Escape') && isFindBarOpen.value) {
       e.preventDefault?.();
       closeFindBar();
+    } else if ((isCtrlOrMeta && isR) || isF5) {
+      e.preventDefault?.();
+      reloadPage();
     }
   };
 
@@ -2495,6 +2548,10 @@ onMounted(() => {
               console.log('__PULSE_ACTION_FIND__');
             } else if (e.key === 'Escape') {
               console.log('__PULSE_ACTION_ESCAPE__');
+            } else if (e.key === 'F5' || e.code === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('__PULSE_ACTION_RELOAD__');
             }
           }, true);
         })()
@@ -2511,6 +2568,8 @@ onMounted(() => {
       } else if (isDrawerOpen.value) {
         closeClipDrawer();
       }
+    } else if (e.message === '__PULSE_ACTION_RELOAD__') {
+      reloadPage();
     }
   };
 

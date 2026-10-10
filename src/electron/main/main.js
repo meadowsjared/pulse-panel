@@ -635,6 +635,8 @@ app.whenReady().then(() => {
         if (input.type === 'keyDown') {
           const isCtrlOrMeta = !!(input.control || input.meta)
           const isF = (input.key && input.key.toLowerCase() === 'f') || input.code === 'KeyF'
+          const isR = (input.key && input.key.toLowerCase() === 'r') || input.code === 'KeyR'
+          const isF5 = (input.key && input.key.toLowerCase() === 'f5') || input.code === 'F5'
           if (isCtrlOrMeta && isF) {
             event.preventDefault()
             if (mainWindow && !mainWindow.isDestroyed()) {
@@ -643,6 +645,11 @@ app.whenReady().then(() => {
           } else if (input.key === 'Escape' || input.code === 'Escape') {
             if (mainWindow && !mainWindow.isDestroyed()) {
               mainWindow.webContents.send('webview-escape-pressed')
+            }
+          } else if ((isCtrlOrMeta && isR) || isF5) {
+            event.preventDefault()
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('webview-reload-pressed')
             }
           }
         }
