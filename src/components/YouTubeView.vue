@@ -168,7 +168,7 @@
 
       <!-- Webview Container -->
       <div class="webview-wrapper"
-           :class="{ 'has-dock-bar': isVideoPage && activeVideoTitle, 'is-covered': isDrawerOpen }">
+           :class="{ 'has-dock-bar': isVideoPage && activeVideoTitle }">
         <webview ref="webviewRef"
                  src="https://www.youtube.com"
                  class="youtube-webview"
@@ -1886,6 +1886,7 @@ function checkVideoUrl(url: string) {
       loadAudioForWaveform(url);
     }
   } else {
+    closeClipDrawer();
     currentPreloadedVideoId.value = null;
     audioBuffer.value = null;
     originalAudioBuffer.value = null;
@@ -1896,16 +1897,19 @@ function checkVideoUrl(url: string) {
 
 // Navigation methods
 function goBack() {
+  closeClipDrawer();
   const wv = webviewRef.value;
   if (wv && wv.canGoBack()) wv.goBack();
 }
 
 function goForward() {
+  closeClipDrawer();
   const wv = webviewRef.value;
   if (wv && wv.canGoForward()) wv.goForward();
 }
 
 function reloadPage() {
+  closeClipDrawer();
   const wv = webviewRef.value;
   if (wv) {
     if (isLoading.value) wv.stop();
@@ -1914,6 +1918,7 @@ function reloadPage() {
 }
 
 function goHome() {
+  closeClipDrawer();
   const wv = webviewRef.value;
   if (wv) {
     wv.loadURL('https://www.youtube.com');
@@ -1934,6 +1939,7 @@ function handleNavigate() {
 }
 
 function navigateToUrl(url: string) {
+  closeClipDrawer();
   const wv = webviewRef.value;
   if (wv) {
     wv.loadURL(url);
@@ -2502,6 +2508,8 @@ onMounted(() => {
     } else if (e.message === '__PULSE_ACTION_ESCAPE__') {
       if (isFindBarOpen.value) {
         closeFindBar();
+      } else if (isDrawerOpen.value) {
+        closeClipDrawer();
       }
     }
   };
@@ -2533,6 +2541,9 @@ onMounted(() => {
     try {
       const url = wv.getURL();
       if (url) {
+        if (url !== currentUrl.value && isDrawerOpen.value) {
+          closeClipDrawer();
+        }
         currentUrl.value = url;
         inputUrl.value = url;
         checkVideoUrl(url);
@@ -2819,10 +2830,6 @@ button:focus-visible {
 
 .webview-wrapper.has-dock-bar {
   height: calc(100% - var(--dock-bar-height));
-}
-
-.webview-wrapper.is-covered {
-  pointer-events: none;
 }
 
 .youtube-webview {
