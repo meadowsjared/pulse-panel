@@ -177,8 +177,8 @@ onUnmounted(() => {
 }
 
 .quick-clip-btn.active {
-  background: #3b82f6;
-  border-color: #60a5fa;
+  background: var(--primary-color);
+  border-color: 1px solid var(--primary-accent);
   color: white;
 }
 
@@ -290,9 +290,9 @@ onUnmounted(() => {
 }
 
 .preset-btn:hover {
-  background: #2563eb;
-  border-color: #3b82f6;
-  color: white;
+  background: var(--primary-color);
+  border-color: var(--primary-accent);
+  color: var(--text-color);
   transform: translateY(-1px);
 }
 
@@ -301,15 +301,15 @@ onUnmounted(() => {
 }
 
 .preset-btn.is-default {
-  border-color: rgba(59, 130, 246, 0.6);
-  background: rgba(37, 99, 235, 0.15);
-  color: #93c5fd;
+  border-color: var(--primary-accent);
+  background: var(--primary-color-50);
+  color: var(--text-color);
 }
 
 .preset-btn.is-default:hover {
-  background: #2563eb;
-  border-color: #3b82f6;
-  color: white;
+  background: var(--primary-color);
+  border-color: var(--primary-accent);
+  color: var(--text-color);
 }
 
 .continue-checkbox {
