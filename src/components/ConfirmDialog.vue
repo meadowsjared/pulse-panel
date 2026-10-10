@@ -1,11 +1,17 @@
 <template>
-  <div v-if="showDialog" class="shaded-background">
+  <div v-if="showDialog"
+       class="shaded-background"
+       @click="cancel">
     <div class="dialog">
       <h2>{{ title }}</h2>
       <p class="message">{{ message }}</p>
       <div class="button-group">
-        <button v-if="confirmText" class="light danger" @click="confirm">{{ confirmText }}</button>
-        <button v-if="cancelText" class="light" @click="cancel">{{ cancelText }}</button>
+        <button v-if="confirmText"
+                class="menu center light danger"
+                @click="confirm">{{ confirmText }}</button>
+        <button v-if="cancelText"
+                class="menu center light"
+                @click="cancel">{{ cancelText }}</button>
       </div>
     </div>
   </div>
@@ -14,18 +20,18 @@
 <script setup lang="ts">
 const emit = defineEmits<{
   // define an emit that will update showDialog
-  (event: 'update:showDialog', value: boolean): void
-  (event: 'confirm'): void
-}>()
+  (event: 'update:showDialog', value: boolean): void;
+  (event: 'confirm'): void;
+}>();
 
 // const showDialog = ref(false)
 withDefaults(
   defineProps<{
-    showDialog: boolean
-    title?: string
-    message?: string
-    confirmText?: string
-    cancelText?: string
+    showDialog: boolean;
+    title?: string;
+    message?: string;
+    confirmText?: string;
+    cancelText?: string;
   }>(),
   {
     title: 'Confirmation',
@@ -33,16 +39,16 @@ withDefaults(
     confirmText: 'Confirm',
     cancelText: 'Cancel',
   },
-)
+);
 
 const confirm = () => {
-  emit('confirm')
-  emit('update:showDialog', false)
-}
+  emit('confirm');
+  emit('update:showDialog', false);
+};
 
 const cancel = () => {
-  emit('update:showDialog', false)
-}
+  emit('update:showDialog', false);
+};
 </script>
 
 <style scoped>
@@ -82,7 +88,7 @@ const cancel = () => {
   justify-content: center;
 }
 
-.button-group > button {
+.button-group>button {
   min-width: calc(7ch + 2rem);
 }
 
