@@ -388,6 +388,31 @@
         </select-custom>
       </div>
     </div>
+    <div class="web-browser-section">
+      <h2>Web Browser:</h2>
+      <p class="section-subtitle">Set the default homepage for the built-in browser and media clipper.</p>
+      <div class="browser-settings-card">
+        <div class="homepage-input-row">
+          <label for="browser-homepage-input" class="homepage-label">Homepage:</label>
+          <div class="homepage-input-group">
+            <input id="browser-homepage-input"
+                   type="text"
+                   class="homepage-input"
+                   v-model="homepageInput"
+                   @blur="saveHomepage"
+                   @keydown.enter="saveHomepage"
+                   placeholder="https://www.youtube.com" />
+            <button v-if="homepageInput && homepageInput !== 'https://www.youtube.com'"
+                    type="button"
+                    class="homepage-reset-btn"
+                    @click="resetHomepage"
+                    title="Reset to default (YouTube)">
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="software-update-section">
       <h2>Software Update:</h2>
       <div class="update-card">
@@ -464,6 +489,30 @@ const selectedHotkey = ref<string[] | undefined>(settingsStore.ptt_hotkey ?? und
 const stopHotkey = ref<string[] | undefined>(settingsStore.stop_hotkey ?? undefined);
 const pulseBackHotkey = ref<string[] | undefined>(settingsStore.pulse_back_hotkey ?? ['F12']);
 const newTag = ref<string | null>(null);
+
+const homepageInput = ref(settingsStore.browser_homepage || 'https://www.youtube.com');
+
+watch(
+  () => settingsStore.browser_homepage,
+  (newVal) => {
+    if (newVal && newVal !== homepageInput.value) {
+      homepageInput.value = newVal;
+    }
+  }
+);
+
+async function saveHomepage() {
+  const target = homepageInput.value.trim() || 'https://www.youtube.com';
+  await settingsStore.setBrowserHomepage(target);
+  homepageInput.value = settingsStore.browser_homepage;
+  pulseBackStore.showToast(`Homepage updated: ${settingsStore.browser_homepage}`);
+}
+
+async function resetHomepage() {
+  await settingsStore.setBrowserHomepage('https://www.youtube.com');
+  homepageInput.value = 'https://www.youtube.com';
+  pulseBackStore.showToast('Homepage reset to YouTube');
+}
 
 const isPlayingCableTest = ref(false);
 
@@ -1526,6 +1575,85 @@ input[type='checkbox']:focus-visible {
   align-items: center;
   margin-top: 1.5rem;
   margin-bottom: 2.5rem;
+}
+
+.web-browser-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.browser-settings-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-radius: 0.5rem;
+  background-color: var(--input-bg-color, rgba(0, 0, 0, 0.05));
+  border: 1px solid rgba(128, 128, 128, 0.2);
+  min-width: 320px;
+  max-width: 540px;
+  width: 90%;
+}
+
+.homepage-input-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.homepage-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--text-color);
+}
+
+.homepage-input-group {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.homepage-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  background-color: var(--background-color, #1e1e1e);
+  color: var(--text-color);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.homepage-input:focus-visible {
+  border-color: var(--active-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+}
+
+.homepage-reset-btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  background: transparent;
+  color: var(--text-color);
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.homepage-reset-btn:hover {
+  background-color: rgba(128, 128, 128, 0.15);
+  border-color: var(--active-color);
 }
 
 .update-card {

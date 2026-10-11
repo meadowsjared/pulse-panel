@@ -82,7 +82,8 @@
         </button>
         <button class="nav-btn menu"
                 @click="goHome"
-                title="YouTube Home">
+                @contextmenu.prevent.stop="openHomeContextMenu($event)"
+                :title="homeButtonTitle">
           <svg class="w-4 h-4"
                viewBox="0 0 24 24"
                fill="none"
@@ -170,7 +171,7 @@
       <div class="webview-wrapper"
            :class="{ 'has-dock-bar': isVideoPage && activeVideoTitle }">
         <webview ref="webviewRef"
-                 src="https://www.youtube.com"
+                 :src="initialWebviewSrc"
                  class="youtube-webview"
                  allowpopups
                  partition="persist:youtube"></webview>
@@ -457,6 +458,22 @@
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
               <span>Clear</span>
+            </button>
+
+            <div class="menu-divider"></div>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="setAsHomepage">
+              <svg class="item-icon text-amber-400"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Set as Homepage</span>
             </button>
           </template>
 
@@ -1025,6 +1042,84 @@
               </svg>
               <span>Open in External Browser</span>
             </button>
+
+            <div class="menu-divider"></div>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="setAsHomepage">
+              <svg class="item-icon text-amber-400"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Set Current Page as Homepage</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    v-if="settingsStore.browser_homepage && settingsStore.browser_homepage !== 'https://www.youtube.com'"
+                    @click="resetHomepageToDefault">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span>Reset Homepage to Default</span>
+            </button>
+          </template>
+
+          <!-- HOME BUTTON CONTEXT MENU -->
+          <template v-else-if="activeMenu === 'home'">
+            <div class="menu-section-header">Homepage</div>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="goHome(); closeContextMenu()">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              <span>Go to Homepage</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="setAsHomepage">
+              <svg class="item-icon text-amber-400"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>Set Current Page as Homepage</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    v-if="settingsStore.browser_homepage && settingsStore.browser_homepage !== 'https://www.youtube.com'"
+                    @click="resetHomepageToDefault">
+              <svg class="item-icon"
+                   viewBox="0 0 24 24"
+                   fill="none"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+              </svg>
+              <span>Reset to Default (YouTube)</span>
+            </button>
           </template>
 
         </div>
@@ -1034,11 +1129,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, shallowRef, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import YouTubeClipPanel from './YouTubeClipPanel.vue';
 import FindInPageBar from './FindInPageBar.vue';
 import { usePulseBackStore } from '../store/pulseBack';
+import { useSettingsStore } from '../store/settings';
 
 const props = withDefaults(
   defineProps<{
@@ -1051,6 +1147,10 @@ const props = withDefaults(
 
 const route = useRoute();
 const pulseBackStore = usePulseBackStore();
+const settingsStore = useSettingsStore();
+
+// Captured once at component setup to avoid Electron webview re-navigating when homepage setting updates
+const initialWebviewSrc = settingsStore.browser_homepage || 'https://www.youtube.com';
 
 const webviewRef = ref<any>(null);
 const clipPanelRef = ref<any>(null);
@@ -1064,7 +1164,7 @@ const findInitialQuery = ref('');
 const isViewActive = ref(true);
 
 // Context menu state
-type MenuType = 'address' | 'webview' | 'address-overflow' | null;
+type MenuType = 'address' | 'webview' | 'address-overflow' | 'home' | null;
 
 interface MenuPosition {
   x: number;
@@ -1802,11 +1902,23 @@ function closeFindBar() {
 
 
 // Navigation state
-const inputUrl = ref('https://www.youtube.com');
-const currentUrl = ref('https://www.youtube.com');
+const inputUrl = ref(settingsStore.browser_homepage || 'https://www.youtube.com');
+const currentUrl = ref(settingsStore.browser_homepage || 'https://www.youtube.com');
 const canGoBack = ref(false);
 const canGoForward = ref(false);
 const isLoading = ref(false);
+
+const homeDomain = computed(() => {
+  try {
+    const raw = settingsStore.browser_homepage || 'https://www.youtube.com';
+    const parsed = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return 'Home';
+  }
+});
+
+const homeButtonTitle = computed(() => `Home (${homeDomain.value})`);
 
 // Video state
 const isVideoPage = ref(false);
@@ -1949,8 +2061,42 @@ function goHome() {
   closeClipDrawer();
   const wv = webviewRef.value;
   if (wv) {
-    wv.loadURL('https://www.youtube.com');
+    const home = settingsStore.browser_homepage || 'https://www.youtube.com';
+    wv.loadURL(home);
   }
+}
+
+function openHomeContextMenu(event: MouseEvent) {
+  event.preventDefault();
+  event.stopPropagation();
+  const btn = event.currentTarget as HTMLElement;
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    showMenuAt('home', rect.left, rect.bottom + 6);
+  } else {
+    showMenuAt('home', event.clientX, event.clientY);
+  }
+}
+
+function setAsHomepage() {
+  closeContextMenu();
+  const target = currentUrl.value || inputUrl.value;
+  if (!target || !isLikelyAddress(target)) {
+    pulseBackStore.showToast('Unable to set homepage: invalid address');
+    return;
+  }
+  let normalized = target.trim();
+  if (!/^https?:\/\//i.test(normalized)) {
+    normalized = `https://${normalized}`;
+  }
+  settingsStore.setBrowserHomepage(normalized);
+  pulseBackStore.showToast(`Homepage set to ${normalized}`);
+}
+
+function resetHomepageToDefault() {
+  closeContextMenu();
+  settingsStore.setBrowserHomepage('https://www.youtube.com');
+  pulseBackStore.showToast('Homepage reset to YouTube');
 }
 
 function handleNavigate() {

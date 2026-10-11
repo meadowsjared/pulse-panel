@@ -47,6 +47,7 @@ interface State {
   pulse_back_volume: number;
   pulse_back_muted: boolean;
   pulse_back_sync_offset_ms: number;
+  browser_homepage: string;
   // not saved in the database:
   /**
    * friendly name of the app
@@ -157,7 +158,7 @@ const Boolean_Settings_Keys = [
 ] as const;
 type BooleanSettings = (typeof Boolean_Settings_Keys)[number];
 
-const String_Settings_Keys = ['selectedMicrophoneId', 'pulse_back_input_device'] as const;
+const String_Settings_Keys = ['selectedMicrophoneId', 'pulse_back_input_device', 'browser_homepage'] as const;
 type StringSettings = (typeof String_Settings_Keys)[number];
 
 const Array_String_Settings_Keys = ['ptt_hotkey', 'stop_hotkey', 'pulse_back_hotkey'] as const;
@@ -475,6 +476,7 @@ export const useSettingsStore = defineStore('settings', {
     pulse_back_volume: 1,
     pulse_back_muted: false,
     pulse_back_sync_offset_ms: 100,
+    browser_homepage: 'https://www.youtube.com',
     allInputDevices: [],
     virtualCableDeviceId: null,
     virtualCableInstalled: false,
@@ -483,6 +485,11 @@ export const useSettingsStore = defineStore('settings', {
     tagImageUrls: {},
   }),
   getters: {
+    browserHomepage(): string {
+      return (this.browser_homepage && this.browser_homepage.trim())
+        ? this.browser_homepage.trim()
+        : 'https://www.youtube.com';
+    },
     quickTags(): LabelActive[] {
       return this.quickTagsAr ?? [];
     },
@@ -574,6 +581,7 @@ export const useSettingsStore = defineStore('settings', {
     _assignValidatedSetting(key: SettingsOnlyKeys, value: SettingValue) {
       if (this._isBooleanSettings(key) && typeof value === 'boolean') return (this[key] = value);
       else if (this._isNumberSettings(key) && typeof value === 'number') return (this[key] = value);
+      else if (this._isStringSettings(key) && (typeof value === 'string' || value === null)) return ((this as any)[key] = value);
       else if (this._isArrayNumberSettings(key) && this._isArrayNumber(value)) return (this[key] = value);
       else if (this._isArrayOutputDeviceSettings(key) && this._isArrayOutputDevice(value)) {
         return (this[key] = value.map(item =>
@@ -764,6 +772,10 @@ export const useSettingsStore = defineStore('settings', {
                 pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device);
               }
             } catch { }
+          } else if (key === 'browser_homepage') {
+            if (!this.browser_homepage || !this.browser_homepage.trim()) {
+              this.browser_homepage = 'https://www.youtube.com';
+            }
           }
           return true;
         }
@@ -832,6 +844,15 @@ export const useSettingsStore = defineStore('settings', {
         return false;
       }
       return false;
+    },
+    async setBrowserHomepage(url: string): Promise<boolean> {
+      let trimmed = url ? url.trim() : '';
+      if (!trimmed) {
+        trimmed = 'https://www.youtube.com';
+      } else if (!/^https?:\/\//i.test(trimmed)) {
+        trimmed = `https://${trimmed}`;
+      }
+      return await this.saveSetting('browser_homepage', trimmed);
     },
     _isBooleanSettings(k: string): k is BooleanSettings {
       return (Boolean_Settings_Keys as readonly string[]).includes(k);
