@@ -40,7 +40,8 @@
                  v-if="videoDurationFormatted">
               {{ videoDurationFormatted }}
             </div>
-            <button type="button"
+            <button v-if="!props.isAudioOnly"
+                    type="button"
                     class="recapture-frame-btn"
                     :disabled="isCapturingFrame"
                     @click="$emit('captureFrame')"
@@ -285,6 +286,8 @@ interface Props {
   isCapturingFrame?: boolean;
   activeVideoTitle?: string;
   currentUrl?: string;
+  videoId?: string | null;
+  isAudioOnly?: boolean;
   isOpen?: boolean;
 }
 
@@ -302,6 +305,8 @@ const props = withDefaults(defineProps<Props>(), {
   isCapturingFrame: false,
   activeVideoTitle: '',
   currentUrl: '',
+  videoId: null,
+  isAudioOnly: false,
   isOpen: false,
 });
 

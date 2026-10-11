@@ -295,6 +295,7 @@
                             :is-capturing-frame="isCapturingFrame"
                             :active-video-title="activeVideoTitle"
                             :current-url="currentUrl"
+                            :is-audio-only="!!activeDirectAudioUrl || isDirectMediaUrl(currentUrl)"
                             :is-open="isDrawerOpen"
                             @capture-frame="handleCaptureCurrentFrame"
                             @retry-audio="loadAudioForWaveform"
@@ -1790,7 +1791,118 @@ function handleOpenImageInNewWindow() {
 
 const activeDirectAudioUrl = ref('');
 
-async function loadDirectAudioIntoClipPanel(audioUrl: string, title?: string, duration?: number) {
+function extractEmbeddedAudioCover(rawBuffer: Uint8Array): string | null {
+  try {
+    const bytes = rawBuffer;
+    if (bytes.length < 10) return null;
+
+    // Check ID3v2 header: "ID3"
+    if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
+      const version = bytes[3];
+      if (version < 2 || version > 4) return null;
+
+      const tagSize =
+        ((bytes[6] & 0x7f) << 21) |
+        ((bytes[7] & 0x7f) << 14) |
+        ((bytes[8] & 0x7f) << 7) |
+        (bytes[9] & 0x7f);
+
+      const end = Math.min(bytes.length, 10 + tagSize);
+      let offset = 10;
+
+      while (offset + 10 < end) {
+        if (version === 2) {
+          const id = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2]);
+          const frameSize = (bytes[offset + 3] << 16) | (bytes[offset + 4] << 8) | bytes[offset + 5];
+          if (frameSize <= 0 || offset + 6 + frameSize > end) break;
+          if (id === 'PIC') {
+            const dataOffset = offset + 6;
+            const format = String.fromCharCode(bytes[dataOffset + 1], bytes[dataOffset + 2], bytes[dataOffset + 3]).toLowerCase();
+            const mime = format === 'png' ? 'image/png' : 'image/jpeg';
+            let descOffset = dataOffset + 5;
+            while (descOffset < dataOffset + frameSize && bytes[descOffset] !== 0) {
+              descOffset++;
+            }
+            descOffset++;
+            const picData = bytes.slice(descOffset, dataOffset + frameSize);
+            if (picData.length > 0) {
+              const blob = new Blob([picData], { type: mime });
+              return URL.createObjectURL(blob);
+            }
+          }
+          offset += 6 + frameSize;
+        } else {
+          const id = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]);
+          if (id === '\0\0\0\0') break;
+
+          let frameSize = 0;
+          if (version === 4) {
+            frameSize =
+              ((bytes[offset + 4] & 0x7f) << 21) |
+              ((bytes[offset + 5] & 0x7f) << 14) |
+              ((bytes[offset + 6] & 0x7f) << 7) |
+              (bytes[offset + 7] & 0x7f);
+          } else {
+            frameSize =
+              (bytes[offset + 4] << 24) |
+              (bytes[offset + 5] << 16) |
+              (bytes[offset + 6] << 8) |
+              bytes[offset + 7];
+          }
+
+          if (frameSize <= 0 || offset + 10 + frameSize > end) break;
+
+          if (id === 'APIC') {
+            const dataOffset = offset + 10;
+            const encoding = bytes[dataOffset];
+            let mimeEnd = dataOffset + 1;
+            while (mimeEnd < dataOffset + frameSize && bytes[mimeEnd] !== 0) {
+              mimeEnd++;
+            }
+            let mime = '';
+            for (let i = dataOffset + 1; i < mimeEnd; i++) {
+              mime += String.fromCharCode(bytes[i]);
+            }
+            if (!mime || mime === 'image/') mime = 'image/jpeg';
+
+            let descStart = mimeEnd + 1 + 1;
+            let descEnd = descStart;
+            if (encoding === 1 || encoding === 2) {
+              while (descEnd + 1 < dataOffset + frameSize && (bytes[descEnd] !== 0 || bytes[descEnd + 1] !== 0)) {
+                descEnd += 2;
+              }
+              descEnd += 2;
+            } else {
+              while (descEnd < dataOffset + frameSize && bytes[descEnd] !== 0) {
+                descEnd++;
+              }
+              descEnd++;
+            }
+
+            const picData = bytes.slice(descEnd, dataOffset + frameSize);
+            if (picData.length > 0) {
+              const blob = new Blob([picData], { type: mime });
+              return URL.createObjectURL(blob);
+            }
+          }
+
+          offset += 10 + frameSize;
+        }
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('Could not extract embedded ID3 cover art:', err);
+    return null;
+  }
+}
+
+async function loadDirectAudioIntoClipPanel(
+  audioUrl: string,
+  title?: string,
+  duration?: number,
+  candidateImageUrl?: string
+) {
   if (!audioUrl) return;
   const audioTitle = (title && title.trim()) ? title.trim() : extractMediaTitle(audioUrl);
 
@@ -1799,17 +1911,19 @@ async function loadDirectAudioIntoClipPanel(audioUrl: string, title?: string, du
     webviewRef.value?.executeJavaScript('document.querySelectorAll("audio, video").forEach(el => el.pause())');
   } catch (_) { }
 
-  // 2. Clear out any previous audio buffer/state so it doesn't display stale data
+  // 2. Clear out any previous audio buffer/state AND stale thumbnail so it never displays past YouTube artwork
   currentPreloadedVideoId.value = null;
   currentAudioLoadUrl = '';
   audioBuffer.value = null;
   originalAudioBuffer.value = null;
   audioDuration.value = 0;
+  thumbnailUrl.value = '';
   activeDirectAudioUrl.value = audioUrl;
 
   // 3. Set title and flags
   activeVideoTitle.value = audioTitle;
   isVideoPage.value = true;
+  isShortVideo.value = false;
   if (duration && duration > 0) {
     videoTotalDuration.value = duration;
     videoDurationFormatted.value = formatTime(duration);
@@ -1818,10 +1932,47 @@ async function loadDirectAudioIntoClipPanel(audioUrl: string, title?: string, du
     videoDurationFormatted.value = '';
   }
 
-  // 4. Open the clip drawer immediately (dock expands with smooth animation)
+  // 4. Try to find a relevant image for this sound
+  if (candidateImageUrl) {
+    try {
+      thumbnailUrl.value = await cleanAndCropArtwork(candidateImageUrl, false);
+    } catch (_) {
+      thumbnailUrl.value = candidateImageUrl;
+    }
+  } else {
+    // Attempt to discover any image associated with this sound or page in the webview
+    try {
+      const pageImage = await webviewRef.value?.executeJavaScript(`
+        (() => {
+          const links = Array.from(document.querySelectorAll('a[href]'));
+          const matchingLink = links.find(a => a.href && a.href.includes(${JSON.stringify(audioUrl)}));
+          if (matchingLink) {
+            const insideImg = matchingLink.querySelector('img');
+            if (insideImg && insideImg.src) return insideImg.src;
+            const container = matchingLink.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div');
+            if (container) {
+              const containerImg = container.querySelector('img');
+              if (containerImg && containerImg.src) return containerImg.src;
+            }
+          }
+          const og = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+          if (og) return og;
+          const tw = document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
+          if (tw) return tw;
+          const linkIcon = document.querySelector('link[rel="apple-touch-icon"], link[rel="image_src"]')?.getAttribute('href');
+          return linkIcon || null;
+        })()
+      `);
+      if (pageImage && activeDirectAudioUrl.value === audioUrl) {
+        thumbnailUrl.value = await cleanAndCropArtwork(pageImage, false);
+      }
+    } catch (_) { }
+  }
+
+  // 5. Open the clip drawer immediately (dock expands with smooth animation)
   isDrawerOpen.value = true;
 
-  // 5. Load the audio into the waveform editor
+  // 6. Load the audio into the waveform editor (and extract embedded ID3 artwork if present)
   await loadAudioForWaveform(audioUrl, true);
 
   pulseBackStore.showToast(`Loaded "${audioTitle}" into clip panel`);
@@ -2141,6 +2292,7 @@ async function pasteFromClipboard() {
 }
 
 async function readVideoState() {
+  if (activeDirectAudioUrl.value) return;
   const wv = webviewRef.value;
   if (!wv) return;
 
@@ -2472,6 +2624,18 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown, forceR
     const decoded = await ctx.decodeAudioData(cleanArrayBuffer);
     if (requestId !== currentAudioLoadRequestId) return;
 
+    // Check if the downloaded audio file has embedded album artwork (e.g. ID3 APIC frame)
+    if (activeDirectAudioUrl.value === targetUrl || isDirectMediaUrl(targetUrl)) {
+      const embeddedCover = extractEmbeddedAudioCover(uint8);
+      if (embeddedCover) {
+        try {
+          thumbnailUrl.value = await cleanAndCropArtwork(embeddedCover, false);
+        } catch (_) {
+          thumbnailUrl.value = embeddedCover;
+        }
+      }
+    }
+
     audioBuffer.value = decoded;
     originalAudioBuffer.value = decoded;
     audioDuration.value = decoded.duration;
@@ -2513,30 +2677,33 @@ async function openClipDrawer() {
   const isShort = currentUrl.value.includes('/shorts/');
   isShortVideo.value = isShort;
 
-  readVideoState().catch(() => { });
+  // Only attempt video frame capture & YouTube oEmbed metadata if not handling direct audio
+  if (!activeDirectAudioUrl.value && !isDirectMediaUrl(currentUrl.value)) {
+    readVideoState().catch(() => { });
 
-  // Non-blocking live frame capture
-  captureVideoFrameFromWebview()
-    .then(async (liveFrame) => {
-      if (liveFrame) {
-        thumbnailUrl.value = await cleanAndCropArtwork(liveFrame, isShortVideo.value);
-      }
-    })
-    .catch(() => { });
-
-  // Non-blocking oEmbed metadata fetch
-  if (window.electron?.ytFetchInfo) {
-    window.electron.ytFetchInfo(currentUrl.value)
-      .then(async (info) => {
-        if (info && info.success) {
-          if (info.isShort !== undefined) isShortVideo.value = info.isShort;
-          if (info.title && !activeVideoTitle.value) activeVideoTitle.value = info.title;
-          if (!thumbnailUrl.value && info.thumbnailUrl) {
-            thumbnailUrl.value = await cleanAndCropArtwork(info.thumbnailUrl, isShortVideo.value);
-          }
+    // Non-blocking live frame capture
+    captureVideoFrameFromWebview()
+      .then(async (liveFrame) => {
+        if (liveFrame && !activeDirectAudioUrl.value) {
+          thumbnailUrl.value = await cleanAndCropArtwork(liveFrame, isShortVideo.value);
         }
       })
       .catch(() => { });
+
+    // Non-blocking oEmbed metadata fetch
+    if (window.electron?.ytFetchInfo) {
+      window.electron.ytFetchInfo(currentUrl.value)
+        .then(async (info) => {
+          if (info && info.success && !activeDirectAudioUrl.value) {
+            if (info.isShort !== undefined) isShortVideo.value = info.isShort;
+            if (info.title && !activeVideoTitle.value) activeVideoTitle.value = info.title;
+            if (!thumbnailUrl.value && info.thumbnailUrl) {
+              thumbnailUrl.value = await cleanAndCropArtwork(info.thumbnailUrl, isShortVideo.value);
+            }
+          }
+        })
+        .catch(() => { });
+    }
   }
 
   if (!audioBuffer.value && !isLoadingAudio.value) {
@@ -2726,9 +2893,25 @@ onMounted(() => {
                 e.preventDefault();
                 e.stopPropagation();
                 const rawTitle = anchor.getAttribute('download') || anchor.innerText || anchor.title || '';
+                let imgUrl = '';
+                const insideImg = anchor.querySelector('img');
+                if (insideImg && insideImg.src) {
+                  imgUrl = insideImg.src;
+                } else {
+                  const container = anchor.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div');
+                  const containerImg = container ? container.querySelector('img') : null;
+                  if (containerImg && containerImg.src) {
+                    imgUrl = containerImg.src;
+                  } else {
+                    const og = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+                    const tw = document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
+                    imgUrl = og || tw || '';
+                  }
+                }
                 console.log('__PULSE_DIRECT_AUDIO_CLICK__:' + JSON.stringify({
                   url: href,
                   title: rawTitle.trim(),
+                  imageUrl: imgUrl,
                 }));
               }
             }
@@ -2753,7 +2936,7 @@ onMounted(() => {
       try {
         const payload = JSON.parse(e.message.slice('__PULSE_DIRECT_AUDIO_CLICK__:'.length));
         if (payload?.url) {
-          loadDirectAudioIntoClipPanel(payload.url, payload.title);
+          loadDirectAudioIntoClipPanel(payload.url, payload.title, undefined, payload.imageUrl);
         }
       } catch (_) { }
     }
@@ -2837,7 +3020,7 @@ onMounted(() => {
   });
 
   videoHeartbeatTimer = setInterval(() => {
-    if (isVideoPage.value) {
+    if (isVideoPage.value && !activeDirectAudioUrl.value) {
       readVideoState();
     }
   }, 1000);
