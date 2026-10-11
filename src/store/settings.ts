@@ -22,6 +22,12 @@ declare global {
   }
 }
 
+export interface BrowserFavorite {
+  id: string;
+  title: string;
+  url: string;
+}
+
 interface State {
   defaultVolume: number;
   outputDevices: OutputDeviceSetting[];
@@ -48,6 +54,7 @@ interface State {
   pulse_back_muted: boolean;
   pulse_back_sync_offset_ms: number;
   browser_homepage: string;
+  browser_favorites: BrowserFavorite[];
   // not saved in the database:
   /**
    * friendly name of the app
@@ -477,6 +484,11 @@ export const useSettingsStore = defineStore('settings', {
     pulse_back_muted: false,
     pulse_back_sync_offset_ms: 100,
     browser_homepage: 'https://www.youtube.com',
+    browser_favorites: [
+      { id: 'fav-youtube', title: 'YouTube', url: 'https://www.youtube.com' },
+      { id: 'fav-myinstants', title: 'Myinstants', url: 'https://www.myinstants.com' },
+      { id: 'fav-freesound', title: 'Freesound', url: 'https://freesound.org' },
+    ],
     allInputDevices: [],
     virtualCableDeviceId: null,
     virtualCableInstalled: false,
@@ -489,6 +501,9 @@ export const useSettingsStore = defineStore('settings', {
       return (this.browser_homepage && this.browser_homepage.trim())
         ? this.browser_homepage.trim()
         : 'https://www.youtube.com';
+    },
+    browserFavorites(): BrowserFavorite[] {
+      return this.browser_favorites ?? [];
     },
     quickTags(): LabelActive[] {
       return this.quickTagsAr ?? [];
@@ -620,6 +635,14 @@ export const useSettingsStore = defineStore('settings', {
         const savedTagImages = await electron?.readDBSetting('tagImages');
         if (savedTagImages && typeof savedTagImages === 'object' && !Array.isArray(savedTagImages)) {
           this.tagImages = savedTagImages as Record<string, string>;
+        }
+      }
+      if (settings?.browser_favorites && Array.isArray(settings.browser_favorites)) {
+        this.browser_favorites = settings.browser_favorites as BrowserFavorite[];
+      } else {
+        const savedFavorites = await electron?.readDBSetting('browser_favorites');
+        if (savedFavorites && Array.isArray(savedFavorites)) {
+          this.browser_favorites = savedFavorites as BrowserFavorite[];
         }
       }
       this._loadTagImageUrls().catch(() => { });
@@ -853,6 +876,49 @@ export const useSettingsStore = defineStore('settings', {
         trimmed = `https://${trimmed}`;
       }
       return await this.saveSetting('browser_homepage', trimmed);
+    },
+    async saveBrowserFavorites(): Promise<void> {
+      const electron = window.electron;
+      await electron?.saveDBSetting('browser_favorites', toCloneable(this.browser_favorites));
+    },
+    async addBrowserFavorite(fav: { title?: string; url: string }): Promise<void> {
+      const url = fav.url.trim();
+      if (!url) return;
+      const title = (fav.title && fav.title.trim()) || url;
+      const cleanUrl = url.replace(/\/+$/, '');
+      const currentList = [...(this.browser_favorites || [])];
+      const existingIdx = currentList.findIndex(
+        f => f.url.trim().toLowerCase().replace(/\/+$/, '') === cleanUrl.toLowerCase()
+      );
+      if (existingIdx !== -1) {
+        currentList[existingIdx] = {
+          ...currentList[existingIdx],
+          title,
+        };
+      } else {
+        currentList.unshift({
+          id: 'fav-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+          title,
+          url,
+        });
+      }
+      this.browser_favorites = currentList;
+      await this.saveBrowserFavorites();
+    },
+    async removeBrowserFavorite(idOrUrl: string): Promise<void> {
+      const cleanTarget = idOrUrl.trim().toLowerCase().replace(/\/+$/, '');
+      this.browser_favorites = (this.browser_favorites || []).filter(
+        f => f.id !== idOrUrl && f.url.trim().toLowerCase().replace(/\/+$/, '') !== cleanTarget
+      );
+      await this.saveBrowserFavorites();
+    },
+    async restoreDefaultFavorites(): Promise<void> {
+      this.browser_favorites = [
+        { id: 'fav-youtube', title: 'YouTube', url: 'https://www.youtube.com' },
+        { id: 'fav-myinstants', title: 'Myinstants', url: 'https://www.myinstants.com' },
+        { id: 'fav-freesound', title: 'Freesound', url: 'https://freesound.org' },
+      ];
+      await this.saveBrowserFavorites();
     },
     _isBooleanSettings(k: string): k is BooleanSettings {
       return (Boolean_Settings_Keys as readonly string[]).includes(k);

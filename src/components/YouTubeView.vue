@@ -117,6 +117,7 @@
                v-model="inputUrl"
                @keydown.enter="handleNavigate"
                @focus="focusAddressBar"
+               @input="handleAddressInput"
                @keydown.escape="handleAddressBarEscape"
                @contextmenu.prevent.stop="openAddressContextMenu($event)"
                placeholder="Search YouTube or paste video / audio URL (Enter to go)..." />
@@ -127,6 +128,29 @@
           ✕
         </button>
         <div class="address-actions-group">
+          <button type="button"
+                  class="favorite-star-btn"
+                  :class="{ 'is-favorite': isCurrentPageFavorite, 'is-active': isFavoritesFlyoutOpen }"
+                  @click="toggleFavoritesFlyout"
+                  :title="isCurrentPageFavorite ? 'Favorite Places (Saved) - Click to view, Right-click to toggle' : 'Favorite Places - Click to view, Right-click to toggle'"
+                  @contextmenu.prevent.stop="toggleFavoriteCurrentPage">
+            <svg v-if="isCurrentPageFavorite"
+                 class="w-3.5 h-3.5 star-icon active text-amber-400"
+                 viewBox="0 0 24 24"
+                 fill="currentColor"
+                 stroke="currentColor"
+                 stroke-width="1">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+            <svg v-else
+                 class="w-3.5 h-3.5 star-icon"
+                 viewBox="0 0 24 24"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </button>
           <button type="button"
                   class="paste-btn"
                   @click="pasteFromClipboard"
@@ -154,6 +178,167 @@
             </svg>
           </button>
         </div>
+
+        <!-- Omnibox Favorites Flyout Dropdown -->
+        <transition name="flyout-slide">
+          <div v-if="isFavoritesFlyoutOpen"
+               ref="favoritesFlyoutRef"
+               class="favorites-flyout"
+               @mousedown.stop>
+            <div class="favorites-flyout-header">
+              <div class="favorites-header-title">
+                <svg class="w-3.5 h-3.5 star-badge-icon text-amber-400"
+                     viewBox="0 0 24 24"
+                     fill="currentColor">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+                <span class="favorites-title-text">Favorites</span>
+                <span class="favorites-count-badge">{{ settingsStore.browserFavorites.length }}</span>
+              </div>
+              <div class="favorites-header-actions">
+                <button type="button"
+                        class="fav-header-action-btn"
+                        v-if="!isCurrentPageFavorite && currentEffectiveUrl"
+                        @click="addCurrentPageToFavorites"
+                        title="Save current page as favorite">
+                  <svg class="w-3 h-3 text-amber-400"
+                       viewBox="0 0 24 24"
+                       fill="currentColor">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  </svg>
+                  <span>+ Save Current</span>
+                </button>
+                <button type="button"
+                        class="fav-header-action-btn is-saved"
+                        v-else-if="isCurrentPageFavorite && currentEffectiveUrl"
+                        @click="toggleFavoriteCurrentPage"
+                        title="Remove current page from favorites">
+                  <svg class="w-3 h-3 text-emerald-400"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2.5">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  <span>Saved</span>
+                </button>
+                <button type="button"
+                        class="fav-header-close-btn"
+                        @click="closeFavoritesFlyout"
+                        title="Close favorites (Esc)">
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <!-- List of favorites -->
+            <div class="favorites-list"
+                 v-if="settingsStore.browserFavorites.length > 0">
+              <div v-for="fav in settingsStore.browserFavorites"
+                   :key="fav.id"
+                   class="favorite-item"
+                   :class="{ 'is-current': isFavoriteCurrentUrl(fav.url) }"
+                   @click="selectFavorite(fav)">
+                <!-- Favicon / Domain Icon badge -->
+                <div class="fav-icon-badge">
+                  <svg v-if="isYouTubeUrl(fav.url)"
+                       class="w-4 h-4 text-red-500"
+                       viewBox="0 0 24 24"
+                       fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                  </svg>
+                  <svg v-else-if="isMyinstantsUrl(fav.url)"
+                       class="w-4 h-4 text-rose-400"
+                       viewBox="0 0 24 24"
+                       fill="currentColor">
+                    <circle cx="12"
+                            cy="12"
+                            r="9" />
+                    <circle cx="12"
+                            cy="12"
+                            r="5"
+                            fill="#18181b" />
+                  </svg>
+                  <svg v-else-if="isAudioSiteUrl(fav.url)"
+                       class="w-4 h-4 text-emerald-400"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2">
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6"
+                            cy="18"
+                            r="3"></circle>
+                    <circle cx="18"
+                            cy="16"
+                            r="3"></circle>
+                  </svg>
+                  <svg v-else
+                       class="w-4 h-4 text-blue-400"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2">
+                    <circle cx="12"
+                            cy="12"
+                            r="10"></circle>
+                    <line x1="2"
+                          y1="12"
+                          x2="22"
+                          y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+
+                <div class="fav-info">
+                  <div class="fav-title"
+                       :title="fav.title">{{ fav.title }}</div>
+                  <div class="fav-url"
+                       :title="fav.url">{{ formatDisplayUrl(fav.url) }}</div>
+                </div>
+
+                <div v-if="isFavoriteCurrentUrl(fav.url)"
+                     class="fav-current-indicator"
+                     title="Current page">
+                  ●
+                </div>
+
+                <div class="fav-actions">
+                  <button type="button"
+                          class="fav-remove-btn"
+                          @click.stop="deleteFavorite(fav)"
+                          title="Remove favorite">
+                    <svg class="w-3.5 h-3.5"
+                         viewBox="0 0 24 24"
+                         fill="none"
+                         stroke="currentColor"
+                         stroke-width="2">
+                      <line x1="18"
+                            y1="6"
+                            x2="6"
+                            y2="18"></line>
+                      <line x1="6"
+                            y1="6"
+                            x2="18"
+                            y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-else
+                 class="favorites-empty-state">
+              <p>No favorite places saved yet.</p>
+              <button type="button"
+                      class="fav-restore-defaults-btn"
+                      @click="settingsStore.restoreDefaultFavorites()">
+                Restore Default Favorites
+              </button>
+            </div>
+          </div>
+        </transition>
       </div>
     </div>
 
@@ -175,6 +360,12 @@
                  class="youtube-webview"
                  allowpopups
                  partition="persist:youtube"></webview>
+        <!-- Overlay shield that intercepts clicks into guest webview while favorites flyout is open -->
+        <div v-if="isFavoritesFlyoutOpen"
+             class="webview-favorites-shield"
+             @mousedown="closeFavoritesFlyout"
+             @contextmenu="closeFavoritesFlyout"
+             @wheel="closeFavoritesFlyout"></div>
       </div>
 
       <!-- Expandable Bar and Panel Section (Unified Slide-Up Card) -->
@@ -303,6 +494,8 @@
         </div>
       </div>
     </div>
+
+
 
     <!-- Context Menu Portal -->
     <teleport to="body">
@@ -462,6 +655,19 @@
             </button>
 
             <div class="menu-divider"></div>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="toggleFavoriteCurrentPage">
+              <svg class="item-icon text-amber-400"
+                   viewBox="0 0 24 24"
+                   :fill="isCurrentPageFavorite ? 'currentColor' : 'none'"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>{{ isCurrentPageFavorite ? 'Remove from Favorites' : 'Add to Favorites' }}</span>
+            </button>
 
             <button type="button"
                     class="context-menu-item"
@@ -968,6 +1174,33 @@
 
             <button type="button"
                     class="context-menu-item"
+                    @click="openFavoritesFlyoutFromMenu">
+              <svg class="item-icon text-amber-400"
+                   viewBox="0 0 24 24"
+                   fill="currentColor">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>Favorite Places</span>
+              <span class="item-badge">{{ settingsStore.browserFavorites.length }}</span>
+            </button>
+
+            <button type="button"
+                    class="context-menu-item"
+                    @click="toggleFavoriteCurrentPage">
+              <svg class="item-icon text-amber-400"
+                   viewBox="0 0 24 24"
+                   :fill="isCurrentPageFavorite ? 'currentColor' : 'none'"
+                   stroke="currentColor"
+                   stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>{{ isCurrentPageFavorite ? 'Remove from Favorites' : 'Add to Favorites' }}</span>
+            </button>
+
+            <div class="menu-divider"></div>
+
+            <button type="button"
+                    class="context-menu-item"
                     @click="handleMenuFindInPage">
               <svg class="item-icon text-blue-400"
                    viewBox="0 0 24 24"
@@ -1158,6 +1391,10 @@ const clipPanelRef = ref<any>(null);
 const addressInputRef = ref<HTMLInputElement | null>(null);
 const overflowBtnRef = ref<HTMLElement | null>(null);
 const findBarRef = ref<any>(null);
+const favoritesFlyoutRef = ref<HTMLElement | null>(null);
+
+// Favorites flyout state
+const isFavoritesFlyoutOpen = ref(false);
 
 // Find in Page state
 const isFindBarOpen = ref(false);
@@ -1285,6 +1522,145 @@ async function showMenuAt(type: MenuType, x: number, y: number) {
 
 function closeContextMenu() {
   activeMenu.value = null;
+}
+
+// Favorites state & helpers
+const currentEffectiveUrl = computed(() => {
+  let wvUrl = '';
+  try {
+    wvUrl = webviewRef.value?.getURL?.() || '';
+  } catch (_) { }
+  return (wvUrl || currentUrl.value || inputUrl.value || '').trim();
+});
+
+const isCurrentPageFavorite = computed(() => {
+  const target = currentEffectiveUrl.value.toLowerCase().replace(/\/+$/, '');
+  if (!target) return false;
+  return settingsStore.browserFavorites.some(f => {
+    const fUrl = f.url.trim().toLowerCase().replace(/\/+$/, '');
+    return fUrl === target;
+  });
+});
+
+function isFavoriteCurrentUrl(url: string): boolean {
+  const current = currentEffectiveUrl.value.toLowerCase().replace(/\/+$/, '');
+  const target = url.trim().toLowerCase().replace(/\/+$/, '');
+  return current === target;
+}
+
+function isYouTubeUrl(url: string): boolean {
+  return /youtube\.com|youtu\.be/i.test(url);
+}
+
+function isMyinstantsUrl(url: string): boolean {
+  return /myinstants\.com/i.test(url);
+}
+
+function isAudioSiteUrl(url: string): boolean {
+  return /freesound\.org|sounddogs|zapsplat|audius/i.test(url) || isDirectMediaUrl(url);
+}
+
+function formatDisplayUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, '');
+    const path = parsed.pathname === '/' ? '' : parsed.pathname;
+    return host + path;
+  } catch (_) {
+    return url;
+  }
+}
+
+function resolvePageTitleForFavorite(normalizedUrl: string): string {
+  let pageTitle = '';
+  try {
+    pageTitle = webviewRef.value?.getTitle?.() || '';
+  } catch (_) { }
+  if (pageTitle) {
+    pageTitle = pageTitle
+      .replace(/\s*-\s*YouTube$/i, '')
+      .replace(/\s*-\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
+      .replace(/\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '')
+      .trim();
+  }
+  return pageTitle || activeVideoTitle.value || extractMediaTitle(normalizedUrl) || formatDisplayUrl(normalizedUrl);
+}
+
+async function toggleFavoriteCurrentPage() {
+  closeContextMenu();
+  const target = currentEffectiveUrl.value;
+  if (!target || !isLikelyAddress(target)) {
+    pulseBackStore.showToast('Invalid address to favorite');
+    return;
+  }
+
+  let normalized = target;
+  if (!/^https?:\/\//i.test(normalized)) {
+    normalized = `https://${normalized}`;
+  }
+
+  if (isCurrentPageFavorite.value) {
+    await settingsStore.removeBrowserFavorite(normalized);
+    pulseBackStore.showToast('Removed from favorites');
+  } else {
+    const title = resolvePageTitleForFavorite(normalized);
+    await settingsStore.addBrowserFavorite({
+      title,
+      url: normalized,
+    });
+    pulseBackStore.showToast(`Saved "${title}" to favorites`);
+    // Right-clicking or toggling should NOT open the flyout
+  }
+}
+
+async function addCurrentPageToFavorites() {
+  const target = currentEffectiveUrl.value;
+  if (!target || !isLikelyAddress(target)) return;
+  let normalized = target;
+  if (!/^https?:\/\//i.test(normalized)) {
+    normalized = `https://${normalized}`;
+  }
+  const title = resolvePageTitleForFavorite(normalized);
+  await settingsStore.addBrowserFavorite({
+    title,
+    url: normalized,
+  });
+  pulseBackStore.showToast(`Saved "${title}" to favorites`);
+}
+
+async function deleteFavorite(fav: { id: string; title: string; url: string; }) {
+  await settingsStore.removeBrowserFavorite(fav.id);
+  pulseBackStore.showToast(`Removed "${fav.title}" from favorites`);
+}
+
+function selectFavorite(fav: { url: string; title: string; }) {
+  isFavoritesFlyoutOpen.value = false;
+  inputUrl.value = fav.url;
+  navigateToUrl(fav.url);
+}
+
+function closeFavoritesFlyout() {
+  isFavoritesFlyoutOpen.value = false;
+}
+
+function openFavoritesFlyoutFromMenu() {
+  closeContextMenu();
+  isFavoritesFlyoutOpen.value = true;
+}
+
+function handleGlobalMouseDown(e: MouseEvent) {
+  if (!isFavoritesFlyoutOpen.value) return;
+  const target = e.target as HTMLElement | null;
+  if (!target) return;
+  if (
+    favoritesFlyoutRef.value?.contains(target) ||
+    addressInputRef.value?.contains(target) ||
+    target.closest('.favorite-star-btn') ||
+    target.closest('.address-actions-group')
+  ) {
+    return;
+  }
+  closeFavoritesFlyout();
 }
 
 // Address Bar Context Menu
@@ -2283,18 +2659,21 @@ function checkVideoUrl(url: string) {
 
 // Navigation methods
 function goBack() {
+  closeFavoritesFlyout();
   closeClipDrawer();
   const wv = webviewRef.value;
   if (wv && wv.canGoBack()) wv.goBack();
 }
 
 function goForward() {
+  closeFavoritesFlyout();
   closeClipDrawer();
   const wv = webviewRef.value;
   if (wv && wv.canGoForward()) wv.goForward();
 }
 
 function reloadPage() {
+  closeFavoritesFlyout();
   closeClipDrawer();
   const wv = webviewRef.value;
   if (wv) {
@@ -2315,6 +2694,7 @@ function reloadPage() {
 }
 
 function goHome() {
+  closeFavoritesFlyout();
   closeClipDrawer();
   const wv = webviewRef.value;
   if (wv) {
@@ -2357,6 +2737,7 @@ function resetHomepageToDefault() {
 }
 
 function handleNavigate() {
+  closeFavoritesFlyout();
   let target = inputUrl.value.trim();
   if (!target) return;
 
@@ -2370,10 +2751,27 @@ function handleNavigate() {
 }
 
 function navigateToUrl(url: string) {
+  closeFavoritesFlyout();
   closeClipDrawer();
   const wv = webviewRef.value;
   if (wv) {
-    wv.loadURL(url);
+    let finalUrl = (url || '').trim();
+    if (!finalUrl) return;
+    if (!/^https?:\/\//i.test(finalUrl)) {
+      finalUrl = `https://${finalUrl}`;
+    }
+    inputUrl.value = finalUrl;
+    try {
+      if (currentUrl.value && currentUrl.value.replace(/\/+$/, '') === finalUrl.replace(/\/+$/, '')) {
+        wv.reload();
+      } else {
+        wv.loadURL(finalUrl);
+      }
+    } catch (_) {
+      try {
+        wv.src = finalUrl;
+      } catch (_) { }
+    }
   }
 }
 
@@ -2846,6 +3244,12 @@ function handleKeydown(e: KeyboardEvent) {
       closeFindBar();
       return;
     }
+    if (isFavoritesFlyoutOpen.value) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeFavoritesFlyout();
+      return;
+    }
     if (activeMenu.value) {
       closeContextMenu();
       return;
@@ -2858,9 +3262,30 @@ function handleKeydown(e: KeyboardEvent) {
 
 function focusAddressBar() {
   addressInputRef.value?.select();
+  if (isFavoritesFlyoutOpen.value) {
+    closeFavoritesFlyout();
+  }
+}
+
+function handleAddressInput() {
+  if (isFavoritesFlyoutOpen.value) {
+    closeFavoritesFlyout();
+  }
+}
+
+function toggleFavoritesFlyout() {
+  closeContextMenu();
+  isFavoritesFlyoutOpen.value = !isFavoritesFlyoutOpen.value;
 }
 
 function handleAddressBarEscape(e: KeyboardEvent) {
+  if (isFavoritesFlyoutOpen.value) {
+    closeFavoritesFlyout();
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
   if (activeMenu.value) {
     closeContextMenu();
     e.preventDefault();
@@ -2907,12 +3332,20 @@ let handleWebviewBeforeInputFn: ((e: any) => void) | null = null;
 let handleConsoleMessageFn: ((e: any) => void) | null = null;
 let injectWebviewKeydownListener: (() => void) | null = null;
 
+let handleWindowBlurFn: (() => void) | null = null;
+
 // Lifecycle and event listeners
 onMounted(() => {
+  handleWindowBlurFn = () => {
+    closeContextMenu();
+    closeFavoritesFlyout();
+  };
+
   window.addEventListener('keydown', handleKeydown, true);
   window.addEventListener('resize', closeContextMenu);
-  window.addEventListener('blur', closeContextMenu);
+  window.addEventListener('blur', handleWindowBlurFn);
   window.addEventListener('mousemove', updateMousePos, { passive: true });
+  window.addEventListener('mousedown', handleGlobalMouseDown);
 
   // Native Electron main process IPC hook (guaranteed to catch Ctrl+F inside webview)
   window.electron?.onTriggerFindInPage?.(() => {
@@ -2980,6 +3413,11 @@ onMounted(() => {
               e.stopPropagation();
               console.log('__PULSE_ACTION_RELOAD__');
             }
+          }, true);
+
+          // 1.5. Intercept any click/pointerdown inside guest webview to dismiss parent popups
+          window.addEventListener('pointerdown', () => {
+            console.log('__PULSE_ACTION_PAGE_CLICK__');
           }, true);
 
           // 2. Intercept clicks on audio file links (e.g. MyInstants, FreeSound, direct media)
@@ -3110,9 +3548,13 @@ onMounted(() => {
     } else if (e.message === '__PULSE_ACTION_ESCAPE__') {
       if (isFindBarOpen.value) {
         closeFindBar();
+      } else if (isFavoritesFlyoutOpen.value) {
+        closeFavoritesFlyout();
       } else if (isDrawerOpen.value) {
         closeClipDrawer();
       }
+    } else if (e.message === '__PULSE_ACTION_PAGE_CLICK__') {
+      closeFavoritesFlyout();
     } else if (e.message === '__PULSE_ACTION_RELOAD__') {
       reloadPage();
     } else if (typeof e.message === 'string' && e.message.startsWith('__PULSE_DIRECT_AUDIO_CLICK__:')) {
@@ -3131,6 +3573,7 @@ onMounted(() => {
   wv.addEventListener('did-navigate', injectWebviewKeydownListener);
   wv.addEventListener('did-navigate-in-page', injectWebviewKeydownListener);
   wv.addEventListener('context-menu', handleWebviewContextMenu);
+  wv.addEventListener('focus', closeFavoritesFlyout);
 
   wv.addEventListener('will-navigate', (e: any) => {
     if (isDirectMediaUrl(e.url)) {
@@ -3251,14 +3694,19 @@ watch(
 
 onUnmounted(() => {
   closeContextMenu();
+  closeFavoritesFlyout();
   window.removeEventListener('keydown', handleKeydown, true);
   window.removeEventListener('resize', closeContextMenu);
-  window.removeEventListener('blur', closeContextMenu);
+  if (handleWindowBlurFn) {
+    window.removeEventListener('blur', handleWindowBlurFn);
+  }
   window.removeEventListener('mousemove', updateMousePos);
+  window.removeEventListener('mousedown', handleGlobalMouseDown);
 
   const wv = webviewRef.value;
   if (wv) {
     try {
+      wv.removeEventListener('focus', closeFavoritesFlyout);
       if (handleWebviewBeforeInputFn) wv.removeEventListener('before-input-event', handleWebviewBeforeInputFn);
       if (handleConsoleMessageFn) wv.removeEventListener('console-message', handleConsoleMessageFn);
       if (injectWebviewKeydownListener) {
@@ -3301,7 +3749,8 @@ onUnmounted(() => {
   background: var(--top-toolbar-color, #2d2d2d);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-shrink: 0;
-  z-index: 20;
+  position: relative;
+  z-index: 30;
 }
 
 .nav-buttons {
@@ -3384,6 +3833,30 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
+.address-actions-group .favorite-star-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-color);
+  padding: 0.2rem 0.45rem;
+  border-radius: 0;
+  margin: 0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.address-actions-group .favorite-star-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fbbf24;
+}
+
+.address-actions-group .favorite-star-btn.is-favorite {
+  color: #fbbf24;
+}
+
 .address-actions-group .paste-btn {
   background: transparent;
   border: none;
@@ -3426,6 +3899,304 @@ onUnmounted(() => {
 .overflow-icon {
   width: 0.85rem;
   height: 0.85rem;
+}
+
+/* Favorites Flyout */
+.favorites-flyout {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: auto;
+  width: 330px;
+  max-width: calc(100vw - 2rem);
+  max-height: 380px;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  text-align: left;
+  transform-origin: top right;
+}
+
+.flyout-slide-enter-active,
+.flyout-slide-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.flyout-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+}
+
+.flyout-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+}
+
+.favorites-flyout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.65rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.favorites-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #f4f4f5;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+.favorites-title-text {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #f4f4f5;
+  white-space: nowrap;
+}
+
+.favorites-count-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.05rem 0.35rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #a1a1aa;
+}
+
+.favorites-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.fav-header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 5px;
+  padding: 0.2rem 0.48rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s ease;
+}
+
+.fav-header-action-btn:hover {
+  background: rgba(251, 191, 36, 0.22);
+  color: #ffffff;
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.fav-header-action-btn.is-saved {
+  background: rgba(35, 164, 89, 0.16);
+  color: #abffab;
+  border: 1px solid rgba(35, 164, 89, 0.35);
+}
+
+.fav-header-action-btn.is-saved:hover {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.fav-header-close-btn {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  padding: 0.2rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
+}
+
+.fav-header-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.favorites-list {
+  overflow-y: auto;
+  max-height: 310px;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  text-align: left;
+}
+
+.favorites-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.favorites-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.favorite-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.42rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.favorite-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.favorite-item.is-current {
+  background: rgba(35, 164, 89, 0.12);
+  border-color: rgba(35, 164, 89, 0.28);
+}
+
+.fav-icon-badge {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.fav-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.fav-title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #f4f4f5;
+  text-align: left;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+.favorite-item.is-current .fav-title {
+  color: #abffab;
+}
+
+.fav-url {
+  font-size: 0.68rem;
+  color: #71717a;
+  text-align: left;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  margin-top: 0.1rem;
+}
+
+.fav-current-indicator {
+  font-size: 0.55rem;
+  color: #23a459;
+  flex-shrink: 0;
+  margin-left: 0.2rem;
+  margin-right: 0.1rem;
+}
+
+.fav-actions {
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  margin-left: 0.25rem;
+}
+
+.favorite-item:hover .fav-actions {
+  opacity: 1;
+}
+
+.fav-remove-btn {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  padding: 0.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
+}
+
+.fav-remove-btn:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.15);
+}
+
+.favorites-empty-state {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  color: #71717a;
+  font-size: 0.78rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.fav-restore-defaults-btn {
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #d4d4d8;
+  padding: 0.3rem 0.65rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.fav-restore-defaults-btn:hover {
+  background: rgba(35, 164, 89, 0.25);
+  color: #fff;
 }
 
 
@@ -3716,6 +4487,15 @@ button:focus-visible {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+/* Favorites Webview Shield (sits only over guest webview, behind flyout) */
+.webview-favorites-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: transparent;
+  cursor: default;
 }
 
 /* Context Menu Styles */
