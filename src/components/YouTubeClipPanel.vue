@@ -384,7 +384,7 @@ watch(
 watch(
   () => props.activeVideoTitle,
   (newTitle) => {
-    if (newTitle && (!clipTitle.value || clipTitle.value === 'YouTube Clip')) {
+    if (newTitle) {
       clipTitle.value = newTitle;
     }
   }
@@ -557,8 +557,13 @@ function stopAudio() {
   waveformEditorRef.value?.stopPreview?.();
 }
 
+function setClipTitle(title: string) {
+  clipTitle.value = title;
+}
+
 defineExpose({
   stopAudio,
+  setClipTitle,
 });
 
 onUnmounted(() => {

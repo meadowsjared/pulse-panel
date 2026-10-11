@@ -2,7 +2,7 @@ const { join, normalize } = require('path')
 const fs = require('fs')
 const os = require('os')
 const {
-  app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, ClipboardItem, nativeImage, protocol,
+  app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, ClipboardItem, nativeImage, protocol, session,
 } = require('electron')
 const settings = require('../settings')
 const updater = require('./updater')
@@ -654,6 +654,46 @@ app.whenReady().then(() => {
           }
         }
       })
+
+      contents.on('will-navigate', (event, navUrl) => {
+        if (ytdlp.isDirectMediaUrl(navUrl)) {
+          event.preventDefault()
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('webview-direct-audio-clicked', {
+              url: navUrl,
+            })
+          }
+        }
+      })
+
+      contents.setWindowOpenHandler(({ url }) => {
+        if (ytdlp.isDirectMediaUrl(url)) {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('webview-direct-audio-clicked', {
+              url,
+            })
+          }
+          return { action: 'deny' }
+        }
+        return { action: 'allow' }
+      })
+    }
+  })
+
+  // Intercept direct media downloads in webview session (e.g. MyInstants, FreeSound)
+  const youtubeSession = session.fromPartition('persist:youtube')
+  youtubeSession.on('will-download', (event, item) => {
+    const url = item.getURL()
+    const mime = item.getMimeType() || ''
+    if (ytdlp.isDirectMediaUrl(url) || mime.startsWith('audio/')) {
+      item.cancel()
+      const filename = item.getFilename()
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('webview-direct-audio-clicked', {
+          url,
+          filename,
+        })
+      }
     }
   })
 

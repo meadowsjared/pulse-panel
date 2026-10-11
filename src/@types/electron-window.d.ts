@@ -123,6 +123,7 @@ export interface Settings {
   onTriggerFindInPage?: (callback: () => void) => void
   onWebviewEscape?: (callback: () => void) => void
   onWebviewReload?: (callback: () => void) => void
+  onWebviewDirectAudioClicked?: (callback: (data: { url: string; filename?: string }) => void) => void
 }
 
 declare global {

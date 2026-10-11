@@ -327,4 +327,5 @@ module.exports = {
   fetchVideoQuickInfo,
   downloadAudioClip,
   fetchImageBuffer,
+  isDirectMediaUrl,
 }

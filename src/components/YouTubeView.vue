@@ -1788,13 +1788,11 @@ function handleOpenImageInNewWindow() {
   }
 }
 
-// Audio Element Actions from Context Menu
-async function handleClipAudioFromPage() {
-  const audioSrc = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl;
-  const audioTitle = webviewMenuContext.value.audioTitle || extractMediaTitle(audioSrc || '');
-  closeContextMenu();
+const activeDirectAudioUrl = ref('');
 
-  if (!audioSrc) return;
+async function loadDirectAudioIntoClipPanel(audioUrl: string, title?: string, duration?: number) {
+  if (!audioUrl) return;
+  const audioTitle = (title && title.trim()) ? title.trim() : extractMediaTitle(audioUrl);
 
   // 1. Pause any playing media on the guest web page so it doesn't clash with editor playback
   try {
@@ -1807,13 +1805,14 @@ async function handleClipAudioFromPage() {
   audioBuffer.value = null;
   originalAudioBuffer.value = null;
   audioDuration.value = 0;
+  activeDirectAudioUrl.value = audioUrl;
 
   // 3. Set title and flags
   activeVideoTitle.value = audioTitle;
   isVideoPage.value = true;
-  if (webviewMenuContext.value.audioDuration) {
-    videoTotalDuration.value = webviewMenuContext.value.audioDuration;
-    videoDurationFormatted.value = formatTime(webviewMenuContext.value.audioDuration);
+  if (duration && duration > 0) {
+    videoTotalDuration.value = duration;
+    videoDurationFormatted.value = formatTime(duration);
   } else {
     videoTotalDuration.value = null;
     videoDurationFormatted.value = '';
@@ -1823,9 +1822,20 @@ async function handleClipAudioFromPage() {
   isDrawerOpen.value = true;
 
   // 5. Load the audio into the waveform editor
-  await loadAudioForWaveform(audioSrc);
+  await loadAudioForWaveform(audioUrl, true);
 
-  pulseBackStore.showToast(`Loaded "${audioTitle}" into sound editor`);
+  pulseBackStore.showToast(`Loaded "${audioTitle}" into clip panel`);
+}
+
+// Audio Element Actions from Context Menu
+async function handleClipAudioFromPage() {
+  const audioSrc = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl;
+  const audioTitle = webviewMenuContext.value.audioTitle || extractMediaTitle(audioSrc || '');
+  const duration = webviewMenuContext.value.audioDuration;
+  closeContextMenu();
+
+  if (!audioSrc) return;
+  await loadDirectAudioIntoClipPanel(audioSrc, audioTitle, duration);
 }
 
 async function handleCopyAudioAddress() {
@@ -2366,7 +2376,9 @@ function getAudioContext(): AudioContext {
 }
 
 async function loadAudioForWaveform(targetUrlOverride?: string | unknown, forceReload = false) {
-  const targetUrl = typeof targetUrlOverride === 'string' ? targetUrlOverride : currentUrl.value;
+  const targetUrl = typeof targetUrlOverride === 'string'
+    ? targetUrlOverride
+    : (activeDirectAudioUrl.value || currentUrl.value);
   const vidId = getVideoId(targetUrl);
   if (!vidId) return;
 
@@ -2685,8 +2697,10 @@ onMounted(() => {
     try {
       wv.executeJavaScript(`
         (() => {
-          if (window.__pulseFindInPageInstalled) return;
-          window.__pulseFindInPageInstalled = true;
+          if (window.__pulseInjectedListenersInstalled) return;
+          window.__pulseInjectedListenersInstalled = true;
+
+          // 1. Keyboard shortcuts inside guest webview
           window.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F' || e.code === 'KeyF')) {
               e.preventDefault();
@@ -2698,6 +2712,25 @@ onMounted(() => {
               e.preventDefault();
               e.stopPropagation();
               console.log('__PULSE_ACTION_RELOAD__');
+            }
+          }, true);
+
+          // 2. Intercept clicks on audio file links (e.g. MyInstants, FreeSound, direct media)
+          window.addEventListener('click', (e) => {
+            const target = e.target;
+            const anchor = target && target.closest ? target.closest('a') : null;
+            if (anchor && anchor.href) {
+              const href = anchor.href;
+              const isDirectAudio = /\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)($|\\?)/i.test(href);
+              if (isDirectAudio) {
+                e.preventDefault();
+                e.stopPropagation();
+                const rawTitle = anchor.getAttribute('download') || anchor.innerText || anchor.title || '';
+                console.log('__PULSE_DIRECT_AUDIO_CLICK__:' + JSON.stringify({
+                  url: href,
+                  title: rawTitle.trim(),
+                }));
+              }
             }
           }, true);
         })()
@@ -2716,6 +2749,13 @@ onMounted(() => {
       }
     } else if (e.message === '__PULSE_ACTION_RELOAD__') {
       reloadPage();
+    } else if (typeof e.message === 'string' && e.message.startsWith('__PULSE_DIRECT_AUDIO_CLICK__:')) {
+      try {
+        const payload = JSON.parse(e.message.slice('__PULSE_DIRECT_AUDIO_CLICK__:'.length));
+        if (payload?.url) {
+          loadDirectAudioIntoClipPanel(payload.url, payload.title);
+        }
+      } catch (_) { }
     }
   };
 
@@ -2725,6 +2765,13 @@ onMounted(() => {
   wv.addEventListener('did-navigate', injectWebviewKeydownListener);
   wv.addEventListener('did-navigate-in-page', injectWebviewKeydownListener);
   wv.addEventListener('context-menu', handleWebviewContextMenu);
+
+  wv.addEventListener('will-navigate', (e: any) => {
+    if (isDirectMediaUrl(e.url)) {
+      e.preventDefault();
+      loadDirectAudioIntoClipPanel(e.url);
+    }
+  });
 
   wv.addEventListener('did-start-loading', () => {
     isLoading.value = true;
@@ -2749,6 +2796,9 @@ onMounted(() => {
         if (url !== currentUrl.value && isDrawerOpen.value) {
           closeClipDrawer();
         }
+        if (!isDirectMediaUrl(url)) {
+          activeDirectAudioUrl.value = '';
+        }
         currentUrl.value = url;
         inputUrl.value = url;
         checkVideoUrl(url);
@@ -2770,6 +2820,12 @@ onMounted(() => {
       if (clean && clean !== 'YouTube') {
         activeVideoTitle.value = clean;
       }
+    }
+  });
+
+  window.electron?.onWebviewDirectAudioClicked?.((data: any) => {
+    if (data?.url) {
+      loadDirectAudioIntoClipPanel(data.url, data.filename);
     }
   });
 

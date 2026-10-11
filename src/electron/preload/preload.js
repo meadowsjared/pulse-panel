@@ -102,6 +102,9 @@ contextBridge.exposeInMainWorld('electron', {
   onWebviewReload: callback => {
     ipcRenderer.on('webview-reload-pressed', () => callback())
   },
+  onWebviewDirectAudioClicked: callback => {
+    ipcRenderer.on('webview-direct-audio-clicked', (_, data) => callback(data))
+  },
   versions: {
     app: require(join(__dirname, '../../../package.json')).version,
     node: process.versions.node,
