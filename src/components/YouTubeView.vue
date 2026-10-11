@@ -115,15 +115,14 @@
                type="text"
                class="address-input"
                v-model="inputUrl"
-               @keydown.enter="handleNavigate"
+               @keydown="handleAddressKeydown"
                @focus="focusAddressBar"
                @input="handleAddressInput"
-               @keydown.escape="handleAddressBarEscape"
                @contextmenu.prevent.stop="openAddressContextMenu($event)"
                placeholder="Search YouTube or paste video / audio URL (Enter to go)..." />
         <button v-if="inputUrl"
                 class="clear-input-btn"
-                @click="inputUrl = ''"
+                @click="handleClearAddressInput"
                 title="Clear">
           ✕
         </button>
@@ -178,6 +177,92 @@
             </svg>
           </button>
         </div>
+
+        <!-- Omnibox Autocomplete Dropdown -->
+        <transition name="flyout-slide">
+          <div v-if="isAutocompleteOpen && matchingFavorites.length > 0"
+               ref="autocompleteDropdownRef"
+               class="omnibox-autocomplete-dropdown"
+               @mousedown.stop>
+            <div class="autocomplete-list">
+              <div v-for="(item, idx) in matchingFavorites"
+                   :key="item.fav.id"
+                   class="autocomplete-item"
+                   :class="{ 'is-selected': selectedAutocompleteIndex === idx }"
+                   @mouseenter="selectedAutocompleteIndex = idx"
+                   @mousedown.prevent="selectAutocompleteItem(item)">
+                <!-- Icon Badge -->
+                <div class="autocomplete-icon-badge">
+                  <svg v-if="isYouTubeUrl(item.fav.url)"
+                       class="w-3.5 h-3.5 text-red-500"
+                       viewBox="0 0 24 24"
+                       fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                  </svg>
+                  <svg v-else-if="isMyinstantsUrl(item.fav.url)"
+                       class="w-3.5 h-3.5 text-rose-400"
+                       viewBox="0 0 24 24"
+                       fill="currentColor">
+                    <circle cx="12"
+                            cy="12"
+                            r="9" />
+                    <circle cx="12"
+                            cy="12"
+                            r="5"
+                            fill="#18181b" />
+                  </svg>
+                  <svg v-else-if="isAudioSiteUrl(item.fav.url)"
+                       class="w-3.5 h-3.5 text-emerald-400"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2">
+                    <path d="M9 18V5l12-2v13"></path>
+                    <circle cx="6"
+                            cy="18"
+                            r="3"></circle>
+                    <circle cx="18"
+                            cy="16"
+                            r="3"></circle>
+                  </svg>
+                  <svg v-else
+                       class="w-3.5 h-3.5 text-blue-400"
+                       viewBox="0 0 24 24"
+                       fill="none"
+                       stroke="currentColor"
+                       stroke-width="2">
+                    <circle cx="12"
+                            cy="12"
+                            r="10"></circle>
+                    <line x1="2"
+                          y1="12"
+                          x2="22"
+                          y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+
+                <!-- Text info -->
+                <div class="autocomplete-info">
+                  <span class="autocomplete-title"
+                        :title="item.fav.title">{{ item.fav.title }}</span>
+                  <span class="autocomplete-url"
+                        :title="item.displayUrl">{{ item.displayUrl }}</span>
+                </div>
+
+                <!-- Right favorite tag -->
+                <div class="autocomplete-tag">
+                  <svg class="w-3 h-3 text-amber-400"
+                       viewBox="0 0 24 24"
+                       fill="currentColor">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  </svg>
+                  <span>Favorite</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
 
         <!-- Omnibox Favorites Flyout Dropdown -->
         <transition name="flyout-slide">
@@ -360,12 +445,12 @@
                  class="youtube-webview"
                  allowpopups
                  partition="persist:youtube"></webview>
-        <!-- Overlay shield that intercepts clicks into guest webview while favorites flyout is open -->
-        <div v-if="isFavoritesFlyoutOpen"
+        <!-- Overlay shield that intercepts clicks into guest webview while favorites flyout or autocomplete is open -->
+        <div v-if="isFavoritesFlyoutOpen || isAutocompleteOpen"
              class="webview-favorites-shield"
-             @mousedown="closeFavoritesFlyout"
-             @contextmenu="closeFavoritesFlyout"
-             @wheel="closeFavoritesFlyout"></div>
+             @mousedown="handleShieldMousedown"
+             @contextmenu="handleShieldMousedown"
+             @wheel="handleShieldMousedown"></div>
       </div>
 
       <!-- Expandable Bar and Panel Section (Unified Slide-Up Card) -->
@@ -1393,8 +1478,22 @@ const overflowBtnRef = ref<HTMLElement | null>(null);
 const findBarRef = ref<any>(null);
 const favoritesFlyoutRef = ref<HTMLElement | null>(null);
 
+interface AutocompleteMatch {
+  fav: { id: string; title: string; url: string; };
+  displayUrl: string;
+  matchedBy: 'domain' | 'title' | 'full';
+}
+
 // Favorites flyout state
 const isFavoritesFlyoutOpen = ref(false);
+
+// Address bar autocomplete state
+const isAutocompleteOpen = ref(false);
+const matchingFavorites = ref<AutocompleteMatch[]>([]);
+const selectedAutocompleteIndex = ref(-1);
+const activeInlineMatch = ref<AutocompleteMatch | null>(null);
+const userTypedQuery = ref('');
+const autocompleteDropdownRef = ref<HTMLElement | null>(null);
 
 // Find in Page state
 const isFindBarOpen = ref(false);
@@ -1639,28 +1738,81 @@ function selectFavorite(fav: { url: string; title: string; }) {
   navigateToUrl(fav.url);
 }
 
+function getCleanUrlForMatch(url: string): string {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./i, '');
+    const path = u.pathname === '/' ? '' : u.pathname;
+    const search = u.search || '';
+    return host + path + search;
+  } catch (_) {
+    return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  }
+}
+
+function closeAutocomplete() {
+  isAutocompleteOpen.value = false;
+  matchingFavorites.value = [];
+  selectedAutocompleteIndex.value = -1;
+  activeInlineMatch.value = null;
+}
+
+function selectAutocompleteItem(item: AutocompleteMatch) {
+  closeAutocomplete();
+  inputUrl.value = item.fav.url;
+  if (addressInputRef.value) {
+    addressInputRef.value.value = item.fav.url;
+    addressInputRef.value.blur();
+  }
+  navigateToUrl(item.fav.url);
+}
+
+function handleClearAddressInput() {
+  inputUrl.value = '';
+  userTypedQuery.value = '';
+  if (addressInputRef.value) {
+    addressInputRef.value.value = '';
+  }
+  closeAutocomplete();
+  addressInputRef.value?.focus();
+}
+
+function handleShieldMousedown() {
+  closeFavoritesFlyout();
+  closeAutocomplete();
+}
+
 function closeFavoritesFlyout() {
   isFavoritesFlyoutOpen.value = false;
 }
 
 function openFavoritesFlyoutFromMenu() {
   closeContextMenu();
+  closeAutocomplete();
   isFavoritesFlyoutOpen.value = true;
 }
 
 function handleGlobalMouseDown(e: MouseEvent) {
-  if (!isFavoritesFlyoutOpen.value) return;
   const target = e.target as HTMLElement | null;
   if (!target) return;
-  if (
-    favoritesFlyoutRef.value?.contains(target) ||
-    addressInputRef.value?.contains(target) ||
-    target.closest('.favorite-star-btn') ||
-    target.closest('.address-actions-group')
-  ) {
-    return;
+
+  if (isAutocompleteOpen.value) {
+    if (!autocompleteDropdownRef.value?.contains(target) && !addressInputRef.value?.contains(target)) {
+      closeAutocomplete();
+    }
   }
-  closeFavoritesFlyout();
+
+  if (isFavoritesFlyoutOpen.value) {
+    if (
+      favoritesFlyoutRef.value?.contains(target) ||
+      addressInputRef.value?.contains(target) ||
+      target.closest('.favorite-star-btn') ||
+      target.closest('.address-actions-group')
+    ) {
+      return;
+    }
+    closeFavoritesFlyout();
+  }
 }
 
 // Address Bar Context Menu
@@ -3238,6 +3390,18 @@ function handleKeydown(e: KeyboardEvent) {
   }
 
   if (e.key === 'Escape') {
+    if (isAutocompleteOpen.value) {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAutocomplete();
+      if (userTypedQuery.value) {
+        inputUrl.value = userTypedQuery.value;
+        if (addressInputRef.value) {
+          addressInputRef.value.value = userTypedQuery.value;
+        }
+      }
+      return;
+    }
     if (isFindBarOpen.value) {
       e.preventDefault();
       e.stopPropagation();
@@ -3262,19 +3426,216 @@ function handleKeydown(e: KeyboardEvent) {
 
 function focusAddressBar() {
   addressInputRef.value?.select();
+  closeAutocomplete();
   if (isFavoritesFlyoutOpen.value) {
     closeFavoritesFlyout();
   }
 }
 
-function handleAddressInput() {
+function handleAddressKeydown(e: KeyboardEvent) {
+  if (e.key === 'ArrowDown') {
+    if (isAutocompleteOpen.value && matchingFavorites.value.length > 0) {
+      e.preventDefault();
+      if (selectedAutocompleteIndex.value < matchingFavorites.value.length - 1) {
+        selectedAutocompleteIndex.value++;
+      } else {
+        selectedAutocompleteIndex.value = 0;
+      }
+      const item = matchingFavorites.value[selectedAutocompleteIndex.value];
+      if (item) {
+        inputUrl.value = item.displayUrl;
+        if (addressInputRef.value) {
+          addressInputRef.value.value = item.displayUrl;
+        }
+        activeInlineMatch.value = item;
+      }
+      return;
+    }
+  }
+
+  if (e.key === 'ArrowUp') {
+    if (isAutocompleteOpen.value && matchingFavorites.value.length > 0) {
+      e.preventDefault();
+      if (selectedAutocompleteIndex.value > 0) {
+        selectedAutocompleteIndex.value--;
+      } else {
+        selectedAutocompleteIndex.value = matchingFavorites.value.length - 1;
+      }
+      const item = matchingFavorites.value[selectedAutocompleteIndex.value];
+      if (item) {
+        inputUrl.value = item.displayUrl;
+        if (addressInputRef.value) {
+          addressInputRef.value.value = item.displayUrl;
+        }
+        activeInlineMatch.value = item;
+      }
+      return;
+    }
+  }
+
+  if (e.key === 'Tab' || e.key === 'ArrowRight') {
+    const el = addressInputRef.value;
+    if (el && el.selectionStart !== null && el.selectionEnd !== null && el.selectionStart < el.selectionEnd) {
+      if (el.selectionEnd === el.value.length) {
+        e.preventDefault();
+        el.setSelectionRange(el.value.length, el.value.length);
+        userTypedQuery.value = el.value;
+        return;
+      }
+    }
+  }
+
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (isAutocompleteOpen.value && selectedAutocompleteIndex.value >= 0) {
+      const item = matchingFavorites.value[selectedAutocompleteIndex.value];
+      if (item) {
+        navigateToMatchedFavorite(e, item);
+        return;
+      }
+    } else if (activeInlineMatch.value) {
+      const match = activeInlineMatch.value;
+      navigateToMatchedFavorite(e, match);
+      return;
+    }
+    closeAutocomplete();
+    handleNavigate();
+    return;
+  }
+
+  if (e.key === 'Escape') {
+    if (isAutocompleteOpen.value) {
+      closeAutocomplete();
+      if (userTypedQuery.value) {
+        inputUrl.value = userTypedQuery.value;
+        if (addressInputRef.value) {
+          addressInputRef.value.value = userTypedQuery.value;
+        }
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    handleAddressBarEscape(e);
+    return;
+  }
+}
+
+function navigateToMatchedFavorite(e: KeyboardEvent, match: AutocompleteMatch) {
+  closeAutocomplete();
+  navigateToUrl(match.fav.url);
+  if (e.target && e.target instanceof HTMLInputElement) {
+    e.target.blur();
+  }
+}
+
+function handleAddressInput(event: Event) {
   if (isFavoritesFlyoutOpen.value) {
     closeFavoritesFlyout();
+  }
+
+  const inputEl = addressInputRef.value;
+  if (!inputEl) return;
+
+  const inputEvent = event as InputEvent;
+  const isDelete = inputEvent?.inputType?.startsWith('delete');
+  const typed = inputEl.value;
+
+  userTypedQuery.value = typed;
+
+  if (!typed || !typed.trim()) {
+    closeAutocomplete();
+    return;
+  }
+
+  const q = typed.trim().toLowerCase();
+  const qClean = q.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+
+  const favorites = settingsStore.browserFavorites || [];
+  const matches: AutocompleteMatch[] = [];
+
+  for (const fav of favorites) {
+    const rawUrl = fav.url.trim();
+    const cleanUrl = getCleanUrlForMatch(rawUrl);
+    const rawLower = rawUrl.toLowerCase();
+    const cleanLower = cleanUrl.toLowerCase();
+    const titleLower = (fav.title || '').toLowerCase();
+
+    if (cleanLower.startsWith(qClean) || cleanLower.startsWith(q)) {
+      matches.push({
+        fav,
+        displayUrl: cleanUrl,
+        matchedBy: 'domain',
+      });
+    } else if (rawLower.startsWith(q)) {
+      matches.push({
+        fav,
+        displayUrl: cleanUrl,
+        matchedBy: 'full',
+      });
+    } else if (titleLower.startsWith(q) || cleanLower.includes(qClean)) {
+      matches.push({
+        fav,
+        displayUrl: cleanUrl,
+        matchedBy: 'title',
+      });
+    }
+  }
+
+  matches.sort((a, b) => {
+    if (a.matchedBy === 'domain' && b.matchedBy !== 'domain') return -1;
+    if (b.matchedBy === 'domain' && a.matchedBy !== 'domain') return 1;
+    return a.displayUrl.length - b.displayUrl.length;
+  });
+
+  matchingFavorites.value = matches.slice(0, 6);
+  selectedAutocompleteIndex.value = -1;
+
+  if (matches.length > 0) {
+    isAutocompleteOpen.value = true;
+
+    // Only attempt inline completion if typing forward (not delete) and cursor is at end
+    if (!isDelete && inputEl.selectionStart === typed.length) {
+      const topMatch = matches[0];
+      const candidate = topMatch.displayUrl;
+      const candidateLower = candidate.toLowerCase();
+
+      let matchPrefix = '';
+      if (candidateLower.startsWith(qClean) && qClean.length > 0) {
+        matchPrefix = qClean;
+      } else if (candidateLower.startsWith(q)) {
+        matchPrefix = q;
+      }
+
+      if (matchPrefix && candidate.length > matchPrefix.length) {
+        const remainder = candidate.slice(matchPrefix.length);
+        const completedText = typed + remainder;
+
+        // Synchronously update the DOM input element so selection range can be applied immediately
+        inputEl.value = completedText;
+        inputUrl.value = completedText;
+        activeInlineMatch.value = topMatch;
+
+        inputEl.setSelectionRange(typed.length, completedText.length);
+
+        // Also reinforce on nextTick in case Vue scheduler patches the input element
+        nextTick(() => {
+          if (addressInputRef.value === inputEl && activeInlineMatch.value === topMatch) {
+            inputEl.setSelectionRange(typed.length, completedText.length);
+          }
+        });
+        return;
+      }
+    }
+    activeInlineMatch.value = null;
+  } else {
+    closeAutocomplete();
   }
 }
 
 function toggleFavoritesFlyout() {
   closeContextMenu();
+  closeAutocomplete();
   isFavoritesFlyoutOpen.value = !isFavoritesFlyoutOpen.value;
 }
 
@@ -4496,6 +4857,116 @@ button:focus-visible {
   z-index: 5;
   background: transparent;
   cursor: default;
+}
+
+/* Omnibox Autocomplete Dropdown */
+.omnibox-autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  background: #18181b;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  z-index: 105;
+  overflow: hidden;
+  user-select: none;
+  text-align: left;
+}
+
+.autocomplete-list {
+  padding: 0.3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.autocomplete-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.autocomplete-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.42rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  text-align: left;
+  transition: background 0.1s ease, border-color 0.1s ease;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.is-selected {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.autocomplete-icon-badge {
+  width: 1.65rem;
+  height: 1.65rem;
+  min-width: 1.65rem;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.autocomplete-info {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+}
+
+.autocomplete-title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #f4f4f5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+  max-width: 50%;
+}
+
+.autocomplete-url {
+  font-size: 0.72rem;
+  color: #71717a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autocomplete-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* Context Menu Styles */
