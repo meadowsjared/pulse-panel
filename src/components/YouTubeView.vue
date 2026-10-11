@@ -1904,7 +1904,6 @@ async function loadDirectAudioIntoClipPanel(
   candidateImageUrl?: string
 ) {
   if (!audioUrl) return;
-  const audioTitle = (title && title.trim()) ? title.trim() : extractMediaTitle(audioUrl);
 
   // 1. Pause any playing media on the guest web page so it doesn't clash with editor playback
   try {
@@ -1920,7 +1919,132 @@ async function loadDirectAudioIntoClipPanel(
   thumbnailUrl.value = '';
   activeDirectAudioUrl.value = audioUrl;
 
-  // 3. Set title and flags
+  let audioTitle = (title && title.trim()) ? title.trim() : '';
+  const isGenericOrFilenameTitle =
+    !audioTitle ||
+    /^download(\s+mp3|\s+audio|\s+sound)?$/i.test(audioTitle) ||
+    isDirectMediaUrl(audioTitle) ||
+    /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i.test(audioTitle);
+
+  let soundArtwork = candidateImageUrl && !candidateImageUrl.includes('/icons/') ? candidateImageUrl : '';
+
+  // 3. Query the guest webview for MyInstants specific metadata or rich page metadata
+  try {
+    const pageMeta = await webviewRef.value?.executeJavaScript(`
+      (() => {
+        let t = '';
+        let img = '';
+
+        // Title Extraction: Check MyInstants #instant-page-title first (always clean sound title)
+        const instantTitleEl = document.querySelector('#instant-page-title, h1#instant-page-title');
+        if (instantTitleEl && instantTitleEl.textContent && instantTitleEl.textContent.trim()) {
+          t = instantTitleEl.textContent.trim();
+        }
+
+        if (!t) {
+          const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+          if (ogTitle) {
+            t = ogTitle.replace(/\\s*-\\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '').trim();
+          }
+        }
+
+        if (!t && document.title) {
+          t = document.title
+            .replace(/\\s*-\\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
+            .replace(/\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '')
+            .trim();
+        }
+
+        // Image Extraction:
+        // 1. Check MyInstants button background image or custom color
+        const btnBg = document.querySelector('#instant-page-button .large-button-background, .large-button-background');
+        if (btnBg) {
+          const bgImg = btnBg.style.backgroundImage || window.getComputedStyle(btnBg).backgroundImage;
+          if (bgImg && bgImg !== 'none') {
+            const m = bgImg.match(/url\\(['"]?(.*?)['"]?\\)/i);
+            if (m && m[1]) img = m[1];
+          }
+          if (!img) {
+            const bgColor = btnBg.style.backgroundColor || window.getComputedStyle(btnBg).backgroundColor;
+            if (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') {
+              try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 256;
+                canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                if (ctx) {
+                  const cx = 128, cy = 128, r = 100;
+                  // Drop shadow
+                  ctx.beginPath();
+                  ctx.arc(cx, cy + 8, r, 0, Math.PI * 2);
+                  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                  ctx.fill();
+
+                  // Button base
+                  ctx.beginPath();
+                  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                  ctx.fillStyle = bgColor;
+                  ctx.fill();
+
+                  // 3D radial gloss highlight
+                  const grad = ctx.createRadialGradient(cx - 25, cy - 35, 15, cx, cy, r);
+                  grad.addColorStop(0, 'rgba(255, 255, 255, 0.48)');
+                  grad.addColorStop(0.55, 'rgba(255, 255, 255, 0.08)');
+                  grad.addColorStop(1, 'rgba(0, 0, 0, 0.38)');
+                  ctx.fillStyle = grad;
+                  ctx.fill();
+
+                  // Bevel rim stroke
+                  ctx.lineWidth = 4;
+                  ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+                  ctx.stroke();
+
+                  img = canvas.toDataURL('image/png');
+                }
+              } catch (_) { }
+            }
+          }
+        }
+
+        // 2. Check for matching sound card artwork (excluding UI action icons)
+        if (!img) {
+          const matchingLink = Array.from(document.querySelectorAll('a[href]')).find(a => a.href && a.href.includes(${JSON.stringify(audioUrl)}));
+          if (matchingLink) {
+            const container = matchingLink.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div');
+            if (container) {
+              const cImg = container.querySelector('img:not([src*="icons/"])');
+              if (cImg && cImg.src) img = cImg.src;
+            }
+          }
+        }
+
+        // 3. Fallback to OpenGraph / Twitter / Touch icon
+        if (!img) {
+          const og = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+          const tw = document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
+          const appleIcon = document.querySelector('link[rel="apple-touch-icon"], link[rel="image_src"]')?.getAttribute('href');
+          img = og || tw || appleIcon || '';
+        }
+
+        return { title: t, image: img };
+      })()
+    `);
+
+    if (pageMeta) {
+      if (isGenericOrFilenameTitle && pageMeta.title) {
+        audioTitle = pageMeta.title;
+      }
+      if (!soundArtwork && pageMeta.image) {
+        soundArtwork = pageMeta.image;
+      }
+    }
+  } catch (_) { }
+
+  if (!audioTitle) {
+    audioTitle = extractMediaTitle(audioUrl);
+  }
+
+  // 4. Set title and flags
   activeVideoTitle.value = audioTitle;
   isVideoPage.value = true;
   isShortVideo.value = false;
@@ -1932,47 +2056,19 @@ async function loadDirectAudioIntoClipPanel(
     videoDurationFormatted.value = '';
   }
 
-  // 4. Try to find a relevant image for this sound
-  if (candidateImageUrl) {
+  // 5. Clean and apply discovered artwork
+  if (soundArtwork) {
     try {
-      thumbnailUrl.value = await cleanAndCropArtwork(candidateImageUrl, false);
+      thumbnailUrl.value = await cleanAndCropArtwork(soundArtwork, false);
     } catch (_) {
-      thumbnailUrl.value = candidateImageUrl;
+      thumbnailUrl.value = soundArtwork;
     }
-  } else {
-    // Attempt to discover any image associated with this sound or page in the webview
-    try {
-      const pageImage = await webviewRef.value?.executeJavaScript(`
-        (() => {
-          const links = Array.from(document.querySelectorAll('a[href]'));
-          const matchingLink = links.find(a => a.href && a.href.includes(${JSON.stringify(audioUrl)}));
-          if (matchingLink) {
-            const insideImg = matchingLink.querySelector('img');
-            if (insideImg && insideImg.src) return insideImg.src;
-            const container = matchingLink.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div');
-            if (container) {
-              const containerImg = container.querySelector('img');
-              if (containerImg && containerImg.src) return containerImg.src;
-            }
-          }
-          const og = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
-          if (og) return og;
-          const tw = document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
-          if (tw) return tw;
-          const linkIcon = document.querySelector('link[rel="apple-touch-icon"], link[rel="image_src"]')?.getAttribute('href');
-          return linkIcon || null;
-        })()
-      `);
-      if (pageImage && activeDirectAudioUrl.value === audioUrl) {
-        thumbnailUrl.value = await cleanAndCropArtwork(pageImage, false);
-      }
-    } catch (_) { }
   }
 
-  // 5. Open the clip drawer immediately (dock expands with smooth animation)
+  // 6. Open the clip drawer immediately (dock expands with smooth animation)
   isDrawerOpen.value = true;
 
-  // 6. Load the audio into the waveform editor (and extract embedded ID3 artwork if present)
+  // 7. Load the audio into the waveform editor (and extract embedded ID3 artwork if present)
   await loadAudioForWaveform(audioUrl, true);
 
   pulseBackStore.showToast(`Loaded "${audioTitle}" into clip panel`);
@@ -2300,9 +2396,13 @@ async function readVideoState() {
     const script = `
       (() => {
         const video = document.querySelector('video, audio');
-        const titleEl = document.querySelector('h1.ytd-watch-metadata yt-formatted-string, h1.title yt-formatted-string, ytd-reel-player-header-renderer h2, #title h1');
+        const instantH1 = document.querySelector('#instant-page-title, h1#instant-page-title');
+        const titleEl = instantH1 || document.querySelector('h1.ytd-watch-metadata yt-formatted-string, h1.title yt-formatted-string, ytd-reel-player-header-renderer h2, #title h1');
         const rawDocTitle = document.title ? document.title.replace(/\\s*-\\s*YouTube$/, '').trim() : '';
-        const cleanedTitle = rawDocTitle.replace(/\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '').trim();
+        const cleanedTitle = rawDocTitle
+          .replace(/\\s*-\\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
+          .replace(/\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '')
+          .trim();
         return {
           title: titleEl ? titleEl.textContent?.trim() : cleanedTitle,
           currentTime: video ? video.currentTime : 0,
@@ -2892,25 +2992,108 @@ onMounted(() => {
               if (isDirectAudio) {
                 e.preventDefault();
                 e.stopPropagation();
-                const rawTitle = anchor.getAttribute('download') || anchor.innerText || anchor.title || '';
-                let imgUrl = '';
-                const insideImg = anchor.querySelector('img');
-                if (insideImg && insideImg.src) {
-                  imgUrl = insideImg.src;
-                } else {
-                  const container = anchor.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div');
-                  const containerImg = container ? container.querySelector('img') : null;
-                  if (containerImg && containerImg.src) {
-                    imgUrl = containerImg.src;
-                  } else {
-                    const og = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
-                    const tw = document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
-                    imgUrl = og || tw || '';
+
+                // 1. Dependable Title Extraction
+                let soundTitle = '';
+                const instantH1 = document.querySelector('#instant-page-title, h1#instant-page-title');
+                if (instantH1 && instantH1.textContent && instantH1.textContent.trim()) {
+                  soundTitle = instantH1.textContent.trim();
+                }
+
+                if (!soundTitle) {
+                  const card = anchor.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"]');
+                  const cardTitle = card ? card.querySelector('.instant-link, [class*="title"], h2, h3, h4') : null;
+                  if (cardTitle && cardTitle.textContent && cardTitle.textContent.trim()) {
+                    soundTitle = cardTitle.textContent.trim();
                   }
                 }
+
+                if (!soundTitle) {
+                  const candidate = (anchor.getAttribute('download') || anchor.title || anchor.innerText || '').trim();
+                  if (candidate && !/^download(\s+mp3|\s+audio|\s+sound)?$/i.test(candidate)) {
+                    soundTitle = candidate;
+                  }
+                }
+
+                if (!soundTitle) {
+                  const ogT = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+                  if (ogT) {
+                    soundTitle = ogT.replace(/\\s*-\\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '').trim();
+                  }
+                }
+
+                if (!soundTitle && document.title) {
+                  soundTitle = document.title
+                    .replace(/\\s*-\\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
+                    .replace(/\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '')
+                    .trim();
+                }
+
+                // 2. Dependable Image Extraction
+                let imgUrl = '';
+                const btnBg = document.querySelector('#instant-page-button .large-button-background, .large-button-background');
+                if (btnBg) {
+                  const bgImg = btnBg.style.backgroundImage || window.getComputedStyle(btnBg).backgroundImage;
+                  if (bgImg && bgImg !== 'none') {
+                    const m = bgImg.match(/url\\(['"]?(.*?)['"]?\\)/i);
+                    if (m && m[1]) imgUrl = m[1];
+                  }
+                  if (!imgUrl) {
+                    const bgColor = btnBg.style.backgroundColor || window.getComputedStyle(btnBg).backgroundColor;
+                    if (bgColor && bgColor !== 'transparent' && bgColor !== 'rgba(0, 0, 0, 0)') {
+                      try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 256;
+                        canvas.height = 256;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                          const cx = 128, cy = 128, r = 100;
+                          ctx.beginPath();
+                          ctx.arc(cx, cy + 8, r, 0, Math.PI * 2);
+                          ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                          ctx.fill();
+
+                          ctx.beginPath();
+                          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                          ctx.fillStyle = bgColor;
+                          ctx.fill();
+
+                          const grad = ctx.createRadialGradient(cx - 25, cy - 35, 15, cx, cy, r);
+                          grad.addColorStop(0, 'rgba(255, 255, 255, 0.48)');
+                          grad.addColorStop(0.55, 'rgba(255, 255, 255, 0.08)');
+                          grad.addColorStop(1, 'rgba(0, 0, 0, 0.38)');
+                          ctx.fillStyle = grad;
+                          ctx.fill();
+
+                          ctx.lineWidth = 4;
+                          ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+                          ctx.stroke();
+
+                          imgUrl = canvas.toDataURL('image/png');
+                        }
+                      } catch (_) { }
+                    }
+                  }
+                }
+
+                if (!imgUrl) {
+                  const container = anchor.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div');
+                  const containerImg = container ? container.querySelector('img:not([src*="icons/"])') : null;
+                  if (containerImg && containerImg.src) {
+                    imgUrl = containerImg.src;
+                  }
+                }
+
+                if (!imgUrl) {
+                  const og = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+                  const tw = document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
+                  const appleIcon = document.querySelector('link[rel="apple-touch-icon"], link[rel="image_src"]')?.getAttribute('href');
+                  imgUrl = og || tw || appleIcon || '';
+                }
+
                 console.log('__PULSE_DIRECT_AUDIO_CLICK__:' + JSON.stringify({
                   url: href,
-                  title: rawTitle.trim(),
+                  title: soundTitle.trim(),
                   imageUrl: imgUrl,
                 }));
               }
@@ -2998,6 +3181,7 @@ onMounted(() => {
     if (e.title) {
       const clean = e.title
         .replace(/\s*-\s*YouTube$/, '')
+        .replace(/\s*-\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
         .replace(/\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '')
         .trim();
       if (clean && clean !== 'YouTube') {
