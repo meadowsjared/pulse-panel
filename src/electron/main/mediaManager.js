@@ -229,17 +229,24 @@ async function readMediaFile(fileName) {
  */
 async function deleteMediaFile(fileName) {
   if (!fileName) return false
+  let cleanName = fileName
+  if (cleanName.startsWith('pulse-media://')) {
+    cleanName = cleanName.replace(/^pulse-media:\/\/[^/]+\//, '')
+  }
+  try {
+    cleanName = decodeURIComponent(cleanName)
+  } catch (_) {}
   const soundboardDir = getSoundboardDirectory()
-  let filePath = join(soundboardDir, fileName)
+  let filePath = join(soundboardDir, cleanName)
   if (!fs.existsSync(filePath)) {
-    filePath = join(getMediaDirectory(), fileName)
+    filePath = join(getMediaDirectory(), cleanName)
   }
   if (!fs.existsSync(filePath)) return false
   try {
     await fs.promises.unlink(filePath)
     return true
   } catch (err) {
-    console.warn(`[mediaManager] Failed to delete ${fileName}:`, err)
+    console.warn(`[mediaManager] Failed to delete ${cleanName}:`, err)
     return false
   }
 }

@@ -1824,12 +1824,31 @@ export const useSettingsStore = defineStore('settings', {
      */
     isFileUsed(key: string | undefined, excludeSoundId?: string): boolean {
       if (!key) return false;
+      const normalize = (k: string | undefined): string => {
+        if (!k) return '';
+        let s = k;
+        if (s.startsWith('pulse-media://')) {
+          s = s.replace(/^pulse-media:\/\/[^/]+\//, '');
+        }
+        try {
+          s = decodeURIComponent(s);
+        } catch (_) {}
+        return s;
+      };
+      const cleanKey = normalize(key);
       const usedBySound = this.sounds.some(sound => {
         if (excludeSoundId && sound.id === excludeSoundId) return false;
-        return sound.imageKey === key || sound.audioKey === key;
+        return (
+          sound.imageKey === key ||
+          sound.audioKey === key ||
+          normalize(sound.imageKey) === cleanKey ||
+          normalize(sound.audioKey) === cleanKey
+        );
       });
       if (usedBySound) return true;
-      return Object.values(this.tagImages ?? {}).some(imageKey => imageKey === key);
+      return Object.values(this.tagImages ?? {}).some(
+        imageKey => imageKey === key || normalize(imageKey) === cleanKey
+      );
     },
     /**
      * Get the loaded blob URL for a tag's assigned image

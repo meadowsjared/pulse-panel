@@ -1359,7 +1359,7 @@ async function handleAudioFileUpload(event: Event) {
   if (!(target instanceof HTMLInputElement)) return;
   if (!target.files || !target.files[0]) return;
   const file = target.files[0];
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file);
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file, props.modelValue.id);
   props.modelValue.title = stripFileExtension(file.name);
   props.modelValue.audioKey = fileKey;
   props.modelValue.audioUrl = fileUrl;
