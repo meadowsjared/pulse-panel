@@ -62,7 +62,7 @@ function nodeStreamToWebStream(nodeStream) {
     isClosed = true
     try {
       nodeStream.destroy()
-    } catch (_) {}
+    } catch (_) { }
   }
 
   return new ReadableStream({
@@ -84,7 +84,7 @@ function nodeStreamToWebStream(nodeStream) {
         isClosed = true
         try {
           controller.close()
-        } catch (_) {}
+        } catch (_) { }
       })
 
       nodeStream.on('error', err => {
@@ -92,7 +92,7 @@ function nodeStreamToWebStream(nodeStream) {
         isClosed = true
         try {
           controller.error(err)
-        } catch (_) {}
+        } catch (_) { }
       })
 
       nodeStream.on('close', () => {
@@ -312,6 +312,10 @@ app.whenReady().then(() => {
     enableTray = value
   })
   ipcMain.handle('set-open-at-login', (_, openAtLogin) => {
+    if (isDev) {
+      settings.saveDBSetting('startWithWindows', !!openAtLogin)
+      return
+    }
     const args = []
     if (!app.isPackaged) {
       args.push(app.getAppPath())
@@ -326,6 +330,9 @@ app.whenReady().then(() => {
     })
   })
   ipcMain.handle('get-open-at-login', () => {
+    if (isDev) {
+      return !!settings.readDBSetting('startWithWindows')
+    }
     const loginSettings = app.getLoginItemSettings(
       app.isPackaged ? undefined : { path: process.execPath, args: [app.getAppPath()] }
     )
