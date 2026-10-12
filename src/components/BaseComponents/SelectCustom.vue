@@ -135,9 +135,9 @@ function emitHTMLSelectChange(option: LabelValue) {
   optionElement.value = option.value
   optionElement.selected = true
   selectElement.appendChild(optionElement)
-  const event = new CustomEvent('change')
-  const payload = { ...event, target: selectElement }
-  emit('change', payload)
+  const event = new Event('change')
+  Object.defineProperty(event, 'target', { value: selectElement, enumerable: true })
+  emit('change', event)
 }
 
 function handleFocus() {

@@ -917,16 +917,29 @@ async function onPulseBackDeviceSelected(payload: unknown) {
     deviceId = payload.length > 0 ? payload : null
   } else if (payload instanceof CustomEvent && typeof payload.detail === 'string') {
     deviceId = payload.detail.length > 0 ? payload.detail : null
-  } else if (payload instanceof Event
-    && (payload.target instanceof HTMLSelectElement || payload.target instanceof HTMLInputElement)) {
-    const val = payload.target.value
-    deviceId = typeof val === 'string' && val.length > 0 ? val : null
+  } else if (typeof payload === 'object' && payload !== null && 'target' in payload) {
+    const target = payload.target
+    if (target instanceof HTMLSelectElement || target instanceof HTMLInputElement) {
+      const val = target.value
+      deviceId = typeof val === 'string' && val.length > 0 ? val : null
+    }
+  } else if (
+    typeof payload === 'object'
+    && payload !== null
+    && 'value' in payload
+    && typeof payload.value === 'string'
+  ) {
+    deviceId = payload.value.length > 0 ? payload.value : null
   }
   await settingsStore.savePulseBackInputDevice(deviceId)
   const micDevice = settingsStore.selectedMicrophoneId
   const effectiveMicVol = settingsStore.microphoneVolume ?? 1
   const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
   await pulseBackBuffer.start(micDevice, deviceId, 180, effectiveMicVol, effectiveInputVol).catch(() => { })
+  if (isTestingPulseBack.value) {
+    const primaryOutput = settingsStore.outputDevices[0]?.deviceId ?? null
+    await pulseBackBuffer.setInputTest(true, primaryOutput).catch(() => { })
+  }
 }
 
 function dragStart(pTag: LabelActive, index: number) {

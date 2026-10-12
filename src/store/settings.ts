@@ -606,7 +606,10 @@ export const useSettingsStore = defineStore('settings', {
       else if (this._isNumberSettings(key) && typeof value === 'number') return (this[key] = value)
       else if (this._isStringSettings(key) && (typeof value === 'string' || value === null)) {
         if (key === 'selectedMicrophoneId') return (this.selectedMicrophoneId = value)
-        if (key === 'pulse_back_input_device') return (this.pulse_back_input_device = value)
+        if (key === 'pulse_back_input_device') {
+          const deviceId = typeof value === 'string' && value.length > 0 ? value : null
+          return (this.pulse_back_input_device = deviceId)
+        }
         if (key === 'browser_homepage') return (this.browser_homepage = value ?? 'https://www.youtube.com')
       }
       else if (this._isArrayNumberSettings(key) && this._isArrayNumber(value)) return (this[key] = value)
@@ -641,6 +644,7 @@ export const useSettingsStore = defineStore('settings', {
       const settings = await electron?.readAllDBSettings()
       // transfer all the properties from settings to the local state
       if (settings) Object.assign(this, toRaw(settings))
+      if (this.pulse_back_input_device === '') this.pulse_back_input_device = null
       if (isRecordStringString(settings?.tagImages)) {
         this.tagImages = settings.tagImages
       } else {
@@ -799,7 +803,7 @@ export const useSettingsStore = defineStore('settings', {
               }
             } catch { }
           } else if (key === 'pulse_back_input_device') {
-            this.pulse_back_input_device = value
+            this.pulse_back_input_device = (typeof value === 'string' && value.length > 0) ? value : null
             try {
               const pulseBackStore = usePulseBackStore()
               if (pulseBackStore.isBufferRunning) {
@@ -1119,8 +1123,9 @@ export const useSettingsStore = defineStore('settings', {
      * Save the Pulse Back input device ID
      */
     async savePulseBackInputDevice(deviceId: string | null): Promise<boolean> {
-      this.pulse_back_input_device = deviceId
-      return this.saveSetting('pulse_back_input_device', deviceId ?? '')
+      const normalized = (deviceId && deviceId.length > 0) ? deviceId : null
+      this.pulse_back_input_device = normalized
+      return this.saveSetting('pulse_back_input_device', normalized ?? '')
     },
     /**
      * Save the Pulse Back volume (0 to 1)
