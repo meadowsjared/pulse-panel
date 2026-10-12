@@ -321,7 +321,7 @@ app.whenReady().then(() => {
       args.push(app.getAppPath())
     }
     if (openAtLogin) {
-      args.push('--hidden')
+      args.push('--minimized')
     }
     app.setLoginItemSettings({
       openAtLogin: !!openAtLogin,
@@ -716,7 +716,7 @@ app.whenReady().then(() => {
 
 function createWindow() {
   // Create the browser window.
-  const startHidden = process.argv.includes('--hidden')
+  const startHidden = process.argv.includes('--minimized')
   if (startHidden) {
     enableTray = true
     ignoreFirstTrayToggle = true
