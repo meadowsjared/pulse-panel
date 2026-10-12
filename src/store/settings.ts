@@ -596,7 +596,8 @@ export const useSettingsStore = defineStore('settings', {
     _assignValidatedSetting(key: SettingsOnlyKeys, value: SettingValue) {
       if (this._isBooleanSettings(key) && typeof value === 'boolean') return (this[key] = value);
       else if (this._isNumberSettings(key) && typeof value === 'number') return (this[key] = value);
-      else if (this._isStringSettings(key) && (typeof value === 'string' || value === null)) return ((this as any)[key] = value);
+      else if (this._isStringSettings(key) && (typeof value === 'string' || value === null))
+        return ((this as any)[key] = value);
       else if (this._isArrayNumberSettings(key) && this._isArrayNumber(value)) return (this[key] = value);
       else if (this._isArrayOutputDeviceSettings(key) && this._isArrayOutputDevice(value)) {
         return (this[key] = value.map(item =>
@@ -711,7 +712,7 @@ export const useSettingsStore = defineStore('settings', {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput');
         const defaultValue: OutputDeviceSetting[] = [
-          { deviceId: audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default', volume: 1 }
+          { deviceId: audioOutputDevices.length > 0 ? audioOutputDevices[0].deviceId : 'default', volume: 1 },
         ];
         await electron?.saveDBSetting('outputDevices', defaultValue);
         this.outputDevices = defaultValue;
@@ -838,7 +839,8 @@ export const useSettingsStore = defineStore('settings', {
         return false;
       }
       if (this._isArrayStringSettings(key)) {
-        if ((key === 'stop_hotkey' || key === 'ptt_hotkey' || key === 'pulse_back_hotkey') && this._isArrayString(value)) {
+        if ((key === 'stop_hotkey' || key === 'ptt_hotkey' || key === 'pulse_back_hotkey')
+          && this._isArrayString(value)) {
           if (value.length === 0) {
             const prevHotkey = toRaw(this[key]);
             electron?.unregisterHotkeys([prevHotkey]);
@@ -881,7 +883,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron;
       await electron?.saveDBSetting('browser_favorites', toCloneable(this.browser_favorites));
     },
-    async addBrowserFavorite(fav: { title?: string; url: string }): Promise<void> {
+    async addBrowserFavorite(fav: { title?: string; url: string; }): Promise<void> {
       const url = fav.url.trim();
       if (!url) return;
       const title = (fav.title && fav.title.trim()) || url;
@@ -1335,7 +1337,8 @@ export const useSettingsStore = defineStore('settings', {
                   else if (blob.type.includes('webm')) ext = '.webm';
                 }
                 const blobName = 'name' in blob ? (blob as File).name : '';
-                const title = sound.title ? sound.title.trim() : (blobName ? blobName.replace(/\.[^.]+$/, '') : 'sound');
+                const title = sound.title
+                  ? sound.title.trim() : (blobName ? blobName.replace(/\.[^.]+$/, '') : 'sound');
                 const res = await electron.saveMediaFile({
                   preferredName: title,
                   extension: ext,
@@ -1359,7 +1362,8 @@ export const useSettingsStore = defineStore('settings', {
                 const buffer = await blob.arrayBuffer();
                 const ext = blob.type && blob.type.includes('jpeg') ? '.jpg' : '.png';
                 const blobName = 'name' in blob ? (blob as File).name : '';
-                const title = sound.title ? sound.title.trim() : (blobName ? blobName.replace(/\.[^.]+$/, '') : 'image');
+                const title = sound.title
+                  ? sound.title.trim() : (blobName ? blobName.replace(/\.[^.]+$/, '') : 'image');
                 const res = await electron.saveMediaFile({
                   preferredName: title,
                   extension: ext,
@@ -1561,7 +1565,8 @@ export const useSettingsStore = defineStore('settings', {
         hotkeys.push(toRaw(this.stop_hotkey));
       }
       // register the pulse_back_hotkey
-      if (this.pulse_back_hotkey && this.pulse_back_hotkey.length > 0 && !hotkeys.some(keys => arraysAreEqual(this.pulse_back_hotkey, keys))) {
+      if (this.pulse_back_hotkey && this.pulse_back_hotkey.length > 0
+        && !hotkeys.some(keys => arraysAreEqual(this.pulse_back_hotkey, keys))) {
         hotkeys.push(toRaw(this.pulse_back_hotkey));
       }
 
@@ -1832,7 +1837,7 @@ export const useSettingsStore = defineStore('settings', {
         }
         try {
           s = decodeURIComponent(s);
-        } catch (_) {}
+        } catch (_) { }
         return s;
       };
       const cleanKey = normalize(key);

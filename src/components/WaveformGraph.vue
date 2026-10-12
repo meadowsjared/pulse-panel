@@ -69,7 +69,9 @@
         <!-- Start Trim Handle -->
         <div :class="['trim-handle', 'start-handle', {
           'active-handle': activeDragHandle === 'start',
-          'is-snapped': (activeSnapLineSec !== null && activeDragHandle === 'start') || (isSnappedToStationaryHandle && activeDragHandle === 'end')
+          'is-snapped': (activeSnapLineSec !== null
+            && activeDragHandle === 'start')
+            || (isSnappedToStationaryHandle && activeDragHandle === 'end')
         }]"
              :style="{ left: `${startPercent}%` }"
              @mousedown.stop="onStartHandleMouseDown"
@@ -86,7 +88,10 @@
         <!-- End Trim Handle -->
         <div :class="['trim-handle', 'end-handle', {
           'active-handle': activeDragHandle === 'end',
-          'is-snapped': (activeSnapLineSec !== null && activeDragHandle === 'end') || (isSnappedToStationaryHandle && activeDragHandle === 'start')
+          'is-snapped': (activeSnapLineSec !== null
+            && activeDragHandle === 'end')
+            || (isSnappedToStationaryHandle
+              && activeDragHandle === 'start')
         }]"
              :style="{ left: `${endPercent}%` }"
              @mousedown.stop="onEndHandleMouseDown"
@@ -573,7 +578,7 @@ function closePopover() {
   focusedPopoverHandle.value = null;
 }
 
-watch(globalActiveGraphInstanceId, (activeId) => {
+watch(globalActiveGraphInstanceId, activeId => {
   if (activeId !== instanceId) {
     if (areTrimPopoversOpen.value) {
       areTrimPopoversOpen.value = false;
@@ -1013,7 +1018,7 @@ function onPlayheadKeydown(e: KeyboardEvent) {
 
 watch(
   () => props.currentTime,
-  (newTime) => {
+  newTime => {
     if (isPlayheadPopoverOpen.value && document.activeElement !== playheadInputRef.value) {
       playheadInputValue.value = formatSeconds(newTime);
     }
@@ -1369,7 +1374,9 @@ function drawWaveform() {
   const trackKey = activeTracks
     .map(
       t =>
-        `${Array.isArray(t.channelIndex) ? t.channelIndex.join(',') : t.channelIndex}:${t.enabled !== false}:${t.label || ''}:${(t.colors || []).join(',')}`
+        `${Array.isArray(t.channelIndex)
+          ? t.channelIndex.join(',')
+          : t.channelIndex}:${t.enabled !== false}:${t.label || ''}:${(t.colors || []).join(',')}`
     )
     .join(';');
   const cacheKey = `${width}x${height}_${trackKey}_${themeKey}`;
@@ -1476,7 +1483,9 @@ function cancelPlayheadClickTimer() {
   }
 }
 
-function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): { snappedSec: number; snapTarget: number | null; boundarySec: number | null; } {
+function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): {
+  snappedSec: number; snapTarget: number | null; boundarySec: number | null;
+} {
   if (!shiftHeld || !waveformWrapperRef.value) {
     return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
   }
@@ -1530,7 +1539,8 @@ function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): { snappedSec
     return {
       snappedSec: closestTarget.sec,
       snapTarget: closestTarget.sec,
-      boundarySec: closestTarget.isBoundary && closestTarget.boundarySec !== undefined ? closestTarget.boundarySec : null,
+      boundarySec: closestTarget.isBoundary && closestTarget.boundarySec !== undefined
+        ? closestTarget.boundarySec : null,
     };
   }
 
