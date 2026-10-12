@@ -110,6 +110,7 @@ jobs:
         with:
           identifier: JaredMeadows.pulse-panel
           token: ${{ secrets.WINGET_TOKEN }}
+          release-tag: v${{ env.VERSION }}
 
       - name: Bump version with Bun
         shell: pwsh
