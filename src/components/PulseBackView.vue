@@ -58,7 +58,10 @@
                     r="9" />
           </svg>
           <p class="font-medium text-zinc-300">No clips captured yet</p>
-          <p class="text-xs text-zinc-500 mt-1">Press <kbd class="px-1 py-0.5 bg-zinc-800 rounded border border-zinc-700">F12</kbd> or click <strong>Clip</strong> in the top bar when audio happens.</p>
+          <p class="text-xs text-zinc-500 mt-1">
+            Press <kbd class="px-1 py-0.5 bg-zinc-800 rounded border border-zinc-700">F12</kbd>
+            or click <strong>Clip</strong> in the top bar when audio happens.
+          </p>
         </div>
 
         <div v-else
@@ -128,7 +131,7 @@
                    @input="onTitleInput"
                    @change="onTitleChange"
                    @blur="onTitleChange"
-                   @keydown.enter="($event.target as HTMLInputElement).blur()"
+                   @keydown.enter="onTitleKeydownEnter"
                    placeholder="Give your sound a name..."
                    class="clip-title-input" />
           </div>
@@ -291,76 +294,76 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue';
-import { usePulseBackStore, PulseBackClip } from '../store/pulseBack';
-import { useSettingsStore } from '../store/settings';
-import { TagInputRef } from './BaseComponents/TagInputTypes';
-import WaveformEditor from './WaveformEditor.vue';
-import { AudioGainRegion } from '../utils/audioGain';
-import { AudioTimelineSegment } from '../utils/audioSegments';
+import { ref, computed, watch, onUnmounted } from 'vue'
+import { usePulseBackStore, PulseBackClip } from '../store/pulseBack'
+import { useSettingsStore } from '../store/settings'
+import { TagInputRef } from './BaseComponents/TagInputTypes'
+import WaveformEditor from './WaveformEditor.vue'
+import { AudioGainRegion } from '../utils/audioGain'
+import { AudioTimelineSegment } from '../utils/audioSegments'
 
-const pulseBackStore = usePulseBackStore();
-const settingsStore = useSettingsStore();
+const pulseBackStore = usePulseBackStore()
+const settingsStore = useSettingsStore()
 
 function getDefaultVolumePercent(): number {
-  const def = settingsStore.defaultVolume;
-  return typeof def === 'number' && !Number.isNaN(def) ? Math.round(def * 100) : 100;
+  const def = settingsStore.defaultVolume
+  return typeof def === 'number' && !Number.isNaN(def) ? Math.round(def * 100) : 100
 }
 
-const tagInputRef = ref<TagInputRef | null>(null);
-const waveformEditorRef = ref<InstanceType<typeof WaveformEditor> | null>(null);
+const tagInputRef = ref<TagInputRef | null>(null)
+const waveformEditorRef = ref<InstanceType<typeof WaveformEditor> | null>(null)
 
-const selectedClip = computed(() => pulseBackStore.selectedClip);
+const selectedClip = computed(() => pulseBackStore.selectedClip)
 
 // Editor Form State
-const clipTitle = ref('');
-const clipColor = ref('#ffffff');
-const clipTags = ref<string[]>(['clip']);
-const clipVolume = ref(getDefaultVolumePercent());
-const isPublishing = ref(false);
-const isSavingFile = ref(false);
+const clipTitle = ref('')
+const clipColor = ref('#ffffff')
+const clipTags = ref<string[]>(['clip'])
+const clipVolume = ref(getDefaultVolumePercent())
+const isPublishing = ref(false)
+const isSavingFile = ref(false)
 
-const savedDeleteAfterPublish = localStorage.getItem('pulse_back_delete_after_publish');
-const deleteAfterPublish = ref(savedDeleteAfterPublish === 'true');
+const savedDeleteAfterPublish = localStorage.getItem('pulse_back_delete_after_publish')
+const deleteAfterPublish = ref(savedDeleteAfterPublish === 'true')
 
 function onDeleteAfterPublishChange() {
   try {
-    localStorage.setItem('pulse_back_delete_after_publish', String(deleteAfterPublish.value));
+    localStorage.setItem('pulse_back_delete_after_publish', String(deleteAfterPublish.value))
   } catch { }
 }
 
-const savedFormat = localStorage.getItem('pulse_back_export_format');
+const savedFormat = localStorage.getItem('pulse_back_export_format')
 const exportFormat = ref<'mp3' | 'wav' | 'ogg'>(
   savedFormat === 'wav' || savedFormat === 'ogg' ? savedFormat : 'mp3'
-);
+)
 
 function setExportFormat(format: 'mp3' | 'wav' | 'ogg') {
-  exportFormat.value = format;
+  exportFormat.value = format
   try {
-    localStorage.setItem('pulse_back_export_format', format);
+    localStorage.setItem('pulse_back_export_format', format)
   } catch { }
 }
 
 // Trimming & Playback State (bound to WaveformEditor)
-const trimStart = ref(0);
-const trimEnd = ref(0);
-const currentTime = ref(0);
+const trimStart = ref(0)
+const trimEnd = ref(0)
+const currentTime = ref(0)
 
 // Dual-Track & Gain State (bound to WaveformEditor)
-const includeMic = ref(true);
-const includeInput = ref(true);
-const activeTrackTarget = ref<'both' | 'mic' | 'input'>('both');
-const micGainMultiplier = ref(1.0);
-const inputGainMultiplier = ref(1.0);
-const appliedGainRegions = ref<AudioGainRegion[]>([]);
-const segmentBoundaries = ref<number[]>([]);
+const includeMic = ref(true)
+const includeInput = ref(true)
+const activeTrackTarget = ref<'both' | 'mic' | 'input'>('both')
+const micGainMultiplier = ref(1.0)
+const inputGainMultiplier = ref(1.0)
+const appliedGainRegions = ref<AudioGainRegion[]>([])
+const segmentBoundaries = ref<number[]>([])
 
 watch(
   () => selectedClip.value?.id,
   (_newId, oldId) => {
-    waveformEditorRef.value?.stopPreview?.();
+    waveformEditorRef.value?.stopPreview?.()
     if (oldId) {
-      const oldClip = pulseBackStore.clips.find(c => c.id === oldId);
+      const oldClip = pulseBackStore.clips.find(c => c.id === oldId)
       if (oldClip) {
         pulseBackStore.updateClip(oldId, {
           title: clipTitle.value,
@@ -376,46 +379,46 @@ watch(
           inputGain: inputGainMultiplier.value,
           partialGains: appliedGainRegions.value ? [...appliedGainRegions.value] : [],
           segmentBoundaries: segmentBoundaries.value ? [...segmentBoundaries.value] : [],
-        });
+        })
       }
     }
     if (!selectedClip.value) {
-      return;
+      return
     }
 
-    const clip = selectedClip.value;
-    clipTitle.value = clip.title;
-    clipTags.value = clip.tags ? [...clip.tags] : ['clip'];
-    trimStart.value = clip.trimStart ?? 0;
-    trimEnd.value = clip.trimEnd ?? clip.duration;
-    currentTime.value = clip.currentTime ?? trimStart.value;
-    clipVolume.value = clip.volume ?? getDefaultVolumePercent();
-    clipColor.value = clip.color ?? '#3b82f6';
-    includeMic.value = clip.includeMic ?? true;
-    includeInput.value = clip.includeInput ?? true;
-    appliedGainRegions.value = clip.partialGains ? [...clip.partialGains] : [];
-    micGainMultiplier.value = clip.micGain ?? 1.0;
-    inputGainMultiplier.value = clip.inputGain ?? 1.0;
-    segmentBoundaries.value = clip.segmentBoundaries ? [...clip.segmentBoundaries] : [];
+    const clip = selectedClip.value
+    clipTitle.value = clip.title
+    clipTags.value = clip.tags ? [...clip.tags] : ['clip']
+    trimStart.value = clip.trimStart ?? 0
+    trimEnd.value = clip.trimEnd ?? clip.duration
+    currentTime.value = clip.currentTime ?? trimStart.value
+    clipVolume.value = clip.volume ?? getDefaultVolumePercent()
+    clipColor.value = clip.color ?? '#3b82f6'
+    includeMic.value = clip.includeMic ?? true
+    includeInput.value = clip.includeInput ?? true
+    appliedGainRegions.value = clip.partialGains ? [...clip.partialGains] : []
+    micGainMultiplier.value = clip.micGain ?? 1.0
+    inputGainMultiplier.value = clip.inputGain ?? 1.0
+    segmentBoundaries.value = clip.segmentBoundaries ? [...clip.segmentBoundaries] : []
 
     if (!clip.originalBlob && clip.blob) {
-      clip.originalBlob = clip.blob;
+      clip.originalBlob = clip.blob
     }
     if (clip.originalDuration === undefined) {
-      clip.originalDuration = clip.duration;
+      clip.originalDuration = clip.duration
     }
     if (!clip.originalFileName && clip.fileName) {
-      clip.originalFileName = clip.fileName;
+      clip.originalFileName = clip.fileName
     }
     if (!clip.originalAudioUrl && clip.audioUrl) {
-      clip.originalAudioUrl = clip.audioUrl;
+      clip.originalAudioUrl = clip.audioUrl
     }
   },
   { immediate: true }
-);
+)
 
 function saveCurrentClipState(options?: { includeBlob?: boolean; }) {
-  if (!selectedClip.value) return;
+  if (!selectedClip.value) return
   const updates: Partial<PulseBackClip> = {
     title: clipTitle.value,
     tags: clipTags.value ? [...clipTags.value] : [],
@@ -433,11 +436,11 @@ function saveCurrentClipState(options?: { includeBlob?: boolean; }) {
     segmentBoundaries: segmentBoundaries.value ? [...segmentBoundaries.value] : [],
     originalDuration: selectedClip.value.originalDuration,
     originalFileName: selectedClip.value.originalFileName,
-  };
-  if (options?.includeBlob && selectedClip.value.blob) {
-    updates.blob = selectedClip.value.blob;
   }
-  pulseBackStore.updateClip(selectedClip.value.id, updates);
+  if (options?.includeBlob && selectedClip.value.blob) {
+    updates.blob = selectedClip.value.blob
+  }
+  pulseBackStore.updateClip(selectedClip.value.id, updates)
 }
 
 function onTimelineChange(payload: {
@@ -447,80 +450,86 @@ function onTimelineChange(payload: {
   segments: AudioTimelineSegment[];
   boundaries: number[];
 }) {
-  if (!selectedClip.value) return;
-  selectedClip.value.duration = payload.duration;
-  selectedClip.value.blob = payload.blob;
+  if (!selectedClip.value) return
+  selectedClip.value.duration = payload.duration
+  selectedClip.value.blob = payload.blob
   if (selectedClip.value.audioUrl && selectedClip.value.audioUrl.startsWith('blob:')) {
     try {
-      URL.revokeObjectURL(selectedClip.value.audioUrl);
+      URL.revokeObjectURL(selectedClip.value.audioUrl)
     } catch { }
   }
-  selectedClip.value.audioUrl = URL.createObjectURL(payload.blob);
-  selectedClip.value.trimStart = trimStart.value;
-  selectedClip.value.trimEnd = trimEnd.value;
-  selectedClip.value.currentTime = currentTime.value;
-  selectedClip.value.segmentBoundaries = payload.boundaries ? [...payload.boundaries] : [];
-  saveCurrentClipState({ includeBlob: true });
+  selectedClip.value.audioUrl = URL.createObjectURL(payload.blob)
+  selectedClip.value.trimStart = trimStart.value
+  selectedClip.value.trimEnd = trimEnd.value
+  selectedClip.value.currentTime = currentTime.value
+  selectedClip.value.segmentBoundaries = payload.boundaries ? [...payload.boundaries] : []
+  saveCurrentClipState({ includeBlob: true })
 }
 
 function selectClip(clip: PulseBackClip) {
-  if (pulseBackStore.selectedClipId === clip.id) return;
-  saveCurrentClipState();
-  pulseBackStore.selectClip(clip.id);
+  if (pulseBackStore.selectedClipId === clip.id) return
+  saveCurrentClipState()
+  pulseBackStore.selectClip(clip.id)
 }
 
 function onTitleInput() {
   if (selectedClip.value && clipTitle.value.trim().length > 0) {
-    selectedClip.value.title = clipTitle.value;
+    selectedClip.value.title = clipTitle.value
   }
 }
 
 async function onTitleChange() {
-  if (!selectedClip.value) return;
-  const newTitle = clipTitle.value.trim();
+  if (!selectedClip.value) return
+  const newTitle = clipTitle.value.trim()
   if (!newTitle) {
-    clipTitle.value = selectedClip.value.title || 'Untitled Clip';
-    return;
+    clipTitle.value = selectedClip.value.title || 'Untitled Clip'
+    return
   }
-  clipTitle.value = newTitle;
-  selectedClip.value.title = newTitle;
-  saveCurrentClipState();
+  clipTitle.value = newTitle
+  selectedClip.value.title = newTitle
+  saveCurrentClipState()
+}
+
+function onTitleKeydownEnter(e: KeyboardEvent) {
+  if (e.target instanceof HTMLElement) {
+    e.target.blur()
+  }
 }
 
 function onTagsChange(tags?: string[]) {
-  if (!selectedClip.value) return;
-  clipTags.value = tags || [];
-  selectedClip.value.tags = [...clipTags.value];
-  saveCurrentClipState();
+  if (!selectedClip.value) return
+  clipTags.value = tags || []
+  selectedClip.value.tags = [...clipTags.value]
+  saveCurrentClipState()
 }
 
 function onVolumeChange() {
-  saveCurrentClipState();
+  saveCurrentClipState()
 }
 
 function onColorChange() {
-  saveCurrentClipState();
+  saveCurrentClipState()
 }
 
 async function deleteClip(id: string) {
-  waveformEditorRef.value?.stopPreview?.();
-  await pulseBackStore.deleteClip(id);
+  waveformEditorRef.value?.stopPreview?.()
+  await pulseBackStore.deleteClip(id)
 }
 
 async function duplicateClip(id: string) {
-  waveformEditorRef.value?.stopPreview?.();
-  saveCurrentClipState();
-  await pulseBackStore.duplicateClip(id);
+  waveformEditorRef.value?.stopPreview?.()
+  saveCurrentClipState()
+  await pulseBackStore.duplicateClip(id)
 }
 
 async function publishToSoundboard() {
-  if (!selectedClip.value || !waveformEditorRef.value || isPublishing.value || isSavingFile.value) return;
+  if (!selectedClip.value || !waveformEditorRef.value || isPublishing.value || isSavingFile.value) return
 
-  isPublishing.value = true;
+  isPublishing.value = true
   try {
-    const format = exportFormat.value;
-    const trimmed = await waveformEditorRef.value.getTrimmedAudioBlob(format);
-    if (!trimmed) return;
+    const format = exportFormat.value
+    const trimmed = await waveformEditorRef.value.getTrimmedAudioBlob(format)
+    if (!trimmed) return
 
     await pulseBackStore.publishToSoundboard(selectedClip.value.id, trimmed.blob, trimmed.duration, {
       title: clipTitle.value.trim() || selectedClip.value.title,
@@ -532,78 +541,78 @@ async function publishToSoundboard() {
       navigateToSoundboard: false,
       format,
       extension: trimmed.extension,
-    });
+    })
   } catch (err) {
-    console.error('Failed to publish clip to soundboard:', err);
+    console.error('Failed to publish clip to soundboard:', err)
   } finally {
-    isPublishing.value = false;
+    isPublishing.value = false
   }
 }
 
 async function saveToFile() {
-  if (!selectedClip.value || !waveformEditorRef.value || isSavingFile.value || isPublishing.value) return;
+  if (!selectedClip.value || !waveformEditorRef.value || isSavingFile.value || isPublishing.value) return
 
-  isSavingFile.value = true;
+  isSavingFile.value = true
   try {
-    const format = exportFormat.value;
-    const trimmed = await waveformEditorRef.value.getTrimmedAudioBlob(format);
-    if (!trimmed) return;
+    const format = exportFormat.value
+    const trimmed = await waveformEditorRef.value.getTrimmedAudioBlob(format)
+    if (!trimmed) return
 
-    const rawTitle = clipTitle.value.trim() || selectedClip.value.title || 'pulse_back_clip';
-    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'pulse_back_clip';
-    const baseName = sanitizedTitle.replace(/\.(mp3|wav|ogg)$/i, '');
-    const defaultFilename = `${baseName}.${trimmed.extension}`;
+    const rawTitle = clipTitle.value.trim() || selectedClip.value.title || 'pulse_back_clip'
+    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'pulse_back_clip'
+    const baseName = sanitizedTitle.replace(/\.(mp3|wav|ogg)$/i, '')
+    const defaultFilename = `${baseName}.${trimmed.extension}`
 
     if (window.electron?.saveFileDialog) {
-      const arrayBuffer = await trimmed.blob.arrayBuffer();
+      const arrayBuffer = await trimmed.blob.arrayBuffer()
       const formatFilterMap: Record<'mp3' | 'wav' | 'ogg', { name: string; extensions: string[]; }> = {
         mp3: { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
         ogg: { name: 'OGG Audio (*.ogg)', extensions: ['ogg'] },
         wav: { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
-      };
-      const filters = [formatFilterMap[format]];
+      }
+      const filters = [formatFilterMap[format]]
 
-      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters)
       if (saved) {
         pulseBackStore.showToast(`Saved "${defaultFilename}"`, {
           filePath: typeof saved === 'string' ? saved : undefined,
-        });
+        })
       }
     } else {
-      const url = URL.createObjectURL(trimmed.blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = defaultFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      pulseBackStore.showToast(`Downloaded "${defaultFilename}"`);
+      const url = URL.createObjectURL(trimmed.blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = defaultFilename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      pulseBackStore.showToast(`Downloaded "${defaultFilename}"`)
     }
   } catch (err) {
-    console.error('Failed to save audio file:', err);
-    pulseBackStore.showToast('Failed to save audio file');
+    console.error('Failed to save audio file:', err)
+    pulseBackStore.showToast('Failed to save audio file')
   } finally {
-    isSavingFile.value = false;
+    isSavingFile.value = false
   }
 }
 
 function formatTime(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 function formatSeconds(secs: number): string {
-  if (Number.isNaN(secs) || secs < 0) secs = 0;
-  const m = Math.floor(secs / 60);
-  const s = Math.floor(secs % 60);
-  const ms = Math.floor((secs % 1) * 10);
-  return `${m}:${s.toString().padStart(2, '0')}.${ms}`;
+  if (Number.isNaN(secs) || secs < 0) secs = 0
+  const m = Math.floor(secs / 60)
+  const s = Math.floor(secs % 60)
+  const ms = Math.floor((secs % 1) * 10)
+  return `${m}:${s.toString().padStart(2, '0')}.${ms}`
 }
 
 onUnmounted(() => {
-  waveformEditorRef.value?.stopPreview?.();
-  saveCurrentClipState();
-});
+  waveformEditorRef.value?.stopPreview?.()
+  saveCurrentClipState()
+})
 </script>
 
 <style scoped>

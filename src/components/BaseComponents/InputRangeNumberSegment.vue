@@ -257,7 +257,8 @@ const lineStartPosition = computed(() => {
   return Math.min(startPosition.value, endPosition.value)
 })
 
-// this is a computed that will find the lowest value between props.min and props.max, just in case they put them in backwards
+// this is a computed that will find the lowest value between props.min and props.max,
+// just in case they put them in backwards
 const minValue = computed(() => Math.min(props.min, props.max))
 const maxValue = computed(() => Math.max(props.min, props.max))
 

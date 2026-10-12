@@ -33,7 +33,8 @@ import { LabelActive } from '../@types/sound'
 const settingsStore = useSettingsStore()
 
 function toggleTag(event: MouseEvent) {
-  const target = event.currentTarget as HTMLElement
+  if (!(event.currentTarget instanceof HTMLElement)) return
+  const target = event.currentTarget
   const tag = target.innerText
   settingsStore.toggleQuickTag(tag)
 }

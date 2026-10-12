@@ -418,7 +418,9 @@ app.whenReady().then(() => {
         pngBuffer = Buffer.from(base64, 'base64')
       }
 
-      const htmlContent = `<meta name="pulse-panel-image-key" content="${imageKey || ''}"><meta name="pulse-panel-image-url" content="${imageUrl || ''}">`
+      const htmlContent =
+        `<meta name="pulse-panel-image-key" content="${imageKey || ''}">` +
+        `<meta name="pulse-panel-image-url" content="${imageUrl || ''}">`
 
       // Modern Electron (44+) ClipboardItem API
       if (typeof ClipboardItem !== 'undefined' && typeof clipboard.write === 'function') {

@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, useId } from 'vue';
+import { computed, onMounted, onUnmounted, ref, useId } from 'vue'
 
 interface Props {
   level?: number;
@@ -67,46 +67,46 @@ const props = withDefaults(defineProps<Props>(), {
   level: 0,
   muted: false,
   max: 100,
-});
+})
 
-const rawId = useId();
-const sanitizedId = computed(() => rawId.replace(/[^a-zA-Z0-9-_]/g, '_'));
-const gradientId = computed(() => `audio-meter-grad-${sanitizedId.value}`);
-const maskId = computed(() => `audio-meter-mask-${sanitizedId.value}`);
+const rawId = useId()
+const sanitizedId = computed(() => rawId.replace(/[^a-zA-Z0-9-_]/g, '_'))
+const gradientId = computed(() => `audio-meter-grad-${sanitizedId.value}`)
+const maskId = computed(() => `audio-meter-mask-${sanitizedId.value}`)
 
-const trackRef = ref<HTMLElement | null>(null);
-const trackWidth = ref(360);
-let resizeObserver: ResizeObserver | null = null;
+const trackRef = ref<HTMLElement | null>(null)
+const trackWidth = ref(360)
+let resizeObserver: ResizeObserver | null = null
 
-const barCount = computed(() => Math.max(1, Math.floor(trackWidth.value / 10)));
+const barCount = computed(() => Math.max(1, Math.floor(trackWidth.value / 10)))
 const activeBarCount = computed(() => {
-  const lvl = props.level ?? 0;
-  if (lvl <= 0) return 0;
-  const maxVal = props.max > 0 ? props.max : 100;
-  const ratio = Math.max(0, Math.min(1, lvl / maxVal));
-  return Math.min(barCount.value, Math.ceil(ratio * barCount.value));
-});
+  const lvl = props.level ?? 0
+  if (lvl <= 0) return 0
+  const maxVal = props.max > 0 ? props.max : 100
+  const ratio = Math.max(0, Math.min(1, lvl / maxVal))
+  return Math.min(barCount.value, Math.ceil(ratio * barCount.value))
+})
 
 onMounted(() => {
   if (trackRef.value) {
-    trackWidth.value = trackRef.value.clientWidth || 360;
+    trackWidth.value = trackRef.value.clientWidth || 360
     resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         if (entry.contentRect.width > 0) {
-          trackWidth.value = Math.round(entry.contentRect.width);
+          trackWidth.value = Math.round(entry.contentRect.width)
         }
       }
-    });
-    resizeObserver.observe(trackRef.value);
+    })
+    resizeObserver.observe(trackRef.value)
   }
-});
+})
 
 onUnmounted(() => {
   if (resizeObserver) {
-    resizeObserver.disconnect();
-    resizeObserver = null;
+    resizeObserver.disconnect()
+    resizeObserver = null
   }
-});
+})
 </script>
 
 <style scoped>

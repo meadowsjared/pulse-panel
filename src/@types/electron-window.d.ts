@@ -116,8 +116,25 @@ export interface Settings {
   saveVisibility: (visibilityChanges: { isVisible: boolean; soundId: string }[]) => Promise<void>
   // YouTube / yt-dlp
   ytCheckStatus: () => Promise<{ installed: boolean; path: string | null; isLocal: boolean }>
-  ytFetchInfo: (url: string) => Promise<{ success: boolean; videoId?: string; title?: string; author?: string; thumbnailUrl?: string; isShort?: boolean; error?: string }>
-  ytDownloadClip: (options: { url: string; startTime?: number; endTime?: number }) => Promise<{ success: boolean; buffer: any; extension: string; mimeType: string }>
+  ytFetchInfo: (url: string) => Promise<{
+    success: boolean
+    videoId?: string
+    title?: string
+    author?: string
+    thumbnailUrl?: string
+    isShort?: boolean
+    error?: string
+  }>
+  ytDownloadClip: (options: {
+    url: string
+    startTime?: number
+    endTime?: number
+  }) => Promise<{
+    success: boolean
+    buffer: any
+    extension: string
+    mimeType: string
+  }>
   onYtDownloadProgress: (callback: (progress: { percent: number; text?: string }) => void) => void
   ytFetchImage: (url: string) => Promise<any>
   onTriggerFindInPage?: (callback: () => void) => void

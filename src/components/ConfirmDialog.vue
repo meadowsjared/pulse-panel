@@ -22,7 +22,7 @@ const emit = defineEmits<{
   // define an emit that will update showDialog
   (event: 'update:showDialog', value: boolean): void;
   (event: 'confirm'): void;
-}>();
+}>()
 
 // const showDialog = ref(false)
 withDefaults(
@@ -39,16 +39,16 @@ withDefaults(
     confirmText: 'Confirm',
     cancelText: 'Cancel',
   },
-);
+)
 
 const confirm = () => {
-  emit('confirm');
-  emit('update:showDialog', false);
-};
+  emit('confirm')
+  emit('update:showDialog', false)
+}
 
 const cancel = () => {
-  emit('update:showDialog', false);
-};
+  emit('update:showDialog', false)
+}
 </script>
 
 <style scoped>

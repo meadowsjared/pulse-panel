@@ -33,7 +33,10 @@ class AudioMixer {
 
   private getInputContext(): AudioContext {
     if (!this.inputCtx) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext
+      if (!AudioContextClass) {
+        throw new Error('AudioContext not supported')
+      }
       try {
         this.inputCtx = new AudioContextClass({ latencyHint: 'balanced' })
       } catch {
@@ -217,7 +220,7 @@ class AudioMixer {
       cableDeviceId &&
       cableDeviceId === this.currentCableId &&
       this.cableCtx &&
-      (this.cableCtx as any).sinkId === cableDeviceId &&
+      this.cableCtx.sinkId === cableDeviceId &&
       this.cableCtx.state !== 'closed'
     ) {
       this.attachMicToCableContext()
@@ -240,7 +243,11 @@ class AudioMixer {
     }
 
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext
+      if (!AudioContextClass) {
+        console.error('[AudioMixer] AudioContext is not supported')
+        return
+      }
 
       // Determine mic sample rate if available to match virtual cable and avoid software resampling
       const micTrack = this.micStream?.getAudioTracks()[0]
@@ -265,8 +272,8 @@ class AudioMixer {
       }
 
       // Explicitly set the output sinkId to CABLE Input
-      if (typeof (ctx as any).setSinkId === 'function') {
-        await (ctx as any).setSinkId(cableDeviceId)
+      if (typeof ctx.setSinkId === 'function') {
+        await ctx.setSinkId(cableDeviceId)
       } else {
         console.error('[AudioMixer] AudioContext.setSinkId is not supported in this runtime')
         ctx.close().catch(() => {})
@@ -275,9 +282,9 @@ class AudioMixer {
 
       // CRITICAL SAFETY CHECK: Ensure sinkId was strictly applied to cableDeviceId!
       // If sinkId does not match, NEVER connect the microphone to avoid any headphone echo!
-      if ((ctx as any).sinkId !== cableDeviceId) {
+      if (ctx.sinkId !== cableDeviceId) {
         console.error('[AudioMixer] SAFETY CHECK FAILED: AudioContext sinkId does not match cableDeviceId!', {
-          actualSinkId: (ctx as any).sinkId,
+          actualSinkId: ctx.sinkId,
           expectedCableDeviceId: cableDeviceId,
         })
         ctx.close().catch(() => {})
@@ -312,7 +319,7 @@ class AudioMixer {
     if (!this.cableCtx || !this.micStream || !this.cableMicGain) return
 
     // Double check sinkId safety before attaching mic
-    if ((this.cableCtx as any).sinkId !== this.currentCableId) {
+    if (this.cableCtx.sinkId !== this.currentCableId) {
       console.warn('[AudioMixer] Safety check prevented mic attachment: sinkId mismatch')
       return
     }
@@ -365,12 +372,12 @@ class AudioMixer {
       await inCtx.resume().catch(() => {})
     }
 
-    if (enabled && typeof (inCtx as any).setSinkId === 'function') {
+    if (enabled && typeof inCtx.setSinkId === 'function') {
       try {
         if (targetDeviceId && targetDeviceId !== 'default') {
-          await (inCtx as any).setSinkId(targetDeviceId)
+          await inCtx.setSinkId(targetDeviceId)
         } else {
-          await (inCtx as any).setSinkId('')
+          await inCtx.setSinkId('')
         }
       } catch (err) {
         console.warn('[AudioMixer] Could not set sinkId on inputCtx for mic test:', err)

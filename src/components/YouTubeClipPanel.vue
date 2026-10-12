@@ -120,7 +120,9 @@
             <div class="sound-button"
                  :class="{ 'has-image': useThumbnailAsIcon && !!thumbnailUrl }"
                  :style="{
-                  backgroundColor: (useThumbnailAsIcon && thumbnailUrl) ? 'transparent' : 'var(--button-color, #23a459)',
+                  backgroundColor: (useThumbnailAsIcon && thumbnailUrl)
+                    ? 'transparent'
+                    : 'var(--button-color, #23a459)',
                   backgroundImage: (useThumbnailAsIcon && thumbnailUrl) ? `url('${thumbnailUrl}')` : 'none',
                 }">
               <span v-if="!hideTitle"
@@ -263,14 +265,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useSettingsStore } from '../store/settings';
-import { usePulseBackStore } from '../store/pulseBack';
-import { Sound } from '../@types/sound';
-import { TagInputRef } from './BaseComponents/TagInputTypes';
-import TagInput from './BaseComponents/TagInput.vue';
-import WaveformEditor from './WaveformEditor.vue';
-import { AudioGainRegion } from '../utils/audioGain';
+import { ref, watch } from 'vue'
+import { useSettingsStore } from '../store/settings'
+import { usePulseBackStore } from '../store/pulseBack'
+import { Sound } from '../@types/sound'
+import { TagInputRef } from './BaseComponents/TagInputTypes'
+import TagInput from './BaseComponents/TagInput.vue'
+import WaveformEditor from './WaveformEditor.vue'
+import { AudioGainRegion } from '../utils/audioGain'
 
 interface Props {
   audioBuffer?: AudioBuffer | null;
@@ -308,40 +310,40 @@ const props = withDefaults(defineProps<Props>(), {
   videoId: null,
   isAudioOnly: false,
   isOpen: false,
-});
+})
 
 const emit = defineEmits<{
   (e: 'captureFrame'): void;
   (e: 'close'): void;
   (e: 'retryAudio'): void;
   (e: 'soundAdded', sound: Sound): void;
-}>();
+}>()
 
-const settingsStore = useSettingsStore();
-const pulseBackStore = usePulseBackStore();
+const settingsStore = useSettingsStore()
+const pulseBackStore = usePulseBackStore()
 
-const waveformEditorRef = ref<InstanceType<typeof WaveformEditor> | null>(null);
+const waveformEditorRef = ref<InstanceType<typeof WaveformEditor> | null>(null)
 
 // Trimming & Gain state
-const startTime = ref(0);
-const endTime = ref(0);
-const currentTime = ref(0);
-const gainMultiplier = ref(1.0);
-const appliedGainRegions = ref<AudioGainRegion[]>([]);
+const startTime = ref(0)
+const endTime = ref(0)
+const currentTime = ref(0)
+const gainMultiplier = ref(1.0)
+const appliedGainRegions = ref<AudioGainRegion[]>([])
 
 // Form / Appearance state
-const clipTitle = ref('');
-const clipTags = ref<string[]>([]);
-const tagInputRef = ref<TagInputRef | null>(null);
-const useThumbnailAsIcon = ref(true);
-const selectedColor = ref('#ffffff');
-const hideTitle = ref(false);
-const titleOpacity = ref(100);
+const clipTitle = ref('')
+const clipTags = ref<string[]>([])
+const tagInputRef = ref<TagInputRef | null>(null)
+const useThumbnailAsIcon = ref(true)
+const selectedColor = ref('#ffffff')
+const hideTitle = ref(false)
+const titleOpacity = ref(100)
 
 // Saving state
-const isProcessing = ref(false);
-const progressStatusText = ref('');
-const progressPercent = ref(0);
+const isProcessing = ref(false)
+const progressStatusText = ref('')
+const progressPercent = ref(0)
 
 const presetColors = [
   '#ffffff',
@@ -354,173 +356,176 @@ const presetColors = [
   '#10b981',
   '#6b7280',
   '#000000',
-];
+]
 
-let audioContext: AudioContext | null = null;
+let audioContext: AudioContext | null = null
 function getAudioContext(): AudioContext {
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext
+  if (!AudioContextClass) {
+    throw new Error('AudioContext not supported')
+  }
   if (!audioContext || audioContext.state === 'closed') {
-    audioContext = new AudioContextClass();
+    audioContext = new AudioContextClass()
   }
   if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(() => { });
+    audioContext.resume().catch(() => { })
   }
-  return audioContext;
+  return audioContext
 }
 
 watch(
   () => props.isOpen,
-  (open) => {
+  open => {
     if (open) {
       if (!clipTitle.value || clipTitle.value === 'YouTube Clip') {
-        clipTitle.value = props.activeVideoTitle || 'YouTube Clip';
+        clipTitle.value = props.activeVideoTitle || 'YouTube Clip'
       }
       if (clipTags.value.length === 0) {
-        const activeTags = settingsStore.quickTags.filter(t => t.active).map(t => t.label);
-        clipTags.value = [...activeTags];
+        const activeTags = settingsStore.quickTags.filter(t => t.active).map(t => t.label)
+        clipTags.value = [...activeTags]
       }
     } else {
-      waveformEditorRef.value?.stopPreview();
+      waveformEditorRef.value?.stopPreview()
     }
   },
   { immediate: true }
-);
+)
 
 watch(
   () => props.activeVideoTitle,
-  (newTitle) => {
+  newTitle => {
     if (newTitle) {
-      clipTitle.value = newTitle;
+      clipTitle.value = newTitle
     }
   }
-);
+)
 
 function applyOpacityToColor(color: string, opacityPercent: number): string {
-  if (opacityPercent >= 100) return color;
-  const alpha = Math.max(0, Math.min(1, opacityPercent / 100));
+  if (opacityPercent >= 100) return color
+  const alpha = Math.max(0, Math.min(1, opacityPercent / 100))
   if (color.startsWith('#')) {
-    let hex = color.slice(1);
+    let hex = color.slice(1)
     if (hex.length === 3) {
-      hex = hex.split('').map(c => c + c).join('');
+      hex = hex.split('').map(c => c + c).join('')
     }
     if (hex.length === 6) {
-      const r = parseInt(hex.slice(0, 2), 16);
-      const g = parseInt(hex.slice(2, 4), 16);
-      const b = parseInt(hex.slice(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+      const r = parseInt(hex.slice(0, 2), 16)
+      const g = parseInt(hex.slice(2, 4), 16)
+      const b = parseInt(hex.slice(4, 6), 16)
+      return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`
     }
     if (hex.length === 8) {
-      const r = parseInt(hex.slice(0, 2), 16);
-      const g = parseInt(hex.slice(2, 4), 16);
-      const b = parseInt(hex.slice(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`;
+      const r = parseInt(hex.slice(0, 2), 16)
+      const g = parseInt(hex.slice(2, 4), 16)
+      const b = parseInt(hex.slice(4, 6), 16)
+      return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`
     }
   } else if (color.startsWith('rgb(') || color.startsWith('rgba(')) {
-    const parts = color.replace(/rgba?\((.*?)\)/, '$1').split(',').map(s => s.trim());
+    const parts = color.replace(/rgba?\((.*?)\)/, '$1').split(',').map(s => s.trim())
     if (parts.length >= 3) {
-      return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha.toFixed(2)})`;
+      return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha.toFixed(2)})`
     }
   }
-  return color;
+  return color
 }
 
 function handleCancel() {
-  if (isProcessing.value) return;
-  waveformEditorRef.value?.stopPreview();
-  emit('close');
+  if (isProcessing.value) return
+  waveformEditorRef.value?.stopPreview()
+  emit('close')
 }
 
 async function saveSound() {
-  if (!clipTitle.value.trim() || isProcessing.value) return;
+  if (!clipTitle.value.trim() || isProcessing.value) return
 
-  isProcessing.value = true;
-  progressPercent.value = 10;
-  progressStatusText.value = 'Preparing audio...';
+  isProcessing.value = true
+  progressPercent.value = 10
+  progressStatusText.value = 'Preparing audio...'
 
   try {
-    const totalMax = props.audioDuration || props.videoTotalDuration || 1;
-    if (startTime.value < 0 || Number.isNaN(startTime.value)) startTime.value = 0;
+    const totalMax = props.audioDuration || props.videoTotalDuration || 1
+    if (startTime.value < 0 || Number.isNaN(startTime.value)) startTime.value = 0
     if (endTime.value <= startTime.value || Number.isNaN(endTime.value)) {
-      endTime.value = totalMax > 0 ? totalMax : startTime.value + 1;
+      endTime.value = totalMax > 0 ? totalMax : startTime.value + 1
     }
 
-    let audioBlob: Blob | null = null;
-    let extension = 'mp3';
-    let duration = Math.max(0, endTime.value - startTime.value);
+    let audioBlob: Blob | null = null
+    let extension = 'mp3'
+    let duration = Math.max(0, endTime.value - startTime.value)
 
     if (waveformEditorRef.value?.hasAudioBuffer) {
-      progressPercent.value = 35;
-      progressStatusText.value = 'Encoding audio snippet to MP3...';
-      const trimmed = await waveformEditorRef.value.getTrimmedAudioBlob('mp3');
+      progressPercent.value = 35
+      progressStatusText.value = 'Encoding audio snippet to MP3...'
+      const trimmed = await waveformEditorRef.value.getTrimmedAudioBlob('mp3')
       if (trimmed) {
-        audioBlob = trimmed.blob;
-        duration = trimmed.duration;
-        extension = trimmed.extension;
+        audioBlob = trimmed.blob
+        duration = trimmed.duration
+        extension = trimmed.extension
       }
     } else {
-      progressStatusText.value = 'Downloading audio with yt-dlp...';
+      progressStatusText.value = 'Downloading audio with yt-dlp...'
       const downloadOpts = {
         url: props.currentUrl,
         startTime: startTime.value,
         endTime: endTime.value,
-      };
-      const result = await window.electron?.ytDownloadClip(downloadOpts);
-      if (!result || !result.success || !result.buffer) {
-        throw new Error('Failed to extract audio from video');
       }
-      audioBlob = new Blob([result.buffer], { type: result.mimeType || 'audio/mp4' });
-      extension = result.extension || 'm4a';
+      const result = await window.electron?.ytDownloadClip(downloadOpts)
+      if (!result || !result.success || !result.buffer) {
+        throw new Error('Failed to extract audio from video')
+      }
+      audioBlob = new Blob([result.buffer], { type: result.mimeType || 'audio/mp4' })
+      extension = result.extension || 'm4a'
     }
 
     if (!audioBlob) {
-      throw new Error('Failed to create audio clip file');
+      throw new Error('Failed to create audio clip file')
     }
 
-    progressPercent.value = 75;
-    progressStatusText.value = 'Adding sound to soundboard...';
+    progressPercent.value = 75
+    progressStatusText.value = 'Adding sound to soundboard...'
 
     const audioFile = new File([audioBlob], `${clipTitle.value.trim()}.${extension}`, {
       type: extension === 'mp3' ? 'audio/mpeg' : 'audio/mp4',
-    });
+    })
 
-    const ctx = getAudioContext();
-    const { fileUrl: audioUrl, fileKey: audioKey } = await settingsStore.replaceFile(undefined, audioFile);
-    const audioDur = await settingsStore.getAudioDuration(audioUrl, ctx);
+    const ctx = getAudioContext()
+    const { fileUrl: audioUrl, fileKey: audioKey } = await settingsStore.replaceFile(undefined, audioFile)
+    const audioDur = await settingsStore.getAudioDuration(audioUrl, ctx)
 
     // Handle thumbnail image if selected
-    let imageKey: string | undefined = undefined;
-    let imageUrl: string | undefined = undefined;
+    let imageKey: string | undefined = undefined
+    let imageUrl: string | undefined = undefined
 
     if (useThumbnailAsIcon.value && props.thumbnailUrl) {
-      progressStatusText.value = 'Processing thumbnail artwork...';
+      progressStatusText.value = 'Processing thumbnail artwork...'
       try {
-        let imgBlob: Blob | null = null;
+        let imgBlob: Blob | null = null
         if (props.thumbnailUrl.startsWith('data:')) {
-          const res = await fetch(props.thumbnailUrl);
-          imgBlob = await res.blob();
+          const res = await fetch(props.thumbnailUrl)
+          imgBlob = await res.blob()
         } else {
-          const imgBuffer = await window.electron?.ytFetchImage(props.thumbnailUrl);
+          const imgBuffer = await window.electron?.ytFetchImage(props.thumbnailUrl)
           if (imgBuffer) {
-            imgBlob = new Blob([imgBuffer], { type: 'image/jpeg' });
+            imgBlob = new Blob([imgBuffer], { type: 'image/jpeg' })
           }
         }
 
         if (imgBlob) {
           const imgFile = new File([imgBlob], `${clipTitle.value.trim()}_icon.jpg`, {
             type: imgBlob.type || 'image/jpeg',
-          });
-          const imgResult = await settingsStore.replaceFile(undefined, imgFile);
-          imageKey = imgResult.fileKey;
-          imageUrl = imgResult.fileUrl;
+          })
+          const imgResult = await settingsStore.replaceFile(undefined, imgFile)
+          imageKey = imgResult.fileKey
+          imageUrl = imgResult.fileUrl
         }
       } catch (imgErr) {
-        console.warn('Could not save thumbnail:', imgErr);
+        console.warn('Could not save thumbnail:', imgErr)
       }
     }
 
     // Parse tags
-    const tags = (clipTags.value || []).map(t => t.trim()).filter(Boolean);
-    const finalColor = applyOpacityToColor(selectedColor.value, titleOpacity.value);
+    const tags = (clipTags.value || []).map(t => t.trim()).filter(Boolean)
+    const finalColor = applyOpacityToColor(selectedColor.value, titleOpacity.value)
 
     const newSound: Sound = {
       id: crypto.randomUUID(),
@@ -540,40 +545,40 @@ async function saveSound() {
           end: audioDur || duration,
         },
       ],
-    };
+    }
 
-    await settingsStore.insertSounds(settingsStore.sounds.length - 1, newSound);
+    await settingsStore.insertSounds(settingsStore.sounds.length - 1, newSound)
 
-    progressPercent.value = 100;
-    progressStatusText.value = 'Saved!';
+    progressPercent.value = 100
+    progressStatusText.value = 'Saved!'
 
-    pulseBackStore.showToast(`Added "${newSound.title}" to Soundboard!`);
-    emit('soundAdded', newSound);
-    emit('close');
+    pulseBackStore.showToast(`Added "${newSound.title}" to Soundboard!`)
+    emit('soundAdded', newSound)
+    emit('close')
   } catch (err: any) {
-    console.error('Download error:', err);
-    alert(`Failed to clip sound: ${err?.message || err}`);
+    console.error('Download error:', err)
+    alert(`Failed to clip sound: ${err?.message || err}`)
   } finally {
-    isProcessing.value = false;
+    isProcessing.value = false
   }
 }
 
 function stopAudio() {
-  waveformEditorRef.value?.stopPreview?.();
+  waveformEditorRef.value?.stopPreview?.()
 }
 
 function setClipTitle(title: string) {
-  clipTitle.value = title;
+  clipTitle.value = title
 }
 
 defineExpose({
   stopAudio,
   setClipTitle,
-});
+})
 
 onUnmounted(() => {
-  stopAudio();
-});
+  stopAudio()
+})
 </script>
 
 <style scoped>

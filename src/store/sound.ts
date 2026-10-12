@@ -207,7 +207,9 @@ export const useSoundStore = defineStore('sound', {
       if (soundObject) {
         await settingsStore.ensureSoundLoaded(soundObject)
       }
-      if (settingsStore.recordingHotkey) return Promise.resolve() // if muted, don't play the sound //  || this.sendingKey
+      if (settingsStore.recordingHotkey) {
+        return Promise.resolve() // if muted, don't play the sound
+      }
       // console.debug('1 this.disabled = ', this.disabled)
       activeOutputDevices ??= settingsStore.outputDevices.map(d => d.deviceId)
       // filter out null values
@@ -322,7 +324,7 @@ export const useSoundStore = defineStore('sound', {
      * @param selectedOutputDevices list of available output devices
      * @param settingsStore the settings store
      * @param soundObject the file to play, defaults to `chordAlert`
-     * @param soundSegment optional segment of the sound to play (otherwise it defaults to the first segment defined, otherwise it defaults to the whole sound)
+     * @param soundSegment optional segment of the sound to play (defaults to first segment or whole sound)
      * @param targetDeviceIndex optional explicit device index
      */
     async _playSoundToDevice(

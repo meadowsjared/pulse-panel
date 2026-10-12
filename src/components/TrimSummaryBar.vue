@@ -211,8 +211,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { AudioGainRegion } from '../utils/audioGain';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { AudioGainRegion } from '../utils/audioGain'
 
 interface Props {
   trimStart: number;
@@ -244,7 +244,7 @@ const props = withDefaults(defineProps<Props>(), {
   hasPartialGains: false,
   gainRegions: () => [],
   activeTrackTarget: 'both',
-});
+})
 
 const emit = defineEmits<{
   (e: 'reset'): void;
@@ -266,226 +266,229 @@ const emit = defineEmits<{
   (e: 'deleteRegion', region: AudioGainRegion): void;
   (e: 'clearAllGainRegions'): void;
   (e: 'resetAllGainRegions'): void;
-}>();
+}>()
 
 const activeTrackTarget = computed({
   get: () => {
-    if (!props.hasDualTracks) return 'both';
-    return props.activeTrackTarget ?? 'both';
+    if (!props.hasDualTracks) return 'both'
+    return props.activeTrackTarget ?? 'both'
   },
   set: (val: 'both' | 'mic' | 'input') => {
-    emit('update:activeTrackTarget', val);
+    emit('update:activeTrackTarget', val)
   },
-});
+})
 
 const selectedDuration = computed(() => {
-  return Math.max(0, props.trimEnd - props.trimStart);
-});
+  return Math.max(0, props.trimEnd - props.trimStart)
+})
 
 const activeTargetLabel = computed(() => {
-  if (!props.hasDualTracks) return 'audio clip';
-  if (activeTrackTarget.value === 'mic') return 'Microphone track';
-  if (activeTrackTarget.value === 'input') return 'Input Device track';
-  return 'all audio tracks';
-});
+  if (!props.hasDualTracks) return 'audio clip'
+  if (activeTrackTarget.value === 'mic') return 'Microphone track'
+  if (activeTrackTarget.value === 'input') return 'Input Device track'
+  return 'all audio tracks'
+})
 
 const currentEffectiveMultiplier = computed(() => {
   if (!props.hasDualTracks) {
-    return props.gain ?? 1.0;
+    return props.gain ?? 1.0
   }
   if (activeTrackTarget.value === 'mic') {
-    return props.micGain ?? 1.0;
+    return props.micGain ?? 1.0
   }
   if (activeTrackTarget.value === 'input') {
-    return props.inputGain ?? 1.0;
+    return props.inputGain ?? 1.0
   }
   // 'both' target: if both identical show value, otherwise micGain
-  return props.micGain ?? 1.0;
-});
+  return props.micGain ?? 1.0
+})
 
 const displayMultiplier = computed(() => {
-  const val = currentEffectiveMultiplier.value;
-  return Number.isInteger(val) ? val.toFixed(1) : String(Math.round(val * 100) / 100);
-});
+  const val = currentEffectiveMultiplier.value
+  return Number.isInteger(val) ? val.toFixed(1) : String(Math.round(val * 100) / 100)
+})
 
 const isGainModified = computed(() => {
   if (props.hasPartialGains) {
-    return true;
+    return true
   }
   if (!props.hasDualTracks) {
-    return Math.abs((props.gain ?? 1.0) - 1.0) >= 0.01;
+    return Math.abs((props.gain ?? 1.0) - 1.0) >= 0.01
   }
   if (activeTrackTarget.value === 'mic') {
-    return Math.abs((props.micGain ?? 1.0) - 1.0) >= 0.01;
+    return Math.abs((props.micGain ?? 1.0) - 1.0) >= 0.01
   }
   if (activeTrackTarget.value === 'input') {
-    return Math.abs((props.inputGain ?? 1.0) - 1.0) >= 0.01;
+    return Math.abs((props.inputGain ?? 1.0) - 1.0) >= 0.01
   }
-  return Math.abs((props.micGain ?? 1.0) - 1.0) >= 0.01 || Math.abs((props.inputGain ?? 1.0) - 1.0) >= 0.01;
-});
+  return Math.abs((props.micGain ?? 1.0) - 1.0) >= 0.01 || Math.abs((props.inputGain ?? 1.0) - 1.0) >= 0.01
+})
 
 function onGainCommit(e: Event) {
-  const el = e.target as HTMLInputElement;
-  let parsed = parseFloat(el.value);
+  if (!(e.target instanceof HTMLInputElement)) return
+  const el = e.target
+  let parsed = parseFloat(el.value)
   if (isNaN(parsed) || parsed < 0) {
-    parsed = 1.0;
+    parsed = 1.0
   }
   // Allow any non-negative number (minimum 0x, no upper ceiling)
-  parsed = Math.round(Math.max(0, parsed) * 100) / 100;
-  el.value = Number.isInteger(parsed) ? parsed.toFixed(1) : String(parsed);
+  parsed = Math.round(Math.max(0, parsed) * 100) / 100
+  el.value = Number.isInteger(parsed) ? parsed.toFixed(1) : String(parsed)
 
   if (!props.hasDualTracks) {
-    emit('update:gain', parsed);
-    emit('changeGain', { target: 'both', multiplier: parsed });
+    emit('update:gain', parsed)
+    emit('changeGain', { target: 'both', multiplier: parsed })
   } else if (activeTrackTarget.value === 'mic') {
-    emit('update:micGain', parsed);
-    emit('changeGain', { target: 'mic', multiplier: parsed });
+    emit('update:micGain', parsed)
+    emit('changeGain', { target: 'mic', multiplier: parsed })
   } else if (activeTrackTarget.value === 'input') {
-    emit('update:inputGain', parsed);
-    emit('changeGain', { target: 'input', multiplier: parsed });
+    emit('update:inputGain', parsed)
+    emit('changeGain', { target: 'input', multiplier: parsed })
   } else {
-    emit('update:micGain', parsed);
-    emit('update:inputGain', parsed);
-    emit('changeGain', { target: 'both', multiplier: parsed });
+    emit('update:micGain', parsed)
+    emit('update:inputGain', parsed)
+    emit('changeGain', { target: 'both', multiplier: parsed })
   }
 }
 
 function resetGain() {
   if (!props.hasDualTracks) {
-    emit('update:gain', 1.0);
-    emit('resetGain', 'both');
+    emit('update:gain', 1.0)
+    emit('resetGain', 'both')
   } else if (activeTrackTarget.value === 'mic') {
-    emit('update:micGain', 1.0);
-    emit('resetGain', 'mic');
+    emit('update:micGain', 1.0)
+    emit('resetGain', 'mic')
   } else if (activeTrackTarget.value === 'input') {
-    emit('update:inputGain', 1.0);
-    emit('resetGain', 'input');
+    emit('update:inputGain', 1.0)
+    emit('resetGain', 'input')
   } else {
-    emit('update:micGain', 1.0);
-    emit('update:inputGain', 1.0);
-    emit('resetGain', 'both');
+    emit('update:micGain', 1.0)
+    emit('update:inputGain', 1.0)
+    emit('resetGain', 'both')
   }
 }
 
 function onAutoLevelClick() {
-  const target = props.hasDualTracks ? activeTrackTarget.value : 'both';
-  emit('autoLevel', target);
+  const target = props.hasDualTracks ? activeTrackTarget.value : 'both'
+  emit('autoLevel', target)
 }
 
 function formatSeconds(secs: number): string {
-  if (Number.isNaN(secs) || secs < 0) secs = 0;
-  const m = Math.floor(secs / 60);
-  const s = Math.floor(secs % 60);
-  const ms = Math.floor((secs % 1) * 10);
-  return `${m}:${s.toString().padStart(2, '0')}.${ms}`;
+  if (Number.isNaN(secs) || secs < 0) secs = 0
+  const m = Math.floor(secs / 60)
+  const s = Math.floor(secs % 60)
+  const ms = Math.floor((secs % 1) * 10)
+  return `${m}:${s.toString().padStart(2, '0')}.${ms}`
 }
 
 const sortedGainRegions = computed(() => {
-  if (!props.gainRegions || props.gainRegions.length === 0) return [];
+  if (!props.gainRegions || props.gainRegions.length === 0) return []
   return [...props.gainRegions].sort((a, b) => {
     if (Math.abs(a.startSec - b.startSec) > 0.001) {
-      return a.startSec - b.startSec;
+      return a.startSec - b.startSec
     }
     if (Math.abs(a.endSec - b.endSec) > 0.001) {
-      return a.endSec - b.endSec;
+      return a.endSec - b.endSec
     }
-    return (a.channel ?? -1) - (b.channel ?? -1);
-  });
-});
+    return (a.channel ?? -1) - (b.channel ?? -1)
+  })
+})
 
 function getRegionKey(region: AudioGainRegion): string {
-  return region.id || `${region.channel ?? 'all'}-${region.startSec.toFixed(2)}-${region.endSec.toFixed(2)}`;
+  return region.id || `${region.channel ?? 'all'}-${region.startSec.toFixed(2)}-${region.endSec.toFixed(2)}`
 }
 
 function formatMultiplier(val: number): string {
-  return Number.isInteger(val) ? val.toFixed(1) : String(Math.round(val * 100) / 100);
+  return Number.isInteger(val) ? val.toFixed(1) : String(Math.round(val * 100) / 100)
 }
 
 function formatRegionLabel(region: AudioGainRegion): string {
   const track = props.hasDualTracks
     ? (region.channel === 0 ? 'Mic' : (region.channel === 1 ? 'Input' : 'Both'))
-    : '';
-  const trackPrefix = track ? `[${track}] ` : '';
-  return `${trackPrefix}${formatSeconds(region.startSec)} - ${formatSeconds(region.endSec)}`;
+    : ''
+  const trackPrefix = track ? `[${track}] ` : ''
+  return `${trackPrefix}${formatSeconds(region.startSec)} - ${formatSeconds(region.endSec)}`
 }
 
 function isRegionActive(region: AudioGainRegion): boolean {
-  const startMatch = Math.abs(props.trimStart - region.startSec) < 0.08;
-  const endMatch = Math.abs(props.trimEnd - region.endSec) < 0.08;
-  if (!startMatch || !endMatch) return false;
-  if (!props.hasDualTracks) return true;
-  if (region.channel === 0) return activeTrackTarget.value === 'mic';
-  if (region.channel === 1) return activeTrackTarget.value === 'input';
-  return activeTrackTarget.value === 'both';
+  const startMatch = Math.abs(props.trimStart - region.startSec) < 0.08
+  const endMatch = Math.abs(props.trimEnd - region.endSec) < 0.08
+  if (!startMatch || !endMatch) return false
+  if (!props.hasDualTracks) return true
+  if (region.channel === 0) return activeTrackTarget.value === 'mic'
+  if (region.channel === 1) return activeTrackTarget.value === 'input'
+  return activeTrackTarget.value === 'both'
 }
 
 function onSelectRegion(region: AudioGainRegion) {
   if (props.hasDualTracks) {
-    if (region.channel === 0) activeTrackTarget.value = 'mic';
-    else if (region.channel === 1) activeTrackTarget.value = 'input';
-    else activeTrackTarget.value = 'both';
+    if (region.channel === 0) activeTrackTarget.value = 'mic'
+    else if (region.channel === 1) activeTrackTarget.value = 'input'
+    else activeTrackTarget.value = 'both'
   }
-  emit('selectRegion', region);
+  emit('selectRegion', region)
 }
 
 function onResetStart() {
-  emit('update:trimStart', 0);
-  emit('resetStart');
+  emit('update:trimStart', 0)
+  emit('resetStart')
 }
 
 function onResetEnd() {
-  const dur = props.duration || 0;
-  emit('update:trimEnd', dur);
-  emit('resetEnd');
+  const dur = props.duration || 0
+  emit('update:trimEnd', dur)
+  emit('resetEnd')
 }
 
 function onResetSelection() {
-  const dur = props.duration || 0;
-  emit('update:trimStart', 0);
-  emit('update:trimEnd', dur);
-  emit('resetSelection');
+  const dur = props.duration || 0
+  emit('update:trimStart', 0)
+  emit('update:trimEnd', dur)
+  emit('resetSelection')
 }
 
 function onDeleteRegion(region: AudioGainRegion) {
-  emit('deleteRegion', region);
+  emit('deleteRegion', region)
 }
 
-const isMenuOpen = ref(false);
-const menuBtnRef = ref<HTMLButtonElement | null>(null);
-const menuDropdownRef = ref<HTMLDivElement | null>(null);
+const isMenuOpen = ref(false)
+const menuBtnRef = ref<HTMLButtonElement | null>(null)
+const menuDropdownRef = ref<HTMLDivElement | null>(null)
 
 function toggleMenu() {
-  isMenuOpen.value = !isMenuOpen.value;
+  isMenuOpen.value = !isMenuOpen.value
 }
 
 function onClearAllRanges() {
-  isMenuOpen.value = false;
-  emit('clearAllGainRegions');
+  isMenuOpen.value = false
+  emit('clearAllGainRegions')
 }
 
 function onResetAllRangesTo1() {
-  isMenuOpen.value = false;
-  emit('resetAllGainRegions');
+  isMenuOpen.value = false
+  emit('resetAllGainRegions')
 }
 
 function onDocumentClick(e: MouseEvent) {
+  const target = e.target instanceof Node ? e.target : null
   if (
     isMenuOpen.value &&
     menuDropdownRef.value &&
-    !menuDropdownRef.value.contains(e.target as Node) &&
-    !menuBtnRef.value?.contains(e.target as Node)
+    target &&
+    !menuDropdownRef.value.contains(target) &&
+    !menuBtnRef.value?.contains(target)
   ) {
-    isMenuOpen.value = false;
+    isMenuOpen.value = false
   }
 }
 
 onMounted(() => {
-  window.addEventListener('click', onDocumentClick);
-});
+  window.addEventListener('click', onDocumentClick)
+})
 
 onUnmounted(() => {
-  window.removeEventListener('click', onDocumentClick);
-});
+  window.removeEventListener('click', onDocumentClick)
+})
 </script>
 
 <style scoped>

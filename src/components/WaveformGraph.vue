@@ -336,8 +336,8 @@
 
 <script lang="ts">
 // Shared across all WaveformGraph instances so opening one closes all other popovers
-let graphInstanceCounter = 0;
-const globalActiveGraphInstanceId = ref<number | null>(null);
+let graphInstanceCounter = 0
+const globalActiveGraphInstanceId = ref<number | null>(null)
 
 export interface WaveformTrack {
   /** Label displayed in the watermark badge pill (e.g. '🎤 MIC (VOICE)'). If empty or undefined, badge is omitted. */
@@ -396,7 +396,7 @@ const props = withDefaults(defineProps<Props>(), {
   activeTrack: 'both',
   segmentBoundaries: () => [],
   canPaste: false,
-});
+})
 
 const emit = defineEmits<{
   (e: 'update:currentTime', time: number): void;
@@ -411,380 +411,384 @@ const emit = defineEmits<{
   (e: 'joinAt', sec: number): void;
   (e: 'playFromCursor', sec: number): void;
   (e: 'pasteAtCursor', sec: number): void;
-}>();
+}>()
 
-const instanceId = ++graphInstanceCounter;
-const containerRef = ref<HTMLDivElement | null>(null);
-const canvasRef = ref<HTMLCanvasElement | null>(null);
-const waveformWrapperRef = ref<HTMLDivElement | null>(null);
+const instanceId = ++graphInstanceCounter
+const containerRef = ref<HTMLDivElement | null>(null)
+const canvasRef = ref<HTMLCanvasElement | null>(null)
+const waveformWrapperRef = ref<HTMLDivElement | null>(null)
 
-const activeDragHandle = ref<'start' | 'end' | null>(null);
-const internalDragStartTime = ref<number | null>(null);
-const isScrubbing = ref(false);
-const internalScrubTime = ref<number | null>(null);
-let resizeObserver: ResizeObserver | null = null;
+const activeDragHandle = ref<'start' | 'end' | null>(null)
+const internalDragStartTime = ref<number | null>(null)
+const isScrubbing = ref(false)
+const internalScrubTime = ref<number | null>(null)
+let resizeObserver: ResizeObserver | null = null
 
 const effectiveDuration = computed(() => {
-  if (props.duration > 0) return props.duration;
-  if (props.audioBuffer?.duration) return props.audioBuffer.duration;
-  return 1;
-});
+  if (props.duration > 0) return props.duration
+  if (props.audioBuffer?.duration) return props.audioBuffer.duration
+  return 1
+})
 
 const displayCurrentTime = computed(() => {
   if (isScrubbing.value && internalScrubTime.value !== null) {
-    return internalScrubTime.value;
+    return internalScrubTime.value
   }
   if (isDraggingHandle.value && activeDragHandle.value === 'start' && internalDragStartTime.value !== null) {
-    return internalDragStartTime.value;
+    return internalDragStartTime.value
   }
-  return props.currentTime;
-});
+  return props.currentTime
+})
 
 const isAtStartPosition = computed(() => {
-  const t = displayCurrentTime.value;
-  return t <= 0.02 || (props.showTrimHandles && Math.abs(t - props.trimStart) <= 0.02);
-});
+  const t = displayCurrentTime.value
+  return t <= 0.02 || (props.showTrimHandles && Math.abs(t - props.trimStart) <= 0.02)
+})
 
 const showPlayhead = computed(() => {
-  if (!props.showPlayhead) return false;
+  if (!props.showPlayhead) return false
   if (!isScrubbing.value && !props.isPlaying && isAtStartPosition.value) {
-    return false;
+    return false
   }
   if (props.playheadOnlyWhenActive || props.playheadOnlyOnDrag) {
-    return isScrubbing.value || Boolean(props.isPlaying);
+    return isScrubbing.value || Boolean(props.isPlaying)
   }
-  return isScrubbing.value || Boolean(props.isPlaying) || !isAtStartPosition.value;
-});
+  return isScrubbing.value || Boolean(props.isPlaying) || !isAtStartPosition.value
+})
 
 const startPercent = computed(() => {
-  if (effectiveDuration.value <= 0) return 0;
-  return Math.max(0, Math.min(100, (props.trimStart / effectiveDuration.value) * 100));
-});
+  if (effectiveDuration.value <= 0) return 0
+  return Math.max(0, Math.min(100, (props.trimStart / effectiveDuration.value) * 100))
+})
 
 const endPercent = computed(() => {
-  if (effectiveDuration.value <= 0) return 0;
-  return Math.max(0, Math.min(100, (props.trimEnd / effectiveDuration.value) * 100));
-});
+  if (effectiveDuration.value <= 0) return 0
+  return Math.max(0, Math.min(100, (props.trimEnd / effectiveDuration.value) * 100))
+})
 
 const playheadPercent = computed(() => {
-  if (effectiveDuration.value <= 0) return 0;
-  return Math.max(0, Math.min(100, (displayCurrentTime.value / effectiveDuration.value) * 100));
-});
+  if (effectiveDuration.value <= 0) return 0
+  return Math.max(0, Math.min(100, (displayCurrentTime.value / effectiveDuration.value) * 100))
+})
 
 const wrapperStyle = computed(() => {
-  const style: Record<string, string> = {};
+  const style: Record<string, string> = {}
   if (props.height) {
-    style.height = typeof props.height === 'number' ? `${props.height}px` : props.height;
+    style.height = typeof props.height === 'number' ? `${props.height}px` : props.height
   }
   if (!props.enableScrubbing) {
-    style.cursor = props.showTrimHandles ? 'pointer' : 'default';
+    style.cursor = props.showTrimHandles ? 'pointer' : 'default'
   }
-  return Object.keys(style).length > 0 ? style : undefined;
-});
+  return Object.keys(style).length > 0 ? style : undefined
+})
 
 const isDualTrackLayout = computed(() => {
-  if (props.tracks && props.tracks.length >= 2) return true;
-  if (props.audioBuffer && props.audioBuffer.numberOfChannels >= 2) return true;
-  return false;
-});
+  if (props.tracks && props.tracks.length >= 2) return true
+  if (props.audioBuffer && props.audioBuffer.numberOfChannels >= 2) return true
+  return false
+})
 
 const selectionLaneStyle = computed(() => {
   if (!isDualTrackLayout.value || props.activeTrack === 'both' || !props.activeTrack) {
-    return { top: '0', height: '100%' };
+    return { top: '0', height: '100%' }
   }
   if (props.activeTrack === 'mic') {
-    return { top: '0', height: '50%' };
+    return { top: '0', height: '50%' }
   }
   if (props.activeTrack === 'input') {
-    return { top: '50%', height: '50%' };
+    return { top: '50%', height: '50%' }
   }
-  return { top: '0', height: '100%' };
-});
+  return { top: '0', height: '100%' }
+})
 
 // Top dimmed curtain: anchored to top: 0. Grows when spotlight moves down, shrinks when spotlight moves up.
 const topDimStyle = computed(() => {
   if (!isDualTrackLayout.value || props.activeTrack === 'both' || !props.activeTrack || props.activeTrack === 'mic') {
-    return { height: '0%' };
+    return { height: '0%' }
   }
-  return { height: '50%' };
-});
+  return { height: '50%' }
+})
 
 // Bottom dimmed curtain: anchored to bottom: 0. Shrinks when spotlight moves down, grows when spotlight moves up.
 const bottomDimStyle = computed(() => {
   if (!isDualTrackLayout.value || props.activeTrack === 'both' || !props.activeTrack || props.activeTrack === 'input') {
-    return { height: '0%' };
+    return { height: '0%' }
   }
-  return { height: '50%' };
-});
+  return { height: '50%' }
+})
 
 function formatSeconds(sec: number): string {
-  if (isNaN(sec) || sec < 0) sec = 0;
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  const ms = Math.floor((sec % 1) * 100);
-  return `${m}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  if (isNaN(sec) || sec < 0) sec = 0
+  const m = Math.floor(sec / 60)
+  const s = Math.floor(sec % 60)
+  const ms = Math.floor((sec % 1) * 100)
+  return `${m}:${s.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`
 }
 
 function parseTimeInput(input: string): number | null {
-  if (!input) return null;
-  const trimmed = input.trim();
-  if (!trimmed) return null;
+  if (!input) return null
+  const trimmed = input.trim()
+  if (!trimmed) return null
   if (trimmed.includes(':')) {
-    const parts = trimmed.split(':');
-    const m = parseFloat(parts[0]);
-    const s = parts[1] === '' ? 0 : parseFloat(parts[1]);
-    if (isNaN(m) && isNaN(s)) return null;
-    return Math.max(0, (isNaN(m) ? 0 : m) * 60 + (isNaN(s) ? 0 : s));
+    const parts = trimmed.split(':')
+    const m = parseFloat(parts[0])
+    const s = parts[1] === '' ? 0 : parseFloat(parts[1])
+    if (isNaN(m) && isNaN(s)) return null
+    return Math.max(0, (isNaN(m) ? 0 : m) * 60 + (isNaN(s) ? 0 : s))
   }
-  const sec = parseFloat(trimmed);
-  if (isNaN(sec)) return null;
-  return Math.max(0, sec);
+  const sec = parseFloat(trimmed)
+  if (isNaN(sec)) return null
+  return Math.max(0, sec)
 }
 
-const areTrimPopoversOpen = ref(false);
-const focusedPopoverHandle = ref<'start' | 'end' | null>(null);
-const startInputValue = ref('');
-const endInputValue = ref('');
-const startInputRef = ref<HTMLInputElement | null>(null);
-const endInputRef = ref<HTMLInputElement | null>(null);
+const areTrimPopoversOpen = ref(false)
+const focusedPopoverHandle = ref<'start' | 'end' | null>(null)
+const startInputValue = ref('')
+const endInputValue = ref('')
+const startInputRef = ref<HTMLInputElement | null>(null)
+const endInputRef = ref<HTMLInputElement | null>(null)
 
 function openTrimPopovers(focusHandle?: 'start' | 'end') {
-  globalActiveGraphInstanceId.value = instanceId;
-  closePlayheadPopover();
-  closePlayheadMenu();
-  areTrimPopoversOpen.value = true;
-  focusedPopoverHandle.value = focusHandle ?? null;
-  startInputValue.value = formatSeconds(props.trimStart);
-  endInputValue.value = formatSeconds(props.trimEnd);
+  globalActiveGraphInstanceId.value = instanceId
+  closePlayheadPopover()
+  closePlayheadMenu()
+  areTrimPopoversOpen.value = true
+  focusedPopoverHandle.value = focusHandle ?? null
+  startInputValue.value = formatSeconds(props.trimStart)
+  endInputValue.value = formatSeconds(props.trimEnd)
 
   if (focusHandle === 'start') {
     nextTick(() => {
-      startInputRef.value?.focus({ preventScroll: true });
-      startInputRef.value?.select();
-    });
+      startInputRef.value?.focus({ preventScroll: true })
+      startInputRef.value?.select()
+    })
   } else if (focusHandle === 'end') {
     nextTick(() => {
-      endInputRef.value?.focus({ preventScroll: true });
-      endInputRef.value?.select();
-    });
+      endInputRef.value?.focus({ preventScroll: true })
+      endInputRef.value?.select()
+    })
   }
 }
 
 function closePopover() {
   if (globalActiveGraphInstanceId.value === instanceId) {
-    globalActiveGraphInstanceId.value = null;
+    globalActiveGraphInstanceId.value = null
   }
-  areTrimPopoversOpen.value = false;
-  focusedPopoverHandle.value = null;
+  areTrimPopoversOpen.value = false
+  focusedPopoverHandle.value = null
 }
 
 watch(globalActiveGraphInstanceId, activeId => {
   if (activeId !== instanceId) {
     if (areTrimPopoversOpen.value) {
-      areTrimPopoversOpen.value = false;
-      focusedPopoverHandle.value = null;
+      areTrimPopoversOpen.value = false
+      focusedPopoverHandle.value = null
     }
     if (isPlayheadPopoverOpen.value) {
-      isPlayheadPopoverOpen.value = false;
+      isPlayheadPopoverOpen.value = false
     }
     if (activePlayheadMenu.value) {
-      activePlayheadMenu.value = null;
+      activePlayheadMenu.value = null
     }
   }
-});
+})
 
 watch(
   () => [props.trimStart, props.trimEnd, effectiveDuration.value],
   () => {
     if (document.activeElement !== startInputRef.value) {
-      startInputValue.value = formatSeconds(props.trimStart);
+      startInputValue.value = formatSeconds(props.trimStart)
     }
     if (document.activeElement !== endInputRef.value) {
-      const endVal = props.trimEnd;
-      endInputValue.value = formatSeconds(endVal);
+      const endVal = props.trimEnd
+      endInputValue.value = formatSeconds(endVal)
     }
   },
   { immediate: true }
-);
+)
 
 function onStartInput(e: Event) {
-  const val = (e.target as HTMLInputElement).value;
-  startInputValue.value = val;
-  const parsed = parseTimeInput(val);
+  if (!(e.target instanceof HTMLInputElement)) return
+  const val = e.target.value
+  startInputValue.value = val
+  const parsed = parseTimeInput(val)
   if (parsed !== null && !isNaN(parsed)) {
-    const maxDur = effectiveDuration.value;
-    const end = props.trimEnd;
-    const newStart = Math.max(0, Math.min(parsed, maxDur));
-    const newEnd = Math.max(newStart, end);
-    emit('update:trimStart', newStart);
-    emit('update:trimEnd', newEnd);
-    emit('update:currentTime', newStart);
-    emit('trimChange', { start: newStart, end: newEnd, handle: 'start' });
-    emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' });
+    const maxDur = effectiveDuration.value
+    const end = props.trimEnd
+    const newStart = Math.max(0, Math.min(parsed, maxDur))
+    const newEnd = Math.max(newStart, end)
+    emit('update:trimStart', newStart)
+    emit('update:trimEnd', newEnd)
+    emit('update:currentTime', newStart)
+    emit('trimChange', { start: newStart, end: newEnd, handle: 'start' })
+    emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' })
   }
 }
 
 function onEndInput(e: Event) {
-  const val = (e.target as HTMLInputElement).value;
-  endInputValue.value = val;
-  const parsed = parseTimeInput(val);
+  if (!(e.target instanceof HTMLInputElement)) return
+  const val = e.target.value
+  endInputValue.value = val
+  const parsed = parseTimeInput(val)
   if (parsed !== null && !isNaN(parsed)) {
-    const maxDur = effectiveDuration.value;
-    const newEnd = Math.max(0, Math.min(maxDur, parsed));
-    const newStart = Math.min(props.trimStart, newEnd);
-    emit('update:trimStart', newStart);
-    emit('update:trimEnd', newEnd);
+    const maxDur = effectiveDuration.value
+    const newEnd = Math.max(0, Math.min(maxDur, parsed))
+    const newStart = Math.min(props.trimStart, newEnd)
+    emit('update:trimStart', newStart)
+    emit('update:trimEnd', newEnd)
     if (props.currentTime > newEnd) {
-      emit('update:currentTime', newStart);
+      emit('update:currentTime', newStart)
     }
-    emit('trimChange', { start: newStart, end: newEnd, handle: 'end' });
-    emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' });
+    emit('trimChange', { start: newStart, end: newEnd, handle: 'end' })
+    emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' })
   }
 }
 
 function focusStartInput() {
-  focusedPopoverHandle.value = 'start';
-  startInputRef.value?.focus({ preventScroll: true });
+  focusedPopoverHandle.value = 'start'
+  startInputRef.value?.focus({ preventScroll: true })
 }
 
 function focusEndInput() {
-  focusedPopoverHandle.value = 'end';
-  endInputRef.value?.focus({ preventScroll: true });
+  focusedPopoverHandle.value = 'end'
+  endInputRef.value?.focus({ preventScroll: true })
 }
 
 function onInputFocus(handle: 'start' | 'end') {
-  focusedPopoverHandle.value = handle;
+  focusedPopoverHandle.value = handle
   if (!areTrimPopoversOpen.value) {
-    globalActiveGraphInstanceId.value = instanceId;
-    areTrimPopoversOpen.value = true;
-    startInputValue.value = formatSeconds(props.trimStart);
-    endInputValue.value = formatSeconds(props.trimEnd);
+    globalActiveGraphInstanceId.value = instanceId
+    areTrimPopoversOpen.value = true
+    startInputValue.value = formatSeconds(props.trimStart)
+    endInputValue.value = formatSeconds(props.trimEnd)
   }
   nextTick(() => {
     if (handle === 'start') {
-      startInputRef.value?.focus({ preventScroll: true });
-      startInputRef.value?.select();
+      startInputRef.value?.focus({ preventScroll: true })
+      startInputRef.value?.select()
     } else {
-      endInputRef.value?.focus({ preventScroll: true });
-      endInputRef.value?.select();
+      endInputRef.value?.focus({ preventScroll: true })
+      endInputRef.value?.select()
     }
-  });
+  })
 }
 
 function onPopoverBlur(e: FocusEvent) {
-  const related = e.relatedTarget as HTMLElement | null;
+  const related = e.relatedTarget instanceof HTMLElement ? e.relatedTarget : null
   if (
     related &&
     (related === startInputRef.value ||
       related === endInputRef.value ||
       related.closest?.('.trim-capsule-card'))
   ) {
-    return;
+    return
   }
 
   requestAnimationFrame(() => {
-    const active = document.activeElement;
+    const active = document.activeElement
     if (active === startInputRef.value || active === endInputRef.value) {
-      return;
+      return
     }
     if (activeDragHandle.value) {
-      return;
+      return
     }
-    closePopover();
-  });
+    closePopover()
+  })
 }
 
 function onPopoverKeydown(handle: 'start' | 'end', e: KeyboardEvent) {
   if (e.key === 'Enter' || e.key === 'Escape') {
-    closePopover();
-    (e.target as HTMLInputElement).blur();
-    return;
+    closePopover()
+    if (e.target instanceof HTMLElement) {
+      e.target.blur()
+    }
+    return
   }
 
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-    e.preventDefault();
-    const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05);
-    const delta = e.key === 'ArrowUp' ? step : -step;
-    const maxDur = effectiveDuration.value;
+    e.preventDefault()
+    const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05)
+    const delta = e.key === 'ArrowUp' ? step : -step
+    const maxDur = effectiveDuration.value
 
     if (handle === 'start') {
-      const current = parseTimeInput(startInputValue.value) ?? props.trimStart;
-      const end = props.trimEnd;
-      const newStart = Math.max(0, Math.min(current + delta, end));
-      startInputValue.value = formatSeconds(newStart);
-      emit('update:trimStart', newStart);
-      emit('update:currentTime', newStart);
-      emit('trimChange', { start: newStart, end, handle: 'start' });
-      emit('trimEndChange', { start: newStart, end, handle: 'start' });
+      const current = parseTimeInput(startInputValue.value) ?? props.trimStart
+      const end = props.trimEnd
+      const newStart = Math.max(0, Math.min(current + delta, end))
+      startInputValue.value = formatSeconds(newStart)
+      emit('update:trimStart', newStart)
+      emit('update:currentTime', newStart)
+      emit('trimChange', { start: newStart, end, handle: 'start' })
+      emit('trimEndChange', { start: newStart, end, handle: 'start' })
       nextTick(() => {
-        startInputRef.value?.select();
-      });
+        startInputRef.value?.select()
+      })
     } else {
-      const current = parseTimeInput(endInputValue.value) ?? props.trimEnd;
-      const newEnd = Math.max(0, Math.min(maxDur, current + delta));
-      const newStart = Math.min(props.trimStart, newEnd);
-      endInputValue.value = formatSeconds(newEnd);
-      emit('update:trimStart', newStart);
-      emit('update:trimEnd', newEnd);
+      const current = parseTimeInput(endInputValue.value) ?? props.trimEnd
+      const newEnd = Math.max(0, Math.min(maxDur, current + delta))
+      const newStart = Math.min(props.trimStart, newEnd)
+      endInputValue.value = formatSeconds(newEnd)
+      emit('update:trimStart', newStart)
+      emit('update:trimEnd', newEnd)
       if (props.currentTime > newEnd) {
-        emit('update:currentTime', newStart);
+        emit('update:currentTime', newStart)
       }
-      emit('trimChange', { start: newStart, end: newEnd, handle: 'end' });
-      emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' });
+      emit('trimChange', { start: newStart, end: newEnd, handle: 'end' })
+      emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' })
       nextTick(() => {
-        endInputRef.value?.select();
-      });
+        endInputRef.value?.select()
+      })
     }
   }
 }
 
 const capsuleCardStyle = computed(() => {
-  const midPct = (startPercent.value + endPercent.value) / 2;
+  const midPct = (startPercent.value + endPercent.value) / 2
   return {
     left: `clamp(90px, ${midPct}%, calc(100% - 90px))`,
     transform: 'translateX(-50%)',
-  };
-});
+  }
+})
 
 const capsuleArrowStyle = computed(() => {
   const activePct = (focusedPopoverHandle.value === 'end' || activeDragHandle.value === 'end')
     ? endPercent.value
-    : startPercent.value;
-  const midPct = (startPercent.value + endPercent.value) / 2;
-  const offset = (activePct - midPct) * 1.3;
+    : startPercent.value
+  const midPct = (startPercent.value + endPercent.value) / 2
+  const offset = (activePct - midPct) * 1.3
   return {
     left: `clamp(14px, calc(50% + ${offset}%), calc(100% - 14px))`,
     transform: 'translateX(-50%)',
-  };
-});
+  }
+})
 
 // Interactive Clip Boundary Menu State
-const activeBoundaryMenu = ref<{ sec: number; x: number; y: number; } | null>(null);
-const snappedBoundarySec = ref<number | null>(null);
-const activeSnapLineSec = ref<number | null>(null);
-const snapBadgeText = ref<string>('');
-const isSnappedToStationaryHandle = ref(false);
-const isSnappedToPlayhead = ref(false);
+const activeBoundaryMenu = ref<{ sec: number; x: number; y: number; } | null>(null)
+const snappedBoundarySec = ref<number | null>(null)
+const activeSnapLineSec = ref<number | null>(null)
+const snapBadgeText = ref<string>('')
+const isSnappedToStationaryHandle = ref(false)
+const isSnappedToPlayhead = ref(false)
 
 const boundaryMenuStyle = computed(() => {
-  if (!activeBoundaryMenu.value || !containerRef.value) return {};
-  const containerRect = containerRef.value.getBoundingClientRect();
-  const relX = activeBoundaryMenu.value.x - containerRect.left;
-  const clampedX = Math.max(120, Math.min(containerRect.width - 120, relX));
+  if (!activeBoundaryMenu.value || !containerRef.value) return {}
+  const containerRect = containerRef.value.getBoundingClientRect()
+  const relX = activeBoundaryMenu.value.x - containerRect.left
+  const clampedX = Math.max(120, Math.min(containerRect.width - 120, relX))
   return {
     left: `${clampedX}px`,
     top: '12px',
     transform: 'translateX(-50%)',
-  };
-});
+  }
+})
 
 function onBoundaryClick(sec: number, e: MouseEvent) {
-  if (isDraggingHandle.value) return;
+  if (isDraggingHandle.value) return
   activeBoundaryMenu.value = {
     sec,
     x: e.clientX,
     y: e.clientY,
-  };
+  }
 }
 
 function onBoundaryContextMenu(sec: number, e: MouseEvent) {
@@ -792,227 +796,230 @@ function onBoundaryContextMenu(sec: number, e: MouseEvent) {
     sec,
     x: e.clientX,
     y: e.clientY,
-  };
+  }
 }
 
 function closeBoundaryMenu() {
-  activeBoundaryMenu.value = null;
+  activeBoundaryMenu.value = null
 }
 
 function selectLeftOfBoundary(boundarySec: number) {
-  const maxDur = effectiveDuration.value;
+  const maxDur = effectiveDuration.value
   const boundaries = (props.segmentBoundaries && props.segmentBoundaries.length > 0)
     ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur];
+    : [0, maxDur]
 
-  let prev = 0;
+  let prev = 0
   for (const b of boundaries) {
     if (b < boundarySec - 0.01) {
-      prev = b;
+      prev = b
     } else {
-      break;
+      break
     }
   }
 
-  startInputValue.value = formatSeconds(prev);
-  endInputValue.value = formatSeconds(boundarySec);
-  emit('update:trimStart', prev);
-  emit('update:trimEnd', boundarySec);
-  emit('update:currentTime', prev);
-  emit('trimChange', { start: prev, end: boundarySec, handle: 'start' });
-  emit('trimEndChange', { start: prev, end: boundarySec, handle: 'start' });
-  closeBoundaryMenu();
+  startInputValue.value = formatSeconds(prev)
+  endInputValue.value = formatSeconds(boundarySec)
+  emit('update:trimStart', prev)
+  emit('update:trimEnd', boundarySec)
+  emit('update:currentTime', prev)
+  emit('trimChange', { start: prev, end: boundarySec, handle: 'start' })
+  emit('trimEndChange', { start: prev, end: boundarySec, handle: 'start' })
+  closeBoundaryMenu()
 }
 
 function selectRightOfBoundary(boundarySec: number) {
-  const maxDur = effectiveDuration.value;
+  const maxDur = effectiveDuration.value
   const boundaries = (props.segmentBoundaries && props.segmentBoundaries.length > 0)
     ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur];
+    : [0, maxDur]
 
-  let next = maxDur;
+  let next = maxDur
   for (let i = boundaries.length - 1; i >= 0; i--) {
-    const b = boundaries[i];
+    const b = boundaries[i]
     if (b > boundarySec + 0.01) {
-      next = b;
+      next = b
     } else {
-      break;
+      break
     }
   }
 
-  startInputValue.value = formatSeconds(boundarySec);
-  endInputValue.value = formatSeconds(next);
-  emit('update:trimStart', boundarySec);
-  emit('update:trimEnd', next);
-  emit('update:currentTime', boundarySec);
-  emit('trimChange', { start: boundarySec, end: next, handle: 'start' });
-  emit('trimEndChange', { start: boundarySec, end: next, handle: 'start' });
-  closeBoundaryMenu();
+  startInputValue.value = formatSeconds(boundarySec)
+  endInputValue.value = formatSeconds(next)
+  emit('update:trimStart', boundarySec)
+  emit('update:trimEnd', next)
+  emit('update:currentTime', boundarySec)
+  emit('trimChange', { start: boundarySec, end: next, handle: 'start' })
+  emit('trimEndChange', { start: boundarySec, end: next, handle: 'start' })
+  closeBoundaryMenu()
 }
 
 function setInAtBoundary(boundarySec: number) {
-  let newStart = boundarySec;
-  let newEnd = props.trimEnd;
+  let newStart = boundarySec
+  let newEnd = props.trimEnd
   if (newStart > newEnd) {
-    newEnd = newStart;
+    newEnd = newStart
   }
-  startInputValue.value = formatSeconds(newStart);
-  endInputValue.value = formatSeconds(newEnd);
-  emit('update:trimStart', newStart);
-  emit('update:trimEnd', newEnd);
-  emit('update:currentTime', newStart);
-  emit('trimChange', { start: newStart, end: newEnd, handle: 'start' });
-  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' });
-  closeBoundaryMenu();
+  startInputValue.value = formatSeconds(newStart)
+  endInputValue.value = formatSeconds(newEnd)
+  emit('update:trimStart', newStart)
+  emit('update:trimEnd', newEnd)
+  emit('update:currentTime', newStart)
+  emit('trimChange', { start: newStart, end: newEnd, handle: 'start' })
+  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' })
+  closeBoundaryMenu()
 }
 
 function setOutAtBoundary(boundarySec: number) {
-  let newStart = props.trimStart;
-  let newEnd = boundarySec;
+  let newStart = props.trimStart
+  let newEnd = boundarySec
   if (newEnd < newStart) {
-    newStart = newEnd;
+    newStart = newEnd
   }
-  startInputValue.value = formatSeconds(newStart);
-  endInputValue.value = formatSeconds(newEnd);
-  emit('update:trimStart', newStart);
-  emit('update:trimEnd', newEnd);
+  startInputValue.value = formatSeconds(newStart)
+  endInputValue.value = formatSeconds(newEnd)
+  emit('update:trimStart', newStart)
+  emit('update:trimEnd', newEnd)
   if (props.currentTime > newEnd) {
-    emit('update:currentTime', newStart);
+    emit('update:currentTime', newStart)
   }
-  emit('trimChange', { start: newStart, end: newEnd, handle: 'end' });
-  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' });
-  closeBoundaryMenu();
+  emit('trimChange', { start: newStart, end: newEnd, handle: 'end' })
+  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' })
+  closeBoundaryMenu()
 }
 
 function joinAtBoundary(boundarySec: number) {
-  emit('joinAt', boundarySec);
-  closeBoundaryMenu();
-  closePlayheadMenu();
+  emit('joinAt', boundarySec)
+  closeBoundaryMenu()
+  closePlayheadMenu()
 }
 
 function seekToBoundary(boundarySec: number) {
-  emit('update:currentTime', boundarySec);
-  emit('scrubStart', boundarySec);
-  emit('scrubMove', boundarySec);
-  emit('scrubEnd', boundarySec);
-  closeBoundaryMenu();
+  emit('update:currentTime', boundarySec)
+  emit('scrubStart', boundarySec)
+  emit('scrubMove', boundarySec)
+  emit('scrubEnd', boundarySec)
+  closeBoundaryMenu()
 }
 
 // Playhead Time Capsule & Context Menu State
-const isPlayheadPopoverOpen = ref(false);
-const playheadInputValue = ref('');
-const playheadInputRef = ref<HTMLInputElement | null>(null);
-const activePlayheadMenu = ref<{ sec: number; x: number; y: number; } | null>(null);
+const isPlayheadPopoverOpen = ref(false)
+const playheadInputValue = ref('')
+const playheadInputRef = ref<HTMLInputElement | null>(null)
+const activePlayheadMenu = ref<{ sec: number; x: number; y: number; } | null>(null)
 
 const playheadNearBoundary = computed(() => {
-  if (!activePlayheadMenu.value || !props.segmentBoundaries || props.segmentBoundaries.length === 0) return null;
-  const sec = activePlayheadMenu.value.sec;
-  const match = props.segmentBoundaries.find(b => Math.abs(b - sec) <= 0.05);
-  return match !== undefined ? match : null;
-});
+  if (!activePlayheadMenu.value || !props.segmentBoundaries || props.segmentBoundaries.length === 0) return null
+  const sec = activePlayheadMenu.value.sec
+  const match = props.segmentBoundaries.find(b => Math.abs(b - sec) <= 0.05)
+  return match !== undefined ? match : null
+})
 
 const playheadCapsuleStyle = computed(() => {
   return {
     left: `clamp(65px, ${playheadPercent.value}%, calc(100% - 65px))`,
     transform: 'translateX(-50%)',
-  };
-});
+  }
+})
 
 const playheadMenuStyle = computed(() => {
-  if (!activePlayheadMenu.value || !containerRef.value) return {};
-  const containerRect = containerRef.value.getBoundingClientRect();
-  const relX = activePlayheadMenu.value.x - containerRect.left;
-  const clampedX = Math.max(120, Math.min(containerRect.width - 120, relX));
+  if (!activePlayheadMenu.value || !containerRef.value) return {}
+  const containerRect = containerRef.value.getBoundingClientRect()
+  const relX = activePlayheadMenu.value.x - containerRect.left
+  const clampedX = Math.max(120, Math.min(containerRect.width - 120, relX))
   return {
     left: `${clampedX}px`,
     top: '12px',
     transform: 'translateX(-50%)',
-  };
-});
+  }
+})
 
 function openPlayheadPopover() {
-  globalActiveGraphInstanceId.value = instanceId;
-  closePopover();
-  closeBoundaryMenu();
-  closePlayheadMenu();
-  isPlayheadPopoverOpen.value = true;
-  playheadInputValue.value = formatSeconds(displayCurrentTime.value);
+  globalActiveGraphInstanceId.value = instanceId
+  closePopover()
+  closeBoundaryMenu()
+  closePlayheadMenu()
+  isPlayheadPopoverOpen.value = true
+  playheadInputValue.value = formatSeconds(displayCurrentTime.value)
   nextTick(() => {
-    playheadInputRef.value?.focus({ preventScroll: true });
-    playheadInputRef.value?.select();
-  });
+    playheadInputRef.value?.focus({ preventScroll: true })
+    playheadInputRef.value?.select()
+  })
 }
 
 function closePlayheadPopover() {
   if (globalActiveGraphInstanceId.value === instanceId) {
-    globalActiveGraphInstanceId.value = null;
+    globalActiveGraphInstanceId.value = null
   }
-  isPlayheadPopoverOpen.value = false;
+  isPlayheadPopoverOpen.value = false
 }
 
 function focusPlayheadInput() {
-  playheadInputRef.value?.focus({ preventScroll: true });
+  playheadInputRef.value?.focus({ preventScroll: true })
 }
 
 function onPlayheadInputFocus() {
-  playheadInputRef.value?.select();
+  playheadInputRef.value?.select()
 }
 
 function onPlayheadBlur(e: FocusEvent) {
-  const related = e.relatedTarget as HTMLElement | null;
+  const related = e.relatedTarget instanceof HTMLElement ? e.relatedTarget : null
   if (
     related &&
     (related === playheadInputRef.value ||
       related.closest?.('.playhead-capsule-card'))
   ) {
-    return;
+    return
   }
 
   requestAnimationFrame(() => {
-    const active = document.activeElement;
+    const active = document.activeElement
     if (active === playheadInputRef.value) {
-      return;
+      return
     }
-    closePlayheadPopover();
-  });
+    closePlayheadPopover()
+  })
 }
 
 function onPlayheadInput(e: Event) {
-  const val = (e.target as HTMLInputElement).value;
-  playheadInputValue.value = val;
-  const parsed = parseTimeInput(val);
+  if (!(e.target instanceof HTMLInputElement)) return
+  const val = e.target.value
+  playheadInputValue.value = val
+  const parsed = parseTimeInput(val)
   if (parsed !== null && !isNaN(parsed)) {
-    const maxDur = effectiveDuration.value;
-    const clamped = Math.max(0, Math.min(maxDur, parsed));
-    emit('update:currentTime', clamped);
-    emit('scrubStart', clamped);
-    emit('scrubMove', clamped);
-    emit('scrubEnd', clamped);
+    const maxDur = effectiveDuration.value
+    const clamped = Math.max(0, Math.min(maxDur, parsed))
+    emit('update:currentTime', clamped)
+    emit('scrubStart', clamped)
+    emit('scrubMove', clamped)
+    emit('scrubEnd', clamped)
   }
 }
 
 function onPlayheadKeydown(e: KeyboardEvent) {
   if (e.key === 'Enter' || e.key === 'Escape') {
-    closePlayheadPopover();
-    (e.target as HTMLInputElement).blur();
-    return;
+    closePlayheadPopover()
+    if (e.target instanceof HTMLElement) {
+      e.target.blur()
+    }
+    return
   }
 
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-    e.preventDefault();
-    const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05);
-    const delta = e.key === 'ArrowUp' ? step : -step;
-    const maxDur = effectiveDuration.value;
-    const current = parseTimeInput(playheadInputValue.value) ?? props.currentTime;
-    const newTime = Math.max(0, Math.min(maxDur, current + delta));
-    playheadInputValue.value = formatSeconds(newTime);
-    emit('update:currentTime', newTime);
-    emit('scrubStart', newTime);
-    emit('scrubMove', newTime);
-    emit('scrubEnd', newTime);
+    e.preventDefault()
+    const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05)
+    const delta = e.key === 'ArrowUp' ? step : -step
+    const maxDur = effectiveDuration.value
+    const current = parseTimeInput(playheadInputValue.value) ?? props.currentTime
+    const newTime = Math.max(0, Math.min(maxDur, current + delta))
+    playheadInputValue.value = formatSeconds(newTime)
+    emit('update:currentTime', newTime)
+    emit('scrubStart', newTime)
+    emit('scrubMove', newTime)
+    emit('scrubEnd', newTime)
     nextTick(() => {
-      playheadInputRef.value?.select();
-    });
+      playheadInputRef.value?.select()
+    })
   }
 }
 
@@ -1020,142 +1027,142 @@ watch(
   () => props.currentTime,
   newTime => {
     if (isPlayheadPopoverOpen.value && document.activeElement !== playheadInputRef.value) {
-      playheadInputValue.value = formatSeconds(newTime);
+      playheadInputValue.value = formatSeconds(newTime)
     }
   }
-);
+)
 
 function onPlayheadContextMenu(e: MouseEvent) {
-  e.preventDefault();
-  closePopover();
-  closeBoundaryMenu();
-  closePlayheadPopover();
-  const sec = displayCurrentTime.value;
+  e.preventDefault()
+  closePopover()
+  closeBoundaryMenu()
+  closePlayheadPopover()
+  const sec = displayCurrentTime.value
   activePlayheadMenu.value = {
     sec,
     x: e.clientX,
     y: e.clientY,
-  };
+  }
 }
 
 function closePlayheadMenu() {
-  activePlayheadMenu.value = null;
+  activePlayheadMenu.value = null
 }
 
 function setInAtPlayhead(sec: number) {
-  let newStart = sec;
-  let newEnd = props.trimEnd;
+  let newStart = sec
+  let newEnd = props.trimEnd
   if (newStart > newEnd) {
-    newEnd = newStart;
+    newEnd = newStart
   }
-  startInputValue.value = formatSeconds(newStart);
-  endInputValue.value = formatSeconds(newEnd);
-  emit('update:trimStart', newStart);
-  emit('update:trimEnd', newEnd);
-  emit('trimChange', { start: newStart, end: newEnd, handle: 'start' });
-  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' });
-  closePlayheadMenu();
+  startInputValue.value = formatSeconds(newStart)
+  endInputValue.value = formatSeconds(newEnd)
+  emit('update:trimStart', newStart)
+  emit('update:trimEnd', newEnd)
+  emit('trimChange', { start: newStart, end: newEnd, handle: 'start' })
+  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'start' })
+  closePlayheadMenu()
 }
 
 function setOutAtPlayhead(sec: number) {
-  let newStart = props.trimStart;
-  let newEnd = sec;
+  let newStart = props.trimStart
+  let newEnd = sec
   if (newEnd < newStart) {
-    newStart = newEnd;
+    newStart = newEnd
   }
-  startInputValue.value = formatSeconds(newStart);
-  endInputValue.value = formatSeconds(newEnd);
-  emit('update:trimStart', newStart);
-  emit('update:trimEnd', newEnd);
-  emit('trimChange', { start: newStart, end: newEnd, handle: 'end' });
-  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' });
-  closePlayheadMenu();
+  startInputValue.value = formatSeconds(newStart)
+  endInputValue.value = formatSeconds(newEnd)
+  emit('update:trimStart', newStart)
+  emit('update:trimEnd', newEnd)
+  emit('trimChange', { start: newStart, end: newEnd, handle: 'end' })
+  emit('trimEndChange', { start: newStart, end: newEnd, handle: 'end' })
+  closePlayheadMenu()
 }
 
 function splitAtPlayhead(sec: number) {
-  emit('splitAt', sec);
-  closePlayheadMenu();
+  emit('splitAt', sec)
+  closePlayheadMenu()
 }
 
 function openTimeInputFromMenu(_sec: number) {
-  closePlayheadMenu();
-  openPlayheadPopover();
+  closePlayheadMenu()
+  openPlayheadPopover()
 }
 
 function togglePlayFromPlayhead(sec: number) {
-  emit('playFromCursor', sec);
-  closePlayheadMenu();
+  emit('playFromCursor', sec)
+  closePlayheadMenu()
 }
 
 function pasteAtPlayhead(sec: number) {
-  emit('pasteAtCursor', sec);
-  closePlayheadMenu();
+  emit('pasteAtCursor', sec)
+  closePlayheadMenu()
 }
 
 function jumpCursorToIn() {
-  const inSec = props.trimStart;
-  emit('update:currentTime', inSec);
-  emit('scrubStart', inSec);
-  emit('scrubMove', inSec);
-  emit('scrubEnd', inSec);
-  closePlayheadMenu();
+  const inSec = props.trimStart
+  emit('update:currentTime', inSec)
+  emit('scrubStart', inSec)
+  emit('scrubMove', inSec)
+  emit('scrubEnd', inSec)
+  closePlayheadMenu()
 }
 
 function handleDocumentMouseDown(e: MouseEvent) {
-  const target = e.target as HTMLElement | null;
+  const target = e.target instanceof Node ? e.target : null
   if (target && containerRef.value?.contains(target)) {
-    return;
+    return
   }
-  closePopover();
-  closeBoundaryMenu();
-  closePlayheadPopover();
-  closePlayheadMenu();
+  closePopover()
+  closeBoundaryMenu()
+  closePlayheadPopover()
+  closePlayheadMenu()
 }
 
-const DOWNSAMPLE_RESOLUTION = 2000;
-const bufferPeaksCache = new WeakMap<AudioBuffer, Map<number, Float32Array>>();
+const DOWNSAMPLE_RESOLUTION = 2000
+const bufferPeaksCache = new WeakMap<AudioBuffer, Map<number, Float32Array>>()
 
 function getDownsampledChannelPeaks(buffer: AudioBuffer, channelIdx: number): Float32Array {
-  let cache = bufferPeaksCache.get(buffer);
+  let cache = bufferPeaksCache.get(buffer)
   if (!cache) {
-    cache = new Map();
-    bufferPeaksCache.set(buffer, cache);
+    cache = new Map()
+    bufferPeaksCache.set(buffer, cache)
   }
-  let peaks = cache.get(channelIdx);
+  let peaks = cache.get(channelIdx)
   if (!peaks) {
-    const rawData = buffer.getChannelData(channelIdx);
-    const len = rawData.length;
-    const res = Math.min(len, DOWNSAMPLE_RESOLUTION);
-    peaks = new Float32Array(res);
-    const step = len / res;
+    const rawData = buffer.getChannelData(channelIdx)
+    const len = rawData.length
+    const res = Math.min(len, DOWNSAMPLE_RESOLUTION)
+    peaks = new Float32Array(res)
+    const step = len / res
     for (let i = 0; i < res; i++) {
-      const start = Math.floor(i * step);
-      const end = Math.min(len, Math.floor((i + 1) * step));
-      let max = 0;
+      const start = Math.floor(i * step)
+      const end = Math.min(len, Math.floor((i + 1) * step))
+      let max = 0
       for (let j = start; j < end; j++) {
-        const val = Math.abs(rawData[j]);
-        if (val > max) max = val;
+        const val = Math.abs(rawData[j])
+        if (val > max) max = val
       }
-      peaks[i] = max;
+      peaks[i] = max
     }
-    cache.set(channelIdx, peaks);
+    cache.set(channelIdx, peaks)
   }
-  return peaks;
+  return peaks
 }
 
-let cachedWidth = 0;
-let cachedHeight = 0;
-let drawRaf: number | null = null;
+let cachedWidth = 0
+let cachedHeight = 0
+let drawRaf: number | null = null
 
 function scheduleDrawWaveform() {
-  if (drawRaf !== null) return;
+  if (drawRaf !== null) return
   drawRaf = requestAnimationFrame(() => {
-    drawRaf = null;
-    drawWaveform();
-  });
+    drawRaf = null
+    drawWaveform()
+  })
 }
 
-const renderedWaveformCache = new WeakMap<AudioBuffer, Map<string, HTMLCanvasElement>>();
+const renderedWaveformCache = new WeakMap<AudioBuffer, Map<string, HTMLCanvasElement>>()
 
 function renderWaveformBars(
   ctx: CanvasRenderingContext2D,
@@ -1166,176 +1173,176 @@ function renderWaveformBars(
   dpr: number,
   themeColors: { blue: [string, string]; green: [string, string]; }
 ) {
-  const numTracks = activeTracks.length;
-  const trackLaneHeight = height / numTracks;
+  const numTracks = activeTracks.length
+  const trackLaneHeight = height / numTracks
 
-  const targetBarWidth = 2 * dpr;
-  const targetBarGap = 1 * dpr;
-  const nominalStep = targetBarWidth + targetBarGap;
-  const numBars = Math.max(10, Math.floor(width / nominalStep));
-  const barStep = width / numBars;
-  const barWidth = Math.max(1, barStep - targetBarGap);
-  const minBarH = Math.max(2, 1.5 * dpr);
-  const cornerRadius = Math.max(1, 1 * dpr);
+  const targetBarWidth = 2 * dpr
+  const targetBarGap = 1 * dpr
+  const nominalStep = targetBarWidth + targetBarGap
+  const numBars = Math.max(10, Math.floor(width / nominalStep))
+  const barStep = width / numBars
+  const barWidth = Math.max(1, barStep - targetBarGap)
+  const minBarH = Math.max(2, 1.5 * dpr)
+  const cornerRadius = Math.max(1, 1 * dpr)
 
   for (let t = 0; t < numTracks; t++) {
-    const track = activeTracks[t];
-    const trackTop = t * trackLaneHeight;
-    const trackBaseline = trackTop + trackLaneHeight / 2;
-    const maxTrackHeight = (trackLaneHeight / 2) * (numTracks > 1 ? 0.88 : 0.92);
+    const track = activeTracks[t]
+    const trackTop = t * trackLaneHeight
+    const trackBaseline = trackTop + trackLaneHeight / 2
+    const maxTrackHeight = (trackLaneHeight / 2) * (numTracks > 1 ? 0.88 : 0.92)
 
     // Separator line between multiple tracks
     if (numTracks >= 2 && t > 0) {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-      ctx.lineWidth = 1 * dpr;
-      ctx.beginPath();
-      ctx.moveTo(0, trackTop);
-      ctx.lineTo(width, trackTop);
-      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)'
+      ctx.lineWidth = 1 * dpr
+      ctx.beginPath()
+      ctx.moveTo(0, trackTop)
+      ctx.lineTo(width, trackTop)
+      ctx.stroke()
     }
 
     // Resolve channel indices for this track
-    let channelIndices: number[] = [];
+    let channelIndices: number[] = []
     if (Array.isArray(track.channelIndex)) {
-      channelIndices = track.channelIndex.filter(idx => idx >= 0 && idx < buffer.numberOfChannels);
+      channelIndices = track.channelIndex.filter(idx => idx >= 0 && idx < buffer.numberOfChannels)
     } else if (typeof track.channelIndex === 'number') {
       if (track.channelIndex >= 0 && track.channelIndex < buffer.numberOfChannels) {
-        channelIndices = [track.channelIndex];
+        channelIndices = [track.channelIndex]
       }
     }
 
     if (channelIndices.length === 0) {
       if (numTracks === 1 && buffer.numberOfChannels >= 2) {
-        channelIndices = [0, 1];
+        channelIndices = [0, 1]
       } else {
-        channelIndices = [Math.min(t, buffer.numberOfChannels - 1)];
+        channelIndices = [Math.min(t, buffer.numberOfChannels - 1)]
       }
     }
 
     // Sample peaks using cached channel downsamples
-    const channelPeaksList = channelIndices.map(cIdx => getDownsampledChannelPeaks(buffer, cIdx));
-    const cachedLen = channelPeaksList[0].length;
-    const trackPeaks = new Float32Array(numBars);
-    let maxPeak = 0.001;
+    const channelPeaksList = channelIndices.map(cIdx => getDownsampledChannelPeaks(buffer, cIdx))
+    const cachedLen = channelPeaksList[0].length
+    const trackPeaks = new Float32Array(numBars)
+    let maxPeak = 0.001
 
     for (let i = 0; i < numBars; i++) {
-      const start = Math.floor((i / numBars) * cachedLen);
-      const end = Math.min(cachedLen, Math.floor(((i + 1) / numBars) * cachedLen));
+      const start = Math.floor((i / numBars) * cachedLen)
+      const end = Math.min(cachedLen, Math.floor(((i + 1) / numBars) * cachedLen))
 
-      let p = 0;
+      let p = 0
       for (let j = start; j < end; j++) {
         for (let c = 0; c < channelPeaksList.length; c++) {
-          const val = channelPeaksList[c][j];
-          if (val > p) p = val;
+          const val = channelPeaksList[c][j]
+          if (val > p) p = val
         }
       }
-      trackPeaks[i] = p;
-      if (p > maxPeak) maxPeak = p;
+      trackPeaks[i] = p
+      if (p > maxPeak) maxPeak = p
     }
 
     // Independent track normalization with a floor to avoid boosting background noise
-    const normFactor = Math.max(0.06, maxPeak);
-    const isEnabled = track.enabled !== false;
-    const colors = track.colors || (t % 2 === 0 ? themeColors.blue : themeColors.green);
+    const normFactor = Math.max(0.06, maxPeak)
+    const isEnabled = track.enabled !== false
+    const colors = track.colors || (t % 2 === 0 ? themeColors.blue : themeColors.green)
 
     // Draw bars
     for (let i = 0; i < numBars; i++) {
-      const normVal = Math.min(1, trackPeaks[i] / normFactor);
-      const curved = Math.pow(normVal, 0.65);
-      const x = i * barStep;
-      const barH = Math.max(minBarH, curved * maxTrackHeight);
-      const y = trackBaseline - barH / 2;
+      const normVal = Math.min(1, trackPeaks[i] / normFactor)
+      const curved = Math.pow(normVal, 0.65)
+      const x = i * barStep
+      const barH = Math.max(minBarH, curved * maxTrackHeight)
+      const y = trackBaseline - barH / 2
 
       if (isEnabled) {
-        const grad = ctx.createLinearGradient(0, y, 0, y + barH);
-        grad.addColorStop(0, colors[0]);
-        grad.addColorStop(1, colors[1]);
-        ctx.fillStyle = grad;
+        const grad = ctx.createLinearGradient(0, y, 0, y + barH)
+        grad.addColorStop(0, colors[0])
+        grad.addColorStop(1, colors[1])
+        ctx.fillStyle = grad
       } else {
-        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)';
+        ctx.fillStyle = 'rgba(113, 113, 122, 0.35)'
       }
 
-      ctx.beginPath();
-      ctx.roundRect(x, y, barWidth, barH, cornerRadius);
-      ctx.fill();
+      ctx.beginPath()
+      ctx.roundRect(x, y, barWidth, barH, cornerRadius)
+      ctx.fill()
     }
 
     // Draw track label badge pill only if label is provided and non-empty
     if (track.label && track.label.trim().length > 0) {
-      const labelText = track.label.trim();
-      const fontSize = Math.round(9.5 * dpr);
-      ctx.font = `600 ${fontSize}px sans-serif`;
-      const textWidth = ctx.measureText(labelText).width;
+      const labelText = track.label.trim()
+      const fontSize = Math.round(9.5 * dpr)
+      ctx.font = `600 ${fontSize}px sans-serif`
+      const textWidth = ctx.measureText(labelText).width
 
       // Position badge so it never collides with start-flag (top: 4px) when handles are visible
       const badgeY =
         props.showTrimHandles && t === 0
           ? trackTop + trackLaneHeight - fontSize - 7 * dpr
-          : trackTop + 4 * dpr;
+          : trackTop + 4 * dpr
 
-      ctx.fillStyle = 'rgba(15, 15, 17, 0.72)';
-      ctx.beginPath();
-      ctx.roundRect(6 * dpr, badgeY, textWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr);
-      ctx.fill();
+      ctx.fillStyle = 'rgba(15, 15, 17, 0.72)'
+      ctx.beginPath()
+      ctx.roundRect(6 * dpr, badgeY, textWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr)
+      ctx.fill()
 
-      ctx.fillStyle = isEnabled ? (colors[0] || 'rgba(56, 189, 248, 0.95)') : 'rgba(161, 161, 170, 0.6)';
-      ctx.fillText(labelText, 11 * dpr, badgeY + fontSize);
+      ctx.fillStyle = isEnabled ? (colors[0] || 'rgba(56, 189, 248, 0.95)') : 'rgba(161, 161, 170, 0.6)'
+      ctx.fillText(labelText, 11 * dpr, badgeY + fontSize)
     }
   }
 }
 
 function getResolvedThemeColor(varName: string): string {
-  if (typeof window === 'undefined') return '';
-  const el = waveformWrapperRef.value || document.documentElement;
+  if (typeof window === 'undefined') return ''
+  const el = waveformWrapperRef.value || document.documentElement
 
   // Resolve any nested var() or relative color expressions (oklch, color-mix) via computed style
-  const dummy = document.createElement('span');
-  dummy.style.color = `var(${varName})`;
-  el.appendChild(dummy);
-  const resolved = getComputedStyle(dummy).color;
-  dummy.remove();
+  const dummy = document.createElement('span')
+  dummy.style.color = `var(${varName})`
+  el.appendChild(dummy)
+  const resolved = getComputedStyle(dummy).color
+  dummy.remove()
 
   if (!resolved) {
-    console.error(`[WaveformGraph] Missing or invalid CSS variable: ${varName}`);
+    console.error(`[WaveformGraph] Missing or invalid CSS variable: ${varName}`)
   }
 
-  return resolved;
+  return resolved
 }
 
 function drawWaveform() {
-  const canvas = canvasRef.value;
-  const buffer = props.audioBuffer;
-  if (!canvas || !buffer) return;
+  const canvas = canvasRef.value
+  const buffer = props.audioBuffer
+  if (!canvas || !buffer) return
 
   if (cachedWidth <= 0 || cachedHeight <= 0) {
-    return;
+    return
   }
 
-  const w = cachedWidth;
-  const h = cachedHeight;
+  const w = cachedWidth
+  const h = cachedHeight
 
-  const dpr = window.devicePixelRatio || 1;
-  const targetWidth = Math.round(w * dpr);
-  const targetHeight = Math.round(h * dpr);
+  const dpr = window.devicePixelRatio || 1
+  const targetWidth = Math.round(w * dpr)
+  const targetHeight = Math.round(h * dpr)
 
   if (canvas.width !== targetWidth) {
-    canvas.width = targetWidth;
+    canvas.width = targetWidth
   }
   if (canvas.height !== targetHeight) {
-    canvas.height = targetHeight;
+    canvas.height = targetHeight
   }
-  const width = canvas.width;
-  const height = canvas.height;
+  const width = canvas.width
+  const height = canvas.height
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
 
-  ctx.clearRect(0, 0, width, height);
+  ctx.clearRect(0, 0, width, height)
 
   // 1. Resolve active tracks
-  let activeTracks: WaveformTrack[] = [];
+  let activeTracks: WaveformTrack[] = []
   if (props.tracks && props.tracks.length > 0) {
-    activeTracks = props.tracks;
+    activeTracks = props.tracks
   } else if (buffer.numberOfChannels >= 2 && (!props.includeMic || !props.includeInput)) {
     // Fallback if legacy includeMic / includeInput are explicitly toggled without tracks prop
     activeTracks = [
@@ -1349,7 +1356,7 @@ function drawWaveform() {
         channelIndex: 1,
         enabled: props.includeInput,
       },
-    ];
+    ]
   } else {
     // Single unified track (mono or stereo merged)
     activeTracks = [
@@ -1358,18 +1365,18 @@ function drawWaveform() {
         channelIndex: buffer.numberOfChannels >= 2 ? [0, 1] : 0,
         enabled: true,
       },
-    ];
+    ]
   }
 
-  const primaryGreen = getResolvedThemeColor('--primary-color-gradient-light');
-  const primaryGreenDark = getResolvedThemeColor('--primary-color-gradient-dark');
-  const primaryBlue = getResolvedThemeColor('--primary-color-blue-gradient-light');
-  const primaryBlueDark = getResolvedThemeColor('--primary-color-blue-gradient-dark');
-  const themeKey = `${primaryBlue}_${primaryBlueDark}_${primaryGreen}_${primaryGreenDark}`;
-  const themeColors = {
-    blue: [primaryBlue, primaryBlueDark] as [string, string],
-    green: [primaryGreen, primaryGreenDark] as [string, string],
-  };
+  const primaryGreen = getResolvedThemeColor('--primary-color-gradient-light')
+  const primaryGreenDark = getResolvedThemeColor('--primary-color-gradient-dark')
+  const primaryBlue = getResolvedThemeColor('--primary-color-blue-gradient-light')
+  const primaryBlueDark = getResolvedThemeColor('--primary-color-blue-gradient-dark')
+  const themeKey = `${primaryBlue}_${primaryBlueDark}_${primaryGreen}_${primaryGreenDark}`
+  const themeColors: { blue: [string, string]; green: [string, string] } = {
+    blue: [primaryBlue, primaryBlueDark],
+    green: [primaryGreen, primaryGreenDark],
+  }
 
   const trackKey = activeTracks
     .map(
@@ -1378,53 +1385,53 @@ function drawWaveform() {
           ? t.channelIndex.join(',')
           : t.channelIndex}:${t.enabled !== false}:${t.label || ''}:${(t.colors || []).join(',')}`
     )
-    .join(';');
-  const cacheKey = `${width}x${height}_${trackKey}_${themeKey}`;
+    .join(';')
+  const cacheKey = `${width}x${height}_${trackKey}_${themeKey}`
 
-  let bufferCache = renderedWaveformCache.get(buffer);
+  let bufferCache = renderedWaveformCache.get(buffer)
   if (!bufferCache) {
-    bufferCache = new Map();
-    renderedWaveformCache.set(buffer, bufferCache);
+    bufferCache = new Map()
+    renderedWaveformCache.set(buffer, bufferCache)
   }
 
-  let cachedCanvas = bufferCache.get(cacheKey);
+  let cachedCanvas = bufferCache.get(cacheKey)
   if (!cachedCanvas) {
-    cachedCanvas = document.createElement('canvas');
-    cachedCanvas.width = width;
-    cachedCanvas.height = height;
-    const offCtx = cachedCanvas.getContext('2d');
+    cachedCanvas = document.createElement('canvas')
+    cachedCanvas.width = width
+    cachedCanvas.height = height
+    const offCtx = cachedCanvas.getContext('2d')
     if (offCtx) {
-      renderWaveformBars(offCtx, buffer, width, height, activeTracks, dpr, themeColors);
-      bufferCache.set(cacheKey, cachedCanvas);
+      renderWaveformBars(offCtx, buffer, width, height, activeTracks, dpr, themeColors)
+      bufferCache.set(cacheKey, cachedCanvas)
     }
   }
 
   if (cachedCanvas) {
-    ctx.drawImage(cachedCanvas, 0, 0);
+    ctx.drawImage(cachedCanvas, 0, 0)
   }
 }
 
 function getSecondsFromMouseEvent(e: MouseEvent): number {
-  if (!waveformWrapperRef.value) return 0;
-  const rect = waveformWrapperRef.value.getBoundingClientRect();
-  if (rect.width <= 0) return 0;
-  const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
-  const percent = relX / rect.width;
-  return percent * effectiveDuration.value;
+  if (!waveformWrapperRef.value) return 0
+  const rect = waveformWrapperRef.value.getBoundingClientRect()
+  if (rect.width <= 0) return 0
+  const relX = Math.max(0, Math.min(rect.width, e.clientX - rect.left))
+  const percent = relX / rect.width
+  return percent * effectiveDuration.value
 }
 
-let handleDownX = 0;
-let clickedHandle: 'start' | 'end' | null = null;
-const isDraggingHandle = ref(false);
-let dragInitialStart = 0;
-let dragInitialEnd = 0;
-let dragStationarySec = 0;
+let handleDownX = 0
+let clickedHandle: 'start' | 'end' | null = null
+const isDraggingHandle = ref(false)
+let dragInitialStart = 0
+let dragInitialEnd = 0
+let dragStationarySec = 0
 
-let lastHandleDragEvent: MouseEvent | null = null;
+let lastHandleDragEvent: MouseEvent | null = null
 
 function onHandleDragKeyChange(ke: KeyboardEvent) {
-  if (!activeDragHandle.value || !lastHandleDragEvent) return;
-  if (ke.repeat) return;
+  if (!activeDragHandle.value || !lastHandleDragEvent) return
+  if (ke.repeat) return
   if (ke.key === 'Shift' || ke.key === 'Alt') {
     const syntheticEvent = new MouseEvent('mousemove', {
       clientX: lastHandleDragEvent.clientX,
@@ -1432,54 +1439,54 @@ function onHandleDragKeyChange(ke: KeyboardEvent) {
       shiftKey: ke.shiftKey,
       altKey: ke.altKey,
       buttons: 1,
-    });
-    onHandleMouseMove(syntheticEvent);
+    })
+    onHandleMouseMove(syntheticEvent)
   }
 }
 
 function onStartHandleMouseDown(e: MouseEvent) {
-  e.preventDefault();
-  handleDownX = e.clientX;
-  clickedHandle = 'start';
-  activeDragHandle.value = 'start';
-  internalDragStartTime.value = props.trimStart;
-  isDraggingHandle.value = false;
-  dragInitialStart = props.trimStart;
-  dragInitialEnd = props.trimEnd;
-  dragStationarySec = dragInitialEnd;
-  lastHandleDragEvent = e;
-  window.addEventListener('mousemove', onHandleMouseMove);
-  window.addEventListener('mouseup', onHandleMouseUp);
-  window.addEventListener('keydown', onHandleDragKeyChange);
-  window.addEventListener('keyup', onHandleDragKeyChange);
+  e.preventDefault()
+  handleDownX = e.clientX
+  clickedHandle = 'start'
+  activeDragHandle.value = 'start'
+  internalDragStartTime.value = props.trimStart
+  isDraggingHandle.value = false
+  dragInitialStart = props.trimStart
+  dragInitialEnd = props.trimEnd
+  dragStationarySec = dragInitialEnd
+  lastHandleDragEvent = e
+  window.addEventListener('mousemove', onHandleMouseMove)
+  window.addEventListener('mouseup', onHandleMouseUp)
+  window.addEventListener('keydown', onHandleDragKeyChange)
+  window.addEventListener('keyup', onHandleDragKeyChange)
 }
 
 function onEndHandleMouseDown(e: MouseEvent) {
-  e.preventDefault();
-  handleDownX = e.clientX;
-  clickedHandle = 'end';
-  activeDragHandle.value = 'end';
-  isDraggingHandle.value = false;
-  dragInitialStart = props.trimStart;
-  dragInitialEnd = props.trimEnd;
-  dragStationarySec = dragInitialStart;
-  lastHandleDragEvent = e;
-  window.addEventListener('mousemove', onHandleMouseMove);
-  window.addEventListener('mouseup', onHandleMouseUp);
-  window.addEventListener('keydown', onHandleDragKeyChange);
-  window.addEventListener('keyup', onHandleDragKeyChange);
+  e.preventDefault()
+  handleDownX = e.clientX
+  clickedHandle = 'end'
+  activeDragHandle.value = 'end'
+  isDraggingHandle.value = false
+  dragInitialStart = props.trimStart
+  dragInitialEnd = props.trimEnd
+  dragStationarySec = dragInitialStart
+  lastHandleDragEvent = e
+  window.addEventListener('mousemove', onHandleMouseMove)
+  window.addEventListener('mouseup', onHandleMouseUp)
+  window.addEventListener('keydown', onHandleDragKeyChange)
+  window.addEventListener('keyup', onHandleDragKeyChange)
 }
 
-let playheadDownX = 0;
-let playheadDownY = 0;
-let isPlayheadDragging = false;
-let playheadClickTimer: ReturnType<typeof setTimeout> | null = null;
-let lastPlayheadDragEvent: MouseEvent | null = null;
+let playheadDownX = 0
+let playheadDownY = 0
+let isPlayheadDragging = false
+let playheadClickTimer: ReturnType<typeof setTimeout> | null = null
+let lastPlayheadDragEvent: MouseEvent | null = null
 
 function cancelPlayheadClickTimer() {
   if (playheadClickTimer !== null) {
-    clearTimeout(playheadClickTimer);
-    playheadClickTimer = null;
+    clearTimeout(playheadClickTimer)
+    playheadClickTimer = null
   }
 }
 
@@ -1487,17 +1494,17 @@ function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): {
   snappedSec: number; snapTarget: number | null; boundarySec: number | null;
 } {
   if (!shiftHeld || !waveformWrapperRef.value) {
-    return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
+    return { snappedSec: rawSec, snapTarget: null, boundarySec: null }
   }
 
-  const rect = waveformWrapperRef.value.getBoundingClientRect();
-  if (rect.width <= 0) return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
+  const rect = waveformWrapperRef.value.getBoundingClientRect()
+  if (rect.width <= 0) return { snappedSec: rawSec, snapTarget: null, boundarySec: null }
 
-  const maxDur = effectiveDuration.value;
-  if (maxDur <= 0) return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
+  const maxDur = effectiveDuration.value
+  if (maxDur <= 0) return { snappedSec: rawSec, snapTarget: null, boundarySec: null }
 
-  const snapPixelThreshold = 24;
-  const snapSecThreshold = (snapPixelThreshold / rect.width) * maxDur;
+  const snapPixelThreshold = 24
+  const snapSecThreshold = (snapPixelThreshold / rect.width) * maxDur
 
   interface SnapTarget {
     sec: number;
@@ -1505,33 +1512,33 @@ function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): {
     boundarySec?: number;
   }
 
-  const targets: SnapTarget[] = [];
+  const targets: SnapTarget[] = []
 
   // Segment boundaries (divider lines)
   if (props.segmentBoundaries && props.segmentBoundaries.length > 0) {
     for (const b of props.segmentBoundaries) {
-      targets.push({ sec: b, isBoundary: true, boundarySec: b });
+      targets.push({ sec: b, isBoundary: true, boundarySec: b })
     }
   }
 
   // Trim handles
   if (props.showTrimHandles) {
-    targets.push({ sec: props.trimStart, isBoundary: false });
-    targets.push({ sec: props.trimEnd, isBoundary: false });
+    targets.push({ sec: props.trimStart, isBoundary: false })
+    targets.push({ sec: props.trimEnd, isBoundary: false })
   }
 
   // Timeline start and end
-  targets.push({ sec: 0, isBoundary: false });
-  targets.push({ sec: maxDur, isBoundary: false });
+  targets.push({ sec: 0, isBoundary: false })
+  targets.push({ sec: maxDur, isBoundary: false })
 
-  let closestDist = Infinity;
-  let closestTarget: SnapTarget | null = null;
+  let closestDist = Infinity
+  let closestTarget: SnapTarget | null = null
 
   for (const t of targets) {
-    const d = Math.abs(rawSec - t.sec);
+    const d = Math.abs(rawSec - t.sec)
     if (d <= snapSecThreshold && d < closestDist) {
-      closestDist = d;
-      closestTarget = t;
+      closestDist = d
+      closestTarget = t
     }
   }
 
@@ -1541,16 +1548,16 @@ function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): {
       snapTarget: closestTarget.sec,
       boundarySec: closestTarget.isBoundary && closestTarget.boundarySec !== undefined
         ? closestTarget.boundarySec : null,
-    };
+    }
   }
 
-  return { snappedSec: rawSec, snapTarget: null, boundarySec: null };
+  return { snappedSec: rawSec, snapTarget: null, boundarySec: null }
 }
 
 function onPlayheadDragKeyChange(ke: KeyboardEvent) {
-  if (!isPlayheadDragging && !isScrubbing.value) return;
-  if (!lastPlayheadDragEvent) return;
-  if (ke.repeat) return;
+  if (!isPlayheadDragging && !isScrubbing.value) return
+  if (!lastPlayheadDragEvent) return
+  if (ke.repeat) return
   if (ke.key === 'Shift' || ke.key === 'Alt') {
     const syntheticEvent = new MouseEvent('mousemove', {
       clientX: lastPlayheadDragEvent.clientX,
@@ -1558,353 +1565,353 @@ function onPlayheadDragKeyChange(ke: KeyboardEvent) {
       shiftKey: ke.shiftKey,
       altKey: ke.altKey,
       buttons: 1,
-    });
+    })
     if (isPlayheadDragging) {
-      onPlayheadMouseMove(syntheticEvent);
+      onPlayheadMouseMove(syntheticEvent)
     } else if (isScrubbing.value) {
-      onScrubMouseMove(syntheticEvent);
+      onScrubMouseMove(syntheticEvent)
     }
   }
 }
 
 function onPlayheadMouseDown(e: MouseEvent) {
-  if (e.button !== 0) return;
-  cancelPlayheadClickTimer();
+  if (e.button !== 0) return
+  cancelPlayheadClickTimer()
 
   // If this is part of a double-click gesture (detail >= 2), keep cursor input box closed
   if (e.detail >= 2) {
-    closePlayheadPopover();
-    return;
+    closePlayheadPopover()
+    return
   }
 
-  e.preventDefault();
-  closeBoundaryMenu();
-  closePlayheadMenu();
+  e.preventDefault()
+  closeBoundaryMenu()
+  closePlayheadMenu()
 
-  playheadDownX = e.clientX;
-  playheadDownY = e.clientY;
-  isPlayheadDragging = false;
-  lastPlayheadDragEvent = e;
+  playheadDownX = e.clientX
+  playheadDownY = e.clientY
+  isPlayheadDragging = false
+  lastPlayheadDragEvent = e
 
-  window.addEventListener('mousemove', onPlayheadMouseMove);
-  window.addEventListener('mouseup', onPlayheadMouseUp);
-  window.addEventListener('keydown', onPlayheadDragKeyChange);
-  window.addEventListener('keyup', onPlayheadDragKeyChange);
+  window.addEventListener('mousemove', onPlayheadMouseMove)
+  window.addEventListener('mouseup', onPlayheadMouseUp)
+  window.addEventListener('keydown', onPlayheadDragKeyChange)
+  window.addEventListener('keyup', onPlayheadDragKeyChange)
 }
 
 function onPlayheadMouseMove(e: MouseEvent) {
-  if (e.clientX === 0 && e.clientY === 0) return;
+  if (e.clientX === 0 && e.clientY === 0) return
   if (e.buttons === 0) {
-    onPlayheadMouseUp(e);
-    return;
+    onPlayheadMouseUp(e)
+    return
   }
 
-  lastPlayheadDragEvent = e;
+  lastPlayheadDragEvent = e
 
-  const dist = Math.hypot(e.clientX - playheadDownX, e.clientY - playheadDownY);
+  const dist = Math.hypot(e.clientX - playheadDownX, e.clientY - playheadDownY)
   if (!isPlayheadDragging && (e.shiftKey || dist >= 3)) {
-    isPlayheadDragging = true;
-    cancelPlayheadClickTimer();
-    closePlayheadPopover();
-    isScrubbing.value = true;
-    const sec = getSecondsFromMouseEvent(e);
-    const clamped = Math.max(0, Math.min(effectiveDuration.value, sec));
-    const snap = calculatePlayheadSnap(clamped, e.shiftKey);
-    const finalSec = snap.snappedSec;
+    isPlayheadDragging = true
+    cancelPlayheadClickTimer()
+    closePlayheadPopover()
+    isScrubbing.value = true
+    const sec = getSecondsFromMouseEvent(e)
+    const clamped = Math.max(0, Math.min(effectiveDuration.value, sec))
+    const snap = calculatePlayheadSnap(clamped, e.shiftKey)
+    const finalSec = snap.snappedSec
 
-    activeSnapLineSec.value = snap.snapTarget;
-    snappedBoundarySec.value = snap.boundarySec;
-    isSnappedToPlayhead.value = snap.snapTarget !== null;
-    snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : '';
+    activeSnapLineSec.value = snap.snapTarget
+    snappedBoundarySec.value = snap.boundarySec
+    isSnappedToPlayhead.value = snap.snapTarget !== null
+    snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : ''
 
-    internalScrubTime.value = finalSec;
-    emit('update:currentTime', finalSec);
-    emit('scrubStart', finalSec);
-    emit('scrubMove', finalSec);
+    internalScrubTime.value = finalSec
+    emit('update:currentTime', finalSec)
+    emit('scrubStart', finalSec)
+    emit('scrubMove', finalSec)
   } else if (isPlayheadDragging) {
-    const sec = getSecondsFromMouseEvent(e);
-    const clamped = Math.max(0, Math.min(effectiveDuration.value, sec));
-    const snap = calculatePlayheadSnap(clamped, e.shiftKey);
-    const finalSec = snap.snappedSec;
+    const sec = getSecondsFromMouseEvent(e)
+    const clamped = Math.max(0, Math.min(effectiveDuration.value, sec))
+    const snap = calculatePlayheadSnap(clamped, e.shiftKey)
+    const finalSec = snap.snappedSec
 
-    activeSnapLineSec.value = snap.snapTarget;
-    snappedBoundarySec.value = snap.boundarySec;
-    isSnappedToPlayhead.value = snap.snapTarget !== null;
-    snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : '';
+    activeSnapLineSec.value = snap.snapTarget
+    snappedBoundarySec.value = snap.boundarySec
+    isSnappedToPlayhead.value = snap.snapTarget !== null
+    snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : ''
 
-    internalScrubTime.value = finalSec;
-    emit('update:currentTime', finalSec);
-    emit('scrubMove', finalSec);
+    internalScrubTime.value = finalSec
+    emit('update:currentTime', finalSec)
+    emit('scrubMove', finalSec)
   }
 }
 
 function onPlayheadMouseUp(e: MouseEvent) {
-  window.removeEventListener('mousemove', onPlayheadMouseMove);
-  window.removeEventListener('mouseup', onPlayheadMouseUp);
-  window.removeEventListener('keydown', onPlayheadDragKeyChange);
-  window.removeEventListener('keyup', onPlayheadDragKeyChange);
+  window.removeEventListener('mousemove', onPlayheadMouseMove)
+  window.removeEventListener('mouseup', onPlayheadMouseUp)
+  window.removeEventListener('keydown', onPlayheadDragKeyChange)
+  window.removeEventListener('keyup', onPlayheadDragKeyChange)
 
-  activeSnapLineSec.value = null;
-  snappedBoundarySec.value = null;
-  isSnappedToPlayhead.value = false;
-  snapBadgeText.value = '';
-  lastPlayheadDragEvent = null;
+  activeSnapLineSec.value = null
+  snappedBoundarySec.value = null
+  isSnappedToPlayhead.value = false
+  snapBadgeText.value = ''
+  lastPlayheadDragEvent = null
 
   if (isPlayheadDragging) {
-    cancelPlayheadClickTimer();
-    const finalTime = internalScrubTime.value ?? props.currentTime;
-    isScrubbing.value = false;
-    internalScrubTime.value = null;
-    isPlayheadDragging = false;
-    emit('scrubEnd', finalTime);
+    cancelPlayheadClickTimer()
+    const finalTime = internalScrubTime.value ?? props.currentTime
+    isScrubbing.value = false
+    internalScrubTime.value = null
+    isPlayheadDragging = false
+    emit('scrubEnd', finalTime)
   } else if (e.detail <= 1) {
     // Single Left-Click! Use a small delay so a subsequent double-click cancels opening the popover
-    cancelPlayheadClickTimer();
+    cancelPlayheadClickTimer()
     playheadClickTimer = setTimeout(() => {
-      playheadClickTimer = null;
-      openPlayheadPopover();
-    }, 220);
+      playheadClickTimer = null
+      openPlayheadPopover()
+    }, 220)
   } else {
     // Double click / multi-click: cancel timer and ensure popover stays closed
-    cancelPlayheadClickTimer();
-    closePlayheadPopover();
+    cancelPlayheadClickTimer()
+    closePlayheadPopover()
   }
 }
 
 function onWaveformDblClick(e: MouseEvent) {
-  cancelPlayheadClickTimer();
-  closePlayheadPopover();
-  closePlayheadMenu();
-  closeBoundaryMenu();
+  cancelPlayheadClickTimer()
+  closePlayheadPopover()
+  closePlayheadMenu()
+  closeBoundaryMenu()
 
-  if (!props.showTrimHandles) return;
-  const clickSec = getSecondsFromMouseEvent(e);
-  const maxDur = effectiveDuration.value;
-  if (maxDur <= 0) return;
+  if (!props.showTrimHandles) return
+  const clickSec = getSecondsFromMouseEvent(e)
+  const maxDur = effectiveDuration.value
+  if (maxDur <= 0) return
 
   const boundaries = props.segmentBoundaries && props.segmentBoundaries.length > 0
     ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur];
+    : [0, maxDur]
 
-  let segStart = 0;
-  let segEnd = maxDur;
+  let segStart = 0
+  let segEnd = maxDur
 
   for (let i = 0; i < boundaries.length - 1; i++) {
-    const bStart = boundaries[i];
-    const bEnd = boundaries[i + 1];
+    const bStart = boundaries[i]
+    const bEnd = boundaries[i + 1]
     if (clickSec >= bStart - 0.01 && clickSec <= bEnd + 0.01) {
-      segStart = bStart;
-      segEnd = bEnd;
-      break;
+      segStart = bStart
+      segEnd = bEnd
+      break
     }
   }
 
-  const currentEnd = props.trimEnd;
+  const currentEnd = props.trimEnd
   if (Math.abs(props.trimStart - segStart) < 0.05 && Math.abs(currentEnd - segEnd) < 0.05) {
-    segStart = 0;
-    segEnd = maxDur;
+    segStart = 0
+    segEnd = maxDur
   }
 
-  startInputValue.value = formatSeconds(segStart);
-  endInputValue.value = formatSeconds(segEnd);
-  emit('update:trimStart', segStart);
-  emit('update:trimEnd', segEnd);
-  emit('update:currentTime', segStart);
-  emit('trimChange', { start: segStart, end: segEnd, handle: 'start' });
-  emit('trimEndChange', { start: segStart, end: segEnd, handle: 'start' });
+  startInputValue.value = formatSeconds(segStart)
+  endInputValue.value = formatSeconds(segEnd)
+  emit('update:trimStart', segStart)
+  emit('update:trimEnd', segEnd)
+  emit('update:currentTime', segStart)
+  emit('trimChange', { start: segStart, end: segEnd, handle: 'start' })
+  emit('trimEndChange', { start: segStart, end: segEnd, handle: 'start' })
 }
 
 function onWaveformMouseDown(e: MouseEvent) {
-  cancelPlayheadClickTimer();
-  if (activeDragHandle.value) return;
-  closePlayheadPopover();
-  closePlayheadMenu();
-  closeBoundaryMenu();
-  e.preventDefault();
+  cancelPlayheadClickTimer()
+  if (activeDragHandle.value) return
+  closePlayheadPopover()
+  closePlayheadMenu()
+  closeBoundaryMenu()
+  e.preventDefault()
 
   if (e.shiftKey && props.showTrimHandles) {
-    const clickSec = getSecondsFromMouseEvent(e);
-    const maxDur = effectiveDuration.value;
-    const clamped = Math.max(0, Math.min(maxDur, clickSec));
-    const effectiveEnd = props.trimEnd;
-    const startDist = Math.abs(clamped - props.trimStart);
-    const endDist = Math.abs(clamped - effectiveEnd);
-    let newStart = props.trimStart;
-    let newEnd = effectiveEnd;
-    let handle: 'start' | 'end';
+    const clickSec = getSecondsFromMouseEvent(e)
+    const maxDur = effectiveDuration.value
+    const clamped = Math.max(0, Math.min(maxDur, clickSec))
+    const effectiveEnd = props.trimEnd
+    const startDist = Math.abs(clamped - props.trimStart)
+    const endDist = Math.abs(clamped - effectiveEnd)
+    let newStart = props.trimStart
+    let newEnd = effectiveEnd
+    let handle: 'start' | 'end'
 
     if (clamped < props.trimStart) {
-      newStart = clamped;
-      handle = 'start';
+      newStart = clamped
+      handle = 'start'
     } else if (clamped > effectiveEnd) {
-      newEnd = clamped;
-      handle = 'end';
+      newEnd = clamped
+      handle = 'end'
     } else if (startDist <= endDist) {
-      newStart = clamped;
-      handle = 'start';
+      newStart = clamped
+      handle = 'start'
     } else {
-      newEnd = clamped;
-      handle = 'end';
+      newEnd = clamped
+      handle = 'end'
     }
 
-    startInputValue.value = formatSeconds(newStart);
-    endInputValue.value = formatSeconds(newEnd);
-    emit('update:trimStart', newStart);
-    emit('update:trimEnd', newEnd);
-    emit('update:currentTime', clamped);
-    emit('trimChange', { start: newStart, end: newEnd, handle });
-    emit('trimEndChange', { start: newStart, end: newEnd, handle });
-    return;
+    startInputValue.value = formatSeconds(newStart)
+    endInputValue.value = formatSeconds(newEnd)
+    emit('update:trimStart', newStart)
+    emit('update:trimEnd', newEnd)
+    emit('update:currentTime', clamped)
+    emit('trimChange', { start: newStart, end: newEnd, handle })
+    emit('trimEndChange', { start: newStart, end: newEnd, handle })
+    return
   }
 
   if (!props.enableScrubbing) {
     if (props.showTrimHandles) {
-      const clickSec = getSecondsFromMouseEvent(e);
-      const effectiveEnd = props.trimEnd;
-      const startDist = Math.abs(clickSec - props.trimStart);
-      const endDist = Math.abs(clickSec - effectiveEnd);
+      const clickSec = getSecondsFromMouseEvent(e)
+      const effectiveEnd = props.trimEnd
+      const startDist = Math.abs(clickSec - props.trimStart)
+      const endDist = Math.abs(clickSec - effectiveEnd)
       if (startDist <= endDist) {
-        clickedHandle = 'start';
-        activeDragHandle.value = 'start';
-        handleDownX = e.clientX;
-        isDraggingHandle.value = true;
-        const newStart = Math.max(0, Math.min(clickSec, effectiveEnd));
-        dragInitialStart = newStart;
-        dragInitialEnd = effectiveEnd;
-        dragStationarySec = effectiveEnd;
-        internalDragStartTime.value = newStart;
-        startInputValue.value = formatSeconds(newStart);
-        emit('update:trimStart', newStart);
-        emit('update:currentTime', newStart);
-        emit('trimChange', { start: newStart, end: effectiveEnd, handle: 'start' });
+        clickedHandle = 'start'
+        activeDragHandle.value = 'start'
+        handleDownX = e.clientX
+        isDraggingHandle.value = true
+        const newStart = Math.max(0, Math.min(clickSec, effectiveEnd))
+        dragInitialStart = newStart
+        dragInitialEnd = effectiveEnd
+        dragStationarySec = effectiveEnd
+        internalDragStartTime.value = newStart
+        startInputValue.value = formatSeconds(newStart)
+        emit('update:trimStart', newStart)
+        emit('update:currentTime', newStart)
+        emit('trimChange', { start: newStart, end: effectiveEnd, handle: 'start' })
       } else {
-        clickedHandle = 'end';
-        activeDragHandle.value = 'end';
-        handleDownX = e.clientX;
-        isDraggingHandle.value = true;
-        const newEnd = Math.min(effectiveDuration.value, Math.max(clickSec, props.trimStart));
-        dragInitialStart = props.trimStart;
-        dragInitialEnd = newEnd;
-        dragStationarySec = props.trimStart;
-        endInputValue.value = formatSeconds(newEnd);
-        emit('update:trimEnd', newEnd);
+        clickedHandle = 'end'
+        activeDragHandle.value = 'end'
+        handleDownX = e.clientX
+        isDraggingHandle.value = true
+        const newEnd = Math.min(effectiveDuration.value, Math.max(clickSec, props.trimStart))
+        dragInitialStart = props.trimStart
+        dragInitialEnd = newEnd
+        dragStationarySec = props.trimStart
+        endInputValue.value = formatSeconds(newEnd)
+        emit('update:trimEnd', newEnd)
         if (props.currentTime > newEnd) {
-          emit('update:currentTime', props.trimStart);
+          emit('update:currentTime', props.trimStart)
         }
-        emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' });
+        emit('trimChange', { start: props.trimStart, end: newEnd, handle: 'end' })
       }
 
-      window.addEventListener('mousemove', onHandleMouseMove);
-      window.addEventListener('mouseup', onHandleMouseUp);
+      window.addEventListener('mousemove', onHandleMouseMove)
+      window.addEventListener('mouseup', onHandleMouseUp)
     }
-    return;
+    return
   }
 
-  isScrubbing.value = true;
+  isScrubbing.value = true
 
-  const clickSec = getSecondsFromMouseEvent(e);
-  const clamped = Math.max(0, Math.min(effectiveDuration.value, clickSec));
-  const snap = calculatePlayheadSnap(clamped, e.shiftKey);
-  const finalSec = snap.snappedSec;
+  const clickSec = getSecondsFromMouseEvent(e)
+  const clamped = Math.max(0, Math.min(effectiveDuration.value, clickSec))
+  const snap = calculatePlayheadSnap(clamped, e.shiftKey)
+  const finalSec = snap.snappedSec
 
-  activeSnapLineSec.value = snap.snapTarget;
-  snappedBoundarySec.value = snap.boundarySec;
-  isSnappedToPlayhead.value = snap.snapTarget !== null;
-  snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : '';
+  activeSnapLineSec.value = snap.snapTarget
+  snappedBoundarySec.value = snap.boundarySec
+  isSnappedToPlayhead.value = snap.snapTarget !== null
+  snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : ''
 
-  internalScrubTime.value = finalSec;
-  emit('update:currentTime', finalSec);
-  emit('scrubStart', finalSec);
-  emit('scrubMove', finalSec);
+  internalScrubTime.value = finalSec
+  emit('update:currentTime', finalSec)
+  emit('scrubStart', finalSec)
+  emit('scrubMove', finalSec)
 
-  lastPlayheadDragEvent = e;
-  window.addEventListener('mousemove', onScrubMouseMove);
-  window.addEventListener('mouseup', onScrubMouseUp);
-  window.addEventListener('keydown', onPlayheadDragKeyChange);
-  window.addEventListener('keyup', onPlayheadDragKeyChange);
+  lastPlayheadDragEvent = e
+  window.addEventListener('mousemove', onScrubMouseMove)
+  window.addEventListener('mouseup', onScrubMouseUp)
+  window.addEventListener('keydown', onPlayheadDragKeyChange)
+  window.addEventListener('keyup', onPlayheadDragKeyChange)
 }
 
 function onScrubMouseMove(e: MouseEvent) {
-  if (!isScrubbing.value) return;
+  if (!isScrubbing.value) return
   // Ignore synthetic/invalid (0, 0) coordinates from Chromium native drag
-  if (e.clientX === 0 && e.clientY === 0) return;
+  if (e.clientX === 0 && e.clientY === 0) return
   if (e.buttons === 0) {
-    onScrubMouseUp();
-    return;
+    onScrubMouseUp()
+    return
   }
-  lastPlayheadDragEvent = e;
-  const sec = getSecondsFromMouseEvent(e);
-  const clamped = Math.max(0, Math.min(effectiveDuration.value, sec));
-  const snap = calculatePlayheadSnap(clamped, e.shiftKey);
-  const finalSec = snap.snappedSec;
+  lastPlayheadDragEvent = e
+  const sec = getSecondsFromMouseEvent(e)
+  const clamped = Math.max(0, Math.min(effectiveDuration.value, sec))
+  const snap = calculatePlayheadSnap(clamped, e.shiftKey)
+  const finalSec = snap.snappedSec
 
-  activeSnapLineSec.value = snap.snapTarget;
-  snappedBoundarySec.value = snap.boundarySec;
-  isSnappedToPlayhead.value = snap.snapTarget !== null;
-  snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : '';
+  activeSnapLineSec.value = snap.snapTarget
+  snappedBoundarySec.value = snap.boundarySec
+  isSnappedToPlayhead.value = snap.snapTarget !== null
+  snapBadgeText.value = snap.snapTarget !== null ? formatSeconds(snap.snapTarget) : ''
 
-  internalScrubTime.value = finalSec;
-  emit('update:currentTime', finalSec);
-  emit('scrubMove', finalSec);
+  internalScrubTime.value = finalSec
+  emit('update:currentTime', finalSec)
+  emit('scrubMove', finalSec)
 }
 
 function onScrubMouseUp() {
   if (isScrubbing.value) {
-    activeSnapLineSec.value = null;
-    snappedBoundarySec.value = null;
-    isSnappedToPlayhead.value = false;
-    snapBadgeText.value = '';
-    lastPlayheadDragEvent = null;
-    window.removeEventListener('keydown', onPlayheadDragKeyChange);
-    window.removeEventListener('keyup', onPlayheadDragKeyChange);
-    const finalTime = internalScrubTime.value ?? props.currentTime;
-    isScrubbing.value = false;
-    internalScrubTime.value = null;
-    window.removeEventListener('mousemove', onScrubMouseMove);
-    window.removeEventListener('mouseup', onScrubMouseUp);
-    emit('scrubEnd', finalTime);
+    activeSnapLineSec.value = null
+    snappedBoundarySec.value = null
+    isSnappedToPlayhead.value = false
+    snapBadgeText.value = ''
+    lastPlayheadDragEvent = null
+    window.removeEventListener('keydown', onPlayheadDragKeyChange)
+    window.removeEventListener('keyup', onPlayheadDragKeyChange)
+    const finalTime = internalScrubTime.value ?? props.currentTime
+    isScrubbing.value = false
+    internalScrubTime.value = null
+    window.removeEventListener('mousemove', onScrubMouseMove)
+    window.removeEventListener('mouseup', onScrubMouseUp)
+    emit('scrubEnd', finalTime)
   }
 }
 
 function onHandleMouseMove(e: MouseEvent) {
-  if (!activeDragHandle.value) return;
-  if (e.clientX === 0 && e.clientY === 0) return;
+  if (!activeDragHandle.value) return
+  if (e.clientX === 0 && e.clientY === 0) return
   if (e.buttons === 0) {
-    onHandleMouseUp(e);
-    return;
+    onHandleMouseUp(e)
+    return
   }
 
-  lastHandleDragEvent = e;
+  lastHandleDragEvent = e
 
   // Deadband threshold: do not update position until mouse has moved at least 3px or user is holding Shift
-  const dist = Math.abs(e.clientX - handleDownX);
+  const dist = Math.abs(e.clientX - handleDownX)
   if (!isDraggingHandle.value && (e.shiftKey || dist >= 3)) {
-    isDraggingHandle.value = true;
+    isDraggingHandle.value = true
   }
   if (!isDraggingHandle.value) {
-    return;
+    return
   }
 
-  if (!waveformWrapperRef.value) return;
-  const rect = waveformWrapperRef.value.getBoundingClientRect();
-  if (rect.width <= 0) return;
+  if (!waveformWrapperRef.value) return
+  const rect = waveformWrapperRef.value.getBoundingClientRect()
+  if (rect.width <= 0) return
 
-  const maxDur = effectiveDuration.value;
-  if (maxDur <= 0) return;
+  const maxDur = effectiveDuration.value
+  if (maxDur <= 0) return
 
-  const deltaSec = ((e.clientX - handleDownX) / rect.width) * maxDur;
-  const initialPos = clickedHandle === 'start' ? dragInitialStart : dragInitialEnd;
-  let rawCurrentSec = Math.max(0, Math.min(maxDur, initialPos + deltaSec));
+  const deltaSec = ((e.clientX - handleDownX) / rect.width) * maxDur
+  const initialPos = clickedHandle === 'start' ? dragInitialStart : dragInitialEnd
+  let rawCurrentSec = Math.max(0, Math.min(maxDur, initialPos + deltaSec))
 
-  let snappedBoundary: number | null = null;
-  let activeSnapSec: number | null = null;
-  let activeSnapLabel = '';
+  let snappedBoundary: number | null = null
+  let activeSnapSec: number | null = null
+  let activeSnapLabel = ''
 
   // Shift-Snapping: ONLY snap when holding Shift AND close to a clip boundary handle (or timeline start/end)
   // Does NOT snap to playhead or arbitrary grid intervals. If too far from a handle, does not snap.
   if (e.shiftKey) {
-    const snapPixelThreshold = 24; // doubled snapping distance (24px)
-    const snapSecThreshold = (snapPixelThreshold / rect.width) * maxDur;
+    const snapPixelThreshold = 24 // doubled snapping distance (24px)
+    const snapSecThreshold = (snapPixelThreshold / rect.width) * maxDur
 
     interface SnapHandle {
       sec: number;
@@ -1914,182 +1921,182 @@ function onHandleMouseMove(e: MouseEvent) {
       isPlayhead?: boolean;
     }
 
-    const handles: SnapHandle[] = [];
+    const handles: SnapHandle[] = []
 
     // Clip boundary divider handles (white divider lines)
     if (props.segmentBoundaries && props.segmentBoundaries.length > 0) {
       for (const b of props.segmentBoundaries) {
-        handles.push({ sec: b, isBoundary: true, boundarySec: b });
+        handles.push({ sec: b, isBoundary: true, boundarySec: b })
       }
     }
 
     // Opposite trim handle
-    handles.push({ sec: dragStationarySec, isBoundary: false, isStationary: true });
+    handles.push({ sec: dragStationarySec, isBoundary: false, isStationary: true })
 
     // Playhead cursor
-    handles.push({ sec: props.currentTime, isBoundary: false, isPlayhead: true });
+    handles.push({ sec: props.currentTime, isBoundary: false, isPlayhead: true })
 
     // Timeline start and end
-    handles.push({ sec: 0, isBoundary: false });
-    handles.push({ sec: maxDur, isBoundary: false });
+    handles.push({ sec: 0, isBoundary: false })
+    handles.push({ sec: maxDur, isBoundary: false })
 
-    let closestDist = Infinity;
-    let closestHandle: SnapHandle | null = null;
+    let closestDist = Infinity
+    let closestHandle: SnapHandle | null = null
 
     for (const h of handles) {
-      const d = Math.abs(rawCurrentSec - h.sec);
+      const d = Math.abs(rawCurrentSec - h.sec)
       if (d <= snapSecThreshold && d < closestDist) {
-        closestDist = d;
-        closestHandle = h;
+        closestDist = d
+        closestHandle = h
       }
     }
 
     if (closestHandle) {
-      rawCurrentSec = closestHandle.sec;
-      activeSnapSec = closestHandle.sec;
-      activeSnapLabel = formatSeconds(closestHandle.sec);
+      rawCurrentSec = closestHandle.sec
+      activeSnapSec = closestHandle.sec
+      activeSnapLabel = formatSeconds(closestHandle.sec)
       if (closestHandle.isBoundary && closestHandle.boundarySec !== undefined) {
-        snappedBoundary = closestHandle.boundarySec;
+        snappedBoundary = closestHandle.boundarySec
       }
-      isSnappedToStationaryHandle.value = !!closestHandle.isStationary;
-      isSnappedToPlayhead.value = !!closestHandle.isPlayhead;
+      isSnappedToStationaryHandle.value = !!closestHandle.isStationary
+      isSnappedToPlayhead.value = !!closestHandle.isPlayhead
     } else {
-      isSnappedToStationaryHandle.value = false;
-      isSnappedToPlayhead.value = false;
+      isSnappedToStationaryHandle.value = false
+      isSnappedToPlayhead.value = false
     }
   } else {
-    isSnappedToStationaryHandle.value = false;
-    isSnappedToPlayhead.value = false;
+    isSnappedToStationaryHandle.value = false
+    isSnappedToPlayhead.value = false
   }
 
-  snappedBoundarySec.value = snappedBoundary;
-  activeSnapLineSec.value = activeSnapSec;
-  snapBadgeText.value = activeSnapLabel;
+  snappedBoundarySec.value = snappedBoundary
+  activeSnapLineSec.value = activeSnapSec
+  snapBadgeText.value = activeSnapLabel
 
-  let newStart: number;
-  let newEnd: number;
-  let activeRole: 'start' | 'end';
+  let newStart: number
+  let newEnd: number
+  let activeRole: 'start' | 'end'
 
   if (rawCurrentSec < dragStationarySec) {
-    newStart = rawCurrentSec;
-    newEnd = dragStationarySec;
-    activeRole = 'start';
+    newStart = rawCurrentSec
+    newEnd = dragStationarySec
+    activeRole = 'start'
   } else if (rawCurrentSec > dragStationarySec) {
-    newStart = dragStationarySec;
-    newEnd = rawCurrentSec;
-    activeRole = 'end';
+    newStart = dragStationarySec
+    newEnd = rawCurrentSec
+    activeRole = 'end'
   } else {
-    newStart = rawCurrentSec;
-    newEnd = rawCurrentSec;
-    activeRole = clickedHandle || 'start';
+    newStart = rawCurrentSec
+    newEnd = rawCurrentSec
+    activeRole = clickedHandle || 'start'
   }
 
-  activeDragHandle.value = activeRole;
-  focusedPopoverHandle.value = activeRole;
-  startInputValue.value = formatSeconds(newStart);
-  endInputValue.value = formatSeconds(newEnd);
+  activeDragHandle.value = activeRole
+  focusedPopoverHandle.value = activeRole
+  startInputValue.value = formatSeconds(newStart)
+  endInputValue.value = formatSeconds(newEnd)
 
   if (activeRole === 'start') {
-    internalDragStartTime.value = newStart;
+    internalDragStartTime.value = newStart
   } else {
-    internalDragStartTime.value = null;
+    internalDragStartTime.value = null
   }
 
-  emit('update:trimStart', newStart);
-  emit('update:trimEnd', newEnd);
+  emit('update:trimStart', newStart)
+  emit('update:trimEnd', newEnd)
   if (activeRole === 'start') {
-    emit('update:currentTime', newStart);
+    emit('update:currentTime', newStart)
   } else if (activeRole === 'end' && props.currentTime > newEnd) {
-    emit('update:currentTime', newStart);
+    emit('update:currentTime', newStart)
   }
-  emit('trimChange', { start: newStart, end: newEnd, handle: activeRole });
+  emit('trimChange', { start: newStart, end: newEnd, handle: activeRole })
 }
 
 function onHandleMouseUp(_e?: MouseEvent) {
-  snappedBoundarySec.value = null;
-  activeSnapLineSec.value = null;
-  snapBadgeText.value = '';
-  isSnappedToStationaryHandle.value = false;
-  isSnappedToPlayhead.value = false;
-  lastHandleDragEvent = null;
-  window.removeEventListener('keydown', onHandleDragKeyChange);
-  window.removeEventListener('keyup', onHandleDragKeyChange);
+  snappedBoundarySec.value = null
+  activeSnapLineSec.value = null
+  snapBadgeText.value = ''
+  isSnappedToStationaryHandle.value = false
+  isSnappedToPlayhead.value = false
+  lastHandleDragEvent = null
+  window.removeEventListener('keydown', onHandleDragKeyChange)
+  window.removeEventListener('keyup', onHandleDragKeyChange)
   if (activeDragHandle.value) {
-    const wasDragging = isDraggingHandle.value;
-    const targetHandle = clickedHandle;
-    const handleType = activeDragHandle.value;
-    activeDragHandle.value = null;
-    isDraggingHandle.value = false;
-    internalDragStartTime.value = null;
-    window.removeEventListener('mousemove', onHandleMouseMove);
-    window.removeEventListener('mouseup', onHandleMouseUp);
+    const wasDragging = isDraggingHandle.value
+    const targetHandle = clickedHandle
+    const handleType = activeDragHandle.value
+    activeDragHandle.value = null
+    isDraggingHandle.value = false
+    internalDragStartTime.value = null
+    window.removeEventListener('mousemove', onHandleMouseMove)
+    window.removeEventListener('mouseup', onHandleMouseUp)
 
     if (wasDragging) {
       emit('trimEndChange', {
         start: props.trimStart,
         end: props.trimEnd,
         handle: handleType,
-      });
+      })
     } else if (targetHandle) {
-      openTrimPopovers(targetHandle);
+      openTrimPopovers(targetHandle)
     }
-    clickedHandle = null;
+    clickedHandle = null
   }
 }
 
 watch(
   () => [props.audioBuffer, props.tracks, props.includeMic, props.includeInput],
   () => {
-    scheduleDrawWaveform();
+    scheduleDrawWaveform()
   },
   { deep: true }
-);
+)
 
 onMounted(() => {
-  window.addEventListener('mousedown', handleDocumentMouseDown, true);
+  window.addEventListener('mousedown', handleDocumentMouseDown, true)
   if (waveformWrapperRef.value) {
     resizeObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
         if (entry.contentRect.width > 0 && entry.contentRect.height > 0) {
-          cachedWidth = entry.contentRect.width;
-          cachedHeight = entry.contentRect.height;
-          scheduleDrawWaveform();
+          cachedWidth = entry.contentRect.width
+          cachedHeight = entry.contentRect.height
+          scheduleDrawWaveform()
         }
       }
-    });
-    resizeObserver.observe(waveformWrapperRef.value);
+    })
+    resizeObserver.observe(waveformWrapperRef.value)
   }
-});
+})
 
 onUnmounted(() => {
   if (drawRaf !== null) {
-    cancelAnimationFrame(drawRaf);
-    drawRaf = null;
+    cancelAnimationFrame(drawRaf)
+    drawRaf = null
   }
   if (globalActiveGraphInstanceId.value === instanceId) {
-    globalActiveGraphInstanceId.value = null;
+    globalActiveGraphInstanceId.value = null
   }
   if (resizeObserver) {
-    resizeObserver.disconnect();
-    resizeObserver = null;
+    resizeObserver.disconnect()
+    resizeObserver = null
   }
-  window.removeEventListener('mousedown', handleDocumentMouseDown, true);
-  window.removeEventListener('mousemove', onHandleMouseMove);
-  window.removeEventListener('mouseup', onHandleMouseUp);
-  window.removeEventListener('keydown', onHandleDragKeyChange);
-  window.removeEventListener('keyup', onHandleDragKeyChange);
-  window.removeEventListener('keydown', onPlayheadDragKeyChange);
-  window.removeEventListener('keyup', onPlayheadDragKeyChange);
-  window.removeEventListener('mousemove', onScrubMouseMove);
-  window.removeEventListener('mouseup', onScrubMouseUp);
-  window.removeEventListener('mousemove', onPlayheadMouseMove);
-  window.removeEventListener('mouseup', onPlayheadMouseUp);
-  cancelPlayheadClickTimer();
-});
+  window.removeEventListener('mousedown', handleDocumentMouseDown, true)
+  window.removeEventListener('mousemove', onHandleMouseMove)
+  window.removeEventListener('mouseup', onHandleMouseUp)
+  window.removeEventListener('keydown', onHandleDragKeyChange)
+  window.removeEventListener('keyup', onHandleDragKeyChange)
+  window.removeEventListener('keydown', onPlayheadDragKeyChange)
+  window.removeEventListener('keyup', onPlayheadDragKeyChange)
+  window.removeEventListener('mousemove', onScrubMouseMove)
+  window.removeEventListener('mouseup', onScrubMouseUp)
+  window.removeEventListener('mousemove', onPlayheadMouseMove)
+  window.removeEventListener('mouseup', onPlayheadMouseUp)
+  cancelPlayheadClickTimer()
+})
 
 defineExpose({
   drawWaveform,
-});
+})
 </script>
 
 <style scoped>

@@ -45,7 +45,9 @@
                   :key="s"
                   type="button"
                   :class="['preset-btn', { 'is-default': selectedPresetSeconds === s && s > 0 }]"
-                  :title="continueRecordingLive ? (s === 0 ? 'Start live recording now' : `Start live punch-in from -${s}s`) : `Capture last ${s}s`"
+                  :title="continueRecordingLive
+                    ? (s === 0 ? 'Start live recording now' : `Start live punch-in from -${s}s`)
+                    : `Capture last ${s}s`"
                   @click="selectAndExecute(s)">
             {{ s === 0 ? '0s' : `-${s}s` }}
           </button>
@@ -66,9 +68,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
-import { usePulseBackStore, PulseBackClip } from '../store/pulseBack';
-import { useSettingsStore } from '../store/settings';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { usePulseBackStore, PulseBackClip } from '../store/pulseBack'
+import { useSettingsStore } from '../store/settings'
 
 const props = withDefaults(
   defineProps<{
@@ -81,71 +83,71 @@ const props = withDefaults(
     align: 'right',
     presets: () => [0, 15, 30, 60],
   }
-);
+)
 
 const emit = defineEmits<{
   (e: 'clipCaptured', clip: PulseBackClip | null): void;
-}>();
+}>()
 
-const pulseBackStore = usePulseBackStore();
-const settingsStore = useSettingsStore();
+const pulseBackStore = usePulseBackStore()
+const settingsStore = useSettingsStore()
 
-const showClipMenu = ref(false);
-const clipMenuRef = ref<HTMLDivElement | null>(null);
-const selectedPresetSeconds = ref(settingsStore.pulse_back_default_duration || 30);
-const continueRecordingLive = ref(false);
+const showClipMenu = ref(false)
+const clipMenuRef = ref<HTMLDivElement | null>(null)
+const selectedPresetSeconds = ref(settingsStore.pulse_back_default_duration || 30)
+const continueRecordingLive = ref(false)
 
 const visiblePresets = computed(() => {
   if (continueRecordingLive.value) {
-    return props.presets;
+    return props.presets
   }
-  return props.presets.filter(s => s > 0);
-});
+  return props.presets.filter(s => s > 0)
+})
 
-const alignClass = computed(() => (props.align === 'left' ? 'align-left' : 'align-right'));
+const alignClass = computed(() => (props.align === 'left' ? 'align-left' : 'align-right'))
 
 const hotkeyLabel = computed(() => {
   if (settingsStore.pulse_back_hotkey && settingsStore.pulse_back_hotkey.length > 0) {
-    return settingsStore.pulse_back_hotkey.join('+');
+    return settingsStore.pulse_back_hotkey.join('+')
   }
-  return 'F12';
-});
+  return 'F12'
+})
 
 watch(
   () => settingsStore.pulse_back_default_duration,
   val => {
-    if (val) selectedPresetSeconds.value = val;
+    if (val) selectedPresetSeconds.value = val
   }
-);
+)
 
 function toggleClipMenu() {
-  if (!pulseBackStore.isBufferRunning) return;
-  showClipMenu.value = !showClipMenu.value;
+  if (!pulseBackStore.isBufferRunning) return
+  showClipMenu.value = !showClipMenu.value
 }
 
 async function selectAndExecute(s: number) {
   if (s > 0) {
-    selectedPresetSeconds.value = s;
-    settingsStore.saveSetting('pulse_back_default_duration', s);
+    selectedPresetSeconds.value = s
+    settingsStore.saveSetting('pulse_back_default_duration', s)
   }
-  showClipMenu.value = false;
-  const clip = await pulseBackStore.triggerQuickClip(s, continueRecordingLive.value);
-  emit('clipCaptured', clip);
+  showClipMenu.value = false
+  const clip = await pulseBackStore.triggerQuickClip(s, continueRecordingLive.value)
+  emit('clipCaptured', clip)
 }
 
 function handleClickOutside(event: MouseEvent) {
-  if (clipMenuRef.value && !clipMenuRef.value.contains(event.target as Node)) {
-    showClipMenu.value = false;
+  if (clipMenuRef.value && event.target instanceof Node && !clipMenuRef.value.contains(event.target)) {
+    showClipMenu.value = false
   }
 }
 
 onMounted(() => {
-  document.addEventListener('pointerdown', handleClickOutside);
-});
+  document.addEventListener('pointerdown', handleClickOutside)
+})
 
 onUnmounted(() => {
-  document.removeEventListener('pointerdown', handleClickOutside);
-});
+  document.removeEventListener('pointerdown', handleClickOutside)
+})
 </script>
 
 <style scoped>

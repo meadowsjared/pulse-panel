@@ -39,6 +39,7 @@ const sharedRules = {
       assertionStyle: 'never',
     },
   ],
+  semi: ['error', 'never'],
 }
 
 module.exports = [

@@ -191,7 +191,8 @@ async function downloadAudioClip(configDirectory, options, onProgress) {
         success: true,
         buffer: Buffer.from(arrayBuf),
         extension: ext,
-        mimeType: ext === 'mp3' ? 'audio/mpeg' : ext === 'wav' ? 'audio/wav' : ext === 'ogg' ? 'audio/ogg' : 'audio/mp4',
+        mimeType:
+          ext === 'mp3' ? 'audio/mpeg' : ext === 'wav' ? 'audio/wav' : ext === 'ogg' ? 'audio/ogg' : 'audio/mp4',
       }
     } catch (directErr) {
       console.warn('Direct fetch failed, falling back to yt-dlp:', directErr.message)

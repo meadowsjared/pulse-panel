@@ -73,232 +73,232 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 
 const props = defineProps<{
   webview: any;
   initialQuery?: string;
-}>();
+}>()
 
 const emit = defineEmits<{
   (e: 'close'): void;
-}>();
+}>()
 
-const findInputRef = ref<HTMLInputElement | null>(null);
-const findQuery = ref(props.initialQuery || '');
-const currentMatch = ref(0);
-const totalMatches = ref(0);
-const deadSearchPrefix = ref('');
-let findDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+const findInputRef = ref<HTMLInputElement | null>(null)
+const findQuery = ref(props.initialQuery || '')
+const currentMatch = ref(0)
+const totalMatches = ref(0)
+const deadSearchPrefix = ref('')
+let findDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const matchCountDisplay = computed(() => {
-  if (!findQuery.value || !findQuery.value.trim()) return '0/0';
-  if (totalMatches.value === 0) return '0/0';
-  const current = currentMatch.value > 0 ? currentMatch.value : 1;
-  return `${current}/${totalMatches.value}`;
-});
+  if (!findQuery.value || !findQuery.value.trim()) return '0/0'
+  if (totalMatches.value === 0) return '0/0'
+  const current = currentMatch.value > 0 ? currentMatch.value : 1
+  return `${current}/${totalMatches.value}`
+})
 
 function getWebviewEl(): any {
-  if (!props.webview) return null;
-  return props.webview.$el || props.webview;
+  if (!props.webview) return null
+  return props.webview.$el || props.webview
 }
 
 function executeFindAsYouType() {
-  const wv = getWebviewEl();
-  const text = findQuery.value.trim();
-  if (!wv) return;
+  const wv = getWebviewEl()
+  const text = findQuery.value.trim()
+  if (!wv) return
 
   if (!text) {
-    currentMatch.value = 0;
-    totalMatches.value = 0;
-    deadSearchPrefix.value = '';
+    currentMatch.value = 0
+    totalMatches.value = 0
+    deadSearchPrefix.value = ''
     try {
-      wv.stopFindInPage?.('clearSelection');
+      wv.stopFindInPage?.('clearSelection')
     } catch (_) { }
-    return;
+    return
   }
 
   // Short-circuit: If a shorter prefix already returned 0 matches,
   // extending it cannot produce matches on this document.
-  const lowerText = text.toLowerCase();
+  const lowerText = text.toLowerCase()
   if (deadSearchPrefix.value && lowerText.startsWith(deadSearchPrefix.value)) {
-    currentMatch.value = 0;
-    totalMatches.value = 0;
-    return;
+    currentMatch.value = 0
+    totalMatches.value = 0
+    return
   }
 
   if (typeof wv.findInPage === 'function') {
     try {
       // forward: true and findNext: true immediately activates & scrolls to match 1
-      wv.findInPage(text, { forward: true, findNext: true, matchCase: false });
+      wv.findInPage(text, { forward: true, findNext: true, matchCase: false })
     } catch (err) {
-      console.warn('findInPage error:', err);
+      console.warn('findInPage error:', err)
     }
   }
 }
 
 function executeFindStep(forward = true) {
-  const wv = getWebviewEl();
-  const text = findQuery.value.trim();
-  if (!wv || !text) return;
+  const wv = getWebviewEl()
+  const text = findQuery.value.trim()
+  if (!wv || !text) return
 
   if (typeof wv.findInPage === 'function') {
     try {
-      wv.findInPage(text, { forward, findNext: true, matchCase: false });
+      wv.findInPage(text, { forward, findNext: true, matchCase: false })
     } catch (err) {
-      console.warn('findInPage step error:', err);
+      console.warn('findInPage step error:', err)
     }
   }
 }
 
 function handleFindInput() {
-  const query = findQuery.value;
+  const query = findQuery.value
   if (!query || !query.trim()) {
     if (findDebounceTimer) {
-      clearTimeout(findDebounceTimer);
-      findDebounceTimer = null;
+      clearTimeout(findDebounceTimer)
+      findDebounceTimer = null
     }
-    executeFindAsYouType();
-    return;
+    executeFindAsYouType()
+    return
   }
 
   if (findDebounceTimer) {
-    clearTimeout(findDebounceTimer);
+    clearTimeout(findDebounceTimer)
   }
 
   // Fast 50ms debounce so typing feels instantaneous while avoiding redundant IPC floods
   findDebounceTimer = setTimeout(() => {
-    executeFindAsYouType();
-  }, 50);
+    executeFindAsYouType()
+  }, 50)
 }
 
 function handleFindPrev() {
-  executeFindStep(false);
+  executeFindStep(false)
 }
 
 function handleFindNext() {
-  executeFindStep(true);
+  executeFindStep(true)
 }
 
 function handleClose() {
-  emit('close');
+  emit('close')
 }
 
 function handleFindInputKeydown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'f' || e.code === 'KeyF')) {
-    e.preventDefault();
-    e.stopPropagation();
-    findInputRef.value?.select();
-    return;
+    e.preventDefault()
+    e.stopPropagation()
+    findInputRef.value?.select()
+    return
   }
   if (e.key === 'Enter') {
-    e.preventDefault();
-    if (!findQuery.value.trim()) return;
+    e.preventDefault()
+    if (!findQuery.value.trim()) return
     if (findDebounceTimer) {
-      clearTimeout(findDebounceTimer);
-      findDebounceTimer = null;
+      clearTimeout(findDebounceTimer)
+      findDebounceTimer = null
     }
     if (e.shiftKey) {
-      executeFindStep(false);
+      executeFindStep(false)
     } else {
-      executeFindStep(true);
+      executeFindStep(true)
     }
   } else if (e.key === 'Escape') {
-    e.preventDefault();
-    e.stopPropagation();
-    handleClose();
+    e.preventDefault()
+    e.stopPropagation()
+    handleClose()
   }
 }
 
 const handleFoundInPage = (e: any) => {
-  const result = e.result || e;
+  const result = e.result || e
   if (typeof result.activeMatchOrdinal === 'number') {
-    currentMatch.value = result.activeMatchOrdinal;
+    currentMatch.value = result.activeMatchOrdinal
   }
   if (typeof result.matches === 'number') {
-    totalMatches.value = result.matches;
+    totalMatches.value = result.matches
     if (result.matches > 0) {
-      deadSearchPrefix.value = '';
+      deadSearchPrefix.value = ''
       if (currentMatch.value === 0) {
-        currentMatch.value = 1;
+        currentMatch.value = 1
       }
     } else if (result.finalUpdate) {
-      const currentLower = findQuery.value.trim().toLowerCase();
+      const currentLower = findQuery.value.trim().toLowerCase()
       if (currentLower) {
-        deadSearchPrefix.value = currentLower;
+        deadSearchPrefix.value = currentLower
       }
     }
   }
-};
+}
 
-watch(() => props.initialQuery, (newVal) => {
+watch(() => props.initialQuery, newVal => {
   if (typeof newVal === 'string' && newVal.trim() && newVal !== findQuery.value) {
-    findQuery.value = newVal.trim();
+    findQuery.value = newVal.trim()
     nextTick(() => {
-      findInputRef.value?.select();
-      executeFindAsYouType();
-    });
+      findInputRef.value?.select()
+      executeFindAsYouType()
+    })
   }
-});
+})
 
 const handleNavigate = () => {
-  deadSearchPrefix.value = '';
+  deadSearchPrefix.value = ''
   setTimeout(() => {
     if (findQuery.value.trim()) {
-      executeFindAsYouType();
+      executeFindAsYouType()
     }
-  }, 250);
-};
+  }, 250)
+}
 
 onMounted(() => {
-  const wv = getWebviewEl();
+  const wv = getWebviewEl()
   if (wv) {
-    wv.addEventListener('found-in-page', handleFoundInPage);
-    wv.addEventListener('did-navigate', handleNavigate);
-    wv.addEventListener('did-navigate-in-page', handleNavigate);
+    wv.addEventListener('found-in-page', handleFoundInPage)
+    wv.addEventListener('did-navigate', handleNavigate)
+    wv.addEventListener('did-navigate-in-page', handleNavigate)
   }
 
   nextTick(() => {
-    findInputRef.value?.focus();
-    findInputRef.value?.select();
+    findInputRef.value?.focus()
+    findInputRef.value?.select()
     if (findQuery.value.trim()) {
-      executeFindAsYouType();
+      executeFindAsYouType()
     }
-  });
-});
+  })
+})
 
 onUnmounted(() => {
   if (findDebounceTimer) {
-    clearTimeout(findDebounceTimer);
-    findDebounceTimer = null;
+    clearTimeout(findDebounceTimer)
+    findDebounceTimer = null
   }
-  const wv = getWebviewEl();
+  const wv = getWebviewEl()
   if (wv) {
     try {
-      wv.removeEventListener('found-in-page', handleFoundInPage);
-      wv.removeEventListener('did-navigate', handleNavigate);
-      wv.removeEventListener('did-navigate-in-page', handleNavigate);
-      wv.stopFindInPage?.('clearSelection');
+      wv.removeEventListener('found-in-page', handleFoundInPage)
+      wv.removeEventListener('did-navigate', handleNavigate)
+      wv.removeEventListener('did-navigate-in-page', handleNavigate)
+      wv.stopFindInPage?.('clearSelection')
     } catch (_) { }
   }
-});
+})
 
 defineExpose({
   focus() {
-    findInputRef.value?.focus();
-    findInputRef.value?.select();
+    findInputRef.value?.focus()
+    findInputRef.value?.select()
   },
   setQuery(q: string) {
-    findQuery.value = q;
-    handleFindInput();
+    findQuery.value = q
+    handleFindInput()
   },
   findNext() {
-    executeFindStep(true);
+    executeFindStep(true)
   },
   findPrev() {
-    executeFindStep(false);
+    executeFindStep(false)
   },
-});
+})
 </script>
 
 <style scoped>

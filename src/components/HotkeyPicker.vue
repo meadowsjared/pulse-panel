@@ -57,7 +57,8 @@ function handleKeyUp(event: KeyboardEvent) {
   /**
    * if event.code isn't already in buttons, then ignore it
    * because we want to ignore keyup events for keys that weren't pressed down
-   * (e.g. if the user triggers the ptt_hotkey by hitting the stop_all_hotkeys key, we don't want to record that keyup event)
+   * (e.g. if the user triggers the ptt_hotkey by hitting the stop_all_hotkeys key,
+   * we don't want to record that keyup event)
    */
   if (!buttons.value.includes(event.code) && !buttons.value.includes(event.key)) return
 

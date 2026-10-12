@@ -41,9 +41,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue';
-import InlineSvg from 'vue-inline-svg';
-import SelectArrow from '../../assets/images/select-arrow.svg';
+import { ref, watch, nextTick } from 'vue'
+import InlineSvg from 'vue-inline-svg'
+import SelectArrow from '../../assets/images/select-arrow.svg'
 
 interface LabelValue {
   label: string;
@@ -54,7 +54,7 @@ const emit = defineEmits<{
   (event: 'update:modelValue', value: string | null): void;
   (change: 'change', value: Event): void;
   (event: 'optionContextmenu', payload: { event: MouseEvent; option: LabelValue; }): void;
-}>();
+}>()
 
 const props = withDefaults(
   defineProps<{
@@ -65,33 +65,33 @@ const props = withDefaults(
   {
     defaultText: 'Select an option',
   }
-);
+)
 
-const isOpen = ref(false);
-const focusedOptionIndex = ref<null | number>(null);
-const optionRefs = ref<HTMLElement[]>([]);
-const focused = ref(false);
-const selectedOption = ref<HTMLDivElement | null>(null);
-const localValue = ref<LabelValue | null>(findOptionFromValue(props.modelValue));
+const isOpen = ref(false)
+const focusedOptionIndex = ref<null | number>(null)
+const optionRefs = ref<HTMLElement[]>([])
+const focused = ref(false)
+const selectedOption = ref<HTMLDivElement | null>(null)
+const localValue = ref<LabelValue | null>(findOptionFromValue(props.modelValue))
 
 // update our local value any time the modelValue changes
 watch(
   () => [props.modelValue, props.options],
   () => {
-    if (props.modelValue === localValue.value?.value) return;
-    localValue.value = findOptionFromValue(props.modelValue);
+    if (props.modelValue === localValue.value?.value) return
+    localValue.value = findOptionFromValue(props.modelValue)
   }
-);
+)
 
 function toggleDropdown() {
-  isOpen.value = !isOpen.value;
+  isOpen.value = !isOpen.value
   if (isOpen.value) {
-    focusedOptionIndex.value = props.options.findIndex(option => option.value === props.modelValue);
+    focusedOptionIndex.value = props.options.findIndex(option => option.value === props.modelValue)
     // allow the options to open before focusing the current value
     nextTick(() => {
-      if (focusedOptionIndex.value === null) return;
-      optionRefs.value[focusedOptionIndex.value]?.focus();
-    });
+      if (focusedOptionIndex.value === null) return
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+    })
   }
 }
 
@@ -102,17 +102,17 @@ function toggleDropdown() {
 function selectOption(option: LabelValue) {
   // selParentRef.value?.focus()
   if (option.value !== props.modelValue) {
-    localValue.value = option;
-    emit('update:modelValue', option.value);
-    emitHTMLSelectChange(option);
+    localValue.value = option
+    emit('update:modelValue', option.value)
+    emitHTMLSelectChange(option)
   }
-  isOpen.value = false;
-  selectedOption.value?.focus();
+  isOpen.value = false
+  selectedOption.value?.focus()
 }
 
 function handleOptionContextMenu(event: MouseEvent, option: LabelValue) {
-  focused.value = true;
-  emit('optionContextmenu', { event, option });
+  focused.value = true
+  emit('optionContextmenu', { event, option })
 }
 
 /**
@@ -121,8 +121,8 @@ function handleOptionContextMenu(event: MouseEvent, option: LabelValue) {
  * @returns The option if found, otherwise null
  */
 function findOptionFromValue(value: string | null) {
-  if (value === null) return null;
-  return props.options.find(option => option.value === value) ?? null;
+  if (value === null) return null
+  return props.options.find(option => option.value === value) ?? null
 }
 
 /**
@@ -130,27 +130,27 @@ function findOptionFromValue(value: string | null) {
  * @param option - The selected option
  */
 function emitHTMLSelectChange(option: LabelValue) {
-  const selectElement = document.createElement('select');
-  const optionElement = document.createElement('option');
-  optionElement.value = option.value;
-  optionElement.selected = true;
-  selectElement.appendChild(optionElement);
-  const event = new CustomEvent('change');
-  const payload = { ...event, target: selectElement };
-  emit('change', payload);
+  const selectElement = document.createElement('select')
+  const optionElement = document.createElement('option')
+  optionElement.value = option.value
+  optionElement.selected = true
+  selectElement.appendChild(optionElement)
+  const event = new CustomEvent('change')
+  const payload = { ...event, target: selectElement }
+  emit('change', payload)
 }
 
 function handleFocus() {
-  focused.value = true;
+  focused.value = true
 }
 
 function handleBlur() {
-  focused.value = false;
+  focused.value = false
   setTimeout(() => {
     if (!focused.value) {
-      isOpen.value = false;
+      isOpen.value = false
     }
-  }, 200);
+  }, 200)
 }
 
 /**
@@ -164,68 +164,68 @@ function handleBlur() {
  */
 function handleKeypress(event: KeyboardEvent) {
   // use a switch case on event.key
-  if (focusedOptionIndex.value === null) return;
+  if (focusedOptionIndex.value === null) return
   switch (event.key) {
     case 'Enter':
-      selectOption(props.options[focusedOptionIndex.value]);
-      return;
+      selectOption(props.options[focusedOptionIndex.value])
+      return
     case 'Escape':
     case 'Tab':
-      isOpen.value = false;
-      selectedOption.value?.focus();
-      focusedOptionIndex.value = null;
-      return;
+      isOpen.value = false
+      selectedOption.value?.focus()
+      focusedOptionIndex.value = null
+      return
   }
   switch (event.key) {
     case 'ArrowUp':
-      focusedOptionIndex.value = getKeypressUp(focusedOptionIndex.value);
-      optionRefs.value[focusedOptionIndex.value]?.focus();
-      break;
+      focusedOptionIndex.value = getKeypressUp(focusedOptionIndex.value)
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
     case 'ArrowDown':
-      focusedOptionIndex.value = getKeypressDown(focusedOptionIndex.value);
-      optionRefs.value[focusedOptionIndex.value]?.focus();
-      break;
+      focusedOptionIndex.value = getKeypressDown(focusedOptionIndex.value)
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
     case 'PageUp':
-      focusedOptionIndex.value = getPageUp(focusedOptionIndex.value);
-      optionRefs.value[focusedOptionIndex.value]?.focus();
-      break;
+      focusedOptionIndex.value = getPageUp(focusedOptionIndex.value)
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
     case 'PageDown':
-      focusedOptionIndex.value = getPageDown(focusedOptionIndex.value);
-      optionRefs.value[focusedOptionIndex.value]?.focus();
-      break;
+      focusedOptionIndex.value = getPageDown(focusedOptionIndex.value)
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
     case 'Home':
-      focusedOptionIndex.value = 0;
-      optionRefs.value[focusedOptionIndex.value]?.focus();
-      break;
+      focusedOptionIndex.value = 0
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
     case 'End':
-      focusedOptionIndex.value = optionRefs.value.length - 1;
-      optionRefs.value[focusedOptionIndex.value]?.focus();
-      break;
+      focusedOptionIndex.value = optionRefs.value.length - 1
+      optionRefs.value[focusedOptionIndex.value]?.focus()
+      break
   }
 }
 
 function getPageUp(index: number) {
-  index -= 5;
-  index = Math.max(index, 0);
-  return index;
+  index -= 5
+  index = Math.max(index, 0)
+  return index
 }
 
 function getPageDown(index: number) {
-  index += 5;
-  index = Math.min(index, optionRefs.value.length - 1);
-  return index;
+  index += 5
+  index = Math.min(index, optionRefs.value.length - 1)
+  return index
 }
 
 function getKeypressUp(index: number) {
-  index--;
-  index = Math.max(index, 0);
-  return index;
+  index--
+  index = Math.max(index, 0)
+  return index
 }
 
 function getKeypressDown(index: number) {
-  index++;
-  index = Math.min(index, optionRefs.value.length - 1);
-  return index;
+  index++
+  index = Math.min(index, optionRefs.value.length - 1)
+  return index
 }
 </script>
 

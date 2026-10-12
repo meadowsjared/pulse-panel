@@ -352,7 +352,8 @@ class PulseBackBuffer {
     this.maxSeconds = Math.max(15, Math.min(300, maxBufferSeconds))
 
     // 1. Open primary microphone stream
-    // Check if audioMixer already has an active, live stream for this microphone to avoid multiple conflicting getUserMedia calls
+    // Check if audioMixer already has an active, live stream for this microphone
+    // to avoid multiple conflicting getUserMedia calls
     const mixerStream = audioMixer.getMicrophoneStream()
     const mixerMicId = audioMixer.getCurrentMicId()
     if (
@@ -388,7 +389,10 @@ class PulseBackBuffer {
       this.isDualTracksActive = false
     }
 
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext
+    if (!AudioContextClass) {
+      throw new Error('AudioContext not supported')
+    }
     try {
       this.audioCtx = new AudioContextClass({ latencyHint: 'balanced' })
     } catch {
@@ -568,12 +572,12 @@ class PulseBackBuffer {
       await this.audioCtx.resume().catch(() => {})
     }
 
-    if (enabled && typeof (this.audioCtx as any).setSinkId === 'function') {
+    if (enabled && typeof this.audioCtx.setSinkId === 'function') {
       try {
         if (targetDeviceId && targetDeviceId !== 'default') {
-          await (this.audioCtx as any).setSinkId(targetDeviceId)
+          await this.audioCtx.setSinkId(targetDeviceId)
         } else {
-          await (this.audioCtx as any).setSinkId('')
+          await this.audioCtx.setSinkId('')
         }
       } catch (err) {
         console.warn('[PulseBackBuffer] Could not set sinkId for input test:', err)

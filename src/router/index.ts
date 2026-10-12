@@ -5,9 +5,9 @@ import Main from '../components/Main.vue'
 const YouTubeRoutePlaceholder = defineComponent({
   name: 'YouTubeRoute',
   render() {
-    return h('div', { style: 'display: none;' });
+    return h('div', { style: 'display: none;' })
   },
-});
+})
 
 const routes = [
   {

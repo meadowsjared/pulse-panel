@@ -43,7 +43,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref } from 'vue'
 
 const versions = ref(window.electron?.versions)
 </script>

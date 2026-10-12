@@ -88,7 +88,11 @@
         <span class="font-semibold text-xs text-zinc-400 uppercase tracking-wider">Segments:</span>
         <div v-for="(segment, index) in modelValue.soundSegments"
              :key="`input-range-segment-${segment.id}`"
-             :class="['segment-card flex flex-col gap-1 w-full cursor-grab p-1.5 rounded-lg border border-zinc-800/80 bg-zinc-900/50', { dragging: segment.isDragPreview }]"
+             :class="[
+               'segment-card flex flex-col gap-1 w-full cursor-grab p-1.5 rounded-lg ' +
+               'border border-zinc-800/80 bg-zinc-900/50',
+               { dragging: segment.isDragPreview },
+             ]"
              draggable="true"
              @dragstart="dragStart(segment, index)"
              @dragenter.prevent="dragOver(segment)"
@@ -100,7 +104,8 @@
                    placeholder="Segment label (optional)"
                    class="segment-label-input flex-1 min-w-0 text-xs py-0.5" />
             <button @click="removeSegment(segment)"
-                    class="close-button menu flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-white flex-shrink-0"
+                    class="close-button menu flex items-center justify-center w-6 h-6
+                           text-zinc-400 hover:text-white flex-shrink-0"
                     title="Remove segment">
               <inline-svg class="w-4 h-4 rotate-45"
                           :src="Plus" />
@@ -159,7 +164,9 @@
           </div>
         </div>
         <button @click="addSegment"
-                class="close-button w-full flex items-center justify-center py-1 mt-0.5 border border-dashed border-zinc-700 hover:border-zinc-500 rounded-lg text-zinc-400 hover:text-zinc-200 text-xs gap-1">
+                class="close-button w-full flex items-center justify-center py-1 mt-0.5
+                       border border-dashed border-zinc-700 hover:border-zinc-500 rounded-lg
+                       text-zinc-400 hover:text-zinc-200 text-xs gap-1">
           <inline-svg class="w-4 h-4"
                       :src="Plus" />
           <span>Add Segment</span>
@@ -170,7 +177,8 @@
            @contextmenu.prevent.stop="openImageContextMenu($event)">
         <div class="absolute top-2 right-2 flex items-center gap-1.5 z-10">
           <button @click="handleCopyImage"
-                  class="image-action-button menu w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
+                  class="image-action-button menu w-8 h-8 bg-white flex items-center
+                         justify-center p-1.5 rounded cursor-pointer"
                   title="Copy image">
             <svg class="w-8 h-8 text-black"
                  viewBox="0 0 24 24"
@@ -189,14 +197,16 @@
             </svg>
           </button>
           <button @click="exportImage"
-                  class="image-action-button menu w-8 h-8 bg-white flex items-center justify-center p-1.5 rounded cursor-pointer"
+                  class="image-action-button menu w-8 h-8 bg-white flex items-center
+                         justify-center p-1.5 rounded cursor-pointer"
                   title="Save / export image">
             <inline-svg :src="DownloadIcon"
                         class="w-full h-full text-black" />
           </button>
           <button v-if="modelValue.imageKey"
                   @click="removeImage"
-                  class="remove-image-button menu image-action-button w-8 h-8 bg-white flex items-center justify-center p-1 rounded cursor-pointer"
+                  class="remove-image-button menu image-action-button w-8 h-8 bg-white
+                         flex items-center justify-center p-1 rounded cursor-pointer"
                   title="Remove custom image override">
             <inline-svg :src="Plus"
                         alt="remove image"
@@ -204,7 +214,8 @@
           </button>
         </div>
         <div v-if="inheritedTag"
-             class="absolute bottom-2 left-2 bg-black/80 backdrop-blur text-white text-[11px] font-medium px-2 py-0.5 rounded flex items-center gap-1 z-10 shadow">
+             class="absolute bottom-2 left-2 bg-black/80 backdrop-blur text-white text-[11px]
+                    font-medium px-2 py-0.5 rounded flex items-center gap-1 z-10 shadow">
           <span class="text-zinc-400">Default from</span>
           <span class="text-emerald-400 font-semibold">#{{ inheritedTag }}</span>
         </div>
@@ -418,82 +429,82 @@
 </template>
 
 <script setup lang="ts">
-import { Sound } from '../@types/sound';
-import Plus from '../assets/images/plus.svg';
-import Listen from '../assets/images/listen.svg';
-import InlineSvg from 'vue-inline-svg';
-import { useSettingsStore } from '../store/settings';
-import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue';
-import PlayIcon from '../assets/images/play.svg';
-import DownloadIcon from '../assets/images/download.svg';
-import { useSoundStore } from '../store/sound';
-import { usePulseBackStore } from '../store/pulseBack';
-import { encodeMP3 } from '../services/pulseBackBuffer';
-import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils';
-import { TagInputRef } from './BaseComponents/TagInputTypes';
-import { useThrottleFn } from '@vueuse/shared';
-import { SoundSegment } from '../@types/sound.d';
+import { Sound } from '../@types/sound'
+import Plus from '../assets/images/plus.svg'
+import Listen from '../assets/images/listen.svg'
+import InlineSvg from 'vue-inline-svg'
+import { useSettingsStore } from '../store/settings'
+import { computed, ref, shallowRef, watch, onMounted, onUnmounted } from 'vue'
+import PlayIcon from '../assets/images/play.svg'
+import DownloadIcon from '../assets/images/download.svg'
+import { useSoundStore } from '../store/sound'
+import { usePulseBackStore } from '../store/pulseBack'
+import { encodeMP3 } from '../services/pulseBackBuffer'
+import { stripFileExtension, formatSecondsToMMSS } from '../utils/utils'
+import { TagInputRef } from './BaseComponents/TagInputTypes'
+import { useThrottleFn } from '@vueuse/shared'
+import { SoundSegment } from '../@types/sound.d'
 
 const props = defineProps<{
   modelValue: Sound;
-}>();
+}>()
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: Sound): void;
   (event: 'deleteSound', sound: Sound): void;
   (event: 'close'): void;
-}>();
-const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id));
+}>()
+const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id))
 
-const settingsStore = useSettingsStore();
-const soundStore = useSoundStore();
-const pulseBackStore = usePulseBackStore();
+const settingsStore = useSettingsStore()
+const soundStore = useSoundStore()
+const pulseBackStore = usePulseBackStore()
 
-const isExporting = ref(false);
-const showExportMenu = ref(false);
-const exportMenuRef = ref<HTMLElement | null>(null);
+const isExporting = ref(false)
+const showExportMenu = ref(false)
+const exportMenuRef = ref<HTMLElement | null>(null)
 
-const hasAudio = computed(() => !!(props.modelValue.audioUrl || props.modelValue.audioKey));
-const soundSegments = computed(() => props.modelValue.soundSegments || []);
+const hasAudio = computed(() => !!(props.modelValue.audioUrl || props.modelValue.audioKey))
+const soundSegments = computed(() => props.modelValue.soundSegments || [])
 
 function handleExportClick() {
-  if (!hasAudio.value || isExporting.value) return;
+  if (!hasAudio.value || isExporting.value) return
   if (soundSegments.value.length > 0) {
-    showExportMenu.value = !showExportMenu.value;
+    showExportMenu.value = !showExportMenu.value
   } else {
-    exportOriginalAudio();
+    exportOriginalAudio()
   }
 }
 
 async function exportOriginalAudio() {
-  let url = props.modelValue.audioUrl;
+  let url = props.modelValue.audioUrl
   if (!url && props.modelValue.audioKey) {
-    url = (await settingsStore.getFile(props.modelValue.audioKey)) ?? undefined;
+    url = (await settingsStore.getFile(props.modelValue.audioKey)) ?? undefined
   }
-  if (!url) return;
+  if (!url) return
 
-  isExporting.value = true;
-  showExportMenu.value = false;
+  isExporting.value = true
+  showExportMenu.value = false
   try {
-    const response = await fetch(url);
-    const blob = await response.blob();
+    const response = await fetch(url)
+    const blob = await response.blob()
 
-    const mimeType = (blob.type || '').toLowerCase();
-    let extension = 'mp3';
-    if (mimeType.includes('wav')) extension = 'wav';
-    else if (mimeType.includes('ogg')) extension = 'ogg';
-    else if (mimeType.includes('flac')) extension = 'flac';
-    else if (mimeType.includes('aac')) extension = 'aac';
-    else if (mimeType.includes('m4a') || mimeType.includes('mp4')) extension = 'm4a';
-    else if (mimeType.includes('webm')) extension = 'webm';
-    else if (mimeType.includes('mpeg') || mimeType.includes('mp3')) extension = 'mp3';
+    const mimeType = (blob.type || '').toLowerCase()
+    let extension = 'mp3'
+    if (mimeType.includes('wav')) extension = 'wav'
+    else if (mimeType.includes('ogg')) extension = 'ogg'
+    else if (mimeType.includes('flac')) extension = 'flac'
+    else if (mimeType.includes('aac')) extension = 'aac'
+    else if (mimeType.includes('m4a') || mimeType.includes('mp4')) extension = 'm4a'
+    else if (mimeType.includes('webm')) extension = 'webm'
+    else if (mimeType.includes('mpeg') || mimeType.includes('mp3')) extension = 'mp3'
 
-    const rawTitle = props.modelValue.title?.trim() || 'sound';
-    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound';
-    const baseName = sanitizedTitle.replace(new RegExp(`\\.${extension}$`, 'i'), '');
-    const defaultFilename = `${baseName}.${extension}`;
+    const rawTitle = props.modelValue.title?.trim() || 'sound'
+    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound'
+    const baseName = sanitizedTitle.replace(new RegExp(`\\.${extension}$`, 'i'), '')
+    const defaultFilename = `${baseName}.${extension}`
 
-    const arrayBuffer = await blob.arrayBuffer();
+    const arrayBuffer = await blob.arrayBuffer()
     const formatFilterMap: Record<string, { name: string; extensions: string[]; }> = {
       mp3: { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
       wav: { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
@@ -501,341 +512,347 @@ async function exportOriginalAudio() {
       flac: { name: 'FLAC Audio (*.flac)', extensions: ['flac'] },
       m4a: { name: 'M4A Audio (*.m4a)', extensions: ['m4a'] },
       webm: { name: 'WebM Audio (*.webm)', extensions: ['webm'] },
-    };
+    }
     const primaryFilter = formatFilterMap[extension] || {
       name: `${extension.toUpperCase()} Audio (*.${extension})`,
       extensions: [extension],
-    };
-    const filters = [primaryFilter, { name: 'All Files (*.*)', extensions: ['*'] }];
+    }
+    const filters = [primaryFilter, { name: 'All Files (*.*)', extensions: ['*'] }]
 
     if (window.electron?.saveFileDialog) {
-      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters)
       if (saved) {
         pulseBackStore.showToast(`Exported "${defaultFilename}"`, {
           filePath: typeof saved === 'string' ? saved : undefined,
-        });
+        })
       }
     } else {
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = defaultFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
-      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+      const downloadUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = defaultFilename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(downloadUrl)
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`)
     }
   } catch (err) {
-    console.error('Failed to export audio:', err);
-    pulseBackStore.showToast('Failed to export audio');
+    console.error('Failed to export audio:', err)
+    pulseBackStore.showToast('Failed to export audio')
   } finally {
-    isExporting.value = false;
+    isExporting.value = false
   }
 }
 
-async function exportSegmentAudio(segment: SoundSegment, segmentIndex?: number, notify = true): Promise<string | boolean> {
+async function exportSegmentAudio(
+  segment: SoundSegment,
+  segmentIndex?: number,
+  notify = true
+): Promise<string | boolean> {
   if (!audioBuffer.value) {
-    await loadAudioBuffer();
-    if (!audioBuffer.value) return false;
+    await loadAudioBuffer()
+    if (!audioBuffer.value) return false
   }
-  const buffer = audioBuffer.value;
-  const sampleRate = buffer.sampleRate;
-  const startSample = Math.max(0, Math.floor(segment.start * sampleRate));
-  const endSample = Math.min(buffer.length, Math.floor(segment.end * sampleRate));
-  const length = Math.max(0, endSample - startSample);
-  if (length <= 0) return false;
+  const buffer = audioBuffer.value
+  const sampleRate = buffer.sampleRate
+  const startSample = Math.max(0, Math.floor(segment.start * sampleRate))
+  const endSample = Math.min(buffer.length, Math.floor(segment.end * sampleRate))
+  const length = Math.max(0, endSample - startSample)
+  if (length <= 0) return false
 
-  const micSamples = new Float32Array(length);
-  buffer.copyFromChannel(micSamples, 0, startSample);
+  const micSamples = new Float32Array(length)
+  buffer.copyFromChannel(micSamples, 0, startSample)
 
-  const isStereo = buffer.numberOfChannels >= 2;
-  const inputSamples = isStereo ? new Float32Array(length) : null;
+  const isStereo = buffer.numberOfChannels >= 2
+  const inputSamples = isStereo ? new Float32Array(length) : null
   if (isStereo && inputSamples) {
-    buffer.copyFromChannel(inputSamples, 1, startSample);
+    buffer.copyFromChannel(inputSamples, 1, startSample)
   }
 
-  const blob = await encodeMP3(micSamples, sampleRate, 192);
+  const blob = await encodeMP3(micSamples, sampleRate, 192)
 
-  const rawTitle = props.modelValue.title?.trim() || 'sound';
-  const segLabel = segment.label?.trim() || (segmentIndex !== undefined ? `segment_${segmentIndex + 1}` : 'segment');
-  const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound';
-  const sanitizedSeg = segLabel.replace(/[<>:"/\\|?*]/g, '_').trim();
-  const defaultFilename = `${sanitizedTitle}_${sanitizedSeg}.mp3`;
+  const rawTitle = props.modelValue.title?.trim() || 'sound'
+  const segLabel = segment.label?.trim() || (segmentIndex !== undefined ? `segment_${segmentIndex + 1}` : 'segment')
+  const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound'
+  const sanitizedSeg = segLabel.replace(/[<>:"/\\|?*]/g, '_').trim()
+  const defaultFilename = `${sanitizedTitle}_${sanitizedSeg}.mp3`
 
-  const arrayBuffer = await blob.arrayBuffer();
+  const arrayBuffer = await blob.arrayBuffer()
   const filters = [
     { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
     { name: 'All Files (*.*)', extensions: ['*'] },
-  ];
+  ]
 
   if (window.electron?.saveFileDialog) {
-    const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+    const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters)
     if (saved && notify) {
       pulseBackStore.showToast(`Exported "${defaultFilename}"`, {
         filePath: typeof saved === 'string' ? saved : undefined,
-      });
+      })
     }
-    return saved || false;
+    return saved || false
   } else {
-    const downloadUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = defaultFilename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(downloadUrl);
+    const downloadUrl = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.download = defaultFilename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(downloadUrl)
     if (notify) {
-      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`)
     }
-    return true;
+    return true
   }
 }
 
 async function exportTrimmedSegment(segment: SoundSegment, segmentIndex?: number) {
-  isExporting.value = true;
-  showExportMenu.value = false;
+  isExporting.value = true
+  showExportMenu.value = false
   try {
-    await exportSegmentAudio(segment, segmentIndex, true);
+    await exportSegmentAudio(segment, segmentIndex, true)
   } catch (err) {
-    console.error('Failed to export segment audio:', err);
-    pulseBackStore.showToast('Failed to export segment audio');
+    console.error('Failed to export segment audio:', err)
+    pulseBackStore.showToast('Failed to export segment audio')
   } finally {
-    isExporting.value = false;
+    isExporting.value = false
   }
 }
 
 async function exportAllSegments() {
-  isExporting.value = true;
-  showExportMenu.value = false;
+  isExporting.value = true
+  showExportMenu.value = false
   try {
-    const segs = soundSegments.value;
-    let savedCount = 0;
-    let lastSavedPath: string | undefined;
+    const segs = soundSegments.value
+    let savedCount = 0
+    let lastSavedPath: string | undefined
     for (let i = 0; i < segs.length; i++) {
-      const saved = await exportSegmentAudio(segs[i], i, false);
+      const saved = await exportSegmentAudio(segs[i], i, false)
       if (saved) {
-        savedCount++;
+        savedCount++
         if (typeof saved === 'string') {
-          lastSavedPath = saved;
+          lastSavedPath = saved
         }
       } else {
         // User cancelled the save dialog, stop asking for remaining files
-        break;
+        break
       }
     }
     if (savedCount > 0) {
       pulseBackStore.showToast(`Exported ${savedCount} segment${savedCount > 1 ? 's' : ''}`, {
         filePath: lastSavedPath,
-      });
+      })
     }
   } catch (err) {
-    console.error('Failed to export all segments:', err);
-    pulseBackStore.showToast('Failed to export segments');
+    console.error('Failed to export all segments:', err)
+    pulseBackStore.showToast('Failed to export segments')
   } finally {
-    isExporting.value = false;
+    isExporting.value = false
   }
 }
 
 function handleExportMenuClickOutside(event: MouseEvent) {
-  if (showExportMenu.value && exportMenuRef.value && !exportMenuRef.value.contains(event.target as Node)) {
-    showExportMenu.value = false;
+  if (showExportMenu.value && exportMenuRef.value
+    && event.target instanceof Node && !exportMenuRef.value.contains(event.target)) {
+    showExportMenu.value = false
   }
 }
 
 function handleExportMenuKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && showExportMenu.value) {
-    showExportMenu.value = false;
+    showExportMenu.value = false
   }
 }
 
-const showImageMenu = ref(false);
-const imageMenuPosition = ref({ x: 0, y: 0 });
-const imageMenuRef = ref<HTMLElement | null>(null);
+const showImageMenu = ref(false)
+const imageMenuPosition = ref({ x: 0, y: 0 })
+const imageMenuRef = ref<HTMLElement | null>(null)
 
 const inheritedTag = computed(() => {
-  if (props.modelValue.imageKey) return null;
-  return settingsStore.getSoundTagImageTag(props.modelValue) ?? null;
-});
+  if (props.modelValue.imageKey) return null
+  return settingsStore.getSoundTagImageTag(props.modelValue) ?? null
+})
 
 const inheritedTagImageUrl = computed(() => {
-  if (props.modelValue.imageKey) return null;
-  return settingsStore.getSoundTagImageUrl(props.modelValue) ?? null;
-});
+  if (props.modelValue.imageKey) return null
+  return settingsStore.getSoundTagImageUrl(props.modelValue) ?? null
+})
 
 const effectiveImageUrl = computed(() => {
-  return props.modelValue.imageUrl || inheritedTagImageUrl.value || undefined;
-});
+  return props.modelValue.imageUrl || inheritedTagImageUrl.value || undefined
+})
 
 const currentImageKey = computed(() => {
-  if (props.modelValue.imageKey) return props.modelValue.imageKey;
+  if (props.modelValue.imageKey) return props.modelValue.imageKey
   if (inheritedTag.value) {
-    return settingsStore.getTagImageKey(inheritedTag.value);
+    return settingsStore.getTagImageKey(inheritedTag.value)
   }
-  return undefined;
-});
+  return undefined
+})
 
-const hasCurrentImage = computed(() => !!currentImageKey.value);
-const canPasteImage = ref(false);
+const hasCurrentImage = computed(() => !!currentImageKey.value)
+const canPasteImage = ref(false)
 
 async function updateCanPaste() {
-  canPasteImage.value = await settingsStore.hasClipboardImage();
+  canPasteImage.value = await settingsStore.hasClipboardImage()
 }
 
 onMounted(() => {
-  updateCanPaste();
-  window.addEventListener('focus', updateCanPaste);
-  document.addEventListener('visibilitychange', updateCanPaste);
-});
+  updateCanPaste()
+  window.addEventListener('focus', updateCanPaste)
+  document.addEventListener('visibilitychange', updateCanPaste)
+})
 
 onUnmounted(() => {
-  window.removeEventListener('focus', updateCanPaste);
-  document.removeEventListener('visibilitychange', updateCanPaste);
-});
+  window.removeEventListener('focus', updateCanPaste)
+  document.removeEventListener('visibilitychange', updateCanPaste)
+})
 
 watch(
   () => props.modelValue,
   () => {
-    updateCanPaste();
+    updateCanPaste()
   }
-);
+)
 
 const imageTooltip = computed(() => {
   if (props.modelValue.imageKey) {
-    return `Filename: ${props.modelValue.imageKey}`;
+    return `Filename: ${props.modelValue.imageKey}`
   }
   if (inheritedTag.value) {
-    return `Default from #${inheritedTag.value} (Filename: ${currentImageKey.value ?? 'none'})`;
+    return `Default from #${inheritedTag.value} (Filename: ${currentImageKey.value ?? 'none'})`
   }
-  return 'Right-click for options';
-});
+  return 'Right-click for options'
+})
 
 async function openImageContextMenu(event: MouseEvent) {
-  await updateCanPaste();
+  await updateCanPaste()
   if (!hasCurrentImage.value && !canPasteImage.value) {
-    return;
+    return
   }
-  event.stopPropagation();
+  event.stopPropagation()
 
-  const menuWidth = 180;
-  const tagCount = props.modelValue?.tags?.length ?? 0;
-  const menuHeight = hasCurrentImage.value ? 140 + tagCount * 30 : 50;
-  let x = event.clientX;
-  let y = event.clientY;
+  const menuWidth = 180
+  const tagCount = props.modelValue?.tags?.length ?? 0
+  const menuHeight = hasCurrentImage.value ? 140 + tagCount * 30 : 50
+  let x = event.clientX
+  let y = event.clientY
 
   if (x + menuWidth > window.innerWidth) {
-    x = window.innerWidth - menuWidth - 8;
+    x = window.innerWidth - menuWidth - 8
   }
   if (y + menuHeight > window.innerHeight) {
-    y = window.innerHeight - menuHeight - 8;
+    y = window.innerHeight - menuHeight - 8
   }
 
-  imageMenuPosition.value = { x: Math.max(8, x), y: Math.max(8, y) };
-  showImageMenu.value = true;
+  imageMenuPosition.value = { x: Math.max(8, x), y: Math.max(8, y) }
+  showImageMenu.value = true
 }
 
 function handleImageMenuClickOutside(event: MouseEvent) {
-  if (showImageMenu.value && imageMenuRef.value && !imageMenuRef.value.contains(event.target as Node)) {
-    showImageMenu.value = false;
+  if (showImageMenu.value && imageMenuRef.value
+    && event.target instanceof Node && !imageMenuRef.value.contains(event.target)) {
+    showImageMenu.value = false
   }
 }
 
 function handleImageMenuKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && showImageMenu.value) {
-    showImageMenu.value = false;
+    showImageMenu.value = false
   }
 }
 
 async function handleCopyImage() {
-  showImageMenu.value = false;
-  const key = currentImageKey.value;
-  if (!key) return;
+  showImageMenu.value = false
+  const key = currentImageKey.value
+  if (!key) return
 
-  const url = effectiveImageUrl.value;
-  await settingsStore.copySoundImage(key, url);
-  pulseBackStore.showToast('Image copied to clipboard');
-  await updateCanPaste();
+  const url = effectiveImageUrl.value
+  await settingsStore.copySoundImage(key, url)
+  pulseBackStore.showToast('Image copied to clipboard')
+  await updateCanPaste()
 }
 
 async function handleSetTagImage(tag: string) {
-  showImageMenu.value = false;
-  const key = currentImageKey.value;
-  if (!key) return;
-  const url = effectiveImageUrl.value;
-  await settingsStore.setTagImage(tag, key, url);
-  pulseBackStore.showToast(`Set as default image for #${tag}`);
+  showImageMenu.value = false
+  const key = currentImageKey.value
+  if (!key) return
+  const url = effectiveImageUrl.value
+  await settingsStore.setTagImage(tag, key, url)
+  pulseBackStore.showToast(`Set as default image for #${tag}`)
 }
 
 async function handlePasteImage() {
-  showImageMenu.value = false;
-  const copied = await settingsStore.readClipboardImage();
+  showImageMenu.value = false
+  const copied = await settingsStore.readClipboardImage()
   if (!copied || !copied.imageKey) {
-    await updateCanPaste();
-    return;
+    await updateCanPaste()
+    return
   }
 
-  const oldKey = props.modelValue.imageKey;
-  let url = copied.imageUrl;
+  const oldKey = props.modelValue.imageKey
+  let url = copied.imageUrl
   if (!url) {
-    url = (await settingsStore.getFile(copied.imageKey)) ?? undefined;
+    url = (await settingsStore.getFile(copied.imageKey)) ?? undefined
   }
 
-  props.modelValue.imageKey = copied.imageKey;
-  props.modelValue.imageUrl = url;
-  emit('update:modelValue', props.modelValue);
+  props.modelValue.imageKey = copied.imageKey
+  props.modelValue.imageUrl = url
+  emit('update:modelValue', props.modelValue)
 
   if (oldKey && oldKey !== copied.imageKey) {
-    await settingsStore.deleteFile(oldKey, props.modelValue.id);
+    await settingsStore.deleteFile(oldKey, props.modelValue.id)
   }
   if (copied.isReused) {
-    pulseBackStore.showToast(`Image pasted (reused: ${copied.imageKey.slice(0, 16)}...)`);
+    pulseBackStore.showToast(`Image pasted (reused: ${copied.imageKey.slice(0, 16)}...)`)
   } else {
-    pulseBackStore.showToast('Image pasted');
+    pulseBackStore.showToast('Image pasted')
   }
-  await updateCanPaste();
+  await updateCanPaste()
 }
 
 function handleExportImageFromMenu() {
-  showImageMenu.value = false;
-  exportImage();
+  showImageMenu.value = false
+  exportImage()
 }
 
 function handleRemoveImageFromMenu() {
-  showImageMenu.value = false;
-  removeImage();
+  showImageMenu.value = false
+  removeImage()
 }
 
-const isExportingImage = ref(false);
+const isExportingImage = ref(false)
 
 async function exportImage() {
-  let url = effectiveImageUrl.value;
-  const key = currentImageKey.value;
+  let url = effectiveImageUrl.value
+  const key = currentImageKey.value
   if (!url && key) {
-    url = (await settingsStore.getFile(key)) ?? undefined;
+    url = (await settingsStore.getFile(key)) ?? undefined
   }
-  if (!url || isExportingImage.value) return;
+  if (!url || isExportingImage.value) return
 
-  isExportingImage.value = true;
+  isExportingImage.value = true
   try {
-    const response = await fetch(url);
-    const blob = await response.blob();
+    const response = await fetch(url)
+    const blob = await response.blob()
 
-    const mimeType = (blob.type || '').toLowerCase();
-    let extension = 'png';
-    if (mimeType.includes('jpeg') || mimeType.includes('jpg')) extension = 'jpg';
-    else if (mimeType.includes('png')) extension = 'png';
-    else if (mimeType.includes('webp')) extension = 'webp';
-    else if (mimeType.includes('gif')) extension = 'gif';
-    else if (mimeType.includes('svg')) extension = 'svg';
-    else if (mimeType.includes('avif')) extension = 'avif';
+    const mimeType = (blob.type || '').toLowerCase()
+    let extension = 'png'
+    if (mimeType.includes('jpeg') || mimeType.includes('jpg')) extension = 'jpg'
+    else if (mimeType.includes('png')) extension = 'png'
+    else if (mimeType.includes('webp')) extension = 'webp'
+    else if (mimeType.includes('gif')) extension = 'gif'
+    else if (mimeType.includes('svg')) extension = 'svg'
+    else if (mimeType.includes('avif')) extension = 'avif'
 
-    const rawTitle = props.modelValue.title?.trim() || 'sound';
-    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound';
-    const baseName = sanitizedTitle.replace(new RegExp(`\\.${extension}$`, 'i'), '');
-    const defaultFilename = `${baseName}.${extension}`;
+    const rawTitle = props.modelValue.title?.trim() || 'sound'
+    const sanitizedTitle = rawTitle.replace(/[<>:"/\\|?*]/g, '_').trim() || 'sound'
+    const baseName = sanitizedTitle.replace(new RegExp(`\\.${extension}$`, 'i'), '')
+    const defaultFilename = `${baseName}.${extension}`
 
-    const arrayBuffer = await blob.arrayBuffer();
+    const arrayBuffer = await blob.arrayBuffer()
     const formatFilterMap: Record<string, { name: string; extensions: string[]; }> = {
       png: { name: 'PNG Image (*.png)', extensions: ['png'] },
       jpg: { name: 'JPEG Image (*.jpg;*.jpeg)', extensions: ['jpg', 'jpeg'] },
@@ -843,406 +860,409 @@ async function exportImage() {
       gif: { name: 'GIF Image (*.gif)', extensions: ['gif'] },
       svg: { name: 'SVG Image (*.svg)', extensions: ['svg'] },
       avif: { name: 'AVIF Image (*.avif)', extensions: ['avif'] },
-    };
+    }
     const primaryFilter = formatFilterMap[extension] || {
       name: `${extension.toUpperCase()} Image (*.${extension})`,
       extensions: [extension],
-    };
+    }
     const filters = [
       primaryFilter,
       { name: 'All Images (*.png;*.jpg;*.jpeg;*.webp;*.gif)', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] },
       { name: 'All Files (*.*)', extensions: ['*'] },
-    ];
+    ]
 
     if (window.electron?.saveFileDialog) {
-      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters);
+      const saved = await window.electron.saveFileDialog(defaultFilename, arrayBuffer, filters)
       if (saved) {
         pulseBackStore.showToast(`Exported "${defaultFilename}"`, {
           filePath: typeof saved === 'string' ? saved : undefined,
-        });
+        })
       }
     } else {
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = defaultFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
-      pulseBackStore.showToast(`Exported "${defaultFilename}"`);
+      const downloadUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = defaultFilename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(downloadUrl)
+      pulseBackStore.showToast(`Exported "${defaultFilename}"`)
     }
   } catch (err) {
-    console.error('Failed to export image:', err);
-    pulseBackStore.showToast('Failed to export image');
+    console.error('Failed to export image:', err)
+    pulseBackStore.showToast('Failed to export image')
   } finally {
-    isExportingImage.value = false;
+    isExportingImage.value = false
   }
 }
 
-const audioBuffer = shallowRef<AudioBuffer | null>(null);
-const currentTime = ref(0);
-let audioContext: AudioContext | null = null;
-let currentLoadId = 0;
-let playheadRaf: number | null = null;
+const audioBuffer = shallowRef<AudioBuffer | null>(null)
+const currentTime = ref(0)
+let audioContext: AudioContext | null = null
+let currentLoadId = 0
+let playheadRaf: number | null = null
 
 // Scrubbing & snippet preview state
-let isScrubbing = false;
-let wasPlayingBeforeScrub = false;
-let lastScrubPlayTime = 0;
-let scrubSourceNode: AudioBufferSourceNode | null = null;
-let scrubGainNode: GainNode | null = null;
+let isScrubbing = false
+let wasPlayingBeforeScrub = false
+let lastScrubPlayTime = 0
+let scrubSourceNode: AudioBufferSourceNode | null = null
+let scrubGainNode: GainNode | null = null
 
 function stopScrubSnippet() {
   if (scrubSourceNode) {
     try {
-      scrubSourceNode.stop();
-      scrubSourceNode.disconnect();
+      scrubSourceNode.stop()
+      scrubSourceNode.disconnect()
     } catch { }
-    scrubSourceNode = null;
+    scrubSourceNode = null
   }
   if (scrubGainNode) {
     try {
-      scrubGainNode.disconnect();
+      scrubGainNode.disconnect()
     } catch { }
-    scrubGainNode = null;
+    scrubGainNode = null
   }
 }
 
 function playScrubSnippet(sec: number) {
-  if (!audioBuffer.value) return;
-  const now = performance.now();
-  if (now - lastScrubPlayTime < 45) return;
-  lastScrubPlayTime = now;
+  if (!audioBuffer.value) return
+  const now = performance.now()
+  if (now - lastScrubPlayTime < 45) return
+  lastScrubPlayTime = now
 
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext
+  if (!AudioContextClass) return
   if (!audioContext || audioContext.state === 'closed') {
-    audioContext = new AudioContextClass();
+    audioContext = new AudioContextClass()
   }
   if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(() => { });
+    audioContext.resume().catch(() => { })
   }
 
-  stopScrubSnippet();
+  stopScrubSnippet()
 
-  const durationSec = 0.08;
-  const startSec = Math.max(0, Math.min(audioBuffer.value.duration - 0.02, sec));
-  const snippetLen = Math.min(durationSec, audioBuffer.value.duration - startSec);
-  if (snippetLen <= 0) return;
+  const durationSec = 0.08
+  const startSec = Math.max(0, Math.min(audioBuffer.value.duration - 0.02, sec))
+  const snippetLen = Math.min(durationSec, audioBuffer.value.duration - startSec)
+  if (snippetLen <= 0) return
 
-  const effectiveVol = props.modelValue.volume ?? settingsStore.defaultVolume;
-  const sampleRate = audioBuffer.value.sampleRate;
-  const sampleCount = Math.floor(snippetLen * sampleRate);
-  if (sampleCount <= 0) return;
+  const effectiveVol = props.modelValue.volume ?? settingsStore.defaultVolume
+  const sampleRate = audioBuffer.value.sampleRate
+  const sampleCount = Math.floor(snippetLen * sampleRate)
+  if (sampleCount <= 0) return
 
-  const startSample = Math.floor(startSec * sampleRate);
-  const snippetBuffer = audioContext.createBuffer(1, sampleCount, sampleRate);
-  const channelData = snippetBuffer.getChannelData(0);
+  const startSample = Math.floor(startSec * sampleRate)
+  const snippetBuffer = audioContext.createBuffer(1, sampleCount, sampleRate)
+  const channelData = snippetBuffer.getChannelData(0)
 
-  const numChannels = audioBuffer.value.numberOfChannels;
-  const ch0 = audioBuffer.value.getChannelData(0);
-  const ch1 = numChannels >= 2 ? audioBuffer.value.getChannelData(1) : null;
+  const numChannels = audioBuffer.value.numberOfChannels
+  const ch0 = audioBuffer.value.getChannelData(0)
+  const ch1 = numChannels >= 2 ? audioBuffer.value.getChannelData(1) : null
 
   for (let i = 0; i < sampleCount; i++) {
-    const idx = startSample + i;
-    if (idx >= audioBuffer.value.length) break;
-    let s = ch0[idx];
-    if (ch1) s = (s + ch1[idx]) * 0.5;
-    channelData[i] = s;
+    const idx = startSample + i
+    if (idx >= audioBuffer.value.length) break
+    let s = ch0[idx]
+    if (ch1) s = (s + ch1[idx]) * 0.5
+    channelData[i] = s
   }
 
-  const fadeSamples = Math.min(Math.floor(sampleRate * 0.006), Math.floor(sampleCount / 4));
+  const fadeSamples = Math.min(Math.floor(sampleRate * 0.006), Math.floor(sampleCount / 4))
   for (let i = 0; i < fadeSamples; i++) {
-    const ramp = i / fadeSamples;
-    channelData[i] *= ramp;
-    channelData[sampleCount - 1 - i] *= ramp;
+    const ramp = i / fadeSamples
+    channelData[i] *= ramp
+    channelData[sampleCount - 1 - i] *= ramp
   }
 
-  const source = audioContext.createBufferSource();
-  source.buffer = snippetBuffer;
+  const source = audioContext.createBufferSource()
+  source.buffer = snippetBuffer
 
-  const gain = audioContext.createGain();
-  gain.gain.setValueAtTime(effectiveVol, audioContext.currentTime);
+  const gain = audioContext.createGain()
+  gain.gain.setValueAtTime(effectiveVol, audioContext.currentTime)
 
-  source.connect(gain);
-  gain.connect(audioContext.destination);
+  source.connect(gain)
+  gain.connect(audioContext.destination)
 
-  scrubSourceNode = source;
-  scrubGainNode = gain;
+  scrubSourceNode = source
+  scrubGainNode = gain
 
   source.onended = () => {
     if (scrubSourceNode === source) {
-      scrubSourceNode = null;
-      scrubGainNode = null;
+      scrubSourceNode = null
+      scrubGainNode = null
     }
-  };
+  }
 
-  source.start(0);
+  source.start(0)
 }
 
-let activeSegmentBeforeScrub: SoundSegment | null = null;
-let wasPreviewBeforeScrub = false;
+let activeSegmentBeforeScrub: SoundSegment | null = null
+let wasPreviewBeforeScrub = false
 
 function onScrubStart(sec: number) {
-  isScrubbing = true;
-  wasPlayingBeforeScrub = playingThisSound.value;
-  activeSegmentBeforeScrub = soundStore.currentSound?.activeSegment ?? null;
-  wasPreviewBeforeScrub = soundStore.currentSound?.activeSegment?.isSoundPreview === true;
+  isScrubbing = true
+  wasPlayingBeforeScrub = playingThisSound.value
+  activeSegmentBeforeScrub = soundStore.currentSound?.activeSegment ?? null
+  wasPreviewBeforeScrub = soundStore.currentSound?.activeSegment?.isSoundPreview === true
   if (wasPlayingBeforeScrub) {
-    soundStore.stopAllSounds();
+    soundStore.stopAllSounds()
   }
-  currentTime.value = sec;
-  playScrubSnippet(sec);
+  currentTime.value = sec
+  playScrubSnippet(sec)
 }
 
 function onScrubMove(sec: number) {
-  currentTime.value = sec;
-  playScrubSnippet(sec);
+  currentTime.value = sec
+  playScrubSnippet(sec)
 }
 
 function onScrubEnd(sec: number) {
-  isScrubbing = false;
-  stopScrubSnippet();
-  currentTime.value = sec;
+  isScrubbing = false
+  stopScrubSnippet()
+  currentTime.value = sec
   if (wasPlayingBeforeScrub) {
-    const resumeSegment = activeSegmentBeforeScrub;
-    const resumePreview = wasPreviewBeforeScrub;
-    wasPlayingBeforeScrub = false;
-    activeSegmentBeforeScrub = null;
-    wasPreviewBeforeScrub = false;
-    playFromCurrentTime(resumePreview, resumeSegment);
+    const resumeSegment = activeSegmentBeforeScrub
+    const resumePreview = wasPreviewBeforeScrub
+    wasPlayingBeforeScrub = false
+    activeSegmentBeforeScrub = null
+    wasPreviewBeforeScrub = false
+    playFromCurrentTime(resumePreview, resumeSegment)
   }
 }
 
 function playFromCurrentTime(preview = false, targetSegment?: SoundSegment | null) {
-  const seg = targetSegment ?? props.modelValue.soundSegments?.[0];
-  const start = Math.max(0, Math.min(duration.value, currentTime.value));
-  const end = seg && start < seg.end ? seg.end : duration.value;
+  const seg = targetSegment ?? props.modelValue.soundSegments?.[0]
+  const start = Math.max(0, Math.min(duration.value, currentTime.value))
+  const end = seg && start < seg.end ? seg.end : duration.value
 
   const segment: SoundSegment = {
     id: seg?.id ?? crypto.randomUUID(),
     start,
     end,
-  };
+  }
   if (preview) {
-    segment.isSoundPreview = true;
+    segment.isSoundPreview = true
   }
 
-  soundStore.playSound(props.modelValue, null, null, preview, true, segment);
+  soundStore.playSound(props.modelValue, null, null, preview, true, segment)
 }
 
 function handlePlayButtonClick() {
   if (playingThisSound.value) {
-    soundStore.stopAllSounds();
-    return;
+    soundStore.stopAllSounds()
+    return
   }
   if (currentTime.value > 0 && currentTime.value < duration.value) {
-    playFromCurrentTime(false);
+    playFromCurrentTime(false)
   } else {
-    soundStore.playSound(props.modelValue, null, null, undefined, true);
+    soundStore.playSound(props.modelValue, null, null, undefined, true)
   }
 }
 
 function handlePreviewButtonClick() {
   if (playingThisSound.value) {
-    soundStore.stopAllSounds();
-    return;
+    soundStore.stopAllSounds()
+    return
   }
   if (currentTime.value > 0 && currentTime.value < duration.value) {
-    playFromCurrentTime(true);
+    playFromCurrentTime(true)
   } else {
-    soundStore.playSound(props.modelValue, null, null, true);
+    soundStore.playSound(props.modelValue, null, null, true)
   }
 }
 
 function handleSegmentTrimStart(val: number, segment: SoundSegment) {
-  const mult = Math.pow(10, precision.value);
-  segment.start = Math.round(val * mult) / mult;
-  currentTime.value = segment.start;
-  emit('update:modelValue', props.modelValue);
+  const mult = Math.pow(10, precision.value)
+  segment.start = Math.round(val * mult) / mult
+  currentTime.value = segment.start
+  emit('update:modelValue', props.modelValue)
 }
 
 function handleSegmentTrimEnd(val: number, segment: SoundSegment) {
-  const mult = Math.pow(10, precision.value);
-  segment.end = Math.round(val * mult) / mult;
-  emit('update:modelValue', props.modelValue);
+  const mult = Math.pow(10, precision.value)
+  segment.end = Math.round(val * mult) / mult
+  emit('update:modelValue', props.modelValue)
 }
 
 function isSegmentPlaying(segment: SoundSegment): boolean {
-  return playingThisSound.value && soundStore.currentSound?.activeSegment?.id === segment.id;
+  return playingThisSound.value && soundStore.currentSound?.activeSegment?.id === segment.id
 }
 
 function onSegmentScrubStart(sec: number, segment: SoundSegment) {
-  isScrubbing = true;
-  wasPlayingBeforeScrub = playingThisSound.value;
-  activeSegmentBeforeScrub = segment;
-  wasPreviewBeforeScrub = soundStore.currentSound?.activeSegment?.isSoundPreview === true;
+  isScrubbing = true
+  wasPlayingBeforeScrub = playingThisSound.value
+  activeSegmentBeforeScrub = segment
+  wasPreviewBeforeScrub = soundStore.currentSound?.activeSegment?.isSoundPreview === true
   if (wasPlayingBeforeScrub) {
-    soundStore.stopAllSounds();
+    soundStore.stopAllSounds()
   }
-  currentTime.value = sec;
-  playScrubSnippet(sec);
+  currentTime.value = sec
+  playScrubSnippet(sec)
 }
 
 function onSegmentScrubEnd(sec: number, segment: SoundSegment) {
-  isScrubbing = false;
-  stopScrubSnippet();
-  currentTime.value = sec;
+  isScrubbing = false
+  stopScrubSnippet()
+  currentTime.value = sec
   if (wasPlayingBeforeScrub) {
-    const resumePreview = wasPreviewBeforeScrub;
-    wasPlayingBeforeScrub = false;
-    activeSegmentBeforeScrub = null;
-    wasPreviewBeforeScrub = false;
-    playFromCurrentTime(resumePreview, segment);
+    const resumePreview = wasPreviewBeforeScrub
+    wasPlayingBeforeScrub = false
+    activeSegmentBeforeScrub = null
+    wasPreviewBeforeScrub = false
+    playFromCurrentTime(resumePreview, segment)
   }
 }
 
 async function loadAudioBuffer() {
-  const loadId = ++currentLoadId;
-  const url = props.modelValue?.audioUrl;
+  const loadId = ++currentLoadId
+  const url = props.modelValue?.audioUrl
   if (!url) {
-    audioBuffer.value = null;
-    return;
+    audioBuffer.value = null
+    return
   }
 
   try {
-    const response = await fetch(url);
-    const arrayBuffer = await response.arrayBuffer();
-    if (loadId !== currentLoadId) return;
+    const response = await fetch(url)
+    const arrayBuffer = await response.arrayBuffer()
+    if (loadId !== currentLoadId) return
 
     if (!audioContext || audioContext.state === 'closed') {
-      audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (!AudioCtx) return
+      audioContext = new AudioCtx()
     }
-    const decoded = await audioContext.decodeAudioData(arrayBuffer);
-    if (loadId !== currentLoadId) return;
+    const decoded = await audioContext.decodeAudioData(arrayBuffer)
+    if (loadId !== currentLoadId) return
 
-    audioBuffer.value = decoded;
+    audioBuffer.value = decoded
   } catch (err) {
     if (loadId === currentLoadId) {
-      console.error('Error decoding audio buffer for SoundEditor:', err);
-      audioBuffer.value = null;
+      console.error('Error decoding audio buffer for SoundEditor:', err)
+      audioBuffer.value = null
     }
   }
 }
 
 function updatePlayhead() {
-  if (isScrubbing) return;
+  if (isScrubbing) return
 
   if (!playingThisSound.value) {
     if (playheadRaf !== null) {
-      cancelAnimationFrame(playheadRaf);
-      playheadRaf = null;
+      cancelAnimationFrame(playheadRaf)
+      playheadRaf = null
     }
-    return;
+    return
   }
 
-  let foundAudio: HTMLAudioElement | null = null;
+  let foundAudio: HTMLAudioElement | null = null
   for (const device of soundStore.outputDeviceData) {
     const audio = device.currentAudio?.find(a =>
       a.getAttribute('data-id')?.startsWith(`${props.modelValue.id}_`)
-    );
+    )
     if (audio) {
-      foundAudio = audio;
-      break;
+      foundAudio = audio
+      break
     }
   }
 
   if (foundAudio) {
-    currentTime.value = foundAudio.currentTime;
+    currentTime.value = foundAudio.currentTime
   }
 
-  playheadRaf = requestAnimationFrame(updatePlayhead);
+  playheadRaf = requestAnimationFrame(updatePlayhead)
 }
 
 watch(playingThisSound, isPlaying => {
   if (isPlaying) {
-    if (playheadRaf !== null) cancelAnimationFrame(playheadRaf);
-    playheadRaf = requestAnimationFrame(updatePlayhead);
+    if (playheadRaf !== null) cancelAnimationFrame(playheadRaf)
+    playheadRaf = requestAnimationFrame(updatePlayhead)
   } else {
     if (playheadRaf !== null) {
-      cancelAnimationFrame(playheadRaf);
-      playheadRaf = null;
+      cancelAnimationFrame(playheadRaf)
+      playheadRaf = null
     }
     if (!isScrubbing) {
-      currentTime.value = 0;
+      currentTime.value = 0
     }
   }
-});
+})
 
 const scrollToSound = () => {
-  if (!props.modelValue?.id) return;
-  const soundButton = document.getElementById(`sound-${props.modelValue.id}`);
+  if (!props.modelValue?.id) return
+  const soundButton = document.getElementById(`sound-${props.modelValue.id}`)
   if (soundButton) {
-    soundButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    soundButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
-};
+}
 
 onMounted(async () => {
-  document.addEventListener('click', handleExportMenuClickOutside);
-  document.addEventListener('keydown', handleExportMenuKeydown);
-  document.addEventListener('click', handleImageMenuClickOutside);
-  document.addEventListener('contextmenu', handleImageMenuClickOutside);
-  document.addEventListener('keydown', handleImageMenuKeydown);
+  document.addEventListener('click', handleExportMenuClickOutside)
+  document.addEventListener('keydown', handleExportMenuKeydown)
+  document.addEventListener('click', handleImageMenuClickOutside)
+  document.addEventListener('contextmenu', handleImageMenuClickOutside)
+  document.addEventListener('keydown', handleImageMenuKeydown)
   if (props.modelValue) {
-    await settingsStore.ensureSoundLoaded(props.modelValue);
-    loadAudioBuffer();
+    await settingsStore.ensureSoundLoaded(props.modelValue)
+    loadAudioBuffer()
   }
-});
+})
 
 watch(
   () => props.modelValue?.id,
   async (newId, oldId) => {
     if (newId !== oldId) {
-      isScrubbing = false;
-      stopScrubSnippet();
-      wasPlayingBeforeScrub = false;
-      activeSegmentBeforeScrub = null;
-      wasPreviewBeforeScrub = false;
-      currentTime.value = 0;
+      isScrubbing = false
+      stopScrubSnippet()
+      wasPlayingBeforeScrub = false
+      activeSegmentBeforeScrub = null
+      wasPreviewBeforeScrub = false
+      currentTime.value = 0
     }
     if (props.modelValue) {
-      await settingsStore.ensureSoundLoaded(props.modelValue);
-      loadAudioBuffer();
+      await settingsStore.ensureSoundLoaded(props.modelValue)
+      loadAudioBuffer()
     }
   }
-);
+)
 
 watch(
   () => props.modelValue?.audioUrl,
   (newUrl, oldUrl) => {
     if (newUrl !== oldUrl) {
-      currentTime.value = 0;
-      loadAudioBuffer();
+      currentTime.value = 0
+      loadAudioBuffer()
     }
   }
-);
+)
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleExportMenuClickOutside);
-  document.removeEventListener('keydown', handleExportMenuKeydown);
-  document.removeEventListener('click', handleImageMenuClickOutside);
-  document.removeEventListener('contextmenu', handleImageMenuClickOutside);
-  document.removeEventListener('keydown', handleImageMenuKeydown);
-  stopScrubSnippet();
+  document.removeEventListener('click', handleExportMenuClickOutside)
+  document.removeEventListener('keydown', handleExportMenuKeydown)
+  document.removeEventListener('click', handleImageMenuClickOutside)
+  document.removeEventListener('contextmenu', handleImageMenuClickOutside)
+  document.removeEventListener('keydown', handleImageMenuKeydown)
+  stopScrubSnippet()
   if (playheadRaf !== null) {
-    cancelAnimationFrame(playheadRaf);
-    playheadRaf = null;
+    cancelAnimationFrame(playheadRaf)
+    playheadRaf = null
   }
   if (audioContext) {
-    audioContext.close().catch(() => { });
-    audioContext = null;
+    audioContext.close().catch(() => { })
+    audioContext = null
   }
-});
-const imageFileInput = ref<HTMLInputElement | null>(null);
-const audioFileInput = ref<HTMLInputElement | null>(null);
-const tagInputRef = ref<TagInputRef | null>(null);
-const focusVisible = ref(false);
+})
+const imageFileInput = ref<HTMLInputElement | null>(null)
+const audioFileInput = ref<HTMLInputElement | null>(null)
+const tagInputRef = ref<TagInputRef | null>(null)
+const focusVisible = ref(false)
 /** how many decimal points should we round to */
-const precision = ref(2);
+const precision = ref(2)
 
-let draggedIndexStart: number | null = null;
-let draggedSegment: SoundSegment | null = null;
-const cancelDragEnd = ref(false);
+let draggedIndexStart: number | null = null
+let draggedSegment: SoundSegment | null = null
+const cancelDragEnd = ref(false)
 
 /**
  * Displays the volume as a percentage
@@ -1250,31 +1270,31 @@ const cancelDragEnd = ref(false);
 const volumeDisplay = computed({
   get: () => Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100),
   set: (value: number) => {
-    value = Math.min(100, Math.max(0, Math.round(value)));
-    soundStore.setVolume(value / 100, props.modelValue.id);
-    saveVolumeDebounced(value);
+    value = Math.min(100, Math.max(0, Math.round(value)))
+    soundStore.setVolume(value / 100, props.modelValue.id)
+    saveVolumeDebounced(value)
   },
-});
+})
 
 /** round the duration up to the nearest precision */
 const duration = computed(() => {
-  const multiplier = Math.pow(10, precision.value);
-  return Math.ceil((props.modelValue.duration ?? 100) * multiplier) / multiplier;
-});
+  const multiplier = Math.pow(10, precision.value)
+  return Math.ceil((props.modelValue.duration ?? 100) * multiplier) / multiplier
+})
 
 const saveVolumeDebounced = useThrottleFn((value: number) => {
-  const newValue = Math.round(value) / 100;
-  if (props.modelValue.volume === newValue) return;
+  const newValue = Math.round(value) / 100
+  if (props.modelValue.volume === newValue) return
   // we don't need to handle this here, but if we don't, it will trigger once
   // when it's set to the same number as the default volume,
   // and then a second time when the volume is deleted,
   // because no volume will turn into the default volume
   if (newValue === settingsStore.defaultVolume) {
-    delete props.modelValue.volume;
+    delete props.modelValue.volume
   } else {
-    props.modelValue.volume = newValue;
+    props.modelValue.volume = newValue
   }
-}, 100);
+}, 100)
 
 // Watch for changes to the title and update the modelValue
 watch(
@@ -1290,30 +1310,30 @@ watch(
   () => {
     // if hideTitle is false and modelValue has the property, delete it
     if (!props.modelValue.hideTitle && props.modelValue.hasOwnProperty('hideTitle')) {
-      delete props.modelValue.hideTitle;
+      delete props.modelValue.hideTitle
     }
     if (props.modelValue.color === '#ffffff') {
-      delete props.modelValue.color;
+      delete props.modelValue.color
     }
-    volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100);
+    volumeDisplay.value = Math.round((props.modelValue.volume ?? settingsStore.defaultVolume) * 100)
     if ((props.modelValue.volume ?? settingsStore.defaultVolume) === settingsStore.defaultVolume) {
-      delete props.modelValue.volume;
+      delete props.modelValue.volume
     }
     if (props.modelValue.tags?.length === 0) {
-      delete props.modelValue.tags;
+      delete props.modelValue.tags
     }
-    emit('update:modelValue', props.modelValue);
+    emit('update:modelValue', props.modelValue)
   },
   { deep: true }
-);
+)
 
 /**
  * Adds a segment to the segments array
  */
 function addSegment() {
-  if (!props.modelValue.soundSegments) props.modelValue.soundSegments = [];
-  props.modelValue.soundSegments.push({ start: 0, end: duration.value, id: crypto.randomUUID() });
-  emit('update:modelValue', props.modelValue);
+  if (!props.modelValue.soundSegments) props.modelValue.soundSegments = []
+  props.modelValue.soundSegments.push({ start: 0, end: duration.value, id: crypto.randomUUID() })
+  emit('update:modelValue', props.modelValue)
 }
 
 /**
@@ -1321,12 +1341,12 @@ function addSegment() {
  * @param segment The segment to remove
  */
 function removeSegment(segment: SoundSegment) {
-  props.modelValue.soundSegments?.splice(props.modelValue.soundSegments?.indexOf(segment) ?? -1, 1);
+  props.modelValue.soundSegments?.splice(props.modelValue.soundSegments?.indexOf(segment) ?? -1, 1)
   if (props.modelValue.soundSegments?.length === 0) {
-    delete props.modelValue.soundSegments;
+    delete props.modelValue.soundSegments
   }
   // delete props.modelValue.soundSegments
-  emit('update:modelValue', props.modelValue);
+  emit('update:modelValue', props.modelValue)
 }
 
 /**
@@ -1335,87 +1355,88 @@ function removeSegment(segment: SoundSegment) {
  * @param event The keyup event
  */
 function handleKeyup(event: KeyboardEvent) {
-  // if the soundStore is sending a ptt_hotkey and the keyup event is the ptt_hotkey, prevent the default action (which will focus it)
+  // if the soundStore is sending a ptt_hotkey and the keyup event is the ptt_hotkey,
+  // prevent the default action (which will focus it)
   if (soundStore.sendingPttHotkey && settingsStore.ptt_hotkey.includes(event.code)) {
-    event.preventDefault();
-    return;
+    event.preventDefault()
+    return
   }
-  focusVisible.value = true;
+  focusVisible.value = true
 }
 
 function updateHotkey(newKey: string[] | undefined, oldKey: string[] | undefined) {
   if (oldKey) {
-    settingsStore.removeSoundHotkey(props.modelValue, oldKey);
+    settingsStore.removeSoundHotkey(props.modelValue, oldKey)
   }
   setTimeout(() => {
     // we must delay this, otherwise it will play the sound when the hotkey is set
-    settingsStore.addSoundHotkey(props.modelValue, newKey);
-  }, 0);
+    settingsStore.addSoundHotkey(props.modelValue, newKey)
+  }, 0)
 }
 
 async function handleAudioFileUpload(event: Event) {
   // Handle the file upload event
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
-  if (!target.files || !target.files[0]) return;
-  const file = target.files[0];
-  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file, props.modelValue.id);
-  props.modelValue.title = stripFileExtension(file.name);
-  props.modelValue.audioKey = fileKey;
-  props.modelValue.audioUrl = fileUrl;
-  props.modelValue.duration = await settingsStore.getAudioDuration(fileUrl);
-  currentTime.value = 0;
-  loadAudioBuffer();
-  emit('update:modelValue', props.modelValue);
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  if (!target.files || !target.files[0]) return
+  const file = target.files[0]
+  const { fileUrl, fileKey } = await settingsStore.replaceFile(props.modelValue.audioKey, file, props.modelValue.id)
+  props.modelValue.title = stripFileExtension(file.name)
+  props.modelValue.audioKey = fileKey
+  props.modelValue.audioUrl = fileUrl
+  props.modelValue.duration = await settingsStore.getAudioDuration(fileUrl)
+  currentTime.value = 0
+  loadAudioBuffer()
+  emit('update:modelValue', props.modelValue)
 }
 
 async function handleImageFileUpload(event: Event) {
   // Handle the file upload event
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
-  if (!target.files || !target.files[0]) return;
-  const file = target.files[0];
-  const oldKey = props.modelValue.imageKey;
-  const { fileUrl, fileKey } = await settingsStore.saveFile(file);
-  props.modelValue.imageKey = fileKey;
-  props.modelValue.imageUrl = fileUrl;
-  emit('update:modelValue', props.modelValue);
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  if (!target.files || !target.files[0]) return
+  const file = target.files[0]
+  const oldKey = props.modelValue.imageKey
+  const { fileUrl, fileKey } = await settingsStore.saveFile(file)
+  props.modelValue.imageKey = fileKey
+  props.modelValue.imageUrl = fileUrl
+  emit('update:modelValue', props.modelValue)
   if (oldKey && oldKey !== fileKey) {
-    await settingsStore.deleteFile(oldKey, props.modelValue.id);
+    await settingsStore.deleteFile(oldKey, props.modelValue.id)
   }
 }
 
 function removeImage() {
   // Remove the image from the modelValue
-  const oldKey = props.modelValue.imageKey;
-  delete props.modelValue.imageKey;
-  delete props.modelValue.imageUrl;
-  emit('update:modelValue', props.modelValue);
+  const oldKey = props.modelValue.imageKey
+  delete props.modelValue.imageKey
+  delete props.modelValue.imageUrl
+  emit('update:modelValue', props.modelValue)
   if (oldKey) {
-    settingsStore.deleteFile(oldKey, props.modelValue.id);
+    settingsStore.deleteFile(oldKey, props.modelValue.id)
   }
 }
 
 function close() {
   // Close the editor
-  emit('close');
+  emit('close')
 }
 
 function dragStart(pSegment: SoundSegment, index: number) {
-  draggedIndexStart = index;
-  pSegment.isDragPreview = true;
-  draggedSegment = pSegment;
+  draggedIndexStart = index
+  pSegment.isDragPreview = true
+  draggedSegment = pSegment
 }
 
 function dragOver(pSegment: SoundSegment) {
-  if (draggedSegment === null || props.modelValue.soundSegments === undefined) return;
+  if (draggedSegment === null || props.modelValue.soundSegments === undefined) return
 
-  const index = props.modelValue.soundSegments.indexOf(pSegment);
-  const draggedIndex = props.modelValue.soundSegments.indexOf(draggedSegment);
-  if (index === draggedIndex) return;
+  const index = props.modelValue.soundSegments.indexOf(pSegment)
+  const draggedIndex = props.modelValue.soundSegments.indexOf(draggedSegment)
+  if (index === draggedIndex) return
   // const segmentsTemp = [...props.modelValue.soundSegments]
-  props.modelValue.soundSegments.splice(draggedIndex, 1); // remove the previous tag preview
-  props.modelValue.soundSegments.splice(index, 0, draggedSegment); // add the tag preview to the new index
+  props.modelValue.soundSegments.splice(draggedIndex, 1) // remove the previous tag preview
+  props.modelValue.soundSegments.splice(index, 0, draggedSegment) // add the tag preview to the new index
 }
 
 /**
@@ -1423,13 +1444,13 @@ function dragOver(pSegment: SoundSegment) {
  */
 function dragEnd() {
   if (cancelDragEnd.value) {
-    cancelDragEnd.value = false;
-    return;
+    cancelDragEnd.value = false
+    return
   }
-  if (draggedIndexStart === null || draggedSegment === null) return;
-  delete draggedSegment.isDragPreview;
-  draggedIndexStart = null;
-  draggedSegment = null;
+  if (draggedIndexStart === null || draggedSegment === null) return
+  delete draggedSegment.isDragPreview
+  draggedIndexStart = null
+  draggedSegment = null
   // no need to save, because we're resetting back to the original order
 }
 </script>

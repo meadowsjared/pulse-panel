@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 function openURL(url: string) {
-  window.open(url);
+  window.open(url)
 }
 
 // window.$nuxt.$router.push({ path: '/login' });

@@ -1005,7 +1005,8 @@ async function checkVirtualCableInstalled() {
 }
 
 function updateSoundKeys(id, audioKey, imageKey) {
-  const stmt = db.prepare('UPDATE sounds SET audioKey = COALESCE(?, audioKey), imageKey = COALESCE(?, imageKey) WHERE id = ?')
+  const query = 'UPDATE sounds SET audioKey = COALESCE(?, audioKey), imageKey = COALESCE(?, imageKey) WHERE id = ?'
+  const stmt = db.prepare(query)
   stmt.run(audioKey ?? null, imageKey ?? null, id)
 }
 

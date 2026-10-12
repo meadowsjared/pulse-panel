@@ -219,7 +219,7 @@ withDefaults(defineProps<Props>(), {
   canCopy: false,
   canPaste: false,
   pasteTooltip: 'Paste audio (Ctrl+V)',
-});
+})
 
 defineEmits<{
   (e: 'undo'): void;
@@ -230,7 +230,7 @@ defineEmits<{
   (e: 'delete'): void;
   (e: 'setIn'): void;
   (e: 'setOut'): void;
-}>();
+}>()
 </script>
 
 <style scoped>

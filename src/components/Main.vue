@@ -113,87 +113,87 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineAsyncComponent, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { useSettingsStore } from '../store/settings';
-import { useSoundStore } from '../store/sound';
-import { useUpdateStore } from '../store/update';
-import { usePulseBackStore } from '../store/pulseBack';
-import InlineSvg from 'vue-inline-svg';
-import SettingsGear from '../assets/images/settings-gear.svg';
-import Speaker from '../assets/images/speaker.svg';
-import PulseBackIcon from '../assets/images/pulse-back.svg';
-import YouTubeIcon from '../assets/images/youtube.svg';
-import StopIcon from '../assets/images/stop.svg';
-import Headphones from '../assets/images/headphones.svg';
-import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp';
-import Router from '../router';
+import { ref, computed, onMounted, defineAsyncComponent, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useSettingsStore } from '../store/settings'
+import { useSoundStore } from '../store/sound'
+import { useUpdateStore } from '../store/update'
+import { usePulseBackStore } from '../store/pulseBack'
+import InlineSvg from 'vue-inline-svg'
+import SettingsGear from '../assets/images/settings-gear.svg'
+import Speaker from '../assets/images/speaker.svg'
+import PulseBackIcon from '../assets/images/pulse-back.svg'
+import YouTubeIcon from '../assets/images/youtube.svg'
+import StopIcon from '../assets/images/stop.svg'
+import Headphones from '../assets/images/headphones.svg'
+import PulsePanelIcon from '../assets/pulse-panel_icon_center.webp'
+import Router from '../router'
 
-const route = useRoute();
-const YouTubeView = defineAsyncComponent(() => import('./YouTubeView.vue'));
-const hasVisitedYouTube = ref(false);
+const route = useRoute()
+const YouTubeView = defineAsyncComponent(() => import('./YouTubeView.vue'))
+const hasVisitedYouTube = ref(false)
 
 watch(
   () => route.path,
-  (path) => {
+  path => {
     if (path === '/youtube') {
-      hasVisitedYouTube.value = true;
+      hasVisitedYouTube.value = true
     }
   },
   { immediate: true }
-);
+)
 
-const darkMode = ref(true);
-const settingsStore = useSettingsStore();
-const soundStore = useSoundStore();
-const updateStore = useUpdateStore();
-const pulseBackStore = usePulseBackStore();
-const appVersion = `v${window.electron?.versions.app}`;
-const routerLinkActive = ref([false, false, false, false]);
-const stopAllSoundsActive = ref(false);
-const muteButtonActive = ref(false);
-const loadingErrorMessage = ref<string | null>(null);
+const darkMode = ref(true)
+const settingsStore = useSettingsStore()
+const soundStore = useSoundStore()
+const updateStore = useUpdateStore()
+const pulseBackStore = usePulseBackStore()
+const appVersion = `v${window.electron?.versions.app}`
+const routerLinkActive = ref([false, false, false, false])
+const stopAllSoundsActive = ref(false)
+const muteButtonActive = ref(false)
+const loadingErrorMessage = ref<string | null>(null)
 
 const isToastActionable = computed(() => {
-  return Boolean(pulseBackStore.toastFilePath || pulseBackStore.toastAction);
-});
+  return Boolean(pulseBackStore.toastFilePath || pulseBackStore.toastAction)
+})
 
 function handleToastClick() {
   if (isToastActionable.value) {
-    pulseBackStore.triggerToastAction();
+    pulseBackStore.triggerToastAction()
   }
 }
 
 function handleToastAction() {
-  pulseBackStore.triggerToastAction();
+  pulseBackStore.triggerToastAction()
 }
 
 function handleToastMouseEnter() {
   if (isToastActionable.value) {
-    pulseBackStore.pauseToastTimer();
+    pulseBackStore.pauseToastTimer()
   }
 }
 
 function handleToastMouseLeave() {
   if (isToastActionable.value) {
-    pulseBackStore.resumeToastTimer();
+    pulseBackStore.resumeToastTimer()
   }
 }
 
 onMounted(() => {
-  pulseBackStore.init();
+  pulseBackStore.init()
   setTimeout(() => {
-    updateStore.checkForUpdates();
-  }, 1500);
-});
+    updateStore.checkForUpdates()
+  }, 1500)
+})
 
 function clearErrorMessages() {
-  loadingErrorMessage.value = null;
-  updateStore.errorMessage = null;
+  loadingErrorMessage.value = null
+  updateStore.errorMessage = null
 }
 
 function activateRouterLink(index: number, activate: boolean) {
-  routerLinkActive.value[index] = activate;
+  routerLinkActive.value[index] = activate
 }
 
 /**
@@ -201,43 +201,44 @@ function activateRouterLink(index: number, activate: boolean) {
  * @param path path to navigate to
  */
 function navigateTo(path: string) {
-  Router.push(path);
+  Router.push(path)
 }
 
 function openLink() {
-  window.electron?.openExternalLink('https://github.com/meadowsjared/pulse-panel');
+  window.electron?.openExternalLink('https://github.com/meadowsjared/pulse-panel')
 }
 
 window.electron?.onDarkModeToggle((value: boolean) => {
-  if (settingsStore.darkMode === value) return;
-  darkMode.value = value;
-  settingsStore.darkMode = value;
-});
+  if (settingsStore.darkMode === value) return
+  darkMode.value = value
+  settingsStore.darkMode = value
+})
 async function initializeSettings() {
   const [settingsResult, soundsResult] = await Promise.allSettled([
     settingsStore.fetchSounds().then(() => {
-      settingsStore.registerHotkeys();
+      settingsStore.registerHotkeys()
     }),
     settingsStore.fetchSettings().then(() => {
-      darkMode.value = settingsStore.darkMode;
+      darkMode.value = settingsStore.darkMode
     }),
-  ]);
+  ])
   if (settingsResult.status !== 'fulfilled' || soundsResult.status !== 'fulfilled') {
     if (settingsResult.status === 'rejected' && soundsResult.status === 'rejected') {
-      loadingErrorMessage.value = `Failed to fetch settings and sounds: ${settingsResult.reason}, ${soundsResult.reason}`;
-      console.error(settingsResult.reason);
-      console.trace(soundsResult.reason);
+      loadingErrorMessage.value =
+        `Failed to fetch settings and sounds: ${settingsResult.reason}, ${soundsResult.reason}`
+      console.error(settingsResult.reason)
+      console.trace(soundsResult.reason)
     } else if (settingsResult.status === 'rejected') {
-      loadingErrorMessage.value = `Failed to fetch settings: ${settingsResult.reason}`;
-      console.trace(settingsResult.reason);
+      loadingErrorMessage.value = `Failed to fetch settings: ${settingsResult.reason}`
+      console.trace(settingsResult.reason)
     } else if (soundsResult.status === 'rejected') {
-      loadingErrorMessage.value = `Failed to fetch sounds: ${soundsResult.reason}`;
-      console.trace(soundsResult.reason);
+      loadingErrorMessage.value = `Failed to fetch sounds: ${soundsResult.reason}`
+      console.trace(soundsResult.reason)
     }
   }
 }
 
-initializeSettings();
+initializeSettings()
 </script>
 
 <style scoped>

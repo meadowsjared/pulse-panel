@@ -131,7 +131,9 @@
                   class="favorite-star-btn"
                   :class="{ 'is-favorite': isCurrentPageFavorite, 'is-active': isFavoritesFlyoutOpen }"
                   @click="toggleFavoritesFlyout"
-                  :title="isCurrentPageFavorite ? 'Favorite Places (Saved) - Click to view, Right-click to toggle' : 'Favorite Places - Click to view, Right-click to toggle'"
+                  :title="isCurrentPageFavorite
+                    ? 'Favorite Places (Saved) - Click to view, Right-click to toggle'
+                    : 'Favorite Places - Click to view, Right-click to toggle'"
                   @contextmenu.prevent.stop="toggleFavoriteCurrentPage">
             <svg v-if="isCurrentPageFavorite"
                  class="w-3.5 h-3.5 star-icon active text-amber-400"
@@ -139,7 +141,10 @@
                  fill="currentColor"
                  stroke="currentColor"
                  stroke-width="1">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                        12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+              </polygon>
             </svg>
             <svg v-else
                  class="w-3.5 h-3.5 star-icon"
@@ -147,7 +152,10 @@
                  fill="none"
                  stroke="currentColor"
                  stroke-width="2">
-              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                        12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+              </polygon>
             </svg>
           </button>
           <button type="button"
@@ -197,7 +205,11 @@
                        class="w-3.5 h-3.5 text-red-500"
                        viewBox="0 0 24 24"
                        fill="currentColor">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                    <path
+                      d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505
+                         A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136
+                         c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12
+                         24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                   </svg>
                   <svg v-else-if="isMyinstantsUrl(item.fav.url)"
                        class="w-3.5 h-3.5 text-rose-400"
@@ -255,7 +267,10 @@
                   <svg class="w-3 h-3 text-amber-400"
                        viewBox="0 0 24 24"
                        fill="currentColor">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                              12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                    </polygon>
                   </svg>
                   <span>Favorite</span>
                 </div>
@@ -275,7 +290,10 @@
                 <svg class="w-3.5 h-3.5 star-badge-icon text-amber-400"
                      viewBox="0 0 24 24"
                      fill="currentColor">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  <polygon
+                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                            12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                  </polygon>
                 </svg>
                 <span class="favorites-title-text">Favorites</span>
                 <span class="favorites-count-badge">{{ settingsStore.browserFavorites.length }}</span>
@@ -289,7 +307,10 @@
                   <svg class="w-3 h-3 text-amber-400"
                        viewBox="0 0 24 24"
                        fill="currentColor">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                              12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                    </polygon>
                   </svg>
                   <span>+ Save Current</span>
                 </button>
@@ -330,7 +351,11 @@
                        class="w-4 h-4 text-red-500"
                        viewBox="0 0 24 24"
                        fill="currentColor">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                    <path
+                      d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505
+                         A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136
+                         c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12
+                         24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                   </svg>
                   <svg v-else-if="isMyinstantsUrl(fav.url)"
                        class="w-4 h-4 text-rose-400"
@@ -749,7 +774,10 @@
                    :fill="isCurrentPageFavorite ? 'currentColor' : 'none'"
                    stroke="currentColor"
                    stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                </polygon>
               </svg>
               <span>{{ isCurrentPageFavorite ? 'Remove from Favorites' : 'Add to Favorites' }}</span>
             </button>
@@ -885,7 +913,9 @@
                         x2="16.65"
                         y2="16.65"></line>
                 </svg>
-                <span class="truncate">Search YouTube for "{{ webviewMenuContext.selectionText.slice(0, 18) }}..."</span>
+                <span class="truncate">
+                  Search YouTube for "{{ webviewMenuContext.selectionText.slice(0, 18) }}..."
+                </span>
               </button>
 
               <div class="menu-divider"></div>
@@ -1073,7 +1103,11 @@
             </template>
 
             <!-- Image Media Actions -->
-            <template v-if="webviewMenuContext.srcUrl && (webviewMenuContext.mediaType === 'image' || webviewMenuContext.srcUrl.includes('ytimg') || webviewMenuContext.srcUrl.includes('googleusercontent'))">
+            <template v-if="webviewMenuContext.srcUrl && (
+              webviewMenuContext.mediaType === 'image' ||
+              webviewMenuContext.srcUrl.includes('ytimg') ||
+              webviewMenuContext.srcUrl.includes('googleusercontent')
+            )">
               <button type="button"
                       class="context-menu-item"
                       @click="handleCopyImageAddress">
@@ -1263,7 +1297,10 @@
               <svg class="item-icon text-amber-400"
                    viewBox="0 0 24 24"
                    fill="currentColor">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                </polygon>
               </svg>
               <span>Favorite Places</span>
               <span class="item-badge">{{ settingsStore.browserFavorites.length }}</span>
@@ -1277,7 +1314,10 @@
                    :fill="isCurrentPageFavorite ? 'currentColor' : 'none'"
                    stroke="currentColor"
                    stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                </polygon>
               </svg>
               <span>{{ isCurrentPageFavorite ? 'Remove from Favorites' : 'Add to Favorites' }}</span>
             </button>
@@ -1380,7 +1420,8 @@
 
             <button type="button"
                     class="context-menu-item"
-                    v-if="settingsStore.browser_homepage && settingsStore.browser_homepage !== 'https://www.youtube.com'"
+                    v-if="settingsStore.browser_homepage &&
+                      settingsStore.browser_homepage !== 'https://www.youtube.com'"
                     @click="resetHomepageToDefault">
               <svg class="item-icon"
                    viewBox="0 0 24 24"
@@ -1420,14 +1461,18 @@
                    fill="none"
                    stroke="currentColor"
                    stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
+                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                </polygon>
               </svg>
               <span>Set Current Page as Homepage</span>
             </button>
 
             <button type="button"
                     class="context-menu-item"
-                    v-if="settingsStore.browser_homepage && settingsStore.browser_homepage !== 'https://www.youtube.com'"
+                    v-if="settingsStore.browser_homepage &&
+                      settingsStore.browser_homepage !== 'https://www.youtube.com'"
                     @click="resetHomepageToDefault">
               <svg class="item-icon"
                    viewBox="0 0 24 24"
@@ -1448,12 +1493,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted, onUnmounted, watch, nextTick, computed } from 'vue';
-import { useRoute } from 'vue-router';
-import YouTubeClipPanel from './YouTubeClipPanel.vue';
-import FindInPageBar from './FindInPageBar.vue';
-import { usePulseBackStore } from '../store/pulseBack';
-import { useSettingsStore } from '../store/settings';
+import { ref, shallowRef, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import YouTubeClipPanel from './YouTubeClipPanel.vue'
+import FindInPageBar from './FindInPageBar.vue'
+import { usePulseBackStore } from '../store/pulseBack'
+import { useSettingsStore } from '../store/settings'
 
 const props = withDefaults(
   defineProps<{
@@ -1462,21 +1507,21 @@ const props = withDefaults(
   {
     active: true,
   }
-);
+)
 
-const route = useRoute();
-const pulseBackStore = usePulseBackStore();
-const settingsStore = useSettingsStore();
+const route = useRoute()
+const pulseBackStore = usePulseBackStore()
+const settingsStore = useSettingsStore()
 
 // Captured once at component setup to avoid Electron webview re-navigating when homepage setting updates
-const initialWebviewSrc = settingsStore.browser_homepage || 'https://www.youtube.com';
+const initialWebviewSrc = settingsStore.browser_homepage || 'https://www.youtube.com'
 
-const webviewRef = ref<any>(null);
-const clipPanelRef = ref<any>(null);
-const addressInputRef = ref<HTMLInputElement | null>(null);
-const overflowBtnRef = ref<HTMLElement | null>(null);
-const findBarRef = ref<any>(null);
-const favoritesFlyoutRef = ref<HTMLElement | null>(null);
+const webviewRef = ref<any>(null)
+const clipPanelRef = ref<any>(null)
+const addressInputRef = ref<HTMLInputElement | null>(null)
+const overflowBtnRef = ref<HTMLElement | null>(null)
+const findBarRef = ref<any>(null)
+const favoritesFlyoutRef = ref<HTMLElement | null>(null)
 
 interface AutocompleteMatch {
   fav: { id: string; title: string; url: string; };
@@ -1485,20 +1530,20 @@ interface AutocompleteMatch {
 }
 
 // Favorites flyout state
-const isFavoritesFlyoutOpen = ref(false);
+const isFavoritesFlyoutOpen = ref(false)
 
 // Address bar autocomplete state
-const isAutocompleteOpen = ref(false);
-const matchingFavorites = ref<AutocompleteMatch[]>([]);
-const selectedAutocompleteIndex = ref(-1);
-const activeInlineMatch = ref<AutocompleteMatch | null>(null);
-const userTypedQuery = ref('');
-const autocompleteDropdownRef = ref<HTMLElement | null>(null);
+const isAutocompleteOpen = ref(false)
+const matchingFavorites = ref<AutocompleteMatch[]>([])
+const selectedAutocompleteIndex = ref(-1)
+const activeInlineMatch = ref<AutocompleteMatch | null>(null)
+const userTypedQuery = ref('')
+const autocompleteDropdownRef = ref<HTMLElement | null>(null)
 
 // Find in Page state
-const isFindBarOpen = ref(false);
-const findInitialQuery = ref('');
-const isViewActive = ref(true);
+const isFindBarOpen = ref(false)
+const findInitialQuery = ref('')
+const isViewActive = ref(true)
 
 // Context menu state
 type MenuType = 'address' | 'webview' | 'address-overflow' | 'home' | null;
@@ -1525,20 +1570,20 @@ interface WebviewMenuContext {
   canSelectAll: boolean;
 }
 
-const activeMenu = ref<MenuType>(null);
-const menuPosition = ref<MenuPosition>({ x: 0, y: 0 });
-const contextMenuRef = ref<HTMLElement | null>(null);
+const activeMenu = ref<MenuType>(null)
+const menuPosition = ref<MenuPosition>({ x: 0, y: 0 })
+const contextMenuRef = ref<HTMLElement | null>(null)
 
-const clipboardText = ref('');
-const clipboardHasText = ref(false);
-const clipboardIsAddress = ref(false);
+const clipboardText = ref('')
+const clipboardHasText = ref(false)
+const clipboardIsAddress = ref(false)
 
 const addressSelection = ref({
   start: 0,
   end: 0,
   hasSelection: false,
   selectedText: '',
-});
+})
 
 const webviewMenuContext = ref<WebviewMenuContext>({
   linkUrl: '',
@@ -1555,392 +1600,393 @@ const webviewMenuContext = ref<WebviewMenuContext>({
   canCopy: false,
   canPaste: false,
   canSelectAll: false,
-});
+})
 
-let lastMousePos = { x: 100, y: 100 };
+let lastMousePos = { x: 100, y: 100 }
 function updateMousePos(e: MouseEvent) {
-  lastMousePos = { x: e.clientX, y: e.clientY };
+  lastMousePos = { x: e.clientX, y: e.clientY }
 }
 
 function isLikelyAddress(str: string): boolean {
-  if (!str) return false;
-  const s = str.trim();
-  if (/^(https?:\/\/|www\.)/i.test(s)) return true;
-  if (s.includes('youtube.com') || s.includes('youtu.be')) return true;
-  if (!s.includes(' ') && /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(s)) return true;
-  return false;
+  if (!str) return false
+  const s = str.trim()
+  if (/^(https?:\/\/|www\.)/i.test(s)) return true
+  if (s.includes('youtube.com') || s.includes('youtu.be')) return true
+  if (!s.includes(' ') && /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(s)) return true
+  return false
 }
 
 function truncateUrl(url: string, maxLen = 34): string {
-  if (!url) return '';
+  if (!url) return ''
   try {
-    const parsed = new URL(url);
-    const display = parsed.hostname.replace(/^www\./, '') + parsed.pathname + (parsed.search ? parsed.search : '');
-    return display.length > maxLen ? display.substring(0, maxLen - 1) + '…' : display;
+    const parsed = new URL(url)
+    const display = parsed.hostname.replace(/^www\./, '') + parsed.pathname + (parsed.search ? parsed.search : '')
+    return display.length > maxLen ? display.substring(0, maxLen - 1) + '…' : display
   } catch (_) {
-    return url.length > maxLen ? url.substring(0, maxLen - 1) + '…' : url;
+    return url.length > maxLen ? url.substring(0, maxLen - 1) + '…' : url
   }
 }
 
 async function refreshClipboardState() {
   try {
-    const text = (await navigator.clipboard.readText()) || '';
-    const trimmed = text.trim();
-    clipboardText.value = trimmed;
-    clipboardHasText.value = trimmed.length > 0;
-    clipboardIsAddress.value = isLikelyAddress(trimmed);
+    const text = (await navigator.clipboard.readText()) || ''
+    const trimmed = text.trim()
+    clipboardText.value = trimmed
+    clipboardHasText.value = trimmed.length > 0
+    clipboardIsAddress.value = isLikelyAddress(trimmed)
   } catch (_) {
-    clipboardText.value = '';
-    clipboardHasText.value = false;
-    clipboardIsAddress.value = false;
+    clipboardText.value = ''
+    clipboardHasText.value = false
+    clipboardIsAddress.value = false
   }
 }
 
 async function showMenuAt(type: MenuType, x: number, y: number) {
-  activeMenu.value = type;
-  menuPosition.value = { x, y };
+  activeMenu.value = type
+  menuPosition.value = { x, y }
 
-  await nextTick();
+  await nextTick()
   if (contextMenuRef.value) {
-    const rect = contextMenuRef.value.getBoundingClientRect();
-    const menuWidth = rect.width || 220;
-    const menuHeight = rect.height || 260;
-    const padding = 10;
-    let finalX = x;
-    let finalY = y;
+    const rect = contextMenuRef.value.getBoundingClientRect()
+    const menuWidth = rect.width || 220
+    const menuHeight = rect.height || 260
+    const padding = 10
+    let finalX = x
+    let finalY = y
 
     if (finalX + menuWidth > window.innerWidth - padding) {
-      finalX = Math.max(padding, window.innerWidth - menuWidth - padding);
+      finalX = Math.max(padding, window.innerWidth - menuWidth - padding)
     }
     if (finalY + menuHeight > window.innerHeight - padding) {
-      finalY = Math.max(padding, window.innerHeight - menuHeight - padding);
+      finalY = Math.max(padding, window.innerHeight - menuHeight - padding)
     }
-    menuPosition.value = { x: Math.max(padding, finalX), y: Math.max(padding, finalY) };
+    menuPosition.value = { x: Math.max(padding, finalX), y: Math.max(padding, finalY) }
   }
 }
 
 function closeContextMenu() {
-  activeMenu.value = null;
+  activeMenu.value = null
 }
 
 // Favorites state & helpers
 const currentEffectiveUrl = computed(() => {
-  let wvUrl = '';
+  let wvUrl = ''
   try {
-    wvUrl = webviewRef.value?.getURL?.() || '';
+    wvUrl = webviewRef.value?.getURL?.() || ''
   } catch (_) { }
-  return (wvUrl || currentUrl.value || inputUrl.value || '').trim();
-});
+  return (wvUrl || currentUrl.value || inputUrl.value || '').trim()
+})
 
 const isCurrentPageFavorite = computed(() => {
-  const target = currentEffectiveUrl.value.toLowerCase().replace(/\/+$/, '');
-  if (!target) return false;
+  const target = currentEffectiveUrl.value.toLowerCase().replace(/\/+$/, '')
+  if (!target) return false
   return settingsStore.browserFavorites.some(f => {
-    const fUrl = f.url.trim().toLowerCase().replace(/\/+$/, '');
-    return fUrl === target;
-  });
-});
+    const fUrl = f.url.trim().toLowerCase().replace(/\/+$/, '')
+    return fUrl === target
+  })
+})
 
 function isFavoriteCurrentUrl(url: string): boolean {
-  const current = currentEffectiveUrl.value.toLowerCase().replace(/\/+$/, '');
-  const target = url.trim().toLowerCase().replace(/\/+$/, '');
-  return current === target;
+  const current = currentEffectiveUrl.value.toLowerCase().replace(/\/+$/, '')
+  const target = url.trim().toLowerCase().replace(/\/+$/, '')
+  return current === target
 }
 
 function isYouTubeUrl(url: string): boolean {
-  return /youtube\.com|youtu\.be/i.test(url);
+  return /youtube\.com|youtu\.be/i.test(url)
 }
 
 function isMyinstantsUrl(url: string): boolean {
-  return /myinstants\.com/i.test(url);
+  return /myinstants\.com/i.test(url)
 }
 
 function isAudioSiteUrl(url: string): boolean {
-  return /freesound\.org|sounddogs|zapsplat|audius/i.test(url) || isDirectMediaUrl(url);
+  return /freesound\.org|sounddogs|zapsplat|audius/i.test(url) || isDirectMediaUrl(url)
 }
 
 function formatDisplayUrl(url: string): string {
   try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.replace(/^www\./, '');
-    const path = parsed.pathname === '/' ? '' : parsed.pathname;
-    return host + path;
+    const parsed = new URL(url)
+    const host = parsed.hostname.replace(/^www\./, '')
+    const path = parsed.pathname === '/' ? '' : parsed.pathname
+    return host + path
   } catch (_) {
-    return url;
+    return url
   }
 }
 
 function resolvePageTitleForFavorite(normalizedUrl: string): string {
-  let pageTitle = '';
+  let pageTitle = ''
   try {
-    pageTitle = webviewRef.value?.getTitle?.() || '';
+    pageTitle = webviewRef.value?.getTitle?.() || ''
   } catch (_) { }
   if (pageTitle) {
     pageTitle = pageTitle
       .replace(/\s*-\s*YouTube$/i, '')
       .replace(/\s*-\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
       .replace(/\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '')
-      .trim();
+      .trim()
   }
-  return pageTitle || activeVideoTitle.value || extractMediaTitle(normalizedUrl) || formatDisplayUrl(normalizedUrl);
+  return pageTitle || activeVideoTitle.value || extractMediaTitle(normalizedUrl) || formatDisplayUrl(normalizedUrl)
 }
 
 async function toggleFavoriteCurrentPage() {
-  closeContextMenu();
-  const target = currentEffectiveUrl.value;
+  closeContextMenu()
+  const target = currentEffectiveUrl.value
   if (!target || !isLikelyAddress(target)) {
-    pulseBackStore.showToast('Invalid address to favorite');
-    return;
+    pulseBackStore.showToast('Invalid address to favorite')
+    return
   }
 
-  let normalized = target;
+  let normalized = target
   if (!/^https?:\/\//i.test(normalized)) {
-    normalized = `https://${normalized}`;
+    normalized = `https://${normalized}`
   }
 
   if (isCurrentPageFavorite.value) {
-    await settingsStore.removeBrowserFavorite(normalized);
-    pulseBackStore.showToast('Removed from favorites');
+    await settingsStore.removeBrowserFavorite(normalized)
+    pulseBackStore.showToast('Removed from favorites')
   } else {
-    const title = resolvePageTitleForFavorite(normalized);
+    const title = resolvePageTitleForFavorite(normalized)
     await settingsStore.addBrowserFavorite({
       title,
       url: normalized,
-    });
-    pulseBackStore.showToast(`Saved "${title}" to favorites`);
+    })
+    pulseBackStore.showToast(`Saved "${title}" to favorites`)
     // Right-clicking or toggling should NOT open the flyout
   }
 }
 
 async function addCurrentPageToFavorites() {
-  const target = currentEffectiveUrl.value;
-  if (!target || !isLikelyAddress(target)) return;
-  let normalized = target;
+  const target = currentEffectiveUrl.value
+  if (!target || !isLikelyAddress(target)) return
+  let normalized = target
   if (!/^https?:\/\//i.test(normalized)) {
-    normalized = `https://${normalized}`;
+    normalized = `https://${normalized}`
   }
-  const title = resolvePageTitleForFavorite(normalized);
+  const title = resolvePageTitleForFavorite(normalized)
   await settingsStore.addBrowserFavorite({
     title,
     url: normalized,
-  });
-  pulseBackStore.showToast(`Saved "${title}" to favorites`);
+  })
+  pulseBackStore.showToast(`Saved "${title}" to favorites`)
 }
 
 async function deleteFavorite(fav: { id: string; title: string; url: string; }) {
-  await settingsStore.removeBrowserFavorite(fav.id);
-  pulseBackStore.showToast(`Removed "${fav.title}" from favorites`);
+  await settingsStore.removeBrowserFavorite(fav.id)
+  pulseBackStore.showToast(`Removed "${fav.title}" from favorites`)
 }
 
 function selectFavorite(fav: { url: string; title: string; }) {
-  isFavoritesFlyoutOpen.value = false;
-  inputUrl.value = fav.url;
-  navigateToUrl(fav.url);
+  isFavoritesFlyoutOpen.value = false
+  inputUrl.value = fav.url
+  navigateToUrl(fav.url)
 }
 
 function getCleanUrlForMatch(url: string): string {
   try {
-    const u = new URL(url);
-    const host = u.hostname.replace(/^www\./i, '');
-    const path = u.pathname === '/' ? '' : u.pathname;
-    const search = u.search || '';
-    return host + path + search;
+    const u = new URL(url)
+    const host = u.hostname.replace(/^www\./i, '')
+    const path = u.pathname === '/' ? '' : u.pathname
+    const search = u.search || ''
+    return host + path + search
   } catch (_) {
-    return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+    return url.replace(/^https?:\/\//i, '').replace(/^www\./i, '')
   }
 }
 
 function closeAutocomplete() {
-  isAutocompleteOpen.value = false;
-  matchingFavorites.value = [];
-  selectedAutocompleteIndex.value = -1;
-  activeInlineMatch.value = null;
+  isAutocompleteOpen.value = false
+  matchingFavorites.value = []
+  selectedAutocompleteIndex.value = -1
+  activeInlineMatch.value = null
 }
 
 function selectAutocompleteItem(item: AutocompleteMatch) {
-  closeAutocomplete();
-  inputUrl.value = item.fav.url;
+  closeAutocomplete()
+  inputUrl.value = item.fav.url
   if (addressInputRef.value) {
-    addressInputRef.value.value = item.fav.url;
-    addressInputRef.value.blur();
+    addressInputRef.value.value = item.fav.url
+    addressInputRef.value.blur()
   }
-  navigateToUrl(item.fav.url);
+  navigateToUrl(item.fav.url)
 }
 
 function handleClearAddressInput() {
-  inputUrl.value = '';
-  userTypedQuery.value = '';
+  inputUrl.value = ''
+  userTypedQuery.value = ''
   if (addressInputRef.value) {
-    addressInputRef.value.value = '';
+    addressInputRef.value.value = ''
   }
-  closeAutocomplete();
-  addressInputRef.value?.focus();
+  closeAutocomplete()
+  addressInputRef.value?.focus()
 }
 
 function handleShieldMousedown() {
-  closeFavoritesFlyout();
-  closeAutocomplete();
+  closeFavoritesFlyout()
+  closeAutocomplete()
 }
 
 function closeFavoritesFlyout() {
-  isFavoritesFlyoutOpen.value = false;
+  isFavoritesFlyoutOpen.value = false
 }
 
 function openFavoritesFlyoutFromMenu() {
-  closeContextMenu();
-  closeAutocomplete();
-  isFavoritesFlyoutOpen.value = true;
+  closeContextMenu()
+  closeAutocomplete()
+  isFavoritesFlyoutOpen.value = true
 }
 
 function handleGlobalMouseDown(e: MouseEvent) {
-  const target = e.target as HTMLElement | null;
-  if (!target) return;
+  const target = e.target instanceof Node ? e.target : null
+  if (!target) return
 
   if (isAutocompleteOpen.value) {
     if (!autocompleteDropdownRef.value?.contains(target) && !addressInputRef.value?.contains(target)) {
-      closeAutocomplete();
+      closeAutocomplete()
     }
   }
 
   if (isFavoritesFlyoutOpen.value) {
+    const el = target instanceof Element ? target : target.parentElement
     if (
       favoritesFlyoutRef.value?.contains(target) ||
       addressInputRef.value?.contains(target) ||
-      target.closest('.favorite-star-btn') ||
-      target.closest('.address-actions-group')
+      el?.closest('.favorite-star-btn') ||
+      el?.closest('.address-actions-group')
     ) {
-      return;
+      return
     }
-    closeFavoritesFlyout();
+    closeFavoritesFlyout()
   }
 }
 
 // Address Bar Context Menu
 async function openAddressContextMenu(event: MouseEvent) {
-  event.preventDefault();
-  event.stopPropagation();
+  event.preventDefault()
+  event.stopPropagation()
 
-  await refreshClipboardState();
+  await refreshClipboardState()
 
-  const inputEl = addressInputRef.value;
+  const inputEl = addressInputRef.value
   if (inputEl) {
-    const start = inputEl.selectionStart ?? 0;
-    const end = inputEl.selectionEnd ?? 0;
-    const val = inputEl.value;
-    const hasSelection = start !== end && start >= 0 && end <= val.length;
-    const selectedText = hasSelection ? val.substring(start, end) : '';
+    const start = inputEl.selectionStart ?? 0
+    const end = inputEl.selectionEnd ?? 0
+    const val = inputEl.value
+    const hasSelection = start !== end && start >= 0 && end <= val.length
+    const selectedText = hasSelection ? val.substring(start, end) : ''
 
     addressSelection.value = {
       start,
       end,
       hasSelection,
       selectedText,
-    };
+    }
   } else {
     addressSelection.value = {
       start: 0,
       end: 0,
       hasSelection: false,
       selectedText: '',
-    };
+    }
   }
 
-  await showMenuAt('address', event.clientX, event.clientY);
+  await showMenuAt('address', event.clientX, event.clientY)
 }
 
 async function handleAddressCut() {
-  closeContextMenu();
-  const inputEl = addressInputRef.value;
-  const current = inputUrl.value;
-  if (!current) return;
+  closeContextMenu()
+  const inputEl = addressInputRef.value
+  const current = inputUrl.value
+  if (!current) return
 
-  let textToCut = current;
+  let textToCut = current
   if (addressSelection.value.hasSelection && addressSelection.value.selectedText) {
-    textToCut = addressSelection.value.selectedText;
-    const { start, end } = addressSelection.value;
-    inputUrl.value = current.substring(0, start) + current.substring(end);
+    textToCut = addressSelection.value.selectedText
+    const { start, end } = addressSelection.value
+    inputUrl.value = current.substring(0, start) + current.substring(end)
     nextTick(() => {
-      inputEl?.focus();
-      inputEl?.setSelectionRange(start, start);
-    });
+      inputEl?.focus()
+      inputEl?.setSelectionRange(start, start)
+    })
   } else {
-    inputUrl.value = '';
+    inputUrl.value = ''
     nextTick(() => {
-      inputEl?.focus();
-    });
+      inputEl?.focus()
+    })
   }
 
   try {
-    await navigator.clipboard.writeText(textToCut);
-    pulseBackStore.showToast('Cut to clipboard');
+    await navigator.clipboard.writeText(textToCut)
+    pulseBackStore.showToast('Cut to clipboard')
   } catch (_) { }
 }
 
 async function handleAddressCopy() {
-  closeContextMenu();
-  const current = inputUrl.value;
-  if (!current) return;
+  closeContextMenu()
+  const current = inputUrl.value
+  if (!current) return
 
   const textToCopy = addressSelection.value.hasSelection && addressSelection.value.selectedText
     ? addressSelection.value.selectedText
-    : current;
+    : current
 
   try {
-    await navigator.clipboard.writeText(textToCopy);
-    pulseBackStore.showToast('Copied to clipboard');
+    await navigator.clipboard.writeText(textToCopy)
+    pulseBackStore.showToast('Copied to clipboard')
   } catch (_) { }
 }
 
 async function handleAddressPaste() {
-  closeContextMenu();
-  if (!clipboardHasText.value || !clipboardText.value) return;
+  closeContextMenu()
+  if (!clipboardHasText.value || !clipboardText.value) return
 
-  const pasteVal = clipboardText.value;
-  const inputEl = addressInputRef.value;
-  const current = inputUrl.value;
+  const pasteVal = clipboardText.value
+  const inputEl = addressInputRef.value
+  const current = inputUrl.value
 
   if (addressSelection.value.hasSelection) {
-    const { start, end } = addressSelection.value;
-    inputUrl.value = current.substring(0, start) + pasteVal + current.substring(end);
-    const newPos = start + pasteVal.length;
+    const { start, end } = addressSelection.value
+    inputUrl.value = current.substring(0, start) + pasteVal + current.substring(end)
+    const newPos = start + pasteVal.length
     nextTick(() => {
-      inputEl?.focus();
-      inputEl?.setSelectionRange(newPos, newPos);
-    });
+      inputEl?.focus()
+      inputEl?.setSelectionRange(newPos, newPos)
+    })
   } else {
-    inputUrl.value = pasteVal;
+    inputUrl.value = pasteVal
     nextTick(() => {
-      inputEl?.focus();
-      inputEl?.select();
-    });
+      inputEl?.focus()
+      inputEl?.select()
+    })
   }
 
-  pulseBackStore.showToast('Pasted from clipboard');
+  pulseBackStore.showToast('Pasted from clipboard')
 }
 
 async function handleAddressPasteAndGo() {
-  closeContextMenu();
-  if (!clipboardHasText.value || !clipboardText.value) return;
+  closeContextMenu()
+  if (!clipboardHasText.value || !clipboardText.value) return
 
-  inputUrl.value = clipboardText.value;
-  handleNavigate();
-  pulseBackStore.showToast(clipboardIsAddress.value ? 'Navigating to address...' : 'Searching YouTube...');
+  inputUrl.value = clipboardText.value
+  handleNavigate()
+  pulseBackStore.showToast(clipboardIsAddress.value ? 'Navigating to address...' : 'Searching YouTube...')
 }
 
 function handleAddressSelectAll() {
-  closeContextMenu();
+  closeContextMenu()
   nextTick(() => {
-    addressInputRef.value?.focus();
-    addressInputRef.value?.select();
-  });
+    addressInputRef.value?.focus()
+    addressInputRef.value?.select()
+  })
 }
 
 function handleAddressClear() {
-  closeContextMenu();
-  inputUrl.value = '';
+  closeContextMenu()
+  inputUrl.value = ''
   nextTick(() => {
-    addressInputRef.value?.focus();
-  });
+    addressInputRef.value?.focus()
+  })
 }
 
 // Main Content / Webview Context Menu
@@ -1959,14 +2005,14 @@ function openMainContextMenu(params: {
   isEditable?: boolean;
   editFlags?: any;
 }) {
-  let linkUrl = params.linkUrl || '';
+  let linkUrl = params.linkUrl || ''
   if (linkUrl && linkUrl.startsWith('/')) {
     try {
-      linkUrl = new URL(linkUrl, 'https://www.youtube.com').href;
+      linkUrl = new URL(linkUrl, 'https://www.youtube.com').href
     } catch (_) { }
   }
 
-  const editFlags = params.editFlags || {};
+  const editFlags = params.editFlags || {}
   webviewMenuContext.value = {
     linkUrl,
     linkText: params.linkText || '',
@@ -1982,23 +2028,23 @@ function openMainContextMenu(params: {
     canCopy: !!editFlags.canCopy || !!params.selectionText,
     canPaste: !!editFlags.canPaste || clipboardHasText.value,
     canSelectAll: !!editFlags.canSelectAll,
-  };
+  }
 
-  showMenuAt('webview', params.x, params.y);
+  showMenuAt('webview', params.x, params.y)
 }
 
 async function handleWebviewContextMenu(event: any) {
-  event?.preventDefault?.();
-  await refreshClipboardState();
+  event?.preventDefault?.()
+  await refreshClipboardState()
 
-  const wv = webviewRef.value;
-  const params = event.params || event || {};
-  const rect = wv?.getBoundingClientRect();
+  const wv = webviewRef.value
+  const params = event.params || event || {}
+  const rect = wv?.getBoundingClientRect()
 
-  const rawX = rect ? rect.left + (typeof params.x === 'number' ? params.x : 20) : lastMousePos.x;
-  const rawY = rect ? rect.top + (typeof params.y === 'number' ? params.y : 20) : lastMousePos.y;
+  const rawX = rect ? rect.left + (typeof params.x === 'number' ? params.x : 20) : lastMousePos.x
+  const rawY = rect ? rect.top + (typeof params.y === 'number' ? params.y : 20) : lastMousePos.y
 
-  let detectedAudio: { src: string; title: string; duration: number; } | null = null;
+  let detectedAudio: { src: string; title: string; duration: number; } | null = null
   if (wv && typeof params.x === 'number' && typeof params.y === 'number') {
     try {
       const detectScript = `
@@ -2113,8 +2159,8 @@ async function handleWebviewContextMenu(event: any) {
             return null;
           }
         })()
-      `;
-      detectedAudio = await wv.executeJavaScript(detectScript);
+      `
+      detectedAudio = await wv.executeJavaScript(detectScript)
     } catch (_) { }
   }
 
@@ -2122,14 +2168,14 @@ async function handleWebviewContextMenu(event: any) {
     (params.mediaType === 'audio' && params.srcURL) ||
     detectedAudio?.src ||
     (params.srcURL && isDirectMediaUrl(params.srcURL))
-  );
+  )
 
   // If Chromium's native hit-test provided a mediaType: 'audio' srcURL, prioritize it!
   const finalAudioSrc = (params.mediaType === 'audio' && params.srcURL)
     ? params.srcURL
-    : (detectedAudio?.src || (isDirectMediaUrl(params.srcURL) ? params.srcURL : ''));
+    : (detectedAudio?.src || (isDirectMediaUrl(params.srcURL) ? params.srcURL : ''))
 
-  const finalAudioTitle = detectedAudio?.title || (finalAudioSrc ? extractMediaTitle(finalAudioSrc) : '');
+  const finalAudioTitle = detectedAudio?.title || (finalAudioSrc ? extractMediaTitle(finalAudioSrc) : '')
 
   openMainContextMenu({
     x: rawX,
@@ -2145,17 +2191,17 @@ async function handleWebviewContextMenu(event: any) {
     audioDuration: detectedAudio?.duration || 0,
     isEditable: !!params.isEditable,
     editFlags: params.editFlags,
-  });
+  })
 }
 
 async function handleMainContentDomContextMenu(event: MouseEvent) {
-  if ((event.target as HTMLElement)?.closest?.('.clip-dock-panel')) {
-    return;
+  if (event.target instanceof HTMLElement && event.target.closest('.clip-dock-panel')) {
+    return
   }
-  event.preventDefault();
-  event.stopPropagation();
+  event.preventDefault()
+  event.stopPropagation()
 
-  await refreshClipboardState();
+  await refreshClipboardState()
 
   openMainContextMenu({
     x: event.clientX,
@@ -2166,262 +2212,266 @@ async function handleMainContentDomContextMenu(event: MouseEvent) {
     srcUrl: '',
     mediaType: 'none',
     isEditable: false,
-  });
+  })
 }
 
 function handleOpenLink() {
-  closeContextMenu();
-  const url = webviewMenuContext.value.linkUrl;
+  closeContextMenu()
+  const url = webviewMenuContext.value.linkUrl
   if (url) {
-    navigateToUrl(url);
+    navigateToUrl(url)
   }
 }
 
 function handleOpenLinkInNewWindow() {
-  closeContextMenu();
-  const url = webviewMenuContext.value.linkUrl;
+  closeContextMenu()
+  const url = webviewMenuContext.value.linkUrl
   if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-    window.electron?.openExternalLink(url);
-    pulseBackStore.showToast('Opened link in default browser');
+    window.electron?.openExternalLink(url)
+    pulseBackStore.showToast('Opened link in default browser')
   }
 }
 
 async function handleCopyLinkAddress() {
-  closeContextMenu();
-  const url = webviewMenuContext.value.linkUrl;
+  closeContextMenu()
+  const url = webviewMenuContext.value.linkUrl
   if (url) {
     try {
-      await navigator.clipboard.writeText(url);
-      pulseBackStore.showToast('Link address copied to clipboard');
+      await navigator.clipboard.writeText(url)
+      pulseBackStore.showToast('Link address copied to clipboard')
     } catch (_) { }
   }
 }
 
 async function handleCopySelectionText() {
-  closeContextMenu();
-  const text = webviewMenuContext.value.selectionText;
+  closeContextMenu()
+  const text = webviewMenuContext.value.selectionText
   if (text) {
     try {
-      await navigator.clipboard.writeText(text);
-      webviewRef.value?.copy?.();
-      pulseBackStore.showToast('Text copied to clipboard');
+      await navigator.clipboard.writeText(text)
+      webviewRef.value?.copy?.()
+      pulseBackStore.showToast('Text copied to clipboard')
     } catch (_) { }
   } else {
     try {
-      webviewRef.value?.copy?.();
-      pulseBackStore.showToast('Copied to clipboard');
+      webviewRef.value?.copy?.()
+      pulseBackStore.showToast('Copied to clipboard')
     } catch (_) { }
   }
 }
 
 function handleSearchSelection() {
-  closeContextMenu();
-  const text = webviewMenuContext.value.selectionText;
+  closeContextMenu()
+  const text = webviewMenuContext.value.selectionText
   if (text) {
-    navigateToUrl(`https://www.youtube.com/results?search_query=${encodeURIComponent(text)}`);
+    navigateToUrl(`https://www.youtube.com/results?search_query=${encodeURIComponent(text)}`)
   }
 }
 
 function handleWebviewCut() {
-  closeContextMenu();
+  closeContextMenu()
   try {
-    webviewRef.value?.cut?.();
+    webviewRef.value?.cut?.()
   } catch (_) { }
 }
 
 function handleWebviewPaste() {
-  closeContextMenu();
+  closeContextMenu()
   try {
-    webviewRef.value?.paste?.();
+    webviewRef.value?.paste?.()
   } catch (_) { }
 }
 
 function handleWebviewSelectAll() {
-  closeContextMenu();
+  closeContextMenu()
   try {
-    webviewRef.value?.selectAll?.();
+    webviewRef.value?.selectAll?.()
   } catch (_) { }
 }
 
 function handleMenuBack() {
-  closeContextMenu();
-  goBack();
+  closeContextMenu()
+  goBack()
 }
 
 function handleMenuForward() {
-  closeContextMenu();
-  goForward();
+  closeContextMenu()
+  goForward()
 }
 
 function handleMenuReload() {
-  closeContextMenu();
-  reloadPage();
+  closeContextMenu()
+  reloadPage()
 }
 
 async function handleCopyPageUrl() {
-  closeContextMenu();
-  const url = currentUrl.value;
+  closeContextMenu()
+  const url = currentUrl.value
   if (url) {
     try {
-      await navigator.clipboard.writeText(url);
-      pulseBackStore.showToast('Page URL copied to clipboard');
+      await navigator.clipboard.writeText(url)
+      pulseBackStore.showToast('Page URL copied to clipboard')
     } catch (_) { }
   }
 }
 
 async function handleCopyTimestampedVideoUrl() {
-  closeContextMenu();
-  const url = currentUrl.value;
-  const timeSec = Math.floor(currentVideoTime.value);
-  let finalUrl = url;
+  closeContextMenu()
+  const url = currentUrl.value
+  const timeSec = Math.floor(currentVideoTime.value)
+  let finalUrl = url
   try {
-    const parsed = new URL(url);
-    parsed.searchParams.set('t', `${timeSec}s`);
-    finalUrl = parsed.toString();
+    const parsed = new URL(url)
+    parsed.searchParams.set('t', `${timeSec}s`)
+    finalUrl = parsed.toString()
   } catch (_) {
-    const sep = url.includes('?') ? '&' : '?';
-    finalUrl = `${url}${sep}t=${timeSec}s`;
+    const sep = url.includes('?') ? '&' : '?'
+    finalUrl = `${url}${sep}t=${timeSec}s`
   }
   try {
-    await navigator.clipboard.writeText(finalUrl);
-    pulseBackStore.showToast(`Copied video URL at ${formatTime(timeSec)}`);
+    await navigator.clipboard.writeText(finalUrl)
+    pulseBackStore.showToast(`Copied video URL at ${formatTime(timeSec)}`)
   } catch (_) { }
 }
 
 function handleOpenPageInNewWindow() {
-  closeContextMenu();
-  const url = currentUrl.value;
+  closeContextMenu()
+  const url = currentUrl.value
   if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-    window.electron?.openExternalLink(url);
-    pulseBackStore.showToast('Opened in default browser');
+    window.electron?.openExternalLink(url)
+    pulseBackStore.showToast('Opened in default browser')
   }
 }
 
 async function handleCopyImageAddress() {
-  closeContextMenu();
-  const url = webviewMenuContext.value.srcUrl;
+  closeContextMenu()
+  const url = webviewMenuContext.value.srcUrl
   if (url) {
     try {
-      await navigator.clipboard.writeText(url);
-      pulseBackStore.showToast('Image address copied to clipboard');
+      await navigator.clipboard.writeText(url)
+      pulseBackStore.showToast('Image address copied to clipboard')
     } catch (_) { }
   }
 }
 
 function handleOpenImageInNewWindow() {
-  closeContextMenu();
-  const url = webviewMenuContext.value.srcUrl;
+  closeContextMenu()
+  const url = webviewMenuContext.value.srcUrl
   if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-    window.electron?.openExternalLink(url);
-    pulseBackStore.showToast('Opened image in default browser');
+    window.electron?.openExternalLink(url)
+    pulseBackStore.showToast('Opened image in default browser')
   }
 }
 
-const activeDirectAudioUrl = ref('');
+const activeDirectAudioUrl = ref('')
 
 function extractEmbeddedAudioCover(rawBuffer: Uint8Array): string | null {
   try {
-    const bytes = rawBuffer;
-    if (bytes.length < 10) return null;
+    const bytes = rawBuffer
+    if (bytes.length < 10) return null
 
     // Check ID3v2 header: "ID3"
     if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
-      const version = bytes[3];
-      if (version < 2 || version > 4) return null;
+      const version = bytes[3]
+      if (version < 2 || version > 4) return null
 
       const tagSize =
         ((bytes[6] & 0x7f) << 21) |
         ((bytes[7] & 0x7f) << 14) |
         ((bytes[8] & 0x7f) << 7) |
-        (bytes[9] & 0x7f);
+        (bytes[9] & 0x7f)
 
-      const end = Math.min(bytes.length, 10 + tagSize);
-      let offset = 10;
+      const end = Math.min(bytes.length, 10 + tagSize)
+      let offset = 10
 
       while (offset + 10 < end) {
         if (version === 2) {
-          const id = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2]);
-          const frameSize = (bytes[offset + 3] << 16) | (bytes[offset + 4] << 8) | bytes[offset + 5];
-          if (frameSize <= 0 || offset + 6 + frameSize > end) break;
+          const id = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2])
+          const frameSize = (bytes[offset + 3] << 16) | (bytes[offset + 4] << 8) | bytes[offset + 5]
+          if (frameSize <= 0 || offset + 6 + frameSize > end) break
           if (id === 'PIC') {
-            const dataOffset = offset + 6;
-            const format = String.fromCharCode(bytes[dataOffset + 1], bytes[dataOffset + 2], bytes[dataOffset + 3]).toLowerCase();
-            const mime = format === 'png' ? 'image/png' : 'image/jpeg';
-            let descOffset = dataOffset + 5;
+            const dataOffset = offset + 6
+            const format = String.fromCharCode(
+              bytes[dataOffset + 1],
+              bytes[dataOffset + 2],
+              bytes[dataOffset + 3]
+            ).toLowerCase()
+            const mime = format === 'png' ? 'image/png' : 'image/jpeg'
+            let descOffset = dataOffset + 5
             while (descOffset < dataOffset + frameSize && bytes[descOffset] !== 0) {
-              descOffset++;
+              descOffset++
             }
-            descOffset++;
-            const picData = bytes.slice(descOffset, dataOffset + frameSize);
+            descOffset++
+            const picData = bytes.slice(descOffset, dataOffset + frameSize)
             if (picData.length > 0) {
-              const blob = new Blob([picData], { type: mime });
-              return URL.createObjectURL(blob);
+              const blob = new Blob([picData], { type: mime })
+              return URL.createObjectURL(blob)
             }
           }
-          offset += 6 + frameSize;
+          offset += 6 + frameSize
         } else {
-          const id = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3]);
-          if (id === '\0\0\0\0') break;
+          const id = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2], bytes[offset + 3])
+          if (id === '\0\0\0\0') break
 
-          let frameSize = 0;
+          let frameSize = 0
           if (version === 4) {
             frameSize =
               ((bytes[offset + 4] & 0x7f) << 21) |
               ((bytes[offset + 5] & 0x7f) << 14) |
               ((bytes[offset + 6] & 0x7f) << 7) |
-              (bytes[offset + 7] & 0x7f);
+              (bytes[offset + 7] & 0x7f)
           } else {
             frameSize =
               (bytes[offset + 4] << 24) |
               (bytes[offset + 5] << 16) |
               (bytes[offset + 6] << 8) |
-              bytes[offset + 7];
+              bytes[offset + 7]
           }
 
-          if (frameSize <= 0 || offset + 10 + frameSize > end) break;
+          if (frameSize <= 0 || offset + 10 + frameSize > end) break
 
           if (id === 'APIC') {
-            const dataOffset = offset + 10;
-            const encoding = bytes[dataOffset];
-            let mimeEnd = dataOffset + 1;
+            const dataOffset = offset + 10
+            const encoding = bytes[dataOffset]
+            let mimeEnd = dataOffset + 1
             while (mimeEnd < dataOffset + frameSize && bytes[mimeEnd] !== 0) {
-              mimeEnd++;
+              mimeEnd++
             }
-            let mime = '';
+            let mime = ''
             for (let i = dataOffset + 1; i < mimeEnd; i++) {
-              mime += String.fromCharCode(bytes[i]);
+              mime += String.fromCharCode(bytes[i])
             }
-            if (!mime || mime === 'image/') mime = 'image/jpeg';
+            if (!mime || mime === 'image/') mime = 'image/jpeg'
 
-            let descStart = mimeEnd + 1 + 1;
-            let descEnd = descStart;
+            let descStart = mimeEnd + 1 + 1
+            let descEnd = descStart
             if (encoding === 1 || encoding === 2) {
               while (descEnd + 1 < dataOffset + frameSize && (bytes[descEnd] !== 0 || bytes[descEnd + 1] !== 0)) {
-                descEnd += 2;
+                descEnd += 2
               }
-              descEnd += 2;
+              descEnd += 2
             } else {
               while (descEnd < dataOffset + frameSize && bytes[descEnd] !== 0) {
-                descEnd++;
+                descEnd++
               }
-              descEnd++;
+              descEnd++
             }
 
-            const picData = bytes.slice(descEnd, dataOffset + frameSize);
+            const picData = bytes.slice(descEnd, dataOffset + frameSize)
             if (picData.length > 0) {
-              const blob = new Blob([picData], { type: mime });
-              return URL.createObjectURL(blob);
+              const blob = new Blob([picData], { type: mime })
+              return URL.createObjectURL(blob)
             }
           }
 
-          offset += 10 + frameSize;
+          offset += 10 + frameSize
         }
       }
     }
-    return null;
+    return null
   } catch (err) {
-    console.warn('Could not extract embedded ID3 cover art:', err);
-    return null;
+    console.warn('Could not extract embedded ID3 cover art:', err)
+    return null
   }
 }
 
@@ -2431,30 +2481,30 @@ async function loadDirectAudioIntoClipPanel(
   duration?: number,
   candidateImageUrl?: string
 ) {
-  if (!audioUrl) return;
+  if (!audioUrl) return
 
   // 1. Pause any playing media on the guest web page so it doesn't clash with editor playback
   try {
-    webviewRef.value?.executeJavaScript('document.querySelectorAll("audio, video").forEach(el => el.pause())');
+    webviewRef.value?.executeJavaScript('document.querySelectorAll("audio, video").forEach(el => el.pause())')
   } catch (_) { }
 
   // 2. Clear out any previous audio buffer/state AND stale thumbnail so it never displays past YouTube artwork
-  currentPreloadedVideoId.value = null;
-  currentAudioLoadUrl = '';
-  audioBuffer.value = null;
-  originalAudioBuffer.value = null;
-  audioDuration.value = 0;
-  thumbnailUrl.value = '';
-  activeDirectAudioUrl.value = audioUrl;
+  currentPreloadedVideoId.value = null
+  currentAudioLoadUrl = ''
+  audioBuffer.value = null
+  originalAudioBuffer.value = null
+  audioDuration.value = 0
+  thumbnailUrl.value = ''
+  activeDirectAudioUrl.value = audioUrl
 
-  let audioTitle = (title && title.trim()) ? title.trim() : '';
+  let audioTitle = (title && title.trim()) ? title.trim() : ''
   const isGenericOrFilenameTitle =
     !audioTitle ||
     /^download(\s+mp3|\s+audio|\s+sound)?$/i.test(audioTitle) ||
     isDirectMediaUrl(audioTitle) ||
-    /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i.test(audioTitle);
+    /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i.test(audioTitle)
 
-  let soundArtwork = candidateImageUrl && !candidateImageUrl.includes('/icons/') ? candidateImageUrl : '';
+  let soundArtwork = candidateImageUrl && !candidateImageUrl.includes('/icons/') ? candidateImageUrl : ''
 
   // 3. Query the guest webview for MyInstants specific metadata or rich page metadata
   try {
@@ -2536,9 +2586,12 @@ async function loadDirectAudioIntoClipPanel(
 
         // 2. Check for matching sound card artwork (excluding UI action icons)
         if (!img) {
-          const matchingLink = Array.from(document.querySelectorAll('a[href]')).find(a => a.href && a.href.includes(${JSON.stringify(audioUrl)}));
+          const matchingLink = Array.from(document.querySelectorAll('a[href]'))
+            .find(a => a.href && a.href.includes(${JSON.stringify(audioUrl)}));
           if (matchingLink) {
-            const container = matchingLink.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div');
+            const container = matchingLink.closest(
+              '.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div'
+            );
             if (container) {
               const cImg = container.querySelector('img:not([src*="icons/"])');
               if (cImg && cImg.src) img = cImg.src;
@@ -2550,378 +2603,381 @@ async function loadDirectAudioIntoClipPanel(
         if (!img) {
           const og = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
           const tw = document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
-          const appleIcon = document.querySelector('link[rel="apple-touch-icon"], link[rel="image_src"]')?.getAttribute('href');
+          const appleIcon = document
+            .querySelector('link[rel="apple-touch-icon"], link[rel="image_src"]')
+            ?.getAttribute('href');
           img = og || tw || appleIcon || '';
         }
 
         return { title: t, image: img };
       })()
-    `);
+    `)
 
     if (pageMeta) {
       if (isGenericOrFilenameTitle && pageMeta.title) {
-        audioTitle = pageMeta.title;
+        audioTitle = pageMeta.title
       }
       if (!soundArtwork && pageMeta.image) {
-        soundArtwork = pageMeta.image;
+        soundArtwork = pageMeta.image
       }
     }
   } catch (_) { }
 
   if (!audioTitle) {
-    audioTitle = extractMediaTitle(audioUrl);
+    audioTitle = extractMediaTitle(audioUrl)
   }
 
   // 4. Set title and flags
-  activeVideoTitle.value = audioTitle;
-  isVideoPage.value = true;
-  isShortVideo.value = false;
+  activeVideoTitle.value = audioTitle
+  isVideoPage.value = true
+  isShortVideo.value = false
   if (duration && duration > 0) {
-    videoTotalDuration.value = duration;
-    videoDurationFormatted.value = formatTime(duration);
+    videoTotalDuration.value = duration
+    videoDurationFormatted.value = formatTime(duration)
   } else {
-    videoTotalDuration.value = null;
-    videoDurationFormatted.value = '';
+    videoTotalDuration.value = null
+    videoDurationFormatted.value = ''
   }
 
   // 5. Clean and apply discovered artwork
   if (soundArtwork) {
     try {
-      thumbnailUrl.value = await cleanAndCropArtwork(soundArtwork, false);
+      thumbnailUrl.value = await cleanAndCropArtwork(soundArtwork, false)
     } catch (_) {
-      thumbnailUrl.value = soundArtwork;
+      thumbnailUrl.value = soundArtwork
     }
   }
 
   // 6. Open the clip drawer immediately (dock expands with smooth animation)
-  isDrawerOpen.value = true;
+  isDrawerOpen.value = true
 
   // 7. Load the audio into the waveform editor (and extract embedded ID3 artwork if present)
-  await loadAudioForWaveform(audioUrl, true);
+  await loadAudioForWaveform(audioUrl, true)
 
-  pulseBackStore.showToast(`Loaded "${audioTitle}" into clip panel`);
+  pulseBackStore.showToast(`Loaded "${audioTitle}" into clip panel`)
 }
 
 // Audio Element Actions from Context Menu
 async function handleClipAudioFromPage() {
-  const audioSrc = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl;
-  const audioTitle = webviewMenuContext.value.audioTitle || extractMediaTitle(audioSrc || '');
-  const duration = webviewMenuContext.value.audioDuration;
-  closeContextMenu();
+  const audioSrc = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl
+  const audioTitle = webviewMenuContext.value.audioTitle || extractMediaTitle(audioSrc || '')
+  const duration = webviewMenuContext.value.audioDuration
+  closeContextMenu()
 
-  if (!audioSrc) return;
-  await loadDirectAudioIntoClipPanel(audioSrc, audioTitle, duration);
+  if (!audioSrc) return
+  await loadDirectAudioIntoClipPanel(audioSrc, audioTitle, duration)
 }
 
 async function handleCopyAudioAddress() {
-  closeContextMenu();
-  const url = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl;
+  closeContextMenu()
+  const url = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl
   if (url) {
     try {
-      await navigator.clipboard.writeText(url);
-      pulseBackStore.showToast('Audio URL copied to clipboard');
+      await navigator.clipboard.writeText(url)
+      pulseBackStore.showToast('Audio URL copied to clipboard')
     } catch (_) { }
   }
 }
 
 function handleOpenAudioInNewWindow() {
-  closeContextMenu();
-  const url = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl;
+  closeContextMenu()
+  const url = webviewMenuContext.value.audioSrc || webviewMenuContext.value.srcUrl
   if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
-    window.electron?.openExternalLink(url);
-    pulseBackStore.showToast('Opened audio in default browser');
+    window.electron?.openExternalLink(url)
+    pulseBackStore.showToast('Opened audio in default browser')
   }
 }
 
 // Address Bar Overflow Menu & Find in Page
 function toggleAddressOverflowMenu(event: MouseEvent) {
   if (activeMenu.value === 'address-overflow') {
-    closeContextMenu();
-    return;
+    closeContextMenu()
+    return
   }
-  const btn = (event.currentTarget as HTMLElement) || overflowBtnRef.value;
+  const btn = event.currentTarget instanceof HTMLElement ? event.currentTarget : overflowBtnRef.value
   if (btn) {
-    const rect = btn.getBoundingClientRect();
-    showMenuAt('address-overflow', rect.right - 215, rect.bottom + 6);
+    const rect = btn.getBoundingClientRect()
+    showMenuAt('address-overflow', rect.right - 215, rect.bottom + 6)
   } else {
-    showMenuAt('address-overflow', event.clientX - 200, event.clientY + 10);
+    showMenuAt('address-overflow', event.clientX - 200, event.clientY + 10)
   }
 }
 
 function handleMenuFindInPage() {
-  const initial = webviewMenuContext.value.selectionText || '';
-  closeContextMenu();
-  openFindBar(initial);
+  const initial = webviewMenuContext.value.selectionText || ''
+  closeContextMenu()
+  openFindBar(initial)
 }
 
 async function openFindBar(initialQuery?: string) {
-  isFindBarOpen.value = true;
+  isFindBarOpen.value = true
   if (typeof initialQuery === 'string' && initialQuery.trim()) {
-    findInitialQuery.value = initialQuery.trim();
+    findInitialQuery.value = initialQuery.trim()
   } else {
     try {
-      const selected = await webviewRef.value?.executeJavaScript('window.getSelection()?.toString() || ""');
+      const selected = await webviewRef.value?.executeJavaScript('window.getSelection()?.toString() || ""')
       if (selected && selected.trim() && !selected.includes('\n') && selected.trim().length < 80) {
-        findInitialQuery.value = selected.trim();
+        findInitialQuery.value = selected.trim()
       } else {
-        findInitialQuery.value = '';
+        findInitialQuery.value = ''
       }
     } catch (_) {
-      findInitialQuery.value = '';
+      findInitialQuery.value = ''
     }
   }
 
   nextTick(() => {
-    findBarRef.value?.focus();
-  });
+    findBarRef.value?.focus()
+  })
 }
 
 function closeFindBar() {
-  isFindBarOpen.value = false;
-  findInitialQuery.value = '';
+  isFindBarOpen.value = false
+  findInitialQuery.value = ''
   try {
-    webviewRef.value?.focus();
+    webviewRef.value?.focus()
   } catch (_) { }
 }
 
 
 
 // Navigation state
-const inputUrl = ref(settingsStore.browser_homepage || 'https://www.youtube.com');
-const currentUrl = ref(settingsStore.browser_homepage || 'https://www.youtube.com');
-const canGoBack = ref(false);
-const canGoForward = ref(false);
-const isLoading = ref(false);
+const inputUrl = ref(settingsStore.browser_homepage || 'https://www.youtube.com')
+const currentUrl = ref(settingsStore.browser_homepage || 'https://www.youtube.com')
+const canGoBack = ref(false)
+const canGoForward = ref(false)
+const isLoading = ref(false)
 
 const homeDomain = computed(() => {
   try {
-    const raw = settingsStore.browser_homepage || 'https://www.youtube.com';
-    const parsed = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
-    return parsed.hostname.replace(/^www\./, '');
+    const raw = settingsStore.browser_homepage || 'https://www.youtube.com'
+    const parsed = new URL(raw.startsWith('http') ? raw : `https://${raw}`)
+    return parsed.hostname.replace(/^www\./, '')
   } catch {
-    return 'Home';
+    return 'Home'
   }
-});
+})
 
-const homeButtonTitle = computed(() => `Home (${homeDomain.value})`);
+const homeButtonTitle = computed(() => `Home (${homeDomain.value})`)
 
 // Video state
-const isVideoPage = ref(false);
-const isShortVideo = ref(false);
-const activeVideoTitle = ref('');
-const thumbnailUrl = ref('');
-const videoTotalDuration = ref<number | null>(null);
-const currentVideoTime = ref(0);
+const isVideoPage = ref(false)
+const isShortVideo = ref(false)
+const activeVideoTitle = ref('')
+const thumbnailUrl = ref('')
+const videoTotalDuration = ref<number | null>(null)
+const currentVideoTime = ref(0)
 
 // Drawer state
-const isDrawerOpen = ref(false);
-const isCapturingFrame = ref(false);
+const isDrawerOpen = ref(false)
+const isCapturingFrame = ref(false)
 
 // Audio state (for background preloading)
-const audioBuffer = shallowRef<AudioBuffer | null>(null);
-const originalAudioBuffer = shallowRef<AudioBuffer | null>(null);
-const audioDuration = ref(0);
-const isLoadingAudio = ref(false);
-const audioLoadProgress = ref(0);
-const audioLoadStatus = ref('');
-const audioLoadError = ref('');
+const audioBuffer = shallowRef<AudioBuffer | null>(null)
+const originalAudioBuffer = shallowRef<AudioBuffer | null>(null)
+const audioDuration = ref(0)
+const isLoadingAudio = ref(false)
+const audioLoadProgress = ref(0)
+const audioLoadStatus = ref('')
+const audioLoadError = ref('')
 
-let currentAudioLoadUrl = '';
-let currentAudioLoadRequestId = 0;
-const currentPreloadedVideoId = ref<string | null>(null);
-let videoHeartbeatTimer: ReturnType<typeof setInterval> | null = null;
-let audioContext: AudioContext | null = null;
+let currentAudioLoadUrl = ''
+let currentAudioLoadRequestId = 0
+const currentPreloadedVideoId = ref<string | null>(null)
+let videoHeartbeatTimer: ReturnType<typeof setInterval> | null = null
+let audioContext: AudioContext | null = null
 
 function formatTime(totalSeconds: number): string {
-  if (Number.isNaN(totalSeconds) || totalSeconds < 0) return '0:00';
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = totalSeconds % 60;
+  if (Number.isNaN(totalSeconds) || totalSeconds < 0) return '0:00'
+  const mins = Math.floor(totalSeconds / 60)
+  const secs = totalSeconds % 60
   const secsFormatted = secs % 1 === 0
     ? (secs < 10 ? `0${secs}` : `${secs}`)
-    : (secs < 10 ? `0${secs.toFixed(1)}` : secs.toFixed(1));
-  return `${mins}:${secsFormatted}`;
+    : (secs < 10 ? `0${secs.toFixed(1)}` : secs.toFixed(1))
+  return `${mins}:${secsFormatted}`
 }
 
-const videoDurationFormatted = ref('');
+const videoDurationFormatted = ref('')
 
 function isDirectMediaUrl(url: string): boolean {
-  if (!url) return false;
+  if (!url) return false
   try {
-    const parsed = new URL(url);
-    const pathname = parsed.pathname.toLowerCase();
-    return /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i.test(pathname);
+    const parsed = new URL(url)
+    const pathname = parsed.pathname.toLowerCase()
+    return /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i.test(pathname)
   } catch {
-    return false;
+    return false
   }
 }
 
 function extractMediaTitle(url: string): string {
   try {
-    const parsed = new URL(url);
-    const filename = parsed.pathname.split('/').filter(Boolean).pop() || '';
-    const nameWithoutExt = filename.replace(/\.[a-zA-Z0-9]+$/, '');
-    return decodeURIComponent(nameWithoutExt).replace(/[-_]+/g, ' ').trim() || decodeURIComponent(filename) || 'Audio Track';
+    const parsed = new URL(url)
+    const filename = parsed.pathname.split('/').filter(Boolean).pop() || ''
+    const nameWithoutExt = filename.replace(/\.[a-zA-Z0-9]+$/, '')
+    const cleanName = decodeURIComponent(nameWithoutExt).replace(/[-_]+/g, ' ').trim()
+    return cleanName || decodeURIComponent(filename) || 'Audio Track'
   } catch {
-    return 'Audio Track';
+    return 'Audio Track'
   }
 }
 
 function getVideoId(url: string): string | null {
-  if (!url) return null;
+  if (!url) return null
   try {
-    const parsed = new URL(url);
+    const parsed = new URL(url)
     if (parsed.hostname.includes('youtube.com') || parsed.hostname.includes('youtu.be')) {
       if (parsed.pathname === '/watch') {
-        return parsed.searchParams.get('v');
+        return parsed.searchParams.get('v')
       }
-      const shortsMatch = parsed.pathname.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
+      const shortsMatch = parsed.pathname.match(/\/shorts\/([a-zA-Z0-9_-]+)/)
       if (shortsMatch) {
-        return shortsMatch[1];
+        return shortsMatch[1]
       }
       if (parsed.hostname.includes('youtu.be')) {
-        return parsed.pathname.replace(/^\//, '').split('?')[0];
+        return parsed.pathname.replace(/^\//, '').split('?')[0]
       }
     }
-    return url;
+    return url
   } catch (_) { }
-  return null;
+  return null
 }
 
 function checkVideoUrl(url: string) {
-  const isDirect = isDirectMediaUrl(url);
-  const isVideo = url.includes('/watch') || url.includes('/shorts/') || isDirect;
-  isVideoPage.value = isVideo;
+  const isDirect = isDirectMediaUrl(url)
+  const isVideo = url.includes('/watch') || url.includes('/shorts/') || isDirect
+  isVideoPage.value = isVideo
   if (isVideo) {
     if (isDirect && (!activeVideoTitle.value || activeVideoTitle.value === 'YouTube')) {
-      activeVideoTitle.value = extractMediaTitle(url);
+      activeVideoTitle.value = extractMediaTitle(url)
     }
-    const vidId = getVideoId(url);
+    const vidId = getVideoId(url)
     if (vidId && vidId !== currentPreloadedVideoId.value) {
-      loadAudioForWaveform(url);
+      loadAudioForWaveform(url)
     }
   } else {
-    closeClipDrawer();
-    currentPreloadedVideoId.value = null;
-    audioBuffer.value = null;
-    originalAudioBuffer.value = null;
-    audioDuration.value = 0;
-    isLoadingAudio.value = false;
+    closeClipDrawer()
+    currentPreloadedVideoId.value = null
+    audioBuffer.value = null
+    originalAudioBuffer.value = null
+    audioDuration.value = 0
+    isLoadingAudio.value = false
   }
 }
 
 // Navigation methods
 function goBack() {
-  closeFavoritesFlyout();
-  closeClipDrawer();
-  const wv = webviewRef.value;
-  if (wv && wv.canGoBack()) wv.goBack();
+  closeFavoritesFlyout()
+  closeClipDrawer()
+  const wv = webviewRef.value
+  if (wv && wv.canGoBack()) wv.goBack()
 }
 
 function goForward() {
-  closeFavoritesFlyout();
-  closeClipDrawer();
-  const wv = webviewRef.value;
-  if (wv && wv.canGoForward()) wv.goForward();
+  closeFavoritesFlyout()
+  closeClipDrawer()
+  const wv = webviewRef.value
+  if (wv && wv.canGoForward()) wv.goForward()
 }
 
 function reloadPage() {
-  closeFavoritesFlyout();
-  closeClipDrawer();
-  const wv = webviewRef.value;
+  closeFavoritesFlyout()
+  closeClipDrawer()
+  const wv = webviewRef.value
   if (wv) {
     if (isLoading.value) {
-      wv.stop();
+      wv.stop()
     } else {
-      currentPreloadedVideoId.value = null;
-      audioBuffer.value = null;
-      originalAudioBuffer.value = null;
-      audioDuration.value = 0;
-      wv.reload();
-      const targetUrl = currentUrl.value;
+      currentPreloadedVideoId.value = null
+      audioBuffer.value = null
+      originalAudioBuffer.value = null
+      audioDuration.value = 0
+      wv.reload()
+      const targetUrl = currentUrl.value
       if (getVideoId(targetUrl)) {
-        loadAudioForWaveform(targetUrl, true);
+        loadAudioForWaveform(targetUrl, true)
       }
     }
   }
 }
 
 function goHome() {
-  closeFavoritesFlyout();
-  closeClipDrawer();
-  const wv = webviewRef.value;
+  closeFavoritesFlyout()
+  closeClipDrawer()
+  const wv = webviewRef.value
   if (wv) {
-    const home = settingsStore.browser_homepage || 'https://www.youtube.com';
-    wv.loadURL(home);
+    const home = settingsStore.browser_homepage || 'https://www.youtube.com'
+    wv.loadURL(home)
   }
 }
 
 function openHomeContextMenu(event: MouseEvent) {
-  event.preventDefault();
-  event.stopPropagation();
-  const btn = event.currentTarget as HTMLElement;
+  event.preventDefault()
+  event.stopPropagation()
+  const btn = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   if (btn) {
-    const rect = btn.getBoundingClientRect();
-    showMenuAt('home', rect.left, rect.bottom + 6);
+    const rect = btn.getBoundingClientRect()
+    showMenuAt('home', rect.left, rect.bottom + 6)
   } else {
-    showMenuAt('home', event.clientX, event.clientY);
+    showMenuAt('home', event.clientX, event.clientY)
   }
 }
 
 function setAsHomepage() {
-  closeContextMenu();
-  const target = currentUrl.value || inputUrl.value;
+  closeContextMenu()
+  const target = currentUrl.value || inputUrl.value
   if (!target || !isLikelyAddress(target)) {
-    pulseBackStore.showToast('Unable to set homepage: invalid address');
-    return;
+    pulseBackStore.showToast('Unable to set homepage: invalid address')
+    return
   }
-  let normalized = target.trim();
+  let normalized = target.trim()
   if (!/^https?:\/\//i.test(normalized)) {
-    normalized = `https://${normalized}`;
+    normalized = `https://${normalized}`
   }
-  settingsStore.setBrowserHomepage(normalized);
-  pulseBackStore.showToast(`Homepage set to ${normalized}`);
+  settingsStore.setBrowserHomepage(normalized)
+  pulseBackStore.showToast(`Homepage set to ${normalized}`)
 }
 
 function resetHomepageToDefault() {
-  closeContextMenu();
-  settingsStore.setBrowserHomepage('https://www.youtube.com');
-  pulseBackStore.showToast('Homepage reset to YouTube');
+  closeContextMenu()
+  settingsStore.setBrowserHomepage('https://www.youtube.com')
+  pulseBackStore.showToast('Homepage reset to YouTube')
 }
 
 function handleNavigate() {
-  closeFavoritesFlyout();
-  let target = inputUrl.value.trim();
-  if (!target) return;
+  closeFavoritesFlyout()
+  let target = inputUrl.value.trim()
+  if (!target) return
 
   if (target.startsWith('http://') || target.startsWith('https://')) {
-    navigateToUrl(target);
+    navigateToUrl(target)
   } else if (target.includes('.') && !target.includes(' ')) {
-    navigateToUrl(`https://${target}`);
+    navigateToUrl(`https://${target}`)
   } else {
-    navigateToUrl(`https://www.youtube.com/results?search_query=${encodeURIComponent(target)}`);
+    navigateToUrl(`https://www.youtube.com/results?search_query=${encodeURIComponent(target)}`)
   }
 }
 
 function navigateToUrl(url: string) {
-  closeFavoritesFlyout();
-  closeClipDrawer();
-  const wv = webviewRef.value;
+  closeFavoritesFlyout()
+  closeClipDrawer()
+  const wv = webviewRef.value
   if (wv) {
-    let finalUrl = (url || '').trim();
-    if (!finalUrl) return;
+    let finalUrl = (url || '').trim()
+    if (!finalUrl) return
     if (!/^https?:\/\//i.test(finalUrl)) {
-      finalUrl = `https://${finalUrl}`;
+      finalUrl = `https://${finalUrl}`
     }
-    inputUrl.value = finalUrl;
+    inputUrl.value = finalUrl
     try {
       if (currentUrl.value && currentUrl.value.replace(/\/+$/, '') === finalUrl.replace(/\/+$/, '')) {
-        wv.reload();
+        wv.reload()
       } else {
-        wv.loadURL(finalUrl);
+        wv.loadURL(finalUrl)
       }
     } catch (_) {
       try {
-        wv.src = finalUrl;
+        wv.src = finalUrl
       } catch (_) { }
     }
   }
@@ -2929,25 +2985,28 @@ function navigateToUrl(url: string) {
 
 async function pasteFromClipboard() {
   try {
-    const text = await navigator.clipboard.readText();
+    const text = await navigator.clipboard.readText()
     if (text) {
-      inputUrl.value = text.trim();
-      handleNavigate();
+      inputUrl.value = text.trim()
+      handleNavigate()
     }
   } catch (_) { }
 }
 
 async function readVideoState() {
-  if (activeDirectAudioUrl.value) return;
-  const wv = webviewRef.value;
-  if (!wv) return;
+  if (activeDirectAudioUrl.value) return
+  const wv = webviewRef.value
+  if (!wv) return
 
   try {
     const script = `
       (() => {
         const video = document.querySelector('video, audio');
         const instantH1 = document.querySelector('#instant-page-title, h1#instant-page-title');
-        const titleEl = instantH1 || document.querySelector('h1.ytd-watch-metadata yt-formatted-string, h1.title yt-formatted-string, ytd-reel-player-header-renderer h2, #title h1');
+        const titleEl = instantH1 || document.querySelector(
+          'h1.ytd-watch-metadata yt-formatted-string, h1.title yt-formatted-string, ' +
+          'ytd-reel-player-header-renderer h2, #title h1'
+        );
         const rawDocTitle = document.title ? document.title.replace(/\\s*-\\s*YouTube$/, '').trim() : '';
         const cleanedTitle = rawDocTitle
           .replace(/\\s*-\\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
@@ -2962,29 +3021,29 @@ async function readVideoState() {
           videoHeight: video ? (video.videoHeight || 0) : 0,
         };
       })()
-    `;
-    const res = await wv.executeJavaScript(script);
+    `
+    const res = await wv.executeJavaScript(script)
     if (res) {
       if (res.title && (!activeVideoTitle.value || activeVideoTitle.value === 'YouTube')) {
-        activeVideoTitle.value = res.title;
+        activeVideoTitle.value = res.title
       }
       if (res.duration && !Number.isNaN(res.duration)) {
-        videoTotalDuration.value = res.duration;
-        videoDurationFormatted.value = formatTime(res.duration);
+        videoTotalDuration.value = res.duration
+        videoDurationFormatted.value = formatTime(res.duration)
       }
       if (res.currentTime !== undefined) {
-        currentVideoTime.value = res.currentTime;
+        currentVideoTime.value = res.currentTime
       }
       if (res.videoWidth && res.videoHeight) {
-        isShortVideo.value = res.videoHeight > res.videoWidth;
+        isShortVideo.value = res.videoHeight > res.videoWidth
       }
     }
   } catch (_) { }
 }
 
 async function captureVideoFrameFromWebview(): Promise<string | null> {
-  const wv = webviewRef.value;
-  if (!wv) return null;
+  const wv = webviewRef.value
+  if (!wv) return null
   try {
     const script = `
       (() => {
@@ -2998,222 +3057,225 @@ async function captureVideoFrameFromWebview(): Promise<string | null> {
         ctx.drawImage(v, 0, 0, v.videoWidth, v.videoHeight);
         return canvas.toDataURL('image/jpeg', 0.95);
       })()
-    `;
-    const dataUrl = await wv.executeJavaScript(script);
-    return dataUrl || null;
+    `
+    const dataUrl = await wv.executeJavaScript(script)
+    return dataUrl || null
   } catch (err) {
-    console.warn('captureVideoFrameFromWebview failed:', err);
-    return null;
+    console.warn('captureVideoFrameFromWebview failed:', err)
+    return null
   }
 }
 
 async function cleanAndCropArtwork(src: string, isShort: boolean): Promise<string> {
-  if (!src) return src;
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
+  if (!src) return src
+  return new Promise(resolve => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
     img.onload = () => {
       try {
-        const w = img.naturalWidth || img.width;
-        const h = img.naturalHeight || img.height;
+        const w = img.naturalWidth || img.width
+        const h = img.naturalHeight || img.height
         if (!w || !h) {
-          resolve(src);
-          return;
+          resolve(src)
+          return
         }
 
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })
         if (!ctx) {
-          resolve(src);
-          return;
+          resolve(src)
+          return
         }
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0)
 
-        let imgData: ImageData | null = null;
+        let imgData: ImageData | null = null
         try {
-          imgData = ctx.getImageData(0, 0, w, h);
+          imgData = ctx.getImageData(0, 0, w, h)
         } catch (_) { }
 
-        const data = imgData ? imgData.data : null;
+        const data = imgData ? imgData.data : null
         const getBrightness = (x: number, y: number) => {
-          if (!data) return 128;
-          const idx = (y * w + x) * 4;
-          return data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
-        };
+          if (!data) return 128
+          const idx = (y * w + x) * 4
+          return data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114
+        }
 
         if (isShort) {
-          let left = 0;
-          let right = w - 1;
+          let left = 0
+          let right = w - 1
 
           if (data) {
             while (left < w * 0.35) {
-              let darkCount = 0;
-              const samples = 25;
+              let darkCount = 0
+              const samples = 25
               for (let i = 0; i < samples; i++) {
-                const y = Math.floor((h * (i + 1)) / (samples + 1));
-                if (getBrightness(left, y) < 30) darkCount++;
+                const y = Math.floor((h * (i + 1)) / (samples + 1))
+                if (getBrightness(left, y) < 30) darkCount++
               }
-              if (darkCount > samples * 0.9) left++;
-              else break;
+              if (darkCount > samples * 0.9) left++
+              else break
             }
 
             while (right > w * 0.65) {
-              let darkCount = 0;
-              const samples = 25;
+              let darkCount = 0
+              const samples = 25
               for (let i = 0; i < samples; i++) {
-                const y = Math.floor((h * (i + 1)) / (samples + 1));
-                if (getBrightness(right, y) < 30) darkCount++;
+                const y = Math.floor((h * (i + 1)) / (samples + 1))
+                if (getBrightness(right, y) < 30) darkCount++
               }
-              if (darkCount > samples * 0.9) right--;
-              else break;
+              if (darkCount > samples * 0.9) right--
+              else break
             }
           }
 
-          const detectedCropWidth = right - left + 1;
+          const detectedCropWidth = right - left + 1
           if (detectedCropWidth < w * 0.95 && detectedCropWidth >= w * 0.3) {
-            const cropCanvas = document.createElement('canvas');
-            cropCanvas.width = detectedCropWidth;
-            cropCanvas.height = h;
-            const cropCtx = cropCanvas.getContext('2d');
+            const cropCanvas = document.createElement('canvas')
+            cropCanvas.width = detectedCropWidth
+            cropCanvas.height = h
+            const cropCtx = cropCanvas.getContext('2d')
             if (cropCtx) {
-              cropCtx.drawImage(canvas, left, 0, detectedCropWidth, h, 0, 0, detectedCropWidth, h);
-              resolve(cropCanvas.toDataURL('image/jpeg', 0.95));
-              return;
+              cropCtx.drawImage(canvas, left, 0, detectedCropWidth, h, 0, 0, detectedCropWidth, h)
+              resolve(cropCanvas.toDataURL('image/jpeg', 0.95))
+              return
             }
           }
         } else {
-          let top = 0;
-          let bottom = h - 1;
+          let top = 0
+          let bottom = h - 1
 
           if (data) {
             while (top < h * 0.35) {
-              let darkCount = 0;
-              const samples = 25;
+              let darkCount = 0
+              const samples = 25
               for (let i = 0; i < samples; i++) {
-                const x = Math.floor((w * (i + 1)) / (samples + 1));
-                if (getBrightness(x, top) < 30) darkCount++;
+                const x = Math.floor((w * (i + 1)) / (samples + 1))
+                if (getBrightness(x, top) < 30) darkCount++
               }
-              if (darkCount > samples * 0.9) top++;
-              else break;
+              if (darkCount > samples * 0.9) top++
+              else break
             }
 
             while (bottom > h * 0.65) {
-              let darkCount = 0;
-              const samples = 25;
+              let darkCount = 0
+              const samples = 25
               for (let i = 0; i < samples; i++) {
-                const x = Math.floor((w * (i + 1)) / (samples + 1));
-                if (getBrightness(x, bottom) < 30) darkCount++;
+                const x = Math.floor((w * (i + 1)) / (samples + 1))
+                if (getBrightness(x, bottom) < 30) darkCount++
               }
-              if (darkCount > samples * 0.9) bottom--;
-              else break;
+              if (darkCount > samples * 0.9) bottom--
+              else break
             }
           }
 
-          const detectedCropHeight = bottom - top + 1;
+          const detectedCropHeight = bottom - top + 1
           if (detectedCropHeight < h * 0.95 && detectedCropHeight >= h * 0.5) {
-            const cropCanvas = document.createElement('canvas');
-            cropCanvas.width = w;
-            cropCanvas.height = detectedCropHeight;
-            const cropCtx = cropCanvas.getContext('2d');
+            const cropCanvas = document.createElement('canvas')
+            cropCanvas.width = w
+            cropCanvas.height = detectedCropHeight
+            const cropCtx = cropCanvas.getContext('2d')
             if (cropCtx) {
-              cropCtx.drawImage(canvas, 0, top, w, detectedCropHeight, 0, 0, w, detectedCropHeight);
-              resolve(cropCanvas.toDataURL('image/jpeg', 0.95));
-              return;
+              cropCtx.drawImage(canvas, 0, top, w, detectedCropHeight, 0, 0, w, detectedCropHeight)
+              resolve(cropCanvas.toDataURL('image/jpeg', 0.95))
+              return
             }
           }
 
-          const aspect = w / h;
+          const aspect = w / h
           if (aspect >= 1.25 && aspect <= 1.45) {
-            const targetHeight = Math.round(w * (9 / 16));
-            const cropY = Math.floor((h - targetHeight) / 2);
-            const cropCanvas = document.createElement('canvas');
-            cropCanvas.width = w;
-            cropCanvas.height = targetHeight;
-            const cropCtx = cropCanvas.getContext('2d');
+            const targetHeight = Math.round(w * (9 / 16))
+            const cropY = Math.floor((h - targetHeight) / 2)
+            const cropCanvas = document.createElement('canvas')
+            cropCanvas.width = w
+            cropCanvas.height = targetHeight
+            const cropCtx = cropCanvas.getContext('2d')
             if (cropCtx) {
-              cropCtx.drawImage(canvas, 0, cropY, w, targetHeight, 0, 0, w, targetHeight);
-              resolve(cropCanvas.toDataURL('image/jpeg', 0.95));
-              return;
+              cropCtx.drawImage(canvas, 0, cropY, w, targetHeight, 0, 0, w, targetHeight)
+              resolve(cropCanvas.toDataURL('image/jpeg', 0.95))
+              return
             }
           }
         }
 
-        resolve(src);
+        resolve(src)
       } catch (err) {
-        console.warn('cleanAndCropArtwork error:', err);
-        resolve(src);
+        console.warn('cleanAndCropArtwork error:', err)
+        resolve(src)
       }
-    };
-    img.onerror = () => resolve(src);
-    img.src = src;
-  });
+    }
+    img.onerror = () => resolve(src)
+    img.src = src
+  })
 }
 
 async function handleCaptureCurrentFrame() {
-  if (isCapturingFrame.value) return;
-  isCapturingFrame.value = true;
+  if (isCapturingFrame.value) return
+  isCapturingFrame.value = true
   try {
-    const frame = await captureVideoFrameFromWebview();
+    const frame = await captureVideoFrameFromWebview()
     if (frame) {
-      thumbnailUrl.value = await cleanAndCropArtwork(frame, isShortVideo.value);
+      thumbnailUrl.value = await cleanAndCropArtwork(frame, isShortVideo.value)
     }
   } catch (err) {
-    console.warn('Could not capture current frame:', err);
+    console.warn('Could not capture current frame:', err)
   } finally {
-    isCapturingFrame.value = false;
+    isCapturingFrame.value = false
   }
 }
 
 function getAudioContext(): AudioContext {
-  const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext
+  if (!AudioContextClass) {
+    throw new Error('AudioContext not supported')
+  }
   if (!audioContext || audioContext.state === 'closed') {
-    audioContext = new AudioContextClass();
+    audioContext = new AudioContextClass()
   }
   if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(() => { });
+    audioContext.resume().catch(() => { })
   }
-  return audioContext;
+  return audioContext
 }
 
 async function loadAudioForWaveform(targetUrlOverride?: string | unknown, forceReload = false) {
   const targetUrl = typeof targetUrlOverride === 'string'
     ? targetUrlOverride
-    : (activeDirectAudioUrl.value || currentUrl.value);
-  const vidId = getVideoId(targetUrl);
-  if (!vidId) return;
+    : (activeDirectAudioUrl.value || currentUrl.value)
+  const vidId = getVideoId(targetUrl)
+  if (!vidId) return
 
   if (!forceReload && currentPreloadedVideoId.value === vidId && audioBuffer.value) {
-    return;
+    return
   }
 
   if (!forceReload && isLoadingAudio.value && currentAudioLoadUrl === targetUrl) {
-    return;
+    return
   }
 
-  const requestId = ++currentAudioLoadRequestId;
-  currentAudioLoadUrl = targetUrl;
-  currentPreloadedVideoId.value = vidId;
+  const requestId = ++currentAudioLoadRequestId
+  currentAudioLoadUrl = targetUrl
+  currentPreloadedVideoId.value = vidId
 
-  isLoadingAudio.value = true;
-  audioLoadError.value = '';
-  audioLoadProgress.value = 5;
-  audioLoadStatus.value = 'Preloading audio...';
-  audioBuffer.value = null;
-  originalAudioBuffer.value = null;
+  isLoadingAudio.value = true
+  audioLoadError.value = ''
+  audioLoadProgress.value = 5
+  audioLoadStatus.value = 'Preloading audio...'
+  audioBuffer.value = null
+  originalAudioBuffer.value = null
 
   try {
-    let result: any = null;
+    let result: any = null
     try {
       result = await window.electron?.ytDownloadClip({
         url: targetUrl,
-      });
+      })
     } catch (e) {
-      console.warn('ytDownloadClip direct download failed, trying webview fallback:', e);
+      console.warn('ytDownloadClip direct download failed, trying webview fallback:', e)
     }
 
-    if (requestId !== currentAudioLoadRequestId) return;
+    if (requestId !== currentAudioLoadRequestId) return
 
     // Webview fallback for site-authenticated or session-dependent media
     if (!result || !result.success || !result.buffer) {
@@ -3235,523 +3297,522 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown, forceR
               return null;
             }
           })()
-        `);
+        `)
         if (base64Data) {
-          const binaryStr = atob(base64Data);
-          const len = binaryStr.length;
-          const bytes = new Uint8Array(len);
+          const binaryStr = atob(base64Data)
+          const len = binaryStr.length
+          const bytes = new Uint8Array(len)
           for (let i = 0; i < len; i++) {
-            bytes[i] = binaryStr.charCodeAt(i);
+            bytes[i] = binaryStr.charCodeAt(i)
           }
           result = {
             success: true,
             buffer: bytes,
-          };
+          }
         }
       } catch (_) { }
     }
 
-    if (requestId !== currentAudioLoadRequestId) return;
+    if (requestId !== currentAudioLoadRequestId) return
 
     if (!result || !result.success || !result.buffer) {
-      throw new Error('Could not download audio stream from URL');
+      throw new Error('Could not download audio stream from URL')
     }
 
-    audioLoadProgress.value = 90;
-    audioLoadStatus.value = 'Decoding audio waveform...';
+    audioLoadProgress.value = 90
+    audioLoadStatus.value = 'Decoding audio waveform...'
 
-    const ctx = getAudioContext();
-    const rawBuffer = result.buffer;
+    const ctx = getAudioContext()
+    const rawBuffer = result.buffer
     const uint8 = rawBuffer instanceof Uint8Array
       ? rawBuffer
       : ArrayBuffer.isView(rawBuffer)
         ? new Uint8Array(rawBuffer.buffer, rawBuffer.byteOffset, rawBuffer.byteLength)
-        : new Uint8Array(rawBuffer);
+        : new Uint8Array(rawBuffer)
 
-    const cleanArrayBuffer = new ArrayBuffer(uint8.byteLength);
-    new Uint8Array(cleanArrayBuffer).set(uint8);
+    const cleanArrayBuffer = new ArrayBuffer(uint8.byteLength)
+    new Uint8Array(cleanArrayBuffer).set(uint8)
 
-    const decoded = await ctx.decodeAudioData(cleanArrayBuffer);
-    if (requestId !== currentAudioLoadRequestId) return;
+    const decoded = await ctx.decodeAudioData(cleanArrayBuffer)
+    if (requestId !== currentAudioLoadRequestId) return
 
     // Check if the downloaded audio file has embedded album artwork (e.g. ID3 APIC frame)
     if (activeDirectAudioUrl.value === targetUrl || isDirectMediaUrl(targetUrl)) {
-      const embeddedCover = extractEmbeddedAudioCover(uint8);
+      const embeddedCover = extractEmbeddedAudioCover(uint8)
       if (embeddedCover) {
         try {
-          thumbnailUrl.value = await cleanAndCropArtwork(embeddedCover, false);
+          thumbnailUrl.value = await cleanAndCropArtwork(embeddedCover, false)
         } catch (_) {
-          thumbnailUrl.value = embeddedCover;
+          thumbnailUrl.value = embeddedCover
         }
       }
     }
 
-    audioBuffer.value = decoded;
-    originalAudioBuffer.value = decoded;
-    audioDuration.value = decoded.duration;
+    audioBuffer.value = decoded
+    originalAudioBuffer.value = decoded
+    audioDuration.value = decoded.duration
 
-    audioLoadProgress.value = 100;
-    audioLoadStatus.value = 'Ready';
+    audioLoadProgress.value = 100
+    audioLoadStatus.value = 'Ready'
   } catch (err: any) {
-    if (requestId !== currentAudioLoadRequestId) return;
-    console.error('Failed to load audio for waveform:', err);
-    audioLoadError.value = err.message || 'Failed to load audio stream';
-    currentPreloadedVideoId.value = null;
+    if (requestId !== currentAudioLoadRequestId) return
+    console.error('Failed to load audio for waveform:', err)
+    audioLoadError.value = err.message || 'Failed to load audio stream'
+    currentPreloadedVideoId.value = null
   } finally {
     if (requestId === currentAudioLoadRequestId) {
-      isLoadingAudio.value = false;
+      isLoadingAudio.value = false
     }
   }
 }
 
 function toggleClipDrawer() {
   if (isDrawerOpen.value) {
-    closeClipDrawer();
+    closeClipDrawer()
   } else {
-    openClipDrawer();
+    openClipDrawer()
   }
 }
 
 async function openClipDrawer() {
   // Immediately expand panel and toggle button so it turns into the collapse button with zero lag
-  isDrawerOpen.value = true;
+  isDrawerOpen.value = true
 
   try {
-    await webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()');
+    await webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()')
   } catch (_) { }
 
   if (isDirectMediaUrl(currentUrl.value) && (!activeVideoTitle.value || activeVideoTitle.value === 'YouTube')) {
-    activeVideoTitle.value = extractMediaTitle(currentUrl.value);
+    activeVideoTitle.value = extractMediaTitle(currentUrl.value)
   }
 
-  const isShort = currentUrl.value.includes('/shorts/');
-  isShortVideo.value = isShort;
+  const isShort = currentUrl.value.includes('/shorts/')
+  isShortVideo.value = isShort
 
   // Only attempt video frame capture & YouTube oEmbed metadata if not handling direct audio
   if (!activeDirectAudioUrl.value && !isDirectMediaUrl(currentUrl.value)) {
-    readVideoState().catch(() => { });
+    readVideoState().catch(() => { })
 
     // Non-blocking live frame capture
     captureVideoFrameFromWebview()
-      .then(async (liveFrame) => {
+      .then(async liveFrame => {
         if (liveFrame && !activeDirectAudioUrl.value) {
-          thumbnailUrl.value = await cleanAndCropArtwork(liveFrame, isShortVideo.value);
+          thumbnailUrl.value = await cleanAndCropArtwork(liveFrame, isShortVideo.value)
         }
       })
-      .catch(() => { });
+      .catch(() => { })
 
     // Non-blocking oEmbed metadata fetch
     if (window.electron?.ytFetchInfo) {
       window.electron.ytFetchInfo(currentUrl.value)
-        .then(async (info) => {
+        .then(async info => {
           if (info && info.success && !activeDirectAudioUrl.value) {
-            if (info.isShort !== undefined) isShortVideo.value = info.isShort;
-            if (info.title && !activeVideoTitle.value) activeVideoTitle.value = info.title;
+            if (info.isShort !== undefined) isShortVideo.value = info.isShort
+            if (info.title && !activeVideoTitle.value) activeVideoTitle.value = info.title
             if (!thumbnailUrl.value && info.thumbnailUrl) {
-              thumbnailUrl.value = await cleanAndCropArtwork(info.thumbnailUrl, isShortVideo.value);
+              thumbnailUrl.value = await cleanAndCropArtwork(info.thumbnailUrl, isShortVideo.value)
             }
           }
         })
-        .catch(() => { });
+        .catch(() => { })
     }
   }
 
   if (!audioBuffer.value && !isLoadingAudio.value) {
-    loadAudioForWaveform();
+    loadAudioForWaveform()
   }
 }
 
 function closeClipDrawer() {
-  closeContextMenu();
-  clipPanelRef.value?.stopAudio?.();
-  isDrawerOpen.value = false;
+  closeContextMenu()
+  clipPanelRef.value?.stopAudio?.()
+  isDrawerOpen.value = false
 }
 
 function handleKeydown(e: KeyboardEvent) {
-  if (route.path !== '/youtube') return;
+  if (route.path !== '/youtube') return
 
-  const isCtrlOrMeta = e.ctrlKey || e.metaKey;
-  const isF = e.key.toLowerCase() === 'f' || e.code === 'KeyF';
-  const isR = e.key.toLowerCase() === 'r' || e.code === 'KeyR';
-  const isF5 = e.key === 'F5' || e.code === 'F5';
+  const isCtrlOrMeta = e.ctrlKey || e.metaKey
+  const isF = e.key.toLowerCase() === 'f' || e.code === 'KeyF'
+  const isR = e.key.toLowerCase() === 'r' || e.code === 'KeyR'
+  const isF5 = e.key === 'F5' || e.code === 'F5'
 
   if (isCtrlOrMeta && isF) {
-    e.preventDefault();
-    e.stopPropagation();
-    openFindBar();
-    return;
+    e.preventDefault()
+    e.stopPropagation()
+    openFindBar()
+    return
   }
 
   if ((isCtrlOrMeta && isR) || isF5) {
-    e.preventDefault();
-    e.stopPropagation();
-    reloadPage();
-    return;
+    e.preventDefault()
+    e.stopPropagation()
+    reloadPage()
+    return
   }
 
   if (e.key === 'Escape') {
     if (isAutocompleteOpen.value) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeAutocomplete();
+      e.preventDefault()
+      e.stopPropagation()
+      closeAutocomplete()
       if (userTypedQuery.value) {
-        inputUrl.value = userTypedQuery.value;
+        inputUrl.value = userTypedQuery.value
         if (addressInputRef.value) {
-          addressInputRef.value.value = userTypedQuery.value;
+          addressInputRef.value.value = userTypedQuery.value
         }
       }
-      return;
+      return
     }
     if (isFindBarOpen.value) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeFindBar();
-      return;
+      e.preventDefault()
+      e.stopPropagation()
+      closeFindBar()
+      return
     }
     if (isFavoritesFlyoutOpen.value) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeFavoritesFlyout();
-      return;
+      e.preventDefault()
+      e.stopPropagation()
+      closeFavoritesFlyout()
+      return
     }
     if (activeMenu.value) {
-      closeContextMenu();
-      return;
+      closeContextMenu()
+      return
     }
     if (isDrawerOpen.value) {
-      closeClipDrawer();
+      closeClipDrawer()
     }
   }
 }
 
 function focusAddressBar() {
-  addressInputRef.value?.select();
-  closeAutocomplete();
+  addressInputRef.value?.select()
+  closeAutocomplete()
   if (isFavoritesFlyoutOpen.value) {
-    closeFavoritesFlyout();
+    closeFavoritesFlyout()
   }
 }
 
 function handleAddressKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown') {
     if (isAutocompleteOpen.value && matchingFavorites.value.length > 0) {
-      e.preventDefault();
+      e.preventDefault()
       if (selectedAutocompleteIndex.value < matchingFavorites.value.length - 1) {
-        selectedAutocompleteIndex.value++;
+        selectedAutocompleteIndex.value++
       } else {
-        selectedAutocompleteIndex.value = 0;
+        selectedAutocompleteIndex.value = 0
       }
-      const item = matchingFavorites.value[selectedAutocompleteIndex.value];
+      const item = matchingFavorites.value[selectedAutocompleteIndex.value]
       if (item) {
-        inputUrl.value = item.displayUrl;
+        inputUrl.value = item.displayUrl
         if (addressInputRef.value) {
-          addressInputRef.value.value = item.displayUrl;
+          addressInputRef.value.value = item.displayUrl
         }
-        activeInlineMatch.value = item;
+        activeInlineMatch.value = item
       }
-      return;
+      return
     }
   }
 
   if (e.key === 'ArrowUp') {
     if (isAutocompleteOpen.value && matchingFavorites.value.length > 0) {
-      e.preventDefault();
+      e.preventDefault()
       if (selectedAutocompleteIndex.value > 0) {
-        selectedAutocompleteIndex.value--;
+        selectedAutocompleteIndex.value--
       } else {
-        selectedAutocompleteIndex.value = matchingFavorites.value.length - 1;
+        selectedAutocompleteIndex.value = matchingFavorites.value.length - 1
       }
-      const item = matchingFavorites.value[selectedAutocompleteIndex.value];
+      const item = matchingFavorites.value[selectedAutocompleteIndex.value]
       if (item) {
-        inputUrl.value = item.displayUrl;
+        inputUrl.value = item.displayUrl
         if (addressInputRef.value) {
-          addressInputRef.value.value = item.displayUrl;
+          addressInputRef.value.value = item.displayUrl
         }
-        activeInlineMatch.value = item;
+        activeInlineMatch.value = item
       }
-      return;
+      return
     }
   }
 
   if (e.key === 'Tab' || e.key === 'ArrowRight') {
-    const el = addressInputRef.value;
+    const el = addressInputRef.value
     if (el && el.selectionStart !== null && el.selectionEnd !== null && el.selectionStart < el.selectionEnd) {
       if (el.selectionEnd === el.value.length) {
-        e.preventDefault();
-        el.setSelectionRange(el.value.length, el.value.length);
-        userTypedQuery.value = el.value;
-        return;
+        e.preventDefault()
+        el.setSelectionRange(el.value.length, el.value.length)
+        userTypedQuery.value = el.value
+        return
       }
     }
   }
 
   if (e.key === 'Enter') {
-    e.preventDefault();
+    e.preventDefault()
     if (isAutocompleteOpen.value && selectedAutocompleteIndex.value >= 0) {
-      const item = matchingFavorites.value[selectedAutocompleteIndex.value];
+      const item = matchingFavorites.value[selectedAutocompleteIndex.value]
       if (item) {
-        navigateToMatchedFavorite(e, item);
-        return;
+        navigateToMatchedFavorite(e, item)
+        return
       }
     } else if (activeInlineMatch.value) {
-      const match = activeInlineMatch.value;
-      navigateToMatchedFavorite(e, match);
-      return;
+      const match = activeInlineMatch.value
+      navigateToMatchedFavorite(e, match)
+      return
     }
-    closeAutocomplete();
-    handleNavigate();
-    return;
+    closeAutocomplete()
+    handleNavigate()
+    return
   }
 
   if (e.key === 'Escape') {
     if (isAutocompleteOpen.value) {
-      closeAutocomplete();
+      closeAutocomplete()
       if (userTypedQuery.value) {
-        inputUrl.value = userTypedQuery.value;
+        inputUrl.value = userTypedQuery.value
         if (addressInputRef.value) {
-          addressInputRef.value.value = userTypedQuery.value;
+          addressInputRef.value.value = userTypedQuery.value
         }
       }
-      e.preventDefault();
-      e.stopPropagation();
-      return;
+      e.preventDefault()
+      e.stopPropagation()
+      return
     }
-    handleAddressBarEscape(e);
-    return;
+    handleAddressBarEscape(e)
+    return
   }
 }
 
 function navigateToMatchedFavorite(e: KeyboardEvent, match: AutocompleteMatch) {
-  closeAutocomplete();
-  navigateToUrl(match.fav.url);
+  closeAutocomplete()
+  navigateToUrl(match.fav.url)
   if (e.target && e.target instanceof HTMLInputElement) {
-    e.target.blur();
+    e.target.blur()
   }
 }
 
 function handleAddressInput(event: Event) {
   if (isFavoritesFlyoutOpen.value) {
-    closeFavoritesFlyout();
+    closeFavoritesFlyout()
   }
 
-  const inputEl = addressInputRef.value;
-  if (!inputEl) return;
+  const inputEl = addressInputRef.value
+  if (!inputEl) return
 
-  const inputEvent = event as InputEvent;
-  const isDelete = inputEvent?.inputType?.startsWith('delete');
-  const typed = inputEl.value;
+  const isDelete = event instanceof InputEvent && event.inputType.startsWith('delete')
+  const typed = inputEl.value
 
-  userTypedQuery.value = typed;
+  userTypedQuery.value = typed
 
   if (!typed || !typed.trim()) {
-    closeAutocomplete();
-    return;
+    closeAutocomplete()
+    return
   }
 
-  const q = typed.trim().toLowerCase();
-  const qClean = q.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  const q = typed.trim().toLowerCase()
+  const qClean = q.replace(/^https?:\/\//i, '').replace(/^www\./i, '')
 
-  const favorites = settingsStore.browserFavorites || [];
-  const matches: AutocompleteMatch[] = [];
+  const favorites = settingsStore.browserFavorites || []
+  const matches: AutocompleteMatch[] = []
 
   for (const fav of favorites) {
-    const rawUrl = fav.url.trim();
-    const cleanUrl = getCleanUrlForMatch(rawUrl);
-    const rawLower = rawUrl.toLowerCase();
-    const cleanLower = cleanUrl.toLowerCase();
-    const titleLower = (fav.title || '').toLowerCase();
+    const rawUrl = fav.url.trim()
+    const cleanUrl = getCleanUrlForMatch(rawUrl)
+    const rawLower = rawUrl.toLowerCase()
+    const cleanLower = cleanUrl.toLowerCase()
+    const titleLower = (fav.title || '').toLowerCase()
 
     if (cleanLower.startsWith(qClean) || cleanLower.startsWith(q)) {
       matches.push({
         fav,
         displayUrl: cleanUrl,
         matchedBy: 'domain',
-      });
+      })
     } else if (rawLower.startsWith(q)) {
       matches.push({
         fav,
         displayUrl: cleanUrl,
         matchedBy: 'full',
-      });
+      })
     } else if (titleLower.startsWith(q) || cleanLower.includes(qClean)) {
       matches.push({
         fav,
         displayUrl: cleanUrl,
         matchedBy: 'title',
-      });
+      })
     }
   }
 
   matches.sort((a, b) => {
-    if (a.matchedBy === 'domain' && b.matchedBy !== 'domain') return -1;
-    if (b.matchedBy === 'domain' && a.matchedBy !== 'domain') return 1;
-    return a.displayUrl.length - b.displayUrl.length;
-  });
+    if (a.matchedBy === 'domain' && b.matchedBy !== 'domain') return -1
+    if (b.matchedBy === 'domain' && a.matchedBy !== 'domain') return 1
+    return a.displayUrl.length - b.displayUrl.length
+  })
 
-  matchingFavorites.value = matches.slice(0, 6);
-  selectedAutocompleteIndex.value = -1;
+  matchingFavorites.value = matches.slice(0, 6)
+  selectedAutocompleteIndex.value = -1
 
   if (matches.length > 0) {
-    isAutocompleteOpen.value = true;
+    isAutocompleteOpen.value = true
 
     // Only attempt inline completion if typing forward (not delete) and cursor is at end
     if (!isDelete && inputEl.selectionStart === typed.length) {
-      const topMatch = matches[0];
-      const candidate = topMatch.displayUrl;
-      const candidateLower = candidate.toLowerCase();
+      const topMatch = matches[0]
+      const candidate = topMatch.displayUrl
+      const candidateLower = candidate.toLowerCase()
 
-      let matchPrefix = '';
+      let matchPrefix = ''
       if (candidateLower.startsWith(qClean) && qClean.length > 0) {
-        matchPrefix = qClean;
+        matchPrefix = qClean
       } else if (candidateLower.startsWith(q)) {
-        matchPrefix = q;
+        matchPrefix = q
       }
 
       if (matchPrefix && candidate.length > matchPrefix.length) {
-        const remainder = candidate.slice(matchPrefix.length);
-        const completedText = typed + remainder;
+        const remainder = candidate.slice(matchPrefix.length)
+        const completedText = typed + remainder
 
         // Synchronously update the DOM input element so selection range can be applied immediately
-        inputEl.value = completedText;
-        inputUrl.value = completedText;
-        activeInlineMatch.value = topMatch;
+        inputEl.value = completedText
+        inputUrl.value = completedText
+        activeInlineMatch.value = topMatch
 
-        inputEl.setSelectionRange(typed.length, completedText.length);
+        inputEl.setSelectionRange(typed.length, completedText.length)
 
         // Also reinforce on nextTick in case Vue scheduler patches the input element
         nextTick(() => {
           if (addressInputRef.value === inputEl && activeInlineMatch.value === topMatch) {
-            inputEl.setSelectionRange(typed.length, completedText.length);
+            inputEl.setSelectionRange(typed.length, completedText.length)
           }
-        });
-        return;
+        })
+        return
       }
     }
-    activeInlineMatch.value = null;
+    activeInlineMatch.value = null
   } else {
-    closeAutocomplete();
+    closeAutocomplete()
   }
 }
 
 function toggleFavoritesFlyout() {
-  closeContextMenu();
-  closeAutocomplete();
-  isFavoritesFlyoutOpen.value = !isFavoritesFlyoutOpen.value;
+  closeContextMenu()
+  closeAutocomplete()
+  isFavoritesFlyoutOpen.value = !isFavoritesFlyoutOpen.value
 }
 
 function handleAddressBarEscape(e: KeyboardEvent) {
   if (isFavoritesFlyoutOpen.value) {
-    closeFavoritesFlyout();
-    e.preventDefault();
-    e.stopPropagation();
-    return;
+    closeFavoritesFlyout()
+    e.preventDefault()
+    e.stopPropagation()
+    return
   }
 
   if (activeMenu.value) {
-    closeContextMenu();
-    e.preventDefault();
-    e.stopPropagation();
-    return;
+    closeContextMenu()
+    e.preventDefault()
+    e.stopPropagation()
+    return
   }
 
-  const inputEl = addressInputRef.value;
-  if (!inputEl) return;
+  const inputEl = addressInputRef.value
+  if (!inputEl) return
 
-  const start = inputEl.selectionStart ?? 0;
-  const end = inputEl.selectionEnd ?? 0;
-  const hasSelection = start !== end;
-  const isModified = inputUrl.value !== currentUrl.value;
+  const start = inputEl.selectionStart ?? 0
+  const end = inputEl.selectionEnd ?? 0
+  const hasSelection = start !== end
+  const isModified = inputUrl.value !== currentUrl.value
 
-  e.preventDefault();
-  e.stopPropagation();
+  e.preventDefault()
+  e.stopPropagation()
 
   // 1. First Escape: if text is currently selected, deselect/collapse the selection while keeping focus
   if (hasSelection) {
-    inputEl.setSelectionRange(end, end);
-    return;
+    inputEl.setSelectionRange(end, end)
+    return
   }
 
   // 2. Second Escape: if URL was modified, reset back to current page URL while keeping focus
   if (isModified) {
-    inputUrl.value = currentUrl.value;
+    inputUrl.value = currentUrl.value
     nextTick(() => {
-      inputEl.focus();
-      const len = inputUrl.value.length;
-      inputEl.setSelectionRange(len, len);
-    });
-    return;
+      inputEl.focus()
+      const len = inputUrl.value.length
+      inputEl.setSelectionRange(len, len)
+    })
+    return
   }
 
   // 3. Subsequent Escape: unmodified and unselected -> blur address bar and return focus to page
-  inputEl.blur();
+  inputEl.blur()
   try {
-    webviewRef.value?.focus?.();
+    webviewRef.value?.focus?.()
   } catch (_) { }
 }
 
-let handleWebviewBeforeInputFn: ((e: any) => void) | null = null;
-let handleConsoleMessageFn: ((e: any) => void) | null = null;
-let injectWebviewKeydownListener: (() => void) | null = null;
+let handleWebviewBeforeInputFn: ((e: any) => void) | null = null
+let handleConsoleMessageFn: ((e: any) => void) | null = null
+let injectWebviewKeydownListener: (() => void) | null = null
 
-let handleWindowBlurFn: (() => void) | null = null;
+let handleWindowBlurFn: (() => void) | null = null
 
 // Lifecycle and event listeners
 onMounted(() => {
   handleWindowBlurFn = () => {
-    closeContextMenu();
-    closeFavoritesFlyout();
-  };
+    closeContextMenu()
+    closeFavoritesFlyout()
+  }
 
-  window.addEventListener('keydown', handleKeydown, true);
-  window.addEventListener('resize', closeContextMenu);
-  window.addEventListener('blur', handleWindowBlurFn);
-  window.addEventListener('mousemove', updateMousePos, { passive: true });
-  window.addEventListener('mousedown', handleGlobalMouseDown);
+  window.addEventListener('keydown', handleKeydown, true)
+  window.addEventListener('resize', closeContextMenu)
+  window.addEventListener('blur', handleWindowBlurFn)
+  window.addEventListener('mousemove', updateMousePos, { passive: true })
+  window.addEventListener('mousedown', handleGlobalMouseDown)
 
   // Native Electron main process IPC hook (guaranteed to catch Ctrl+F inside webview)
   window.electron?.onTriggerFindInPage?.(() => {
     if (route.path === '/youtube') {
-      openFindBar();
+      openFindBar()
     }
-  });
+  })
 
   window.electron?.onWebviewEscape?.(() => {
     if (route.path === '/youtube' && isFindBarOpen.value) {
-      closeFindBar();
+      closeFindBar()
     }
-  });
+  })
 
   window.electron?.onWebviewReload?.(() => {
     if (route.path === '/youtube') {
-      reloadPage();
+      reloadPage()
     }
-  });
+  })
 
-  const wv = webviewRef.value;
-  if (!wv) return;
+  const wv = webviewRef.value
+  if (!wv) return
 
   handleWebviewBeforeInputFn = (e: any) => {
-    const input = e.input || e;
-    const isKeyDown = input.type === 'keyDown' || input.type === 'keydown';
-    if (!isKeyDown) return;
+    const input = e.input || e
+    const isKeyDown = input.type === 'keyDown' || input.type === 'keydown'
+    if (!isKeyDown) return
 
-    const isCtrlOrMeta = !!(input.control || input.meta);
-    const key = (input.key || '').toLowerCase();
-    const isF = key === 'f' || input.code === 'KeyF';
-    const isR = key === 'r' || input.code === 'KeyR';
-    const isF5 = key === 'f5' || input.code === 'F5';
+    const isCtrlOrMeta = !!(input.control || input.meta)
+    const key = (input.key || '').toLowerCase()
+    const isF = key === 'f' || input.code === 'KeyF'
+    const isR = key === 'r' || input.code === 'KeyR'
+    const isF5 = key === 'f5' || input.code === 'F5'
 
     if (isCtrlOrMeta && isF) {
-      e.preventDefault?.();
-      openFindBar();
+      e.preventDefault?.()
+      openFindBar()
     } else if ((key === 'escape' || input.code === 'Escape') && isFindBarOpen.value) {
-      e.preventDefault?.();
-      closeFindBar();
+      e.preventDefault?.()
+      closeFindBar()
     } else if ((isCtrlOrMeta && isR) || isF5) {
-      e.preventDefault?.();
-      reloadPage();
+      e.preventDefault?.()
+      reloadPage()
     }
-  };
+  }
 
   // Injected client script fallback for inside YouTube webview
   injectWebviewKeydownListener = () => {
@@ -3769,7 +3830,10 @@ onMounted(() => {
               console.log('__PULSE_ACTION_FIND__');
             } else if (e.key === 'Escape') {
               console.log('__PULSE_ACTION_ESCAPE__');
-            } else if (e.key === 'F5' || e.code === 'F5' || ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))) {
+            } else if (
+              e.key === 'F5' || e.code === 'F5' ||
+              ((e.ctrlKey || e.metaKey) && (e.key === 'r' || e.key === 'R'))
+            ) {
               e.preventDefault();
               e.stopPropagation();
               console.log('__PULSE_ACTION_RELOAD__');
@@ -3787,7 +3851,8 @@ onMounted(() => {
             const anchor = target && target.closest ? target.closest('a') : null;
             if (anchor && anchor.href) {
               const href = anchor.href;
-              const isDirectAudio = /\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)($|\\?)/i.test(href);
+              const isDirectAudio =
+                /\\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)($|\\?)/i.test(href);
               if (isDirectAudio) {
                 e.preventDefault();
                 e.stopPropagation();
@@ -3800,7 +3865,9 @@ onMounted(() => {
                 }
 
                 if (!soundTitle) {
-                  const card = anchor.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"]');
+                  const card = anchor.closest(
+                    '.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"]'
+                  );
                   const cardTitle = card ? card.querySelector('.instant-link, [class*="title"], h2, h3, h4') : null;
                   if (cardTitle && cardTitle.textContent && cardTitle.textContent.trim()) {
                     soundTitle = cardTitle.textContent.trim();
@@ -3817,7 +3884,9 @@ onMounted(() => {
                 if (!soundTitle) {
                   const ogT = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
                   if (ogT) {
-                    soundTitle = ogT.replace(/\\s*-\\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '').trim();
+                    soundTitle = ogT
+                      .replace(/\\s*-\\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
+                      .trim();
                   }
                 }
 
@@ -3830,7 +3899,9 @@ onMounted(() => {
 
                 // 2. Dependable Image Extraction
                 let imgUrl = '';
-                const btnBg = document.querySelector('#instant-page-button .large-button-background, .large-button-background');
+                const btnBg = document.querySelector(
+                  '#instant-page-button .large-button-background, .large-button-background'
+                );
                 if (btnBg) {
                   const bgImg = btnBg.style.backgroundImage || window.getComputedStyle(btnBg).backgroundImage;
                   if (bgImg && bgImg !== 'none') {
@@ -3876,7 +3947,9 @@ onMounted(() => {
                 }
 
                 if (!imgUrl) {
-                  const container = anchor.closest('.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div');
+                  const container = anchor.closest(
+                    '.instant, [class*="instant"], [class*="sound"], [class*="card"], [class*="item"], article, li, div'
+                  );
                   const containerImg = container ? container.querySelector('img:not([src*="icons/"])') : null;
                   if (containerImg && containerImg.src) {
                     imgUrl = containerImg.src;
@@ -3886,7 +3959,9 @@ onMounted(() => {
                 if (!imgUrl) {
                   const og = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
                   const tw = document.querySelector('meta[name="twitter:image"]')?.getAttribute('content');
-                  const appleIcon = document.querySelector('link[rel="apple-touch-icon"], link[rel="image_src"]')?.getAttribute('href');
+                  const appleIcon = document
+                    .querySelector('link[rel="apple-touch-icon"], link[rel="image_src"]')
+                    ?.getAttribute('href');
                   imgUrl = og || tw || appleIcon || '';
                 }
 
@@ -3899,194 +3974,194 @@ onMounted(() => {
             }
           }, true);
         })()
-      `).catch(() => { });
+      `).catch(() => { })
     } catch (_) { }
-  };
+  }
 
   handleConsoleMessageFn = (e: any) => {
     if (e.message === '__PULSE_ACTION_FIND__') {
-      openFindBar();
+      openFindBar()
     } else if (e.message === '__PULSE_ACTION_ESCAPE__') {
       if (isFindBarOpen.value) {
-        closeFindBar();
+        closeFindBar()
       } else if (isFavoritesFlyoutOpen.value) {
-        closeFavoritesFlyout();
+        closeFavoritesFlyout()
       } else if (isDrawerOpen.value) {
-        closeClipDrawer();
+        closeClipDrawer()
       }
     } else if (e.message === '__PULSE_ACTION_PAGE_CLICK__') {
-      closeFavoritesFlyout();
+      closeFavoritesFlyout()
     } else if (e.message === '__PULSE_ACTION_RELOAD__') {
-      reloadPage();
+      reloadPage()
     } else if (typeof e.message === 'string' && e.message.startsWith('__PULSE_DIRECT_AUDIO_CLICK__:')) {
       try {
-        const payload = JSON.parse(e.message.slice('__PULSE_DIRECT_AUDIO_CLICK__:'.length));
+        const payload = JSON.parse(e.message.slice('__PULSE_DIRECT_AUDIO_CLICK__:'.length))
         if (payload?.url) {
-          loadDirectAudioIntoClipPanel(payload.url, payload.title, undefined, payload.imageUrl);
+          loadDirectAudioIntoClipPanel(payload.url, payload.title, undefined, payload.imageUrl)
         }
       } catch (_) { }
     }
-  };
+  }
 
-  wv.addEventListener('before-input-event', handleWebviewBeforeInputFn);
-  wv.addEventListener('console-message', handleConsoleMessageFn);
-  wv.addEventListener('dom-ready', injectWebviewKeydownListener);
-  wv.addEventListener('did-navigate', injectWebviewKeydownListener);
-  wv.addEventListener('did-navigate-in-page', injectWebviewKeydownListener);
-  wv.addEventListener('context-menu', handleWebviewContextMenu);
-  wv.addEventListener('focus', closeFavoritesFlyout);
+  wv.addEventListener('before-input-event', handleWebviewBeforeInputFn)
+  wv.addEventListener('console-message', handleConsoleMessageFn)
+  wv.addEventListener('dom-ready', injectWebviewKeydownListener)
+  wv.addEventListener('did-navigate', injectWebviewKeydownListener)
+  wv.addEventListener('did-navigate-in-page', injectWebviewKeydownListener)
+  wv.addEventListener('context-menu', handleWebviewContextMenu)
+  wv.addEventListener('focus', closeFavoritesFlyout)
 
   wv.addEventListener('will-navigate', (e: any) => {
     if (isDirectMediaUrl(e.url)) {
-      e.preventDefault();
-      loadDirectAudioIntoClipPanel(e.url);
+      e.preventDefault()
+      loadDirectAudioIntoClipPanel(e.url)
     }
-  });
+  })
 
   wv.addEventListener('did-start-loading', () => {
-    isLoading.value = true;
-    closeContextMenu();
-  });
+    isLoading.value = true
+    closeContextMenu()
+  })
 
   wv.addEventListener('did-stop-loading', () => {
-    isLoading.value = false;
-    injectWebviewKeydownListener?.();
+    isLoading.value = false
+    injectWebviewKeydownListener?.()
     try {
-      canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false;
-      canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false;
+      canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false
+      canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false
     } catch (_) { }
-  });
+  })
 
   const updateLocation = () => {
-    closeContextMenu();
-    injectWebviewKeydownListener?.();
+    closeContextMenu()
+    injectWebviewKeydownListener?.()
     try {
-      const url = wv.getURL();
+      const url = wv.getURL()
       if (url) {
         if (url !== currentUrl.value && isDrawerOpen.value) {
-          closeClipDrawer();
+          closeClipDrawer()
         }
         if (!isDirectMediaUrl(url)) {
-          activeDirectAudioUrl.value = '';
+          activeDirectAudioUrl.value = ''
         }
-        currentUrl.value = url;
-        inputUrl.value = url;
-        checkVideoUrl(url);
+        currentUrl.value = url
+        inputUrl.value = url
+        checkVideoUrl(url)
       }
-      canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false;
-      canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false;
-      readVideoState();
+      canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false
+      canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false
+      readVideoState()
     } catch (_) { }
-  };
+  }
 
-  wv.addEventListener('did-navigate', updateLocation);
-  wv.addEventListener('did-navigate-in-page', updateLocation);
+  wv.addEventListener('did-navigate', updateLocation)
+  wv.addEventListener('did-navigate-in-page', updateLocation)
   wv.addEventListener('page-title-updated', (e: any) => {
     if (e.title) {
       const clean = e.title
         .replace(/\s*-\s*YouTube$/, '')
         .replace(/\s*-\s*(Instant Sound Effect Button|Sound Button|Myinstants).*$/i, '')
         .replace(/\.(mp3|wav|ogg|oga|m4a|aac|flac|opus|webm|weba|wma|aiff|aif|mp4)$/i, '')
-        .trim();
+        .trim()
       if (clean && clean !== 'YouTube') {
-        activeVideoTitle.value = clean;
+        activeVideoTitle.value = clean
       }
     }
-  });
+  })
 
   window.electron?.onWebviewDirectAudioClicked?.((data: any) => {
     if (data?.url) {
-      loadDirectAudioIntoClipPanel(data.url, data.filename);
+      loadDirectAudioIntoClipPanel(data.url, data.filename)
     }
-  });
+  })
 
   window.electron?.onYtDownloadProgress(progress => {
     if (isLoadingAudio.value) {
-      audioLoadProgress.value = Math.min(88, Math.max(5, progress.percent));
-      if (progress.text) audioLoadStatus.value = progress.text;
+      audioLoadProgress.value = Math.min(88, Math.max(5, progress.percent))
+      if (progress.text) audioLoadStatus.value = progress.text
     }
-  });
+  })
 
   videoHeartbeatTimer = setInterval(() => {
     if (isVideoPage.value && !activeDirectAudioUrl.value) {
-      readVideoState();
+      readVideoState()
     }
-  }, 1000);
-});
+  }, 1000)
+})
 
 function handleDeactivate() {
-  isViewActive.value = false;
-  closeContextMenu();
-  closeClipDrawer();
-  closeFindBar();
+  isViewActive.value = false
+  closeContextMenu()
+  closeClipDrawer()
+  closeFindBar()
   if (videoHeartbeatTimer) {
-    clearInterval(videoHeartbeatTimer);
-    videoHeartbeatTimer = null;
+    clearInterval(videoHeartbeatTimer)
+    videoHeartbeatTimer = null
   }
   try {
-    webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()');
+    webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()')
   } catch (_) { }
 }
 
 function handleActivate() {
-  isViewActive.value = true;
-  injectWebviewKeydownListener?.();
+  isViewActive.value = true
+  injectWebviewKeydownListener?.()
   if (!videoHeartbeatTimer) {
     videoHeartbeatTimer = setInterval(() => {
       if (isVideoPage.value) {
-        readVideoState();
+        readVideoState()
       }
-    }, 1000);
+    }, 1000)
   }
 }
 
 watch(
   () => props.active,
-  (isActive) => {
+  isActive => {
     if (isActive) {
-      handleActivate();
+      handleActivate()
     } else {
-      handleDeactivate();
+      handleDeactivate()
     }
   }
-);
+)
 
 
 
 onUnmounted(() => {
-  closeContextMenu();
-  closeFavoritesFlyout();
-  window.removeEventListener('keydown', handleKeydown, true);
-  window.removeEventListener('resize', closeContextMenu);
+  closeContextMenu()
+  closeFavoritesFlyout()
+  window.removeEventListener('keydown', handleKeydown, true)
+  window.removeEventListener('resize', closeContextMenu)
   if (handleWindowBlurFn) {
-    window.removeEventListener('blur', handleWindowBlurFn);
+    window.removeEventListener('blur', handleWindowBlurFn)
   }
-  window.removeEventListener('mousemove', updateMousePos);
-  window.removeEventListener('mousedown', handleGlobalMouseDown);
+  window.removeEventListener('mousemove', updateMousePos)
+  window.removeEventListener('mousedown', handleGlobalMouseDown)
 
-  const wv = webviewRef.value;
+  const wv = webviewRef.value
   if (wv) {
     try {
-      wv.removeEventListener('focus', closeFavoritesFlyout);
-      if (handleWebviewBeforeInputFn) wv.removeEventListener('before-input-event', handleWebviewBeforeInputFn);
-      if (handleConsoleMessageFn) wv.removeEventListener('console-message', handleConsoleMessageFn);
+      wv.removeEventListener('focus', closeFavoritesFlyout)
+      if (handleWebviewBeforeInputFn) wv.removeEventListener('before-input-event', handleWebviewBeforeInputFn)
+      if (handleConsoleMessageFn) wv.removeEventListener('console-message', handleConsoleMessageFn)
       if (injectWebviewKeydownListener) {
-        wv.removeEventListener('dom-ready', injectWebviewKeydownListener);
-        wv.removeEventListener('did-navigate', injectWebviewKeydownListener);
-        wv.removeEventListener('did-navigate-in-page', injectWebviewKeydownListener);
+        wv.removeEventListener('dom-ready', injectWebviewKeydownListener)
+        wv.removeEventListener('did-navigate', injectWebviewKeydownListener)
+        wv.removeEventListener('did-navigate-in-page', injectWebviewKeydownListener)
       }
-      wv.removeEventListener('context-menu', handleWebviewContextMenu);
+      wv.removeEventListener('context-menu', handleWebviewContextMenu)
     } catch (_) { }
   }
 
   if (videoHeartbeatTimer) {
-    clearInterval(videoHeartbeatTimer);
-    videoHeartbeatTimer = null;
+    clearInterval(videoHeartbeatTimer)
+    videoHeartbeatTimer = null
   }
   if (audioContext && audioContext.state !== 'closed') {
-    audioContext.close().catch(() => { });
+    audioContext.close().catch(() => { })
   }
-});
+})
 </script>
 
 <style scoped>

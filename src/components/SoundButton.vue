@@ -26,7 +26,9 @@
             :style="mergedStyle">
       <span v-if="!props.modelValue.hideTitle"
             class="button-title"
-            :style="props.modelValue.color && `color: ${props.modelValue.color}`">{{ modelValue.title || 'New Sound' }}</span>
+            :style="props.modelValue.color && `color: ${props.modelValue.color}`">
+        {{ modelValue.title || 'New Sound' }}
+      </span>
     </button>
     <div :class="['button-group', 'menu', { 'button-group-visible': displayMode === 'edit' }]"
          @click.capture="editSound">
@@ -57,12 +59,12 @@
 </template>
 
 <script setup lang="ts">
-import { useSoundStore } from '../store/sound';
-import { Sound } from '../@types/sound';
-import { computed, ref } from 'vue';
-import Plus from '../assets/images/plus.svg';
-import InlineSvg from 'vue-inline-svg';
-import { DisplayMode, useSettingsStore } from '../store/settings';
+import { useSoundStore } from '../store/sound'
+import { Sound } from '../@types/sound'
+import { computed, ref } from 'vue'
+import Plus from '../assets/images/plus.svg'
+import InlineSvg from 'vue-inline-svg'
+import { DisplayMode, useSettingsStore } from '../store/settings'
 
 // Define the props
 const props = withDefaults(
@@ -75,88 +77,89 @@ const props = withDefaults(
   {
     isVisible: false,
   }
-);
+)
 
 // define the emits
 const emit = defineEmits<{
   (event: 'update:modelValue', value: Sound): void;
   (event: 'editSound'): void;
   (event: 'fileDropped', dragEvent: DragEvent, sound: Sound, isNewSound: boolean): void;
-}>();
+}>()
 
-const numSoundsPlaying = ref(0);
+const numSoundsPlaying = ref(0)
 /**
  * used to manually handle the focus state of the button by:
  * 1. tracking if the button is focused by keyboard events
  * 2. preventing focus events from being triggered by the ptt_hotkey
  */
-const focusVisible = ref(false);
-const containerElement = ref<HTMLElement | null>(null);
+const focusVisible = ref(false)
+const containerElement = ref<HTMLElement | null>(null)
 
-const soundStore = useSoundStore();
-const settingsStore = useSettingsStore();
+const soundStore = useSoundStore()
+const settingsStore = useSettingsStore()
 
 defineExpose({
   ref: containerElement,
-});
+})
 
 const effectiveImageUrl = computed(() => {
-  if (props.modelValue.imageUrl) return props.modelValue.imageUrl;
-  return settingsStore.getSoundTagImageUrl(props.modelValue);
-});
+  if (props.modelValue.imageUrl) return props.modelValue.imageUrl
+  return settingsStore.getSoundTagImageUrl(props.modelValue)
+})
 
 const mergedStyle = computed(() => {
-  const img = effectiveImageUrl.value;
+  const img = effectiveImageUrl.value
   return {
     ...(img ? { backgroundImage: `url("${img.replace(/"/g, '\\"')}")` } : {}),
     ...(props.modelValue.activeSegment
       ? {
-        '--sound-duration': `${(props.modelValue.activeSegment?.end ?? 100) - (props.modelValue.activeSegment?.start ?? 0)
-          }s`,
+        '--sound-duration': `${
+          (props.modelValue.activeSegment?.end ?? 100) - (props.modelValue.activeSegment?.start ?? 0)
+        }s`,
       }
       : {}),
-  };
-});
+  }
+})
 
-const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id));
+const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id))
 
 function editSound() {
   if (props.displayMode === 'edit') {
-    emit('editSound');
+    emit('editSound')
   }
 }
 
 function handleAuxClick(event: MouseEvent) {
   if (event.button === 2) {
-    emit('editSound');
-    return;
+    emit('editSound')
+    return
   }
   if (event.button === 1) {
-    playSoundSegment(2);
+    playSoundSegment(2)
     // return
   }
 }
 
 function handleMouseDown(event: MouseEvent) {
   if (event.button === 1) {
-    event.preventDefault();
+    event.preventDefault()
   }
 }
 
 async function playSoundSegment(soundNumber: number) {
-  numSoundsPlaying.value++;
+  numSoundsPlaying.value++
   const segment = props.modelValue.soundSegments?.[soundNumber - 1] ??
-    props.modelValue.soundSegments?.[0] ?? { start: 0, end: 0, id: crypto.randomUUID() };
+    props.modelValue.soundSegments?.[0] ?? { start: 0, end: 0, id: crypto.randomUUID() }
   soundStore.playSound(props.modelValue, null, null, undefined, true, segment).then(() => {
-    numSoundsPlaying.value--;
-  });
+    numSoundsPlaying.value--
+  })
 }
 
 async function playSound() {
-  numSoundsPlaying.value++;
+  numSoundsPlaying.value++
   soundStore.playSound(props.modelValue, null, null, undefined, true).then(() => {
-    numSoundsPlaying.value--;
-  });
+    numSoundsPlaying.value--
+  })
 }
 
 /**
@@ -165,30 +168,31 @@ async function playSound() {
  * @param event The keyup event
  */
 function handleKeyup(event: KeyboardEvent) {
-  // if the soundStore is sending a ptt_hotkey and the keyup event is the ptt_hotkey, prevent the default action (which will focus it)
+  // if the soundStore is sending a ptt_hotkey and the keyup event is the ptt_hotkey,
+  // prevent the default action (which will focus it)
   if (soundStore.sendingPttHotkey && settingsStore.ptt_hotkey.includes(event.code)) {
-    event.preventDefault();
-    return;
+    event.preventDefault()
+    return
   }
-  focusVisible.value = true;
+  focusVisible.value = true
 }
 
 function handleMouseEnter() {
-  settingsStore.setHoveringSound(props.modelValue);
+  settingsStore.setHoveringSound(props.modelValue)
 }
 
 function handleMouseLeave() {
-  settingsStore.setHoveringSound(null);
+  settingsStore.setHoveringSound(null)
 }
 
 function addSound() {
-  const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label);
+  const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label)
   const newSound: Sound = {
     title: '',
     id: props.modelValue?.id,
     ...(activeTags.length > 0 ? { tags: [...activeTags] } : {}),
-  };
-  emit('update:modelValue', newSound);
+  }
+  emit('update:modelValue', newSound)
 }
 
 /**
@@ -196,7 +200,7 @@ function addSound() {
  * @param event The drag event
  */
 function handleFileDrop(isNewSound: boolean, event: DragEvent) {
-  emit('fileDropped', event, props.modelValue, isNewSound);
+  emit('fileDropped', event, props.modelValue, isNewSound)
 }
 </script>
 

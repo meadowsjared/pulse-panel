@@ -40,14 +40,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from 'vue'
 
-const sideBarOpen = ref(false);
-const hamburgerActive = ref(false);
+const sideBarOpen = ref(false)
+const hamburgerActive = ref(false)
 
 function toggleSidebar() {
-  sideBarOpen.value = !sideBarOpen.value;
-  hamburgerActive.value = false;
+  sideBarOpen.value = !sideBarOpen.value
+  hamburgerActive.value = false
 }
 </script>
 

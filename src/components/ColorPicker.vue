@@ -29,12 +29,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, defineAsyncComponent, nextTick } from 'vue';
-import 'vue3-colorpicker/style.css';
+import { computed, ref, onMounted, onUnmounted, defineAsyncComponent, nextTick } from 'vue'
+import 'vue3-colorpicker/style.css'
 
 const ColorPicker = defineAsyncComponent(() =>
   import('vue3-colorpicker').then(m => m.ColorPicker)
-);
+)
 
 const props = withDefaults(defineProps<{
   modelValue: string | undefined;
@@ -45,144 +45,145 @@ const props = withDefaults(defineProps<{
   label: 'Color:',
   align: 'auto',
   placement: 'auto',
-});
+})
 
-const emit = defineEmits<(event: 'update:modelValue', value: string | undefined) => void>();
+const emit = defineEmits<(event: 'update:modelValue', value: string | undefined) => void>()
 
-const showPicker = ref(false);
-const colorPickerRef = ref<HTMLElement>();
-const dropdownRef = ref<HTMLElement>();
-const dropdownStyle = ref<Record<string, string>>({});
-let resizeObserver: ResizeObserver | null = null;
+const showPicker = ref(false)
+const colorPickerRef = ref<HTMLElement>()
+const dropdownRef = ref<HTMLElement>()
+const dropdownStyle = ref<Record<string, string>>({})
+let resizeObserver: ResizeObserver | null = null
 
 const defaultColor = computed({
   get: () => props.modelValue ?? '#ffffff',
   set: (value: string) => {
-    emit('update:modelValue', value);
+    emit('update:modelValue', value)
   },
-});
+})
 
 const updateDropdownPosition = () => {
-  if (!colorPickerRef.value) return;
-  const swatchEl = (colorPickerRef.value.querySelector('.color-swatch') as HTMLElement) || colorPickerRef.value;
-  const rect = swatchEl.getBoundingClientRect();
+  if (!colorPickerRef.value) return
+  const queried = colorPickerRef.value.querySelector('.color-swatch')
+  const swatchEl = queried instanceof HTMLElement ? queried : colorPickerRef.value
+  const rect = swatchEl.getBoundingClientRect()
 
   // If the swatch is completely offscreen due to parent scroll, close the picker
   if (rect.bottom < 0 || rect.top > window.innerHeight) {
-    showPicker.value = false;
-    return;
+    showPicker.value = false
+    return
   }
 
-  const el = dropdownRef.value;
-  const pickerWidth = el && el.offsetWidth > 0 ? el.offsetWidth : 276;
-  const pickerHeight = el && el.offsetHeight > 0 ? el.offsetHeight : 270;
+  const el = dropdownRef.value
+  const pickerWidth = el && el.offsetWidth > 0 ? el.offsetWidth : 276
+  const pickerHeight = el && el.offsetHeight > 0 ? el.offsetHeight : 270
 
-  const spaceBelow = window.innerHeight - rect.bottom;
-  const spaceAbove = rect.top;
+  const spaceBelow = window.innerHeight - rect.bottom
+  const spaceAbove = rect.top
 
   // Decide whether to place above or below the swatch
-  let placeAbove = false;
+  let placeAbove = false
   if (props.placement === 'top') {
-    placeAbove = spaceAbove >= pickerHeight + 6 || spaceAbove > spaceBelow;
+    placeAbove = spaceAbove >= pickerHeight + 6 || spaceAbove > spaceBelow
   } else if (props.placement === 'bottom') {
-    placeAbove = spaceBelow < pickerHeight + 6 && spaceAbove > spaceBelow;
+    placeAbove = spaceBelow < pickerHeight + 6 && spaceAbove > spaceBelow
   } else {
     // 'auto'
-    placeAbove = spaceBelow < pickerHeight + 6 && spaceAbove > spaceBelow;
+    placeAbove = spaceBelow < pickerHeight + 6 && spaceAbove > spaceBelow
   }
 
-  let top: number;
+  let top: number
   if (placeAbove) {
-    top = rect.top - pickerHeight - 6;
+    top = rect.top - pickerHeight - 6
     // Keep within top viewport bound
-    top = Math.max(8, top);
+    top = Math.max(8, top)
   } else {
-    top = rect.bottom + 6;
+    top = rect.bottom + 6
     // Keep within bottom viewport bound
-    top = Math.min(top, window.innerHeight - pickerHeight - 8);
-    top = Math.max(8, top);
+    top = Math.min(top, window.innerHeight - pickerHeight - 8)
+    top = Math.max(8, top)
   }
 
   // Horizontal positioning
-  let left = rect.left;
+  let left = rect.left
   if (props.align === 'right' || (props.align === 'auto' && window.innerWidth - rect.left < pickerWidth)) {
-    left = rect.right - pickerWidth;
+    left = rect.right - pickerWidth
   }
 
   // Keep within horizontal viewport bounds
-  left = Math.max(8, Math.min(left, window.innerWidth - pickerWidth - 8));
+  left = Math.max(8, Math.min(left, window.innerWidth - pickerWidth - 8))
 
   dropdownStyle.value = {
     position: 'fixed',
     top: `${Math.round(top)}px`,
     left: `${Math.round(left)}px`,
     zIndex: '99999',
-  };
-};
+  }
+}
 
 const attachObserver = () => {
   if (typeof ResizeObserver !== 'undefined' && dropdownRef.value) {
     if (!resizeObserver) {
       resizeObserver = new ResizeObserver(() => {
-        updateDropdownPosition();
-      });
+        updateDropdownPosition()
+      })
     }
-    resizeObserver.observe(dropdownRef.value);
+    resizeObserver.observe(dropdownRef.value)
   }
-};
+}
 
 const detachObserver = () => {
   if (resizeObserver) {
-    resizeObserver.disconnect();
-    resizeObserver = null;
+    resizeObserver.disconnect()
+    resizeObserver = null
   }
-};
+}
 
 const togglePicker = () => {
-  showPicker.value = !showPicker.value;
+  showPicker.value = !showPicker.value
   if (showPicker.value) {
-    updateDropdownPosition();
+    updateDropdownPosition()
     nextTick(() => {
-      updateDropdownPosition();
-      attachObserver();
-    });
+      updateDropdownPosition()
+      attachObserver()
+    })
   } else {
-    detachObserver();
+    detachObserver()
   }
-};
+}
 
 const updateColor = (color: string) => {
-  defaultColor.value = color;
-};
+  defaultColor.value = color
+}
 
 const handleClickOutside = (event: MouseEvent) => {
-  const target = event.target as Node;
-  const insideTrigger = colorPickerRef.value && colorPickerRef.value.contains(target);
-  const insideDropdown = dropdownRef.value && dropdownRef.value.contains(target);
+  const target = event.target instanceof Node ? event.target : null
+  const insideTrigger = colorPickerRef.value && target && colorPickerRef.value.contains(target)
+  const insideDropdown = dropdownRef.value && target && dropdownRef.value.contains(target)
   if (!insideTrigger && !insideDropdown) {
-    showPicker.value = false;
-    detachObserver();
+    showPicker.value = false
+    detachObserver()
   }
-};
+}
 
 const handleScrollOrResize = () => {
   if (showPicker.value) {
-    updateDropdownPosition();
+    updateDropdownPosition()
   }
-};
+}
 
 onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-  window.addEventListener('resize', handleScrollOrResize);
-  window.addEventListener('scroll', handleScrollOrResize, true);
-});
+  document.addEventListener('click', handleClickOutside)
+  window.addEventListener('resize', handleScrollOrResize)
+  window.addEventListener('scroll', handleScrollOrResize, true)
+})
 
 onUnmounted(() => {
-  detachObserver();
-  document.removeEventListener('click', handleClickOutside);
-  window.removeEventListener('resize', handleScrollOrResize);
-  window.removeEventListener('scroll', handleScrollOrResize, true);
-});
+  detachObserver()
+  document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('resize', handleScrollOrResize)
+  window.removeEventListener('scroll', handleScrollOrResize, true)
+})
 </script>
 
 <style scoped>
