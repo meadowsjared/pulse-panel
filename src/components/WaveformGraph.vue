@@ -433,7 +433,7 @@ const displayCurrentTime = computed(() => {
 
 const isAtStartPosition = computed(() => {
   const t = displayCurrentTime.value
-  return t <= 0.02 || (props.showTrimHandles && Math.abs(t - props.trimStart) <= 0.02)
+  return t <= 0 || (props.showTrimHandles && t <= props.trimStart)
 })
 
 const showPlayhead = computed(() => {
@@ -800,7 +800,7 @@ function selectLeftOfBoundary(boundarySec: number) {
 
   let prev = 0
   for (const b of boundaries) {
-    if (b < boundarySec - 0.01) {
+    if (b < boundarySec) {
       prev = b
     } else {
       break
@@ -827,7 +827,7 @@ function selectRightOfBoundary(boundarySec: number) {
   let next = maxDur
   for (let i = boundaries.length - 1; i >= 0; i--) {
     const b = boundaries[i]
-    if (b > boundarySec + 0.01) {
+    if (b > boundarySec) {
       next = b
     } else {
       break
@@ -1689,7 +1689,7 @@ function onWaveformDblClick(e: MouseEvent) {
   for (let i = 0; i < boundaries.length - 1; i++) {
     const bStart = boundaries[i]
     const bEnd = boundaries[i + 1]
-    if (clickSec >= bStart - 0.01 && clickSec <= bEnd + 0.01) {
+    if (clickSec >= bStart && clickSec <= bEnd) {
       segStart = bStart
       segEnd = bEnd
       break
@@ -1697,7 +1697,7 @@ function onWaveformDblClick(e: MouseEvent) {
   }
 
   const currentEnd = props.trimEnd
-  if (Math.abs(props.trimStart - segStart) < 0.05 && Math.abs(currentEnd - segEnd) < 0.05) {
+  if (props.trimStart === segStart && currentEnd === segEnd) {
     segStart = 0
     segEnd = maxDur
   }
@@ -1873,9 +1873,9 @@ function onHandleMouseMove(e: MouseEvent) {
 
   lastHandleDragEvent = e
 
-  // Deadband threshold: do not update position until mouse has moved at least 3px or user is holding Shift
+  // Start dragging immediately if mouse has moved at least 1px or user is holding Shift
   const dist = Math.abs(e.clientX - handleDownX)
-  if (!isDraggingHandle.value && (e.shiftKey || dist >= 3)) {
+  if (!isDraggingHandle.value && (e.shiftKey || dist >= 1)) {
     isDraggingHandle.value = true
   }
   if (!isDraggingHandle.value) {

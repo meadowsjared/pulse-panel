@@ -494,7 +494,7 @@ const relativeCurrentTime = computed(() => {
 const canTrimToSelection = computed(() => {
   if (!effectiveAudioBuffer.value) return false
   const dur = effectiveDuration.value
-  return trimEnd.value > trimStart.value && (trimStart.value > 0.01 || trimEnd.value < dur - 0.01)
+  return trimEnd.value > trimStart.value && (trimStart.value > 0 || trimEnd.value < dur)
 })
 
 // Segmented Indicator Animation Ref
@@ -607,23 +607,22 @@ const canCopy = computed(() => effectiveDuration.value > 0)
 const canCut = computed(() => {
   if (effectiveDuration.value <= 0) return false
   const totalDur = effectiveDuration.value
-  const isTrimmed = trimStart.value > 0.05 || (trimEnd.value > 0 && trimEnd.value < totalDur - 0.05)
+  const isTrimmed = trimStart.value > 0 || (trimEnd.value > 0 && trimEnd.value < totalDur)
   const selDuration = (trimEnd.value > 0 ? trimEnd.value : totalDur) - trimStart.value
-  return isTrimmed && selDuration > 0.05
+  return isTrimmed && selDuration > 0
 })
 const canFade = computed(() => {
   if (!effectiveAudioBuffer.value) return false
   const totalDur = effectiveDuration.value
   const end = trimEnd.value > 0 ? trimEnd.value : totalDur
-  return end - trimStart.value > 0.05
+  return end - trimStart.value > 0
 })
 const canPaste = computed(() => sharedAudioClipboard.value !== null)
 const pasteTooltip = computed(() => {
   if (!canPaste.value) return 'Paste audio (Ctrl+V) - Clipboard empty'
   const totalDur = effectiveDuration.value
-  const hasSubSelection = (trimEnd.value > 0 && trimEnd.value < totalDur - 0.05) || trimStart.value > 0.05
-  const isCursorInside =
-    hasSubSelection && currentTime.value >= trimStart.value - 0.05 && currentTime.value <= trimEnd.value + 0.05
+  const hasSubSelection = (trimEnd.value > 0 && trimEnd.value < totalDur) || trimStart.value > 0
+  const isCursorInside = hasSubSelection && currentTime.value >= trimStart.value && currentTime.value <= trimEnd.value
   if (hasSubSelection && isCursorInside) {
     return `Paste (Replace selection ${formatSeconds(trimStart.value)} - ${formatSeconds(trimEnd.value)}) (Ctrl+V)`
   }
@@ -1203,7 +1202,7 @@ function trimToSelection() {
   for (const reg of appliedGainRegions.value) {
     const overlapStart = Math.max(reg.startSec, startSec)
     const overlapEnd = Math.min(reg.endSec, endSec)
-    if (overlapEnd - overlapStart > 0.02) {
+    if (overlapEnd - overlapStart > 0) {
       newGainRegions.push({
         ...reg,
         startSec: Math.max(0, overlapStart - startSec),
@@ -1333,7 +1332,7 @@ function onCutAudio() {
   const totalDur = effectiveDuration.value
   const startSec = Math.max(0, trimStart.value)
   const endSec = Math.min(totalDur, trimEnd.value > 0 ? trimEnd.value : totalDur)
-  if (endSec <= startSec + 0.005) return
+  if (endSec <= startSec) return
 
   pushUndoState()
 
@@ -1376,7 +1375,7 @@ function onDeleteAudio() {
   const totalDur = effectiveDuration.value
   const startSec = Math.max(0, trimStart.value)
   const endSec = Math.min(totalDur, trimEnd.value > 0 ? trimEnd.value : totalDur)
-  if (endSec <= startSec + 0.005) return
+  if (endSec <= startSec) return
 
   pushUndoState()
 
@@ -1495,7 +1494,7 @@ function onPasteAudio() {
 function onSplitAt(sec: number) {
   if (!cleanBaseAudioBuffer.value) return
   const dur = effectiveDuration.value
-  if (sec <= 0.05 || sec >= dur - 0.05) {
+  if (sec <= 0 || sec >= dur) {
     pulseBackStore.showToast('Cannot split at the very beginning or end of clip')
     return
   }
@@ -2346,7 +2345,7 @@ async function loadAudioData(source: AudioBuffer | Blob, savedBoundaries?: numbe
     if (savedBoundaries && savedBoundaries.length > 0) {
       let segs = createInitialSegments(decoded)
       for (const b of savedBoundaries) {
-        if (b > 0.01 && b < decoded.duration - 0.01) {
+        if (b > 0 && b < decoded.duration) {
           segs = splitTimelineAt(ctx, segs, b)
         }
       }
@@ -2623,6 +2622,7 @@ defineExpose({
 
 .waveform-labels {
   display: flex;
+  /* flex-direction: column; */
   justify-content: space-between;
   align-items: center;
   font-size: 0.85rem;
@@ -2630,6 +2630,7 @@ defineExpose({
   color: #e4e4e7;
   gap: 0.25rem;
   flex-wrap: wrap;
+  align-content: start;
 }
 
 .playback-controls {
