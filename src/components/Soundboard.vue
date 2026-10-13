@@ -109,7 +109,7 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
       fileArray.reduce<{
         [fileName: string]: CompilingSoundWithImage
       }>((prevVal, file) => {
-        const fileName = stripFileExtension(file.name).toLowerCase().replace(/[`’]/g, "'")
+        const fileName = stripFileExtension(file.name).toLowerCase().replace(/[`’]/g, '\'')
         if (file.type.includes('audio')) {
           if (!prevVal[fileName]) {
             prevVal[fileName] = { audioFile: file }
