@@ -172,27 +172,22 @@
           <span>Add Segment</span>
         </button>
       </div>
-      <div v-if="effectiveImageUrl"
-           class="relative"
-           @contextmenu.prevent.stop="openImageContextMenu($event)">
-        <div class="absolute top-2 right-2 flex items-center gap-1.5 z-10">
-          <button @click="handleCopyImage"
-                  class="image-action-button menu w-8 h-8 bg-white flex items-center
-                         justify-center p-1.5 rounded cursor-pointer"
-                  title="Copy image">
-            <svg class="w-8 h-8 text-black"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2"
-                 stroke-linecap="round"
-                 stroke-linejoin="round">
-              <rect x="9"
-                    y="9"
-                    width="13"
-                    height="13"
-                    rx="2"
-                    ry="2"></rect>
+      <div v-if="effectiveImageUrl" class="relative" @contextmenu.prevent.stop="openImageContextMenu($event)">
+        <div
+          class="image-actions-toolbar absolute top-2 right-2 opacity-50 flex items-center p-1 gap-1 z-10 bg-black/75 backdrop-blur-md rounded-lg shadow-lg hover:opacity-100">
+          <button
+            @click="handleCopyImage"
+            class="image-action-button menu flex items-center justify-center w-7 h-7 p-1 rounded text-zinc-200 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
+            title="Copy image">
+            <svg
+              class="w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
           </button>
@@ -213,9 +208,9 @@
                         class="w-full h-full rotate-45 text-black" />
           </button>
         </div>
-        <div v-if="inheritedTag"
-             class="absolute bottom-2 left-2 bg-black/80 backdrop-blur text-white text-[11px]
-                    font-medium px-2 py-0.5 rounded flex items-center gap-1 z-10 shadow">
+        <div
+          v-if="inheritedTag"
+          class="image-default-tag absolute bottom-2 left-2 opacity-50 bg-black/80 backdrop-blur text-white text-[11px] font-medium px-2 py-0.5 rounded flex items-center gap-1 z-10 shadow hover:opacity-100 cursor-default">
           <span class="text-zinc-400">Default from</span>
           <span class="text-emerald-400 font-semibold">#{{ inheritedTag }}</span>
         </div>
@@ -1619,6 +1614,12 @@ input[type='checkbox']:focus-visible {
   object-fit: cover;
   width: 100%;
   aspect-ratio: 1 / 1;
+}
+
+.image-actions-toolbar,
+.image-default-tag {
+  box-shadow: 0px 0px 6px rgba(255, 255, 255, 1.15);
+  transition: opacity 0.15s ease;
 }
 
 .remove-image-button,
