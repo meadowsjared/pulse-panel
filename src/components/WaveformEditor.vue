@@ -355,7 +355,9 @@ import {
   spliceTimelineSegments,
   cutTimelineSegments,
   deleteTimelineSegments,
+  calculateSoundSegments,
 } from '../utils/audioSegments'
+import { SoundSegment } from '../@types/sound'
 import { encodeWAV, encodeMP3, encodeOGG } from '../services/pulseBackBuffer'
 
 interface Props {
@@ -2457,7 +2459,7 @@ watch(isDualTrackActive, active => {
 // Helper for Exporting Trimmed Audio
 async function getTrimmedAudioBlob(
   format: 'mp3' | 'wav' | 'ogg' = 'mp3'
-): Promise<{ blob: Blob; duration: number; extension: string; } | null> {
+): Promise<{ blob: Blob; duration: number; extension: string; segments?: SoundSegment[]; } | null> {
   const buf = effectiveAudioBuffer.value
   if (!buf) return null
 
@@ -2519,7 +2521,14 @@ async function getTrimmedAudioBlob(
     extension = 'wav'
   }
 
-  return { blob, duration, extension }
+  const segments = calculateSoundSegments(
+    segmentBoundaries.value,
+    startSec,
+    endSec,
+    duration
+  )
+
+  return { blob, duration, extension, segments }
 }
 
 // Lifecycle Hooks
@@ -2555,6 +2564,14 @@ function formatSeconds(secs: number): string {
 // Expose public API for parents
 defineExpose({
   getTrimmedAudioBlob,
+  getTrimmedSegments: () => {
+    const buf = effectiveAudioBuffer.value
+    if (!buf) return undefined
+    const startSec = Math.max(0, trimStart.value)
+    const endSec = Math.min(buf.duration, trimEnd.value > 0 ? trimEnd.value : buf.duration)
+    const dur = Math.max(0, endSec - startSec)
+    return calculateSoundSegments(segmentBoundaries.value, startSec, endSec, dur)
+  },
   getEffectiveAudioBuffer: () => effectiveAudioBuffer.value,
   getCleanAudioBuffer: () => cleanBaseAudioBuffer.value,
   hasAudioBuffer: computed(() => !!effectiveAudioBuffer.value),

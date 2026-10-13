@@ -536,6 +536,7 @@ async function publishToSoundboard() {
       tags: clipTags.value ? [...clipTags.value] : [],
       color: clipColor.value,
       volume: clipVolume.value,
+      soundSegments: trimmed.segments,
     }, {
       deleteAfterPublish: deleteAfterPublish.value,
       navigateToSoundboard: false,

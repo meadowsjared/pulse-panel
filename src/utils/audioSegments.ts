@@ -14,6 +14,7 @@ export interface AudioTimelineSegment {
 }
 
 import { ref } from 'vue'
+import { SoundSegment } from '../@types/sound'
 
 export interface AudioClipboardData {
   buffer: AudioBuffer;
@@ -636,3 +637,47 @@ export function joinTimelineAt(
 
   return result
 }
+
+/**
+ * Calculates SoundSegment[] for a trimmed clip given its split boundaries.
+ * If there are no split boundaries strictly inside [startSec, endSec], returns undefined.
+ */
+export function calculateSoundSegments(
+  boundaries: number[] | undefined,
+  startSec: number,
+  endSec: number,
+  trimmedDuration: number
+): SoundSegment[] | undefined {
+  if (!boundaries || boundaries.length === 0) return undefined
+
+  const internalBoundaries = boundaries
+    .filter(b => b > startSec + 0.05 && b < endSec - 0.05)
+    .sort((a, b) => a - b)
+
+  if (internalBoundaries.length === 0) return undefined
+
+  const relBoundaries = internalBoundaries.map(b => Math.round((b - startSec) * 100) / 100)
+  const durRounded = Math.round(trimmedDuration * 100) / 100
+  const rawPoints = [0, ...relBoundaries, durRounded]
+
+  // Ensure monotonically strictly increasing points
+  const points: number[] = [0]
+  for (let i = 1; i < rawPoints.length; i++) {
+    const prev = points[points.length - 1]
+    const candidate = rawPoints[i]
+    points.push(Math.max(prev + 0.01, candidate))
+  }
+
+  const segments: SoundSegment[] = []
+  for (let i = 0; i < points.length - 1; i++) {
+    segments.push({
+      id: crypto.randomUUID(),
+      label: `Segment ${i + 1}`,
+      start: points[i],
+      end: points[i + 1],
+    })
+  }
+
+  return segments
+}
+

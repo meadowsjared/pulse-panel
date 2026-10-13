@@ -3,9 +3,10 @@ import { toRaw } from 'vue'
 import { openDB } from 'idb'
 import { pulseBackBuffer } from '../services/pulseBackBuffer'
 import { useSettingsStore } from './settings'
-import { Sound } from '../@types/sound'
+import { Sound, SoundSegment } from '../@types/sound'
 import Router from '../router'
 import { AudioGainRegion } from '../utils/audioGain'
+import { calculateSoundSegments } from '../utils/audioSegments'
 
 export interface PulseBackClip {
   id: string;
@@ -711,7 +712,13 @@ export const usePulseBackStore = defineStore('pulseBack', {
       clipId: string,
       trimmedBlob: Blob,
       trimmedDuration: number,
-      soundMetadata: { title: string; tags: string[]; color: string; volume?: number; },
+      soundMetadata: {
+        title: string;
+        tags: string[];
+        color: string;
+        volume?: number;
+        soundSegments?: SoundSegment[];
+      },
       options: {
         deleteAfterPublish?: boolean; navigateToSoundboard?: boolean;
         format?: 'mp3' | 'wav' | 'ogg'; extension?: string;
@@ -720,6 +727,22 @@ export const usePulseBackStore = defineStore('pulseBack', {
       const settingsStore = useSettingsStore()
       const clip = this.clips.find(c => c.id === clipId)
       if (!clip) return
+
+      let soundSegments = soundMetadata.soundSegments
+      if (
+        (!soundSegments || soundSegments.length === 0) &&
+        clip.segmentBoundaries &&
+        clip.segmentBoundaries.length > 0
+      ) {
+        const startSec = Math.max(0, clip.trimStart || 0)
+        const endSec = clip.trimEnd && clip.trimEnd > 0 ? clip.trimEnd : clip.duration
+        soundSegments = calculateSoundSegments(
+          clip.segmentBoundaries,
+          startSec,
+          endSec,
+          trimmedDuration
+        )
+      }
 
       const ext = options.extension || options.format || 'wav'
       const mimeType = ext === 'mp3' ? 'audio/mpeg' : ext === 'ogg' ? 'audio/ogg' : 'audio/wav'
@@ -753,6 +776,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
         audioKey: fileKey,
         audioUrl: fileUrl,
         duration: trimmedDuration,
+        ...(soundSegments && soundSegments.length > 0 ? { soundSegments } : {}),
       }
 
       await settingsStore.insertSounds(settingsStore.sounds.length - 1, newSound)
@@ -762,7 +786,9 @@ export const usePulseBackStore = defineStore('pulseBack', {
         await this.deleteClip(clipId)
       }
 
-      this.showToast(`Added "${newSound.title}" to Soundboard!`)
+      const segCount = newSound.soundSegments?.length
+      const segInfo = segCount && segCount > 1 ? ` (${segCount} segments)` : ''
+      this.showToast(`Added "${newSound.title}"${segInfo} to Soundboard!`)
 
       if (options.navigateToSoundboard) {
         Router.push('/soundboard')
