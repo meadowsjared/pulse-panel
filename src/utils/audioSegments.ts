@@ -6,21 +6,21 @@
  */
 
 export interface AudioTimelineSegment {
-  id: string;
-  buffer: AudioBuffer;
-  duration: number;
-  label?: string;
-  isPasted?: boolean;
+  id: string
+  buffer: AudioBuffer
+  duration: number
+  label?: string
+  isPasted?: boolean
 }
 
 import { ref } from 'vue'
 import { SoundSegment } from '../@types/sound'
 
 export interface AudioClipboardData {
-  buffer: AudioBuffer;
-  segments?: AudioTimelineSegment[];
-  sourceTrack: 'both' | 'mic' | 'input';
-  duration: number;
+  buffer: AudioBuffer
+  segments?: AudioTimelineSegment[]
+  sourceTrack: 'both' | 'mic' | 'input'
+  duration: number
 }
 
 export const sharedAudioClipboard = ref<AudioClipboardData | null>(null)
@@ -101,11 +101,7 @@ export function sliceAudioBuffer(
 /**
  * Resamples an AudioBuffer if its sample rate doesn't match the target context.
  */
-export function resampleBufferIfNeeded(
-  ctx: AudioContext,
-  buffer: AudioBuffer,
-  targetSampleRate: number
-): AudioBuffer {
+export function resampleBufferIfNeeded(ctx: AudioContext, buffer: AudioBuffer, targetSampleRate: number): AudioBuffer {
   if (buffer.sampleRate === targetSampleRate) return buffer
   const ratio = targetSampleRate / buffer.sampleRate
   const newLength = Math.max(1, Math.round(buffer.length * ratio))
@@ -129,10 +125,7 @@ export function resampleBufferIfNeeded(
 /**
  * Composites an array of sequential AudioTimelineSegments into a single unified AudioBuffer.
  */
-export function compositeSegments(
-  ctx: AudioContext,
-  segments: AudioTimelineSegment[]
-): AudioBuffer {
+export function compositeSegments(ctx: AudioContext, segments: AudioTimelineSegment[]): AudioBuffer {
   if (segments.length === 0) {
     return ctx.createBuffer(1, 1, 44100)
   }
@@ -366,12 +359,12 @@ export function spliceTimelineSegments(
   targetTrack: 'both' | 'mic' | 'input' = 'both',
   pasteSegments?: AudioTimelineSegment[]
 ): {
-  newSegments: AudioTimelineSegment[];
-  insertedSegments: AudioTimelineSegment[];
-  timeDelta: number;
+  newSegments: AudioTimelineSegment[]
+  insertedSegments: AudioTimelineSegment[]
+  timeDelta: number
 } {
   const hasReplacement = replaceEndSec !== undefined && replaceEndSec > insertAtSec + 0.005
-  const replaceDuration = hasReplacement ? (replaceEndSec! - insertAtSec) : 0
+  const replaceDuration = hasReplacement ? replaceEndSec! - insertAtSec : 0
 
   const targetSampleRate = currentSegments[0]?.buffer.sampleRate || ctx.sampleRate
   const targetChannels = Math.max(1, ...currentSegments.map(s => s.buffer.numberOfChannels))
@@ -418,9 +411,10 @@ export function spliceTimelineSegments(
   }
 
   // 3. Adapt incoming segment(s) to timeline layout
-  const rawSegments = (pasteSegments && pasteSegments.length > 0)
-    ? pasteSegments
-    : [{ id: 'seg-paste-raw', buffer: pasteBuffer, duration: pasteBuffer.duration }]
+  const rawSegments =
+    pasteSegments && pasteSegments.length > 0
+      ? pasteSegments
+      : [{ id: 'seg-paste-raw', buffer: pasteBuffer, duration: pasteBuffer.duration }]
 
   const adaptedSegments: AudioTimelineSegment[] = []
   let preservedOffsetSamples = 0
@@ -434,13 +428,7 @@ export function spliceTimelineSegments(
       preservedOffsetSamples += segLen
     }
 
-    const adaptedBuffer = adaptPasteBufferForTimeline(
-      ctx,
-      normalized,
-      targetChannels,
-      targetTrack,
-      segPreserved
-    )
+    const adaptedBuffer = adaptPasteBufferForTimeline(ctx, normalized, targetChannels, targetTrack, segPreserved)
 
     adaptedSegments.push({
       id: 'seg-paste-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
@@ -472,8 +460,8 @@ export function cutTimelineSegments(
   endSec: number,
   targetTrack: 'both' | 'mic' | 'input' = 'both'
 ): {
-  newSegments: AudioTimelineSegment[];
-  clipboardData: AudioClipboardData;
+  newSegments: AudioTimelineSegment[]
+  clipboardData: AudioClipboardData
 } {
   const clipboardData = copyAudioSelection(ctx, currentSegments, startSec, endSec, targetTrack)
 
@@ -650,9 +638,7 @@ export function calculateSoundSegments(
 ): SoundSegment[] | undefined {
   if (!boundaries || boundaries.length === 0) return undefined
 
-  const internalBoundaries = boundaries
-    .filter(b => b > startSec + 0.05 && b < endSec - 0.05)
-    .sort((a, b) => a - b)
+  const internalBoundaries = boundaries.filter(b => b > startSec + 0.05 && b < endSec - 0.05).sort((a, b) => a - b)
 
   if (internalBoundaries.length === 0) return undefined
 
@@ -680,4 +666,3 @@ export function calculateSoundSegments(
 
   return segments
 }
-

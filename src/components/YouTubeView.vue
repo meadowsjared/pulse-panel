@@ -3,92 +3,45 @@
     <!-- Browser Navigation & Control Bar -->
     <div class="browser-navbar">
       <div class="nav-buttons">
-        <button class="nav-btn menu"
-                :disabled="!canGoBack"
-                @click="goBack"
-                title="Back">
-          <svg class="w-4 h-4"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2.5">
+        <button class="nav-btn menu" :disabled="!canGoBack" @click="goBack" title="Back">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="15 18 9 12 15 6"></polyline>
           </svg>
         </button>
-        <button class="nav-btn menu"
-                :disabled="!canGoForward"
-                @click="goForward"
-                title="Forward">
-          <svg class="w-4 h-4"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2.5">
+        <button class="nav-btn menu" :disabled="!canGoForward" @click="goForward" title="Forward">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
         </button>
-        <button class="nav-btn menu"
-                @click="reloadPage"
-                :title="isLoading ? 'Stop' : 'Reload'">
-          <svg v-if="!isLoading"
-               class="w-4 h-4"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2">
+        <button class="nav-btn menu" @click="reloadPage" :title="isLoading ? 'Stop' : 'Reload'">
+          <svg v-if="!isLoading" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M23 4v6h-6"></path>
             <path d="M1 20v-6h6"></path>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
           </svg>
-          <svg v-else
-               class="w-4 h-4 animate-spin"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2">
-            <line x1="12"
-                  y1="2"
-                  x2="12"
-                  y2="6"></line>
-            <line x1="12"
-                  y1="18"
-                  x2="12"
-                  y2="22"></line>
-            <line x1="4.93"
-                  y1="4.93"
-                  x2="7.76"
-                  y2="7.76"></line>
-            <line x1="16.24"
-                  y1="16.24"
-                  x2="19.07"
-                  y2="19.07"></line>
-            <line x1="2"
-                  y1="12"
-                  x2="6"
-                  y2="12"></line>
-            <line x1="18"
-                  y1="12"
-                  x2="22"
-                  y2="12"></line>
-            <line x1="4.93"
-                  y1="19.07"
-                  x2="7.76"
-                  y2="16.24"></line>
-            <line x1="16.24"
-                  y1="7.76"
-                  x2="19.07"
-                  y2="4.93"></line>
+          <svg
+            v-else
+            class="w-4 h-4 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+            <line x1="12" y1="2" x2="12" y2="6"></line>
+            <line x1="12" y1="18" x2="12" y2="22"></line>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+            <line x1="2" y1="12" x2="6" y2="12"></line>
+            <line x1="18" y1="12" x2="22" y2="12"></line>
+            <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
+            <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
           </svg>
         </button>
-        <button class="nav-btn menu"
-                @click="goHome"
-                @contextmenu.prevent.stop="openHomeContextMenu($event)"
-                :title="homeButtonTitle">
-          <svg class="w-4 h-4"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2">
+        <button
+          class="nav-btn menu"
+          @click="goHome"
+          @contextmenu.prevent.stop="openHomeContextMenu($event)"
+          :title="homeButtonTitle">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
           </svg>
@@ -96,181 +49,152 @@
       </div>
 
       <!-- Address / Search Bar -->
-      <div class="address-bar-wrapper"
-           @contextmenu.prevent.stop="openAddressContextMenu($event)">
-        <svg class="w-4 h-4 search-icon text-zinc-400"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2">
-          <circle cx="11"
-                  cy="11"
-                  r="8"></circle>
-          <line x1="21"
-                y1="21"
-                x2="16.65"
-                y2="16.65"></line>
+      <div class="address-bar-wrapper" @contextmenu.prevent.stop="openAddressContextMenu($event)">
+        <svg
+          class="w-4 h-4 search-icon text-zinc-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
-        <input ref="addressInputRef"
-               type="text"
-               class="address-input"
-               v-model="inputUrl"
-               @keydown="handleAddressKeydown"
-               @focus="focusAddressBar"
-               @input="handleAddressInput"
-               @contextmenu.prevent.stop="openAddressContextMenu($event)"
-               placeholder="Search YouTube or paste video / audio URL (Enter to go)..." />
-        <button v-if="inputUrl"
-                class="clear-input-btn"
-                @click="handleClearAddressInput"
-                title="Clear">
-          ✕
-        </button>
+        <input
+          ref="addressInputRef"
+          type="text"
+          class="address-input"
+          v-model="inputUrl"
+          @keydown="handleAddressKeydown"
+          @focus="focusAddressBar"
+          @input="handleAddressInput"
+          @contextmenu.prevent.stop="openAddressContextMenu($event)"
+          placeholder="Search YouTube or paste video / audio URL (Enter to go)..." />
+        <button v-if="inputUrl" class="clear-input-btn" @click="handleClearAddressInput" title="Clear">✕</button>
         <div class="address-actions-group">
-          <button type="button"
-                  class="favorite-star-btn"
-                  :class="{ 'is-favorite': isCurrentPageFavorite, 'is-active': isFavoritesFlyoutOpen }"
-                  @click="toggleFavoritesFlyout"
-                  :title="isCurrentPageFavorite
-                    ? 'Favorite Places (Saved) - Click to view, Right-click to toggle'
-                    : 'Favorite Places - Click to view, Right-click to toggle'"
-                  @contextmenu.prevent.stop="toggleFavoriteCurrentPage">
-            <svg v-if="isCurrentPageFavorite"
-                 class="w-3.5 h-3.5 star-icon active text-amber-400"
-                 viewBox="0 0 24 24"
-                 fill="currentColor"
-                 stroke="currentColor"
-                 stroke-width="1">
+          <button
+            type="button"
+            class="favorite-star-btn"
+            :class="{ 'is-favorite': isCurrentPageFavorite, 'is-active': isFavoritesFlyoutOpen }"
+            @click="toggleFavoritesFlyout"
+            :title="
+              isCurrentPageFavorite
+                ? 'Favorite Places (Saved) - Click to view, Right-click to toggle'
+                : 'Favorite Places - Click to view, Right-click to toggle'
+            "
+            @contextmenu.prevent.stop="toggleFavoriteCurrentPage">
+            <svg
+              v-if="isCurrentPageFavorite"
+              class="w-3.5 h-3.5 star-icon active text-amber-400"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              stroke="currentColor"
+              stroke-width="1">
               <polygon
                 points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                        12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-              </polygon>
+                        12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
-            <svg v-else
-                 class="w-3.5 h-3.5 star-icon"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2">
+            <svg
+              v-else
+              class="w-3.5 h-3.5 star-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2">
               <polygon
                 points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                        12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-              </polygon>
+                        12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
             </svg>
           </button>
-          <button type="button"
-                  class="paste-btn"
-                  @click="pasteFromClipboard"
-                  title="Paste from clipboard">
+          <button type="button" class="paste-btn" @click="pasteFromClipboard" title="Paste from clipboard">
             Paste
           </button>
-          <button ref="overflowBtnRef"
-                  type="button"
-                  class="overflow-btn"
-                  :class="{ 'is-active': activeMenu === 'address-overflow' }"
-                  @click.stop="toggleAddressOverflowMenu($event)"
-                  title="More options">
-            <svg class="overflow-icon"
-                 viewBox="0 0 24 24"
-                 fill="currentColor">
-              <circle cx="12"
-                      cy="5"
-                      r="1.75" />
-              <circle cx="12"
-                      cy="12"
-                      r="1.75" />
-              <circle cx="12"
-                      cy="19"
-                      r="1.75" />
+          <button
+            ref="overflowBtnRef"
+            type="button"
+            class="overflow-btn"
+            :class="{ 'is-active': activeMenu === 'address-overflow' }"
+            @click.stop="toggleAddressOverflowMenu($event)"
+            title="More options">
+            <svg class="overflow-icon" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="1.75" />
+              <circle cx="12" cy="12" r="1.75" />
+              <circle cx="12" cy="19" r="1.75" />
             </svg>
           </button>
         </div>
 
         <!-- Omnibox Autocomplete Dropdown -->
         <transition name="flyout-slide">
-          <div v-if="isAutocompleteOpen && matchingFavorites.length > 0"
-               ref="autocompleteDropdownRef"
-               class="omnibox-autocomplete-dropdown"
-               @mousedown.stop>
+          <div
+            v-if="isAutocompleteOpen && matchingFavorites.length > 0"
+            ref="autocompleteDropdownRef"
+            class="omnibox-autocomplete-dropdown"
+            @mousedown.stop>
             <div class="autocomplete-list">
-              <div v-for="(item, idx) in matchingFavorites"
-                   :key="item.fav.id"
-                   class="autocomplete-item"
-                   :class="{ 'is-selected': selectedAutocompleteIndex === idx }"
-                   @mouseenter="selectedAutocompleteIndex = idx"
-                   @mousedown.prevent="selectAutocompleteItem(item)">
+              <div
+                v-for="(item, idx) in matchingFavorites"
+                :key="item.fav.id"
+                class="autocomplete-item"
+                :class="{ 'is-selected': selectedAutocompleteIndex === idx }"
+                @mouseenter="selectedAutocompleteIndex = idx"
+                @mousedown.prevent="selectAutocompleteItem(item)">
                 <!-- Icon Badge -->
                 <div class="autocomplete-icon-badge">
-                  <svg v-if="isYouTubeUrl(item.fav.url)"
-                       class="w-3.5 h-3.5 text-red-500"
-                       viewBox="0 0 24 24"
-                       fill="currentColor">
+                  <svg
+                    v-if="isYouTubeUrl(item.fav.url)"
+                    class="w-3.5 h-3.5 text-red-500"
+                    viewBox="0 0 24 24"
+                    fill="currentColor">
                     <path
                       d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505
                          A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136
                          c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12
                          24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                   </svg>
-                  <svg v-else-if="isMyinstantsUrl(item.fav.url)"
-                       class="w-3.5 h-3.5 text-rose-400"
-                       viewBox="0 0 24 24"
-                       fill="currentColor">
-                    <circle cx="12"
-                            cy="12"
-                            r="9" />
-                    <circle cx="12"
-                            cy="12"
-                            r="5"
-                            fill="#18181b" />
+                  <svg
+                    v-else-if="isMyinstantsUrl(item.fav.url)"
+                    class="w-3.5 h-3.5 text-rose-400"
+                    viewBox="0 0 24 24"
+                    fill="currentColor">
+                    <circle cx="12" cy="12" r="9" />
+                    <circle cx="12" cy="12" r="5" fill="#18181b" />
                   </svg>
-                  <svg v-else-if="isAudioSiteUrl(item.fav.url)"
-                       class="w-3.5 h-3.5 text-emerald-400"
-                       viewBox="0 0 24 24"
-                       fill="none"
-                       stroke="currentColor"
-                       stroke-width="2">
+                  <svg
+                    v-else-if="isAudioSiteUrl(item.fav.url)"
+                    class="w-3.5 h-3.5 text-emerald-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2">
                     <path d="M9 18V5l12-2v13"></path>
-                    <circle cx="6"
-                            cy="18"
-                            r="3"></circle>
-                    <circle cx="18"
-                            cy="16"
-                            r="3"></circle>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
                   </svg>
-                  <svg v-else
-                       class="w-3.5 h-3.5 text-blue-400"
-                       viewBox="0 0 24 24"
-                       fill="none"
-                       stroke="currentColor"
-                       stroke-width="2">
-                    <circle cx="12"
-                            cy="12"
-                            r="10"></circle>
-                    <line x1="2"
-                          y1="12"
-                          x2="22"
-                          y2="12"></line>
+                  <svg
+                    v-else
+                    class="w-3.5 h-3.5 text-blue-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
                   </svg>
                 </div>
 
                 <!-- Text info -->
                 <div class="autocomplete-info">
-                  <span class="autocomplete-title"
-                        :title="item.fav.title">{{ item.fav.title }}</span>
-                  <span class="autocomplete-url"
-                        :title="item.displayUrl">{{ item.displayUrl }}</span>
+                  <span class="autocomplete-title" :title="item.fav.title">{{ item.fav.title }}</span>
+                  <span class="autocomplete-url" :title="item.displayUrl">{{ item.displayUrl }}</span>
                 </div>
 
                 <!-- Right favorite tag -->
                 <div class="autocomplete-tag">
-                  <svg class="w-3 h-3 text-amber-400"
-                       viewBox="0 0 24 24"
-                       fill="currentColor">
+                  <svg class="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                     <polygon
                       points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                              12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                    </polygon>
+                              12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                   </svg>
                   <span>Favorite</span>
                 </div>
@@ -281,156 +205,126 @@
 
         <!-- Omnibox Favorites Flyout Dropdown -->
         <transition name="flyout-slide">
-          <div v-if="isFavoritesFlyoutOpen"
-               ref="favoritesFlyoutRef"
-               class="favorites-flyout"
-               @mousedown.stop>
+          <div v-if="isFavoritesFlyoutOpen" ref="favoritesFlyoutRef" class="favorites-flyout" @mousedown.stop>
             <div class="favorites-flyout-header">
               <div class="favorites-header-title">
-                <svg class="w-3.5 h-3.5 star-badge-icon text-amber-400"
-                     viewBox="0 0 24 24"
-                     fill="currentColor">
+                <svg class="w-3.5 h-3.5 star-badge-icon text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                   <polygon
                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                            12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                  </polygon>
+                            12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                 </svg>
                 <span class="favorites-title-text">Favorites</span>
                 <span class="favorites-count-badge">{{ settingsStore.browserFavorites.length }}</span>
               </div>
               <div class="favorites-header-actions">
-                <button type="button"
-                        class="fav-header-action-btn"
-                        v-if="!isCurrentPageFavorite && currentEffectiveUrl"
-                        @click="addCurrentPageToFavorites"
-                        title="Save current page as favorite">
-                  <svg class="w-3 h-3 text-amber-400"
-                       viewBox="0 0 24 24"
-                       fill="currentColor">
+                <button
+                  type="button"
+                  class="fav-header-action-btn"
+                  v-if="!isCurrentPageFavorite && currentEffectiveUrl"
+                  @click="addCurrentPageToFavorites"
+                  title="Save current page as favorite">
+                  <svg class="w-3 h-3 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                     <polygon
                       points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                              12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                    </polygon>
+                              12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                   </svg>
                   <span>+ Save Current</span>
                 </button>
-                <button type="button"
-                        class="fav-header-action-btn is-saved"
-                        v-else-if="isCurrentPageFavorite && currentEffectiveUrl"
-                        @click="toggleFavoriteCurrentPage"
-                        title="Remove current page from favorites">
-                  <svg class="w-3 h-3 text-emerald-400"
-                       viewBox="0 0 24 24"
-                       fill="none"
-                       stroke="currentColor"
-                       stroke-width="2.5">
+                <button
+                  type="button"
+                  class="fav-header-action-btn is-saved"
+                  v-else-if="isCurrentPageFavorite && currentEffectiveUrl"
+                  @click="toggleFavoriteCurrentPage"
+                  title="Remove current page from favorites">
+                  <svg
+                    class="w-3 h-3 text-emerald-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5">
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                   <span>Saved</span>
                 </button>
-                <button type="button"
-                        class="fav-header-close-btn"
-                        @click="closeFavoritesFlyout"
-                        title="Close favorites (Esc)">
+                <button
+                  type="button"
+                  class="fav-header-close-btn"
+                  @click="closeFavoritesFlyout"
+                  title="Close favorites (Esc)">
                   ✕
                 </button>
               </div>
             </div>
 
             <!-- List of favorites -->
-            <div class="favorites-list"
-                 v-if="settingsStore.browserFavorites.length > 0">
-              <div v-for="fav in settingsStore.browserFavorites"
-                   :key="fav.id"
-                   class="favorite-item"
-                   :class="{ 'is-current': isFavoriteCurrentUrl(fav.url) }"
-                   @click="selectFavorite(fav)">
+            <div class="favorites-list" v-if="settingsStore.browserFavorites.length > 0">
+              <div
+                v-for="fav in settingsStore.browserFavorites"
+                :key="fav.id"
+                class="favorite-item"
+                :class="{ 'is-current': isFavoriteCurrentUrl(fav.url) }"
+                @click="selectFavorite(fav)">
                 <!-- Favicon / Domain Icon badge -->
                 <div class="fav-icon-badge">
-                  <svg v-if="isYouTubeUrl(fav.url)"
-                       class="w-4 h-4 text-red-500"
-                       viewBox="0 0 24 24"
-                       fill="currentColor">
+                  <svg
+                    v-if="isYouTubeUrl(fav.url)"
+                    class="w-4 h-4 text-red-500"
+                    viewBox="0 0 24 24"
+                    fill="currentColor">
                     <path
                       d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505
                          A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136
                          c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12
                          24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                   </svg>
-                  <svg v-else-if="isMyinstantsUrl(fav.url)"
-                       class="w-4 h-4 text-rose-400"
-                       viewBox="0 0 24 24"
-                       fill="currentColor">
-                    <circle cx="12"
-                            cy="12"
-                            r="9" />
-                    <circle cx="12"
-                            cy="12"
-                            r="5"
-                            fill="#18181b" />
+                  <svg
+                    v-else-if="isMyinstantsUrl(fav.url)"
+                    class="w-4 h-4 text-rose-400"
+                    viewBox="0 0 24 24"
+                    fill="currentColor">
+                    <circle cx="12" cy="12" r="9" />
+                    <circle cx="12" cy="12" r="5" fill="#18181b" />
                   </svg>
-                  <svg v-else-if="isAudioSiteUrl(fav.url)"
-                       class="w-4 h-4 text-emerald-400"
-                       viewBox="0 0 24 24"
-                       fill="none"
-                       stroke="currentColor"
-                       stroke-width="2">
+                  <svg
+                    v-else-if="isAudioSiteUrl(fav.url)"
+                    class="w-4 h-4 text-emerald-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2">
                     <path d="M9 18V5l12-2v13"></path>
-                    <circle cx="6"
-                            cy="18"
-                            r="3"></circle>
-                    <circle cx="18"
-                            cy="16"
-                            r="3"></circle>
+                    <circle cx="6" cy="18" r="3"></circle>
+                    <circle cx="18" cy="16" r="3"></circle>
                   </svg>
-                  <svg v-else
-                       class="w-4 h-4 text-blue-400"
-                       viewBox="0 0 24 24"
-                       fill="none"
-                       stroke="currentColor"
-                       stroke-width="2">
-                    <circle cx="12"
-                            cy="12"
-                            r="10"></circle>
-                    <line x1="2"
-                          y1="12"
-                          x2="22"
-                          y2="12"></line>
+                  <svg
+                    v-else
+                    class="w-4 h-4 text-blue-400"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
                   </svg>
                 </div>
 
                 <div class="fav-info">
-                  <div class="fav-title"
-                       :title="fav.title">{{ fav.title }}</div>
-                  <div class="fav-url"
-                       :title="fav.url">{{ formatDisplayUrl(fav.url) }}</div>
+                  <div class="fav-title" :title="fav.title">{{ fav.title }}</div>
+                  <div class="fav-url" :title="fav.url">{{ formatDisplayUrl(fav.url) }}</div>
                 </div>
 
-                <div v-if="isFavoriteCurrentUrl(fav.url)"
-                     class="fav-current-indicator"
-                     title="Current page">
-                  ●
-                </div>
+                <div v-if="isFavoriteCurrentUrl(fav.url)" class="fav-current-indicator" title="Current page">●</div>
 
                 <div class="fav-actions">
-                  <button type="button"
-                          class="fav-remove-btn"
-                          @click.stop="deleteFavorite(fav)"
-                          title="Remove favorite">
-                    <svg class="w-3.5 h-3.5"
-                         viewBox="0 0 24 24"
-                         fill="none"
-                         stroke="currentColor"
-                         stroke-width="2">
-                      <line x1="18"
-                            y1="6"
-                            x2="6"
-                            y2="18"></line>
-                      <line x1="6"
-                            y1="6"
-                            x2="18"
-                            y2="18"></line>
+                  <button
+                    type="button"
+                    class="fav-remove-btn"
+                    @click.stop="deleteFavorite(fav)"
+                    title="Remove favorite">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                   </button>
                 </div>
@@ -438,12 +332,9 @@
             </div>
 
             <!-- Empty state -->
-            <div v-else
-                 class="favorites-empty-state">
+            <div v-else class="favorites-empty-state">
               <p>No favorite places saved yet.</p>
-              <button type="button"
-                      class="fav-restore-defaults-btn"
-                      @click="settingsStore.restoreDefaultFavorites()">
+              <button type="button" class="fav-restore-defaults-btn" @click="settingsStore.restoreDefaultFavorites()">
                 Restore Default Favorites
               </button>
             </div>
@@ -453,266 +344,181 @@
     </div>
 
     <!-- Main Content Area: Webview and Expandable Bottom Bar/Panel -->
-    <div class="youtube-main-content"
-         @contextmenu="handleMainContentDomContextMenu($event)">
+    <div class="youtube-main-content" @contextmenu="handleMainContentDomContextMenu($event)">
       <!-- Find in Page Floating Bar -->
-      <FindInPageBar v-if="isFindBarOpen"
-                     ref="findBarRef"
-                     :webview="webviewRef"
-                     :initial-query="findInitialQuery"
-                     @close="closeFindBar" />
+      <FindInPageBar
+        v-if="isFindBarOpen"
+        ref="findBarRef"
+        :webview="webviewRef"
+        :initial-query="findInitialQuery"
+        @close="closeFindBar" />
 
       <!-- Webview Container -->
-      <div class="webview-wrapper"
-           :class="{ 'has-dock-bar': isVideoPage && activeVideoTitle }">
-        <webview ref="webviewRef"
-                 :src="initialWebviewSrc"
-                 class="youtube-webview"
-                 allowpopups
-                 partition="persist:youtube"></webview>
+      <div class="webview-wrapper" :class="{ 'has-dock-bar': isVideoPage && activeVideoTitle }">
+        <webview
+          ref="webviewRef"
+          :src="initialWebviewSrc"
+          class="youtube-webview"
+          allowpopups
+          partition="persist:youtube"></webview>
         <!-- Overlay shield that intercepts clicks into guest webview while favorites flyout or autocomplete is open -->
-        <div v-if="isFavoritesFlyoutOpen || isAutocompleteOpen"
-             class="webview-favorites-shield"
-             @mousedown="handleShieldMousedown"
-             @contextmenu="handleShieldMousedown"
-             @wheel="handleShieldMousedown"></div>
+        <div
+          v-if="isFavoritesFlyoutOpen || isAutocompleteOpen"
+          class="webview-favorites-shield"
+          @mousedown="handleShieldMousedown"
+          @contextmenu="handleShieldMousedown"
+          @wheel="handleShieldMousedown"></div>
       </div>
 
       <!-- Expandable Bar and Panel Section (Unified Slide-Up Card) -->
-      <div v-if="isVideoPage && activeVideoTitle"
-           class="clip-dock-panel"
-           :class="{ 'is-expanded': isDrawerOpen }">
+      <div v-if="isVideoPage && activeVideoTitle" class="clip-dock-panel" :class="{ 'is-expanded': isDrawerOpen }">
         <!-- Active Video Banner / Bar (Card Header: translates from bottom to top) -->
         <div class="video-info-strip">
           <span class="live-dot"></span>
-          <span class="video-title-text"
-                :title="activeVideoTitle">
+          <span class="video-title-text" :title="activeVideoTitle">
             {{ activeVideoTitle }}
           </span>
 
           <!-- Right Action: Single button that seamlessly morphs between Configure/Add Sound and Collapse -->
-          <button type="button"
-                  class="clip-action-btn"
-                  :class="{
-                    'is-collapse': isDrawerOpen,
-                    'is-active': !isDrawerOpen && !isLoadingAudio,
-                    'is-loading': !isDrawerOpen && isLoadingAudio,
-                    'has-ready': !isDrawerOpen && !isLoadingAudio && !!audioBuffer,
-                    'pulse': !isDrawerOpen && !isLoadingAudio
-                  }"
-                  @click="toggleClipDrawer"
-                  :title="isDrawerOpen ? 'Collapse clip panel (Esc)' : 'Configure and clip sound'">
-            <transition name="btn-morph"
-                        mode="out-in">
+          <button
+            type="button"
+            class="clip-action-btn"
+            :class="{
+              'is-collapse': isDrawerOpen,
+              'is-active': !isDrawerOpen && !isLoadingAudio,
+              'is-loading': !isDrawerOpen && isLoadingAudio,
+              'has-ready': !isDrawerOpen && !isLoadingAudio && !!audioBuffer,
+              pulse: !isDrawerOpen && !isLoadingAudio,
+            }"
+            @click="toggleClipDrawer"
+            :title="isDrawerOpen ? 'Collapse clip panel (Esc)' : 'Configure and clip sound'">
+            <transition name="btn-morph" mode="out-in">
               <!-- When Expanded: Collapse State -->
-              <div v-if="isDrawerOpen"
-                   key="collapse"
-                   class="btn-inner collapse-content">
-                <svg class="w-4 h-4"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2.5">
+              <div v-if="isDrawerOpen" key="collapse" class="btn-inner collapse-content">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
                 <span>Collapse</span>
               </div>
 
               <!-- When Collapsed & Preloading Audio -->
-              <div v-else-if="isLoadingAudio"
-                   key="loading"
-                   class="btn-inner loading-content">
-                <div class="clip-preload-strip-fill"
-                     :style="{ width: `${audioLoadProgress}%` }"></div>
+              <div v-else-if="isLoadingAudio" key="loading" class="btn-inner loading-content">
+                <div class="clip-preload-strip-fill" :style="{ width: `${audioLoadProgress}%` }"></div>
                 <div class="clip-preload-strip-content">
-                  <svg class="w-3.5 h-3.5 animate-spin"
-                       viewBox="0 0 24 24"
-                       fill="none"
-                       stroke="currentColor">
-                    <circle cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            stroke-width="4"
-                            class="opacity-25"></circle>
-                    <path fill="currentColor"
-                          d="M4 12a8 8 0 018-8v8H4z"
-                          class="opacity-75"></path>
+                  <svg class="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+                    <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" class="opacity-75"></path>
                   </svg>
                   <span class="clip-preload-strip-title">Preloading Audio: {{ audioLoadProgress }}%</span>
                 </div>
               </div>
 
               <!-- When Collapsed & Ready / Normal -->
-              <div v-else
-                   key="configure"
-                   class="btn-inner ready-content">
-                <svg class="w-4 h-4"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <circle cx="6"
-                          cy="6"
-                          r="3"></circle>
-                  <circle cx="6"
-                          cy="18"
-                          r="3"></circle>
-                  <line x1="20"
-                        y1="4"
-                        x2="8.12"
-                        y2="15.88"></line>
-                  <line x1="14.47"
-                        y1="14.48"
-                        x2="20"
-                        y2="20"></line>
-                  <line x1="8.12"
-                        y1="8.12"
-                        x2="12"
-                        y2="12"></line>
+              <div v-else key="configure" class="btn-inner ready-content">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="6" cy="6" r="3"></circle>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                  <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                  <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
                 </svg>
                 <span>Configure & Add Sound</span>
-                <span v-if="audioBuffer"
-                      class="ready-badge">✓ Ready</span>
+                <span v-if="audioBuffer" class="ready-badge">✓ Ready</span>
               </div>
             </transition>
           </button>
         </div>
 
         <!-- Revealed Component: YouTubeClipPanel (Card Body + Footer) -->
-        <div class="clip-component-wrapper"
-             :inert="!isDrawerOpen">
-          <YouTubeClipPanel ref="clipPanelRef"
-                            :audio-buffer="audioBuffer"
-                            :audio-duration="audioDuration"
-                            :video-total-duration="videoTotalDuration"
-                            :is-loading-audio="isLoadingAudio"
-                            :audio-load-status="audioLoadStatus"
-                            :audio-load-progress="audioLoadProgress"
-                            :audio-load-error="audioLoadError"
-                            :thumbnail-url="thumbnailUrl"
-                            :is-short-video="isShortVideo"
-                            :video-duration-formatted="videoDurationFormatted"
-                            :is-capturing-frame="isCapturingFrame"
-                            :active-video-title="activeVideoTitle"
-                            :current-url="currentUrl"
-                            :is-audio-only="!!activeDirectAudioUrl || isDirectMediaUrl(currentUrl)"
-                            :is-open="isDrawerOpen"
-                            @capture-frame="handleCaptureCurrentFrame"
-                            @retry-audio="loadAudioForWaveform"
-                            @close="closeClipDrawer" />
+        <div class="clip-component-wrapper" :inert="!isDrawerOpen">
+          <YouTubeClipPanel
+            ref="clipPanelRef"
+            :audio-buffer="audioBuffer"
+            :audio-duration="audioDuration"
+            :video-total-duration="videoTotalDuration"
+            :is-loading-audio="isLoadingAudio"
+            :audio-load-status="audioLoadStatus"
+            :audio-load-progress="audioLoadProgress"
+            :audio-load-error="audioLoadError"
+            :thumbnail-url="thumbnailUrl"
+            :is-short-video="isShortVideo"
+            :video-duration-formatted="videoDurationFormatted"
+            :is-capturing-frame="isCapturingFrame"
+            :active-video-title="activeVideoTitle"
+            :current-url="currentUrl"
+            :is-audio-only="!!activeDirectAudioUrl || isDirectMediaUrl(currentUrl)"
+            :is-open="isDrawerOpen"
+            @capture-frame="handleCaptureCurrentFrame"
+            @retry-audio="loadAudioForWaveform"
+            @close="closeClipDrawer" />
         </div>
       </div>
     </div>
 
-
-
     <!-- Context Menu Portal -->
     <teleport to="body">
       <!-- Backdrop for closing on outside click / right-click -->
-      <div v-if="activeMenu"
-           class="pulse-context-backdrop"
-           @mousedown="closeContextMenu"
-           @contextmenu.prevent="closeContextMenu"
-           @wheel="closeContextMenu"></div>
+      <div
+        v-if="activeMenu"
+        class="pulse-context-backdrop"
+        @mousedown="closeContextMenu"
+        @contextmenu.prevent="closeContextMenu"
+        @wheel="closeContextMenu"></div>
 
       <!-- Context Menu Popup -->
       <transition name="context-menu-fade">
-        <div v-if="activeMenu"
-             ref="contextMenuRef"
-             class="pulse-context-menu"
-             :style="{ top: `${menuPosition.y}px`, left: `${menuPosition.x}px` }"
-             @contextmenu.prevent.stop>
-
+        <div
+          v-if="activeMenu"
+          ref="contextMenuRef"
+          class="pulse-context-menu"
+          :style="{ top: `${menuPosition.y}px`, left: `${menuPosition.x}px` }"
+          @contextmenu.prevent.stop>
           <!-- ADDRESS BAR CONTEXT MENU -->
           <template v-if="activeMenu === 'address'">
             <div class="menu-section-header">Address Bar</div>
 
-            <button type="button"
-                    class="context-menu-item"
-                    :disabled="!inputUrl"
-                    @click="handleAddressCut">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <circle cx="6"
-                        cy="6"
-                        r="3"></circle>
-                <circle cx="6"
-                        cy="18"
-                        r="3"></circle>
-                <line x1="20"
-                      y1="4"
-                      x2="8.12"
-                      y2="15.88"></line>
-                <line x1="14.47"
-                      y1="14.48"
-                      x2="20"
-                      y2="20"></line>
-                <line x1="8.12"
-                      y1="8.12"
-                      x2="12"
-                      y2="12"></line>
+            <button type="button" class="context-menu-item" :disabled="!inputUrl" @click="handleAddressCut">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="6" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
               </svg>
               <span>Cut</span>
               <span class="item-shortcut">Ctrl+X</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    :disabled="!inputUrl"
-                    @click="handleAddressCopy">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <rect x="9"
-                      y="9"
-                      width="13"
-                      height="13"
-                      rx="2"
-                      ry="2"></rect>
+            <button type="button" class="context-menu-item" :disabled="!inputUrl" @click="handleAddressCopy">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
               <span>Copy</span>
               <span class="item-shortcut">Ctrl+C</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    :disabled="!clipboardHasText"
-                    @click="handleAddressPaste">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" :disabled="!clipboardHasText" @click="handleAddressPaste">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                <rect x="8"
-                      y="2"
-                      width="8"
-                      height="4"
-                      rx="1"
-                      ry="1"></rect>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
               </svg>
               <span>Paste</span>
-              <span v-if="clipboardIsAddress"
-                    class="item-badge">Address</span>
+              <span v-if="clipboardIsAddress" class="item-badge">Address</span>
               <span class="item-shortcut">Ctrl+V</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    :disabled="!clipboardHasText"
-                    @click="handleAddressPasteAndGo">
-              <svg class="item-icon text-emerald-400"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button
+              type="button"
+              class="context-menu-item"
+              :disabled="!clipboardHasText"
+              @click="handleAddressPasteAndGo">
+              <svg
+                class="item-icon text-emerald-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
                 <path d="M15 2H9a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1Z"></path>
                 <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"></path>
                 <path d="m13 14 3-3-3-3"></path>
@@ -724,40 +530,22 @@
 
             <div class="menu-divider"></div>
 
-            <button type="button"
-                    class="context-menu-item"
-                    :disabled="!inputUrl"
-                    @click="handleAddressSelectAll">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" :disabled="!inputUrl" @click="handleAddressSelectAll">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 3h4"></path>
                 <path d="M17 3h4"></path>
                 <path d="M3 21h4"></path>
                 <path d="M17 21h4"></path>
                 <path d="M3 7v10"></path>
                 <path d="M21 7v10"></path>
-                <rect x="8"
-                      y="8"
-                      width="8"
-                      height="8"
-                      rx="1"></rect>
+                <rect x="8" y="8" width="8" height="8" rx="1"></rect>
               </svg>
               <span>Select All</span>
               <span class="item-shortcut">Ctrl+A</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    :disabled="!inputUrl"
-                    @click="handleAddressClear">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" :disabled="!inputUrl" @click="handleAddressClear">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
@@ -766,30 +554,27 @@
 
             <div class="menu-divider"></div>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="toggleFavoriteCurrentPage">
-              <svg class="item-icon text-amber-400"
-                   viewBox="0 0 24 24"
-                   :fill="isCurrentPageFavorite ? 'currentColor' : 'none'"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="toggleFavoriteCurrentPage">
+              <svg
+                class="item-icon text-amber-400"
+                viewBox="0 0 24 24"
+                :fill="isCurrentPageFavorite ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="2">
                 <polygon
                   points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                </polygon>
+                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
               <span>{{ isCurrentPageFavorite ? 'Remove from Favorites' : 'Add to Favorites' }}</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="setAsHomepage">
-              <svg class="item-icon text-amber-400"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="setAsHomepage">
+              <svg
+                class="item-icon text-amber-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
               </svg>
@@ -801,71 +586,39 @@
           <template v-else-if="activeMenu === 'webview'">
             <!-- Link Context Group -->
             <template v-if="webviewMenuContext.linkUrl">
-              <div class="menu-preview-header"
-                   :title="webviewMenuContext.linkUrl">
-                <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <div class="menu-preview-header" :title="webviewMenuContext.linkUrl">
+                <svg
+                  class="w-3.5 h-3.5 text-emerald-400 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
                 <span class="truncate">{{ truncateUrl(webviewMenuContext.linkUrl) }}</span>
               </div>
 
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleOpenLink">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <button type="button" class="context-menu-item" @click="handleOpenLink">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
                   <polyline points="15 3 21 3 21 9"></polyline>
-                  <line x1="10"
-                        y1="14"
-                        x2="21"
-                        y2="3"></line>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
                 </svg>
                 <span>Open Link</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleOpenLinkInNewWindow">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <rect x="2"
-                        y="3"
-                        width="20"
-                        height="14"
-                        rx="2"
-                        ry="2"></rect>
-                  <line x1="8"
-                        y1="21"
-                        x2="16"
-                        y2="21"></line>
-                  <line x1="12"
-                        y1="17"
-                        x2="12"
-                        y2="21"></line>
+              <button type="button" class="context-menu-item" @click="handleOpenLinkInNewWindow">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
                 </svg>
                 <span>Open Link in New Window</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleCopyLinkAddress">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <button type="button" class="context-menu-item" @click="handleCopyLinkAddress">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
@@ -877,41 +630,19 @@
 
             <!-- Selection Context Group -->
             <template v-if="webviewMenuContext.selectionText">
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleCopySelectionText">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <rect x="9"
-                        y="9"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        ry="2"></rect>
+              <button type="button" class="context-menu-item" @click="handleCopySelectionText">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
                 <span>Copy Text</span>
                 <span class="item-shortcut">Ctrl+C</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleSearchSelection">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <circle cx="11"
-                          cy="11"
-                          r="8"></circle>
-                  <line x1="21"
-                        y1="21"
-                        x2="16.65"
-                        y2="16.65"></line>
+              <button type="button" class="context-menu-item" @click="handleSearchSelection">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
                 <span class="truncate">
                   Search YouTube for "{{ webviewMenuContext.selectionText.slice(0, 18) }}..."
@@ -923,99 +654,57 @@
 
             <!-- Editable Fields inside Guest Page -->
             <template v-else-if="webviewMenuContext.isEditable">
-              <button type="button"
-                      class="context-menu-item"
-                      :disabled="!webviewMenuContext.canCut"
-                      @click="handleWebviewCut">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <circle cx="6"
-                          cy="6"
-                          r="3"></circle>
-                  <circle cx="6"
-                          cy="18"
-                          r="3"></circle>
-                  <line x1="20"
-                        y1="4"
-                        x2="8.12"
-                        y2="15.88"></line>
-                  <line x1="14.47"
-                        y1="14.48"
-                        x2="20"
-                        y2="20"></line>
-                  <line x1="8.12"
-                        y1="8.12"
-                        x2="12"
-                        y2="12"></line>
+              <button
+                type="button"
+                class="context-menu-item"
+                :disabled="!webviewMenuContext.canCut"
+                @click="handleWebviewCut">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="6" cy="6" r="3"></circle>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                  <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                  <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
                 </svg>
                 <span>Cut</span>
                 <span class="item-shortcut">Ctrl+X</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      :disabled="!webviewMenuContext.canCopy"
-                      @click="handleCopySelectionText">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <rect x="9"
-                        y="9"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        ry="2"></rect>
+              <button
+                type="button"
+                class="context-menu-item"
+                :disabled="!webviewMenuContext.canCopy"
+                @click="handleCopySelectionText">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
                 <span>Copy</span>
                 <span class="item-shortcut">Ctrl+C</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      :disabled="!webviewMenuContext.canPaste && !clipboardHasText"
-                      @click="handleWebviewPaste">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <button
+                type="button"
+                class="context-menu-item"
+                :disabled="!webviewMenuContext.canPaste && !clipboardHasText"
+                @click="handleWebviewPaste">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                  <rect x="8"
-                        y="2"
-                        width="8"
-                        height="4"
-                        rx="1"
-                        ry="1"></rect>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
                 </svg>
                 <span>Paste</span>
                 <span class="item-shortcut">Ctrl+V</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleWebviewSelectAll">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <button type="button" class="context-menu-item" @click="handleWebviewSelectAll">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M3 3h4"></path>
                   <path d="M17 3h4"></path>
                   <path d="M3 21h4"></path>
                   <path d="M17 21h4"></path>
                   <path d="M3 7v10"></path>
                   <path d="M21 7v10"></path>
-                  <rect x="8"
-                        y="8"
-                        width="8"
-                        height="8"
-                        rx="1"></rect>
+                  <rect x="8" y="8" width="8" height="8" rx="1"></rect>
                 </svg>
                 <span>Select All</span>
                 <span class="item-shortcut">Ctrl+A</span>
@@ -1026,32 +715,22 @@
 
             <!-- Audio Media Actions (Detected Audio Element) -->
             <template v-if="webviewMenuContext.isAudio && webviewMenuContext.audioSrc">
-              <div v-if="webviewMenuContext.audioTitle"
-                   class="menu-preview-header">
-                <svg class="item-icon text-emerald-400"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <div v-if="webviewMenuContext.audioTitle" class="menu-preview-header">
+                <svg
+                  class="item-icon text-emerald-400"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2">
                   <path d="M9 18V5l12-2v13"></path>
-                  <circle cx="6"
-                          cy="18"
-                          r="3"></circle>
-                  <circle cx="18"
-                          cy="16"
-                          r="3"></circle>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <circle cx="18" cy="16" r="3"></circle>
                 </svg>
                 <span class="truncate">{{ webviewMenuContext.audioTitle }}</span>
               </div>
 
-              <button type="button"
-                      class="context-menu-item audio-highlight-item"
-                      @click="handleClipAudioFromPage">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2.5">
+              <button type="button" class="context-menu-item audio-highlight-item" @click="handleClipAudioFromPage">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                   <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
                   <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
                 </svg>
@@ -1059,42 +738,19 @@
                 <span class="item-badge">Clip</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleCopyAudioAddress">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <button type="button" class="context-menu-item" @click="handleCopyAudioAddress">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
                 <span>Copy Audio URL</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleOpenAudioInNewWindow">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <rect x="2"
-                        y="3"
-                        width="20"
-                        height="14"
-                        rx="2"
-                        ry="2"></rect>
-                  <line x1="8"
-                        y1="21"
-                        x2="16"
-                        y2="21"></line>
-                  <line x1="12"
-                        y1="17"
-                        x2="12"
-                        y2="21"></line>
+              <button type="button" class="context-menu-item" @click="handleOpenAudioInNewWindow">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
                 </svg>
                 <span>Open Audio in New Window</span>
               </button>
@@ -1103,55 +759,27 @@
             </template>
 
             <!-- Image Media Actions -->
-            <template v-if="webviewMenuContext.srcUrl && (
-              webviewMenuContext.mediaType === 'image' ||
-              webviewMenuContext.srcUrl.includes('ytimg') ||
-              webviewMenuContext.srcUrl.includes('googleusercontent')
-            )">
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleCopyImageAddress">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <rect x="3"
-                        y="3"
-                        width="18"
-                        height="18"
-                        rx="2"
-                        ry="2"></rect>
-                  <circle cx="8.5"
-                          cy="8.5"
-                          r="1.5"></circle>
+            <template
+              v-if="
+                webviewMenuContext.srcUrl &&
+                (webviewMenuContext.mediaType === 'image' ||
+                  webviewMenuContext.srcUrl.includes('ytimg') ||
+                  webviewMenuContext.srcUrl.includes('googleusercontent'))
+              ">
+              <button type="button" class="context-menu-item" @click="handleCopyImageAddress">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
                   <polyline points="21 15 16 10 5 21"></polyline>
                 </svg>
                 <span>Copy Image Address</span>
               </button>
 
-              <button type="button"
-                      class="context-menu-item"
-                      @click="handleOpenImageInNewWindow">
-                <svg class="item-icon"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <rect x="2"
-                        y="3"
-                        width="20"
-                        height="14"
-                        rx="2"
-                        ry="2"></rect>
-                  <line x1="8"
-                        y1="21"
-                        x2="16"
-                        y2="21"></line>
-                  <line x1="12"
-                        y1="17"
-                        x2="12"
-                        y2="21"></line>
+              <button type="button" class="context-menu-item" @click="handleOpenImageInNewWindow">
+                <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
                 </svg>
                 <span>Open Image in New Window</span>
               </button>
@@ -1160,44 +788,24 @@
             </template>
 
             <!-- Navigation Controls (Always present and prominent!) -->
-            <button type="button"
-                    class="context-menu-item"
-                    :disabled="!canGoBack"
-                    @click="handleMenuBack">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2.5">
+            <button type="button" class="context-menu-item" :disabled="!canGoBack" @click="handleMenuBack">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="15 18 9 12 15 6"></polyline>
               </svg>
               <span>Back</span>
               <span class="item-shortcut">Alt+Left</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    :disabled="!canGoForward"
-                    @click="handleMenuForward">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2.5">
+            <button type="button" class="context-menu-item" :disabled="!canGoForward" @click="handleMenuForward">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
               <span>Forward</span>
               <span class="item-shortcut">Alt+Right</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="handleMenuReload">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="handleMenuReload">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M23 4v6h-6"></path>
                 <path d="M1 20v-6h6"></path>
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
@@ -1209,79 +817,46 @@
             <div class="menu-divider"></div>
 
             <!-- Page Level Actions -->
-            <button type="button"
-                    class="context-menu-item"
-                    @click="handleMenuFindInPage">
-              <svg class="item-icon text-blue-400"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <circle cx="11"
-                        cy="11"
-                        r="8"></circle>
-                <line x1="21"
-                      y1="21"
-                      x2="16.65"
-                      y2="16.65"></line>
+            <button type="button" class="context-menu-item" @click="handleMenuFindInPage">
+              <svg
+                class="item-icon text-blue-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
               <span>Find in Page</span>
               <span class="item-shortcut">Ctrl+F</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="handleCopyPageUrl">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="handleCopyPageUrl">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
               <span>Copy Page URL</span>
             </button>
 
-            <button v-if="isVideoPage"
-                    type="button"
-                    class="context-menu-item"
-                    @click="handleCopyTimestampedVideoUrl">
-              <svg class="item-icon text-amber-400"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <circle cx="12"
-                        cy="12"
-                        r="10"></circle>
+            <button v-if="isVideoPage" type="button" class="context-menu-item" @click="handleCopyTimestampedVideoUrl">
+              <svg
+                class="item-icon text-amber-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
               <span>Copy Video URL at {{ formatTime(currentVideoTime) }}</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="handleOpenPageInNewWindow">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <rect x="2"
-                      y="3"
-                      width="20"
-                      height="14"
-                      rx="2"
-                      ry="2"></rect>
-                <line x1="8"
-                      y1="21"
-                      x2="16"
-                      y2="21"></line>
-                <line x1="12"
-                      y1="17"
-                      x2="12"
-                      y2="21"></line>
+            <button type="button" class="context-menu-item" @click="handleOpenPageInNewWindow">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
               </svg>
               <span>Open Page in New Window</span>
             </button>
@@ -1291,54 +866,41 @@
           <template v-else-if="activeMenu === 'address-overflow'">
             <div class="menu-section-header">Options</div>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="openFavoritesFlyoutFromMenu">
-              <svg class="item-icon text-amber-400"
-                   viewBox="0 0 24 24"
-                   fill="currentColor">
+            <button type="button" class="context-menu-item" @click="openFavoritesFlyoutFromMenu">
+              <svg class="item-icon text-amber-400" viewBox="0 0 24 24" fill="currentColor">
                 <polygon
                   points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                </polygon>
+                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
               <span>Favorite Places</span>
               <span class="item-badge">{{ settingsStore.browserFavorites.length }}</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="toggleFavoriteCurrentPage">
-              <svg class="item-icon text-amber-400"
-                   viewBox="0 0 24 24"
-                   :fill="isCurrentPageFavorite ? 'currentColor' : 'none'"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="toggleFavoriteCurrentPage">
+              <svg
+                class="item-icon text-amber-400"
+                viewBox="0 0 24 24"
+                :fill="isCurrentPageFavorite ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="2">
                 <polygon
                   points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                </polygon>
+                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
               <span>{{ isCurrentPageFavorite ? 'Remove from Favorites' : 'Add to Favorites' }}</span>
             </button>
 
             <div class="menu-divider"></div>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="handleMenuFindInPage">
-              <svg class="item-icon text-blue-400"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <circle cx="11"
-                        cy="11"
-                        r="8"></circle>
-                <line x1="21"
-                      y1="21"
-                      x2="16.65"
-                      y2="16.65"></line>
+            <button type="button" class="context-menu-item" @click="handleMenuFindInPage">
+              <svg
+                class="item-icon text-blue-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
               <span>Find in Page</span>
               <span class="item-shortcut">Ctrl+F</span>
@@ -1346,14 +908,8 @@
 
             <div class="menu-divider"></div>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="handleMenuReload">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="handleMenuReload">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M23 4v6h-6"></path>
                 <path d="M1 20v-6h6"></path>
                 <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
@@ -1362,72 +918,44 @@
               <span class="item-shortcut">Ctrl+R</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="handleCopyPageUrl">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="handleCopyPageUrl">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
               <span>Copy Page URL</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="handleOpenPageInNewWindow">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <rect x="2"
-                      y="3"
-                      width="20"
-                      height="14"
-                      rx="2"
-                      ry="2"></rect>
-                <line x1="8"
-                      y1="21"
-                      x2="16"
-                      y2="21"></line>
-                <line x1="12"
-                      y1="17"
-                      x2="12"
-                      y2="21"></line>
+            <button type="button" class="context-menu-item" @click="handleOpenPageInNewWindow">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
               </svg>
               <span>Open in External Browser</span>
             </button>
 
             <div class="menu-divider"></div>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="setAsHomepage">
-              <svg class="item-icon text-amber-400"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="setAsHomepage">
+              <svg
+                class="item-icon text-amber-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
               </svg>
               <span>Set Current Page as Homepage</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    v-if="settingsStore.browser_homepage &&
-                      settingsStore.browser_homepage !== 'https://www.youtube.com'"
-                    @click="resetHomepageToDefault">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button
+              type="button"
+              class="context-menu-item"
+              v-if="settingsStore.browser_homepage && settingsStore.browser_homepage !== 'https://www.youtube.com'"
+              @click="resetHomepageToDefault">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                 <path d="M3 3v5h5"></path>
               </svg>
@@ -1439,53 +967,46 @@
           <template v-else-if="activeMenu === 'home'">
             <div class="menu-section-header">Homepage</div>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="goHome(); closeContextMenu()">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button
+              type="button"
+              class="context-menu-item"
+              @click="
+                goHome()
+                closeContextMenu()
+              ">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
               </svg>
               <span>Go to Homepage</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    @click="setAsHomepage">
-              <svg class="item-icon text-amber-400"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button type="button" class="context-menu-item" @click="setAsHomepage">
+              <svg
+                class="item-icon text-amber-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
                 <polygon
                   points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02
-                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
-                </polygon>
+                          12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
               <span>Set Current Page as Homepage</span>
             </button>
 
-            <button type="button"
-                    class="context-menu-item"
-                    v-if="settingsStore.browser_homepage &&
-                      settingsStore.browser_homepage !== 'https://www.youtube.com'"
-                    @click="resetHomepageToDefault">
-              <svg class="item-icon"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button
+              type="button"
+              class="context-menu-item"
+              v-if="settingsStore.browser_homepage && settingsStore.browser_homepage !== 'https://www.youtube.com'"
+              @click="resetHomepageToDefault">
+              <svg class="item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                 <path d="M3 3v5h5"></path>
               </svg>
               <span>Reset to Default (YouTube)</span>
             </button>
           </template>
-
         </div>
       </transition>
     </teleport>
@@ -1502,7 +1023,7 @@ import { useSettingsStore } from '../store/settings'
 
 const props = withDefaults(
   defineProps<{
-    active?: boolean;
+    active?: boolean
   }>(),
   {
     active: true,
@@ -1524,9 +1045,9 @@ const findBarRef = ref<any>(null)
 const favoritesFlyoutRef = ref<HTMLElement | null>(null)
 
 interface AutocompleteMatch {
-  fav: { id: string; title: string; url: string; };
-  displayUrl: string;
-  matchedBy: 'domain' | 'title' | 'full';
+  fav: { id: string; title: string; url: string }
+  displayUrl: string
+  matchedBy: 'domain' | 'title' | 'full'
 }
 
 // Favorites flyout state
@@ -1546,28 +1067,28 @@ const findInitialQuery = ref('')
 const isViewActive = ref(true)
 
 // Context menu state
-type MenuType = 'address' | 'webview' | 'address-overflow' | 'home' | null;
+type MenuType = 'address' | 'webview' | 'address-overflow' | 'home' | null
 
 interface MenuPosition {
-  x: number;
-  y: number;
+  x: number
+  y: number
 }
 
 interface WebviewMenuContext {
-  linkUrl: string;
-  linkText: string;
-  selectionText: string;
-  srcUrl: string;
-  mediaType: string;
-  isAudio?: boolean;
-  audioSrc?: string;
-  audioTitle?: string;
-  audioDuration?: number;
-  isEditable: boolean;
-  canCut: boolean;
-  canCopy: boolean;
-  canPaste: boolean;
-  canSelectAll: boolean;
+  linkUrl: string
+  linkText: string
+  selectionText: string
+  srcUrl: string
+  mediaType: string
+  isAudio?: boolean
+  audioSrc?: string
+  audioTitle?: string
+  audioDuration?: number
+  isEditable: boolean
+  canCut: boolean
+  canCopy: boolean
+  canPaste: boolean
+  canSelectAll: boolean
 }
 
 const activeMenu = ref<MenuType>(null)
@@ -1673,7 +1194,7 @@ const currentEffectiveUrl = computed(() => {
   let wvUrl = ''
   try {
     wvUrl = webviewRef.value?.getURL?.() || ''
-  } catch (_) { }
+  } catch (_) {}
   return (wvUrl || currentUrl.value || inputUrl.value || '').trim()
 })
 
@@ -1719,7 +1240,7 @@ function resolvePageTitleForFavorite(normalizedUrl: string): string {
   let pageTitle = ''
   try {
     pageTitle = webviewRef.value?.getTitle?.() || ''
-  } catch (_) { }
+  } catch (_) {}
   if (pageTitle) {
     pageTitle = pageTitle
       .replace(/\s*-\s*YouTube$/i, '')
@@ -1772,12 +1293,12 @@ async function addCurrentPageToFavorites() {
   pulseBackStore.showToast(`Saved "${title}" to favorites`)
 }
 
-async function deleteFavorite(fav: { id: string; title: string; url: string; }) {
+async function deleteFavorite(fav: { id: string; title: string; url: string }) {
   await settingsStore.removeBrowserFavorite(fav.id)
   pulseBackStore.showToast(`Removed "${fav.title}" from favorites`)
 }
 
-function selectFavorite(fav: { url: string; title: string; }) {
+function selectFavorite(fav: { url: string; title: string }) {
   isFavoritesFlyoutOpen.value = false
   inputUrl.value = fav.url
   navigateToUrl(fav.url)
@@ -1919,7 +1440,7 @@ async function handleAddressCut() {
   try {
     await navigator.clipboard.writeText(textToCut)
     pulseBackStore.showToast('Cut to clipboard')
-  } catch (_) { }
+  } catch (_) {}
 }
 
 async function handleAddressCopy() {
@@ -1927,14 +1448,15 @@ async function handleAddressCopy() {
   const current = inputUrl.value
   if (!current) return
 
-  const textToCopy = addressSelection.value.hasSelection && addressSelection.value.selectedText
-    ? addressSelection.value.selectedText
-    : current
+  const textToCopy =
+    addressSelection.value.hasSelection && addressSelection.value.selectedText
+      ? addressSelection.value.selectedText
+      : current
 
   try {
     await navigator.clipboard.writeText(textToCopy)
     pulseBackStore.showToast('Copied to clipboard')
-  } catch (_) { }
+  } catch (_) {}
 }
 
 async function handleAddressPaste() {
@@ -1991,25 +1513,25 @@ function handleAddressClear() {
 
 // Main Content / Webview Context Menu
 function openMainContextMenu(params: {
-  x: number;
-  y: number;
-  linkUrl?: string;
-  linkText?: string;
-  selectionText?: string;
-  srcUrl?: string;
-  mediaType?: string;
-  isAudio?: boolean;
-  audioSrc?: string;
-  audioTitle?: string;
-  audioDuration?: number;
-  isEditable?: boolean;
-  editFlags?: any;
+  x: number
+  y: number
+  linkUrl?: string
+  linkText?: string
+  selectionText?: string
+  srcUrl?: string
+  mediaType?: string
+  isAudio?: boolean
+  audioSrc?: string
+  audioTitle?: string
+  audioDuration?: number
+  isEditable?: boolean
+  editFlags?: any
 }) {
   let linkUrl = params.linkUrl || ''
   if (linkUrl && linkUrl.startsWith('/')) {
     try {
       linkUrl = new URL(linkUrl, 'https://www.youtube.com').href
-    } catch (_) { }
+    } catch (_) {}
   }
 
   const editFlags = params.editFlags || {}
@@ -2044,7 +1566,7 @@ async function handleWebviewContextMenu(event: any) {
   const rawX = rect ? rect.left + (typeof params.x === 'number' ? params.x : 20) : lastMousePos.x
   const rawY = rect ? rect.top + (typeof params.y === 'number' ? params.y : 20) : lastMousePos.y
 
-  let detectedAudio: { src: string; title: string; duration: number; } | null = null
+  let detectedAudio: { src: string; title: string; duration: number } | null = null
   if (wv && typeof params.x === 'number' && typeof params.y === 'number') {
     try {
       const detectScript = `
@@ -2161,7 +1683,7 @@ async function handleWebviewContextMenu(event: any) {
         })()
       `
       detectedAudio = await wv.executeJavaScript(detectScript)
-    } catch (_) { }
+    } catch (_) {}
   }
 
   const isAudioMedia = !!(
@@ -2171,9 +1693,10 @@ async function handleWebviewContextMenu(event: any) {
   )
 
   // If Chromium's native hit-test provided a mediaType: 'audio' srcURL, prioritize it!
-  const finalAudioSrc = (params.mediaType === 'audio' && params.srcURL)
-    ? params.srcURL
-    : (detectedAudio?.src || (isDirectMediaUrl(params.srcURL) ? params.srcURL : ''))
+  const finalAudioSrc =
+    params.mediaType === 'audio' && params.srcURL
+      ? params.srcURL
+      : detectedAudio?.src || (isDirectMediaUrl(params.srcURL) ? params.srcURL : '')
 
   const finalAudioTitle = detectedAudio?.title || (finalAudioSrc ? extractMediaTitle(finalAudioSrc) : '')
 
@@ -2184,7 +1707,7 @@ async function handleWebviewContextMenu(event: any) {
     linkText: params.linkText || '',
     selectionText: params.selectionText || '',
     srcUrl: params.srcURL || params.srcUrl || finalAudioSrc || '',
-    mediaType: isAudioMedia ? 'audio' : (params.mediaType || 'none'),
+    mediaType: isAudioMedia ? 'audio' : params.mediaType || 'none',
     isAudio: isAudioMedia && !!finalAudioSrc,
     audioSrc: finalAudioSrc,
     audioTitle: finalAudioTitle,
@@ -2239,7 +1762,7 @@ async function handleCopyLinkAddress() {
     try {
       await navigator.clipboard.writeText(url)
       pulseBackStore.showToast('Link address copied to clipboard')
-    } catch (_) { }
+    } catch (_) {}
   }
 }
 
@@ -2251,12 +1774,12 @@ async function handleCopySelectionText() {
       await navigator.clipboard.writeText(text)
       webviewRef.value?.copy?.()
       pulseBackStore.showToast('Text copied to clipboard')
-    } catch (_) { }
+    } catch (_) {}
   } else {
     try {
       webviewRef.value?.copy?.()
       pulseBackStore.showToast('Copied to clipboard')
-    } catch (_) { }
+    } catch (_) {}
   }
 }
 
@@ -2272,21 +1795,21 @@ function handleWebviewCut() {
   closeContextMenu()
   try {
     webviewRef.value?.cut?.()
-  } catch (_) { }
+  } catch (_) {}
 }
 
 function handleWebviewPaste() {
   closeContextMenu()
   try {
     webviewRef.value?.paste?.()
-  } catch (_) { }
+  } catch (_) {}
 }
 
 function handleWebviewSelectAll() {
   closeContextMenu()
   try {
     webviewRef.value?.selectAll?.()
-  } catch (_) { }
+  } catch (_) {}
 }
 
 function handleMenuBack() {
@@ -2311,7 +1834,7 @@ async function handleCopyPageUrl() {
     try {
       await navigator.clipboard.writeText(url)
       pulseBackStore.showToast('Page URL copied to clipboard')
-    } catch (_) { }
+    } catch (_) {}
   }
 }
 
@@ -2331,7 +1854,7 @@ async function handleCopyTimestampedVideoUrl() {
   try {
     await navigator.clipboard.writeText(finalUrl)
     pulseBackStore.showToast(`Copied video URL at ${formatTime(timeSec)}`)
-  } catch (_) { }
+  } catch (_) {}
 }
 
 function handleOpenPageInNewWindow() {
@@ -2350,7 +1873,7 @@ async function handleCopyImageAddress() {
     try {
       await navigator.clipboard.writeText(url)
       pulseBackStore.showToast('Image address copied to clipboard')
-    } catch (_) { }
+    } catch (_) {}
   }
 }
 
@@ -2376,10 +1899,7 @@ function extractEmbeddedAudioCover(rawBuffer: Uint8Array): string | null {
       if (version < 2 || version > 4) return null
 
       const tagSize =
-        ((bytes[6] & 0x7f) << 21) |
-        ((bytes[7] & 0x7f) << 14) |
-        ((bytes[8] & 0x7f) << 7) |
-        (bytes[9] & 0x7f)
+        ((bytes[6] & 0x7f) << 21) | ((bytes[7] & 0x7f) << 14) | ((bytes[8] & 0x7f) << 7) | (bytes[9] & 0x7f)
 
       const end = Math.min(bytes.length, 10 + tagSize)
       let offset = 10
@@ -2422,10 +1942,7 @@ function extractEmbeddedAudioCover(rawBuffer: Uint8Array): string | null {
               (bytes[offset + 7] & 0x7f)
           } else {
             frameSize =
-              (bytes[offset + 4] << 24) |
-              (bytes[offset + 5] << 16) |
-              (bytes[offset + 6] << 8) |
-              bytes[offset + 7]
+              (bytes[offset + 4] << 24) | (bytes[offset + 5] << 16) | (bytes[offset + 6] << 8) | bytes[offset + 7]
           }
 
           if (frameSize <= 0 || offset + 10 + frameSize > end) break
@@ -2486,7 +2003,7 @@ async function loadDirectAudioIntoClipPanel(
   // 1. Pause any playing media on the guest web page so it doesn't clash with editor playback
   try {
     webviewRef.value?.executeJavaScript('document.querySelectorAll("audio, video").forEach(el => el.pause())')
-  } catch (_) { }
+  } catch (_) {}
 
   // 2. Clear out any previous audio buffer/state AND stale thumbnail so it never displays past YouTube artwork
   currentPreloadedVideoId.value = null
@@ -2497,7 +2014,7 @@ async function loadDirectAudioIntoClipPanel(
   thumbnailUrl.value = ''
   activeDirectAudioUrl.value = audioUrl
 
-  let audioTitle = (title && title.trim()) ? title.trim() : ''
+  let audioTitle = title && title.trim() ? title.trim() : ''
   const isGenericOrFilenameTitle =
     !audioTitle ||
     /^download(\s+mp3|\s+audio|\s+sound)?$/i.test(audioTitle) ||
@@ -2621,7 +2138,7 @@ async function loadDirectAudioIntoClipPanel(
         soundArtwork = pageMeta.image
       }
     }
-  } catch (_) { }
+  } catch (_) {}
 
   if (!audioTitle) {
     audioTitle = extractMediaTitle(audioUrl)
@@ -2675,7 +2192,7 @@ async function handleCopyAudioAddress() {
     try {
       await navigator.clipboard.writeText(url)
       pulseBackStore.showToast('Audio URL copied to clipboard')
-    } catch (_) { }
+    } catch (_) {}
   }
 }
 
@@ -2736,10 +2253,8 @@ function closeFindBar() {
   findInitialQuery.value = ''
   try {
     webviewRef.value?.focus()
-  } catch (_) { }
+  } catch (_) {}
 }
-
-
 
 // Navigation state
 const inputUrl = ref(settingsStore.browser_homepage || 'https://www.youtube.com')
@@ -2791,9 +2306,8 @@ function formatTime(totalSeconds: number): string {
   if (Number.isNaN(totalSeconds) || totalSeconds < 0) return '0:00'
   const mins = Math.floor(totalSeconds / 60)
   const secs = totalSeconds % 60
-  const secsFormatted = secs % 1 === 0
-    ? (secs < 10 ? `0${secs}` : `${secs}`)
-    : (secs < 10 ? `0${secs.toFixed(1)}` : secs.toFixed(1))
+  const secsFormatted =
+    secs % 1 === 0 ? (secs < 10 ? `0${secs}` : `${secs}`) : secs < 10 ? `0${secs.toFixed(1)}` : secs.toFixed(1)
   return `${mins}:${secsFormatted}`
 }
 
@@ -2839,7 +2353,7 @@ function getVideoId(url: string): string | null {
       }
     }
     return url
-  } catch (_) { }
+  } catch (_) {}
   return null
 }
 
@@ -2978,7 +2492,7 @@ function navigateToUrl(url: string) {
     } catch (_) {
       try {
         wv.src = finalUrl
-      } catch (_) { }
+      } catch (_) {}
     }
   }
 }
@@ -2990,7 +2504,7 @@ async function pasteFromClipboard() {
       inputUrl.value = text.trim()
       handleNavigate()
     }
-  } catch (_) { }
+  } catch (_) {}
 }
 
 async function readVideoState() {
@@ -3038,7 +2552,7 @@ async function readVideoState() {
         isShortVideo.value = res.videoHeight > res.videoWidth
       }
     }
-  } catch (_) { }
+  } catch (_) {}
 }
 
 async function captureVideoFrameFromWebview(): Promise<string | null> {
@@ -3093,7 +2607,7 @@ async function cleanAndCropArtwork(src: string, isShort: boolean): Promise<strin
         let imgData: ImageData | null = null
         try {
           imgData = ctx.getImageData(0, 0, w, h)
-        } catch (_) { }
+        } catch (_) {}
 
         const data = imgData ? imgData.data : null
         const getBrightness = (x: number, y: number) => {
@@ -3234,15 +2748,14 @@ function getAudioContext(): AudioContext {
     audioContext = new AudioContextClass()
   }
   if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(() => { })
+    audioContext.resume().catch(() => {})
   }
   return audioContext
 }
 
 async function loadAudioForWaveform(targetUrlOverride?: string | unknown, forceReload = false) {
-  const targetUrl = typeof targetUrlOverride === 'string'
-    ? targetUrlOverride
-    : (activeDirectAudioUrl.value || currentUrl.value)
+  const targetUrl =
+    typeof targetUrlOverride === 'string' ? targetUrlOverride : activeDirectAudioUrl.value || currentUrl.value
   const vidId = getVideoId(targetUrl)
   if (!vidId) return
 
@@ -3310,7 +2823,7 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown, forceR
             buffer: bytes,
           }
         }
-      } catch (_) { }
+      } catch (_) {}
     }
 
     if (requestId !== currentAudioLoadRequestId) return
@@ -3324,11 +2837,12 @@ async function loadAudioForWaveform(targetUrlOverride?: string | unknown, forceR
 
     const ctx = getAudioContext()
     const rawBuffer = result.buffer
-    const uint8 = rawBuffer instanceof Uint8Array
-      ? rawBuffer
-      : ArrayBuffer.isView(rawBuffer)
-        ? new Uint8Array(rawBuffer.buffer, rawBuffer.byteOffset, rawBuffer.byteLength)
-        : new Uint8Array(rawBuffer)
+    const uint8 =
+      rawBuffer instanceof Uint8Array
+        ? rawBuffer
+        : ArrayBuffer.isView(rawBuffer)
+          ? new Uint8Array(rawBuffer.buffer, rawBuffer.byteOffset, rawBuffer.byteLength)
+          : new Uint8Array(rawBuffer)
 
     const cleanArrayBuffer = new ArrayBuffer(uint8.byteLength)
     new Uint8Array(cleanArrayBuffer).set(uint8)
@@ -3380,7 +2894,7 @@ async function openClipDrawer() {
 
   try {
     await webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()')
-  } catch (_) { }
+  } catch (_) {}
 
   if (isDirectMediaUrl(currentUrl.value) && (!activeVideoTitle.value || activeVideoTitle.value === 'YouTube')) {
     activeVideoTitle.value = extractMediaTitle(currentUrl.value)
@@ -3391,7 +2905,7 @@ async function openClipDrawer() {
 
   // Only attempt video frame capture & YouTube oEmbed metadata if not handling direct audio
   if (!activeDirectAudioUrl.value && !isDirectMediaUrl(currentUrl.value)) {
-    readVideoState().catch(() => { })
+    readVideoState().catch(() => {})
 
     // Non-blocking live frame capture
     captureVideoFrameFromWebview()
@@ -3400,11 +2914,12 @@ async function openClipDrawer() {
           thumbnailUrl.value = await cleanAndCropArtwork(liveFrame, isShortVideo.value)
         }
       })
-      .catch(() => { })
+      .catch(() => {})
 
     // Non-blocking oEmbed metadata fetch
     if (window.electron?.ytFetchInfo) {
-      window.electron.ytFetchInfo(currentUrl.value)
+      window.electron
+        .ytFetchInfo(currentUrl.value)
         .then(async info => {
           if (info && info.success && !activeDirectAudioUrl.value) {
             if (info.isShort !== undefined) isShortVideo.value = info.isShort
@@ -3414,7 +2929,7 @@ async function openClipDrawer() {
             }
           }
         })
-        .catch(() => { })
+        .catch(() => {})
     }
   }
 
@@ -3747,7 +3262,7 @@ function handleAddressBarEscape(e: KeyboardEvent) {
   inputEl.blur()
   try {
     webviewRef.value?.focus?.()
-  } catch (_) { }
+  } catch (_) {}
 }
 
 let handleWebviewBeforeInputFn: ((e: any) => void) | null = null
@@ -3817,7 +3332,8 @@ onMounted(() => {
   // Injected client script fallback for inside YouTube webview
   injectWebviewKeydownListener = () => {
     try {
-      wv.executeJavaScript(`
+      wv.executeJavaScript(
+        `
         (() => {
           if (window.__pulseInjectedListenersInstalled) return;
           window.__pulseInjectedListenersInstalled = true;
@@ -3974,8 +3490,9 @@ onMounted(() => {
             }
           }, true);
         })()
-      `).catch(() => { })
-    } catch (_) { }
+      `
+      ).catch(() => {})
+    } catch (_) {}
   }
 
   handleConsoleMessageFn = (e: any) => {
@@ -3999,7 +3516,7 @@ onMounted(() => {
         if (payload?.url) {
           loadDirectAudioIntoClipPanel(payload.url, payload.title, undefined, payload.imageUrl)
         }
-      } catch (_) { }
+      } catch (_) {}
     }
   }
 
@@ -4029,7 +3546,7 @@ onMounted(() => {
     try {
       canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false
       canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false
-    } catch (_) { }
+    } catch (_) {}
   })
 
   const updateLocation = () => {
@@ -4051,7 +3568,7 @@ onMounted(() => {
       canGoBack.value = typeof wv.canGoBack === 'function' ? wv.canGoBack() : false
       canGoForward.value = typeof wv.canGoForward === 'function' ? wv.canGoForward() : false
       readVideoState()
-    } catch (_) { }
+    } catch (_) {}
   }
 
   wv.addEventListener('did-navigate', updateLocation)
@@ -4100,7 +3617,7 @@ function handleDeactivate() {
   }
   try {
     webviewRef.value?.executeJavaScript('document.querySelector("video, audio")?.pause()')
-  } catch (_) { }
+  } catch (_) {}
 }
 
 function handleActivate() {
@@ -4126,8 +3643,6 @@ watch(
   }
 )
 
-
-
 onUnmounted(() => {
   closeContextMenu()
   closeFavoritesFlyout()
@@ -4151,7 +3666,7 @@ onUnmounted(() => {
         wv.removeEventListener('did-navigate-in-page', injectWebviewKeydownListener)
       }
       wv.removeEventListener('context-menu', handleWebviewContextMenu)
-    } catch (_) { }
+    } catch (_) {}
   }
 
   if (videoHeartbeatTimer) {
@@ -4159,7 +3674,7 @@ onUnmounted(() => {
     videoHeartbeatTimer = null
   }
   if (audioContext && audioContext.state !== 'closed') {
-    audioContext.close().catch(() => { })
+    audioContext.close().catch(() => {})
   }
 })
 </script>
@@ -4281,7 +3796,9 @@ onUnmounted(() => {
   border-radius: 0;
   margin: 0;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .address-actions-group .favorite-star-btn:hover {
@@ -4303,7 +3820,9 @@ onUnmounted(() => {
   border-radius: 0;
   margin: 0;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .address-actions-group .paste-btn:hover {
@@ -4323,7 +3842,9 @@ onUnmounted(() => {
   border-radius: 0;
   margin: 0;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .address-actions-group .overflow-btn:hover,
@@ -4349,7 +3870,10 @@ onUnmounted(() => {
   background: #18181b;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.95),
+    0 4px 12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px);
   z-index: 100;
   display: flex;
@@ -4362,7 +3886,9 @@ onUnmounted(() => {
 
 .flyout-slide-enter-active,
 .flyout-slide-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .flyout-slide-enter-from {
@@ -4505,7 +4031,9 @@ onUnmounted(() => {
   background: transparent;
   border: 1px solid transparent;
   text-align: left;
-  transition: background 0.12s ease, border-color 0.12s ease;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
 }
 
 .favorite-item:hover {
@@ -4635,7 +4163,6 @@ onUnmounted(() => {
   color: #fff;
 }
 
-
 button:focus-visible {
   outline: 2px solid var(--primary-color);
 }
@@ -4746,7 +4273,8 @@ button:focus-visible {
   padding: 0;
   border: 1px solid transparent;
   box-sizing: border-box;
-  transition: width var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
+  transition:
+    width var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
     background-color var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
     border-color var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
     color var(--drawer-anim-duration) cubic-bezier(0.16, 1, 0.3, 1),
@@ -4874,7 +4402,8 @@ button:focus-visible {
 /* Button Morph Crossfade */
 .btn-morph-enter-active,
 .btn-morph-leave-active {
-  transition: opacity calc(var(--drawer-anim-duration) * 0.35) ease,
+  transition:
+    opacity calc(var(--drawer-anim-duration) * 0.35) ease,
     transform calc(var(--drawer-anim-duration) * 0.35) ease;
 }
 
@@ -4943,7 +4472,10 @@ button:focus-visible {
   background: #18181b;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 14px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.95),
+    0 4px 14px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(20px);
   z-index: 105;
   overflow: hidden;
@@ -4979,7 +4511,9 @@ button:focus-visible {
   background: transparent;
   border: 1px solid transparent;
   text-align: left;
-  transition: background 0.1s ease, border-color 0.1s ease;
+  transition:
+    background 0.1s ease,
+    border-color 0.1s ease;
 }
 
 .autocomplete-item:hover,
@@ -5062,7 +4596,10 @@ button:focus-visible {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   padding: 0.35rem;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.95),
+    0 4px 12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
   user-select: none;
   display: flex;
@@ -5073,7 +4610,9 @@ button:focus-visible {
 
 .context-menu-fade-enter-active,
 .context-menu-fade-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .context-menu-fade-enter-from {
@@ -5122,7 +4661,9 @@ button:focus-visible {
   font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.1s ease, color 0.1s ease;
+  transition:
+    background-color 0.1s ease,
+    color 0.1s ease;
   white-space: nowrap;
 }
 

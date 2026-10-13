@@ -1,50 +1,48 @@
 <template>
-  <div class="main"
-       ref="main"
-       :style="forcedWidth ? { width: `${forcedWidth}px`, flexGrow: 0 } : {}">
+  <div class="main" ref="main" :style="forcedWidth ? { width: `${forcedWidth}px`, flexGrow: 0 } : {}">
     <SoundToolbar />
-    <div class="soundboard"
-         @dragover.prevent
-         @drop.prevent="droppedOnBackground">
-      <template v-for="sound in filteredSounds"
-                :key="sound.id">
-        <sound-button v-if="sound"
-                      :key="`${sound?.id}`"
-                      :id="`sound-${sound.id}`"
-                      :class="{ placeholder: sound.isDragPreview }"
-                      :modelValue="sound"
-                      :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
-                      :displayMode="settingsStore.displayMode"
-                      @update:modelValue="handleSoundsUpdate"
-                      @file-dropped="fileDropped"
-                      @editSound="editSound(sound)"
-                      @dragstart="dragStart(sound)"
-                      @dragover="dragOver(sound)"
-                      @drop="drop"
-                      @dragend="dragEnd(sound)" />
+    <div class="soundboard" @dragover.prevent @drop.prevent="droppedOnBackground">
+      <template v-for="sound in filteredSounds" :key="sound.id">
+        <sound-button
+          v-if="sound"
+          :key="`${sound?.id}`"
+          :id="`sound-${sound.id}`"
+          :class="{ placeholder: sound.isDragPreview }"
+          :modelValue="sound"
+          :draggable="settingsStore.displayMode === 'edit' && sound.title !== undefined"
+          :displayMode="settingsStore.displayMode"
+          @update:modelValue="handleSoundsUpdate"
+          @file-dropped="fileDropped"
+          @editSound="editSound(sound)"
+          @dragstart="dragStart(sound)"
+          @dragover="dragOver(sound)"
+          @drop="drop"
+          @dragend="dragEnd(sound)" />
       </template>
-      <div v-if="filteredSounds.length === 0 && settingsStore.searchText.trim() !== ''"
-           class="empty-search-state">
+      <div v-if="filteredSounds.length === 0 && settingsStore.searchText.trim() !== ''" class="empty-search-state">
         <p class="empty-title">No sounds found</p>
-        <p class="empty-subtitle">No sounds match "<strong>{{ settingsStore.searchText }}</strong>"</p>
-        <button class="clear-search-btn light"
-                @click="settingsStore.searchText = ''">Clear Search</button>
+        <p class="empty-subtitle">
+          No sounds match "<strong>{{ settingsStore.searchText }}</strong
+          >"
+        </p>
+        <button class="clear-search-btn light" @click="settingsStore.searchText = ''">Clear Search</button>
       </div>
     </div>
   </div>
-  <div v-if="settingsStore.currentEditingSound !== null"
-       class="rightSideBar">
-    <SoundEditor v-model="settingsStore.currentEditingSound"
-                 @update:modelValue="updateCurrentEditingSound"
-                 @close="closeEditor"
-                 @deleteSound="deleteSound($event)" />
+  <div v-if="settingsStore.currentEditingSound !== null" class="rightSideBar">
+    <SoundEditor
+      v-model="settingsStore.currentEditingSound"
+      @update:modelValue="updateCurrentEditingSound"
+      @close="closeEditor"
+      @deleteSound="deleteSound($event)" />
   </div>
-  <confirm-dialog v-model:showDialog="dialogOpen"
-                  title="Are you sure?"
-                  :message="`that you want to delete the '${soundToDelete?.title}' sound?`"
-                  @confirm="deleteSoundConfirmed"
-                  confirmText="Yes"
-                  cancelText="No" />
+  <confirm-dialog
+    v-model:showDialog="dialogOpen"
+    title="Are you sure?"
+    :message="`that you want to delete the '${soundToDelete?.title}' sound?`"
+    @confirm="deleteSoundConfirmed"
+    confirmText="Yes"
+    cancelText="No" />
 </template>
 
 <script setup lang="ts">
@@ -86,13 +84,13 @@ onUnmounted(() => {
 })
 
 interface CompilingSoundWithImage {
-  audioFile?: File;
-  imageFile?: File;
+  audioFile?: File
+  imageFile?: File
 }
 
 interface SoundWithImage extends CompilingSoundWithImage {
   // audioFile is required
-  audioFile: File;
+  audioFile: File
 }
 
 async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) {
@@ -109,9 +107,9 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
     // go through all the files, and group them by name
     const combinedFiles: SoundWithImage[] = Object.values(
       fileArray.reduce<{
-        [fileName: string]: CompilingSoundWithImage;
+        [fileName: string]: CompilingSoundWithImage
       }>((prevVal, file) => {
-        const fileName = stripFileExtension(file.name).toLowerCase().replace(/[`’]/g, '\'')
+        const fileName = stripFileExtension(file.name).toLowerCase().replace(/[`’]/g, "'")
         if (file.type.includes('audio')) {
           if (!prevVal[fileName]) {
             prevVal[fileName] = { audioFile: file }
@@ -126,7 +124,7 @@ async function fileDropped(event: DragEvent, sound: Sound, isNewSound: boolean) 
           }
         }
         return prevVal
-      }, {}),
+      }, {})
     ).filter((file): file is SoundWithImage => file.audioFile !== undefined)
     const activeTags = settingsStore.quickTags.filter(tag => tag.active === true).map(tag => tag.label)
     const audioContext = new AudioContext()

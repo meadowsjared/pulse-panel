@@ -1,80 +1,76 @@
 <template>
-  <div ref="containerRef"
-       class="tag-input"
-       @click="handleContainerClick">
-    <div v-if="(!modelValue || modelValue.length === 0) && newTag.trim() === ''"
-         class="placeholder-text">
+  <div ref="containerRef" class="tag-input" @click="handleContainerClick">
+    <div v-if="(!modelValue || modelValue.length === 0) && newTag.trim() === ''" class="placeholder-text">
       {{ placeholder }}
     </div>
-    <div v-for="(tag, index) in modelValue"
-         :key="index"
-         class="tag"
-         @contextmenu.prevent.stop="openTagMenu($event, tag)">
-      <img v-if="settingsStore.getTagImageUrl(tag)"
-           :src="settingsStore.getTagImageUrl(tag)"
-           alt=""
-           class="tag-image-avatar" />
+    <div
+      v-for="(tag, index) in modelValue"
+      :key="index"
+      class="tag"
+      @contextmenu.prevent.stop="openTagMenu($event, tag)">
+      <img
+        v-if="settingsStore.getTagImageUrl(tag)"
+        :src="settingsStore.getTagImageUrl(tag)"
+        alt=""
+        class="tag-image-avatar" />
       <span>{{ tag }}</span>
-      <button type="button"
-              class="remove-button"
-              :title="`Remove ${tag}`"
-              :aria-label="`Remove tag ${tag}`"
-              @click.stop="removeTag(index)">
-        <inline-svg :src="PlusIcon"
-                    class="rotate-45" />
+      <button
+        type="button"
+        class="remove-button"
+        :title="`Remove ${tag}`"
+        :aria-label="`Remove tag ${tag}`"
+        @click.stop="removeTag(index)">
+        <inline-svg :src="PlusIcon" class="rotate-45" />
       </button>
     </div>
-    <div ref="textInputRef"
-         class="text-input"
-         contenteditable="plaintext-only"
-         @input="handleInput"
-         @paste="handlePaste"
-         @keydown="handleKeyDown"
-         @focus="handleFocus"
-         @blur="handleBlur"
-         v-bind="$attrs" />
+    <div
+      ref="textInputRef"
+      class="text-input"
+      contenteditable="plaintext-only"
+      @input="handleInput"
+      @paste="handlePaste"
+      @keydown="handleKeyDown"
+      @focus="handleFocus"
+      @blur="handleBlur"
+      v-bind="$attrs" />
 
     <!-- Tag Autocomplete Dropdown -->
     <transition name="autocomplete-fade">
-      <div v-if="showSuggestions"
-           ref="dropdownRef"
-           class="tag-autocomplete-dropdown"
-           @mousedown.prevent>
+      <div v-if="showSuggestions" ref="dropdownRef" class="tag-autocomplete-dropdown" @mousedown.prevent>
         <div class="autocomplete-list">
-          <button v-for="(item, index) in filteredSuggestions"
-                  :key="item.name"
-                  type="button"
-                  class="suggestion-item"
-                  :class="{
-                    'is-selected': index === selectedIndex,
-                    'is-top-match': selectedIndex === -1 && index === 0,
-                  }"
-                  @mouseenter="selectedIndex = index"
-                  @click="selectSuggestion(item.name)">
-            <img v-if="settingsStore.getTagImageUrl(item.name)"
-                 :src="settingsStore.getTagImageUrl(item.name)"
-                 alt=""
-                 class="suggestion-avatar" />
-            <span v-else
-                  class="suggestion-hash">#</span>
+          <button
+            v-for="(item, index) in filteredSuggestions"
+            :key="item.name"
+            type="button"
+            class="suggestion-item"
+            :class="{
+              'is-selected': index === selectedIndex,
+              'is-top-match': selectedIndex === -1 && index === 0,
+            }"
+            @mouseenter="selectedIndex = index"
+            @click="selectSuggestion(item.name)">
+            <img
+              v-if="settingsStore.getTagImageUrl(item.name)"
+              :src="settingsStore.getTagImageUrl(item.name)"
+              alt=""
+              class="suggestion-avatar" />
+            <span v-else class="suggestion-hash">#</span>
 
             <span class="suggestion-label truncate">
-              <template v-for="(part, pIdx) in getHighlightParts(item.name, newTag.trim())"
-                        :key="pIdx">
-                <strong v-if="part.match"
-                        class="matched-text">{{ part.text }}</strong>
+              <template v-for="(part, pIdx) in getHighlightParts(item.name, newTag.trim())" :key="pIdx">
+                <strong v-if="part.match" class="matched-text">{{ part.text }}</strong>
                 <span v-else>{{ part.text }}</span>
               </template>
             </span>
 
-            <span v-if="item.count > 0"
-                  class="suggestion-count"
-                  :title="`${item.count} sound${item.count === 1 ? '' : 's'}`">
+            <span
+              v-if="item.count > 0"
+              class="suggestion-count"
+              :title="`${item.count} sound${item.count === 1 ? '' : 's'}`">
               {{ item.count }}
             </span>
 
-            <span v-if="index === selectedIndex || (selectedIndex === -1 && index === 0)"
-                  class="tab-badge">
+            <span v-if="index === selectedIndex || (selectedIndex === -1 && index === 0)" class="tab-badge">
               ↵ Enter
             </span>
           </button>
@@ -89,61 +85,52 @@
     <!-- Tag Context Menu -->
     <teleport to="body">
       <transition name="tag-menu-fade">
-        <div v-if="showTagMenu && selectedTag"
-             ref="tagMenuRef"
-             class="tag-context-menu"
-             :style="{ top: `${tagMenuPosition.y}px`, left: `${tagMenuPosition.x}px` }">
+        <div
+          v-if="showTagMenu && selectedTag"
+          ref="tagMenuRef"
+          class="tag-context-menu"
+          :style="{ top: `${tagMenuPosition.y}px`, left: `${tagMenuPosition.x}px` }">
           <div class="tag-menu-header">
             <span class="truncate">#{{ selectedTag }}</span>
           </div>
-          <button v-if="canPasteImage"
-                  @click="handlePasteImageToTag"
-                  type="button"
-                  class="tag-menu-item text-emerald-400 hover:text-emerald-300">
-            <svg class="w-3.5 h-3.5"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2"
-                 stroke-linecap="round"
-                 stroke-linejoin="round">
+          <button
+            v-if="canPasteImage"
+            @click="handlePasteImageToTag"
+            type="button"
+            class="tag-menu-item text-emerald-400 hover:text-emerald-300">
+            <svg
+              class="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
               <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-              <rect x="8"
-                    y="2"
-                    width="8"
-                    height="4"
-                    rx="1"
-                    ry="1"></rect>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
             </svg>
             <span>Paste Image to Tag</span>
           </button>
-          <button v-if="selectedTagHasImage"
-                  @click="handleCopyTagImage"
-                  type="button"
-                  class="tag-menu-item">
-            <svg class="w-3.5 h-3.5"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2"
-                 stroke-linecap="round"
-                 stroke-linejoin="round">
-              <rect x="9"
-                    y="9"
-                    width="13"
-                    height="13"
-                    rx="2"
-                    ry="2"></rect>
+          <button v-if="selectedTagHasImage" @click="handleCopyTagImage" type="button" class="tag-menu-item">
+            <svg
+              class="w-3.5 h-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
             <span>Copy Tag Image</span>
           </button>
-          <button v-if="selectedTagHasImage"
-                  @click="handleRemoveTagImage"
-                  type="button"
-                  class="tag-menu-item text-red-400 hover:text-red-300">
-            <inline-svg :src="PlusIcon"
-                        class="w-3.5 h-3.5 rotate-45 text-red-400" />
+          <button
+            v-if="selectedTagHasImage"
+            @click="handleRemoveTagImage"
+            type="button"
+            class="tag-menu-item text-red-400 hover:text-red-300">
+            <inline-svg :src="PlusIcon" class="w-3.5 h-3.5 rotate-45 text-red-400" />
             <span>Clear Tag Image</span>
           </button>
         </div>
@@ -162,10 +149,10 @@ import { usePulseBackStore } from '../../store/pulseBack'
 
 const props = withDefaults(
   defineProps<{
-    modelValue: string[] | undefined;
-    placeholder?: string | undefined;
-    id?: string;
-    suggestions?: string[] | { name: string; count?: number; }[];
+    modelValue: string[] | undefined
+    placeholder?: string | undefined
+    id?: string
+    suggestions?: string[] | { name: string; count?: number }[]
   }>(),
   {
     placeholder: undefined,
@@ -200,7 +187,7 @@ const selectedTagHasImage = computed(() => !!(selectedTag.value && settingsStore
 /**
  * Source list of tags available for autocomplete suggestions
  */
-const candidateTags = computed<{ name: string; count: number; }[]>(() => {
+const candidateTags = computed<{ name: string; count: number }[]>(() => {
   if (props.suggestions && props.suggestions.length > 0) {
     return props.suggestions.map(s => {
       if (typeof s === 'string') return { name: s, count: 0 }
@@ -218,7 +205,7 @@ const filteredSuggestions = computed(() => {
   if (!query) return []
   const currentTags = (props.modelValue ?? []).map(t => t.trim().toLowerCase())
 
-  const matches: { name: string; count: number; startsWith: boolean; }[] = []
+  const matches: { name: string; count: number; startsWith: boolean }[] = []
 
   for (const tag of candidateTags.value) {
     const lower = tag.name.toLowerCase()
@@ -253,7 +240,7 @@ function getHighlightParts(name: string, query: string) {
   const before = name.slice(0, idx)
   const match = name.slice(idx, idx + query.length)
   const after = name.slice(idx + query.length)
-  const parts: { text: string; match: boolean; }[] = []
+  const parts: { text: string; match: boolean }[] = []
   if (before) parts.push({ text: before, match: false })
   parts.push({ text: match, match: true })
   if (after) parts.push({ text: after, match: false })
@@ -350,9 +337,8 @@ function handleKeyDown(event: KeyboardEvent) {
   } else if (event.key === 'Tab') {
     if (showSuggestions.value && filteredSuggestions.value.length > 0) {
       event.preventDefault()
-      const target = selectedIndex.value >= 0
-        ? filteredSuggestions.value[selectedIndex.value]
-        : filteredSuggestions.value[0]
+      const target =
+        selectedIndex.value >= 0 ? filteredSuggestions.value[selectedIndex.value] : filteredSuggestions.value[0]
       if (target) {
         selectSuggestion(target.name)
       }
@@ -364,9 +350,8 @@ function handleKeyDown(event: KeyboardEvent) {
   } else if (event.key === 'Enter') {
     event.preventDefault()
     if (showSuggestions.value && filteredSuggestions.value.length > 0) {
-      const target = selectedIndex.value >= 0
-        ? filteredSuggestions.value[selectedIndex.value]
-        : filteredSuggestions.value[0]
+      const target =
+        selectedIndex.value >= 0 ? filteredSuggestions.value[selectedIndex.value] : filteredSuggestions.value[0]
       if (target) {
         selectSuggestion(target.name)
       }
@@ -542,7 +527,9 @@ onUnmounted(() => {
   background-color: #18181b;
   border: 1px solid #3f3f46;
   border-radius: 8px;
-  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7);
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.95),
+    0 4px 12px rgba(0, 0, 0, 0.7);
   z-index: 10000;
   display: flex;
   flex-direction: column;
@@ -572,7 +559,9 @@ onUnmounted(() => {
   font-size: 0.825rem;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.1s ease, color 0.1s ease;
+  transition:
+    background-color 0.1s ease,
+    color 0.1s ease;
 }
 
 .suggestion-item:hover,
@@ -662,7 +651,9 @@ onUnmounted(() => {
 
 .autocomplete-fade-enter-active,
 .autocomplete-fade-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .autocomplete-fade-enter-from,
@@ -677,7 +668,9 @@ onUnmounted(() => {
   border: 1px solid #3f3f46;
   border-radius: 8px;
   padding: 0.35rem;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.95),
+    0 4px 12px rgba(0, 0, 0, 0.7);
   z-index: 99999;
   display: flex;
   flex-direction: column;
@@ -708,7 +701,9 @@ onUnmounted(() => {
   font-size: 0.8rem;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .tag-menu-item:hover,
@@ -725,7 +720,9 @@ onUnmounted(() => {
 
 .tag-menu-fade-enter-active,
 .tag-menu-fade-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .tag-menu-fade-enter-from,
@@ -744,7 +741,10 @@ onUnmounted(() => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
 }
 
 .remove-button:hover {

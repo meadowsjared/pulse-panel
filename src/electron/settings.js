@@ -194,7 +194,7 @@ function saveSoundsArray(sounds) {
         sound.color ?? null,
         sound.soundSegments ?? null,
         sound.isVisible ?? null,
-        index,
+        index
       )
     }
   })
@@ -244,7 +244,7 @@ function saveSound(sound, order_index = null) {
       sound.color ?? null,
       sound.soundSegments ?? null,
       sound.isVisible ?? null,
-      nextIndex,
+      nextIndex
     )
     return
   }
@@ -342,7 +342,7 @@ function insertSounds(beforeIndex, ...newSounds) {
         sound.color ?? null,
         sound.soundSegments ?? null,
         sound.isVisible ?? null,
-        beforeIndex + insertArrayIndex,
+        beforeIndex + insertArrayIndex
       )
     })
   })
@@ -384,13 +384,13 @@ function moveSound(prevIndex, newIndex) {
     if (prevIndex < newIndex) {
       // Moving down: shift sounds between prevIndex and newIndex up by 1
       const shiftStmt = db.prepare(
-        'UPDATE sounds SET order_index = order_index - 1 WHERE order_index > ? AND order_index <= ?',
+        'UPDATE sounds SET order_index = order_index - 1 WHERE order_index > ? AND order_index <= ?'
       )
       shiftStmt.run(prevIndex, newIndex)
     } else {
       // Moving up: shift sounds between newIndex and prevIndex down by 1
       const shiftStmt = db.prepare(
-        'UPDATE sounds SET order_index = order_index + 1 WHERE order_index >= ? AND order_index < ?',
+        'UPDATE sounds SET order_index = order_index + 1 WHERE order_index >= ? AND order_index < ?'
       )
       shiftStmt.run(newIndex, prevIndex)
     }
@@ -768,9 +768,7 @@ async function downloadVBCable(appName) {
                 `expected ${EXPECTED_VBCABLE_SHA256}, got ${calculatedHash}). Installation aborted.`
               console.error(hashError)
               mainResponse.errors.push(new Error(hashError))
-              mainResponse.messages.push(
-                'VBCABLE driver package integrity verification failed. Installation aborted.'
-              )
+              mainResponse.messages.push('VBCABLE driver package integrity verification failed. Installation aborted.')
               return reject(new Error(hashError))
             }
 
@@ -784,7 +782,9 @@ async function downloadVBCable(appName) {
             resolve(cleanResult(result))
           } catch (err) {
             if (fs.existsSync(filePath)) {
-              try { fs.unlinkSync(filePath) } catch {}
+              try {
+                fs.unlinkSync(filePath)
+              } catch {}
             }
             console.error('Error extracting or running VBCable zip file', err)
             mainResponse.errors.push(err)
@@ -796,7 +796,9 @@ async function downloadVBCable(appName) {
       file.on('error', err => {
         console.error('File write error during VBCable download:', err)
         if (fs.existsSync(filePath)) {
-          try { fs.unlinkSync(filePath) } catch {}
+          try {
+            fs.unlinkSync(filePath)
+          } catch {}
         }
         mainResponse.errors.push(err)
         reject(cleanResult(mainResponse))
@@ -806,7 +808,9 @@ async function downloadVBCable(appName) {
     request.on('error', error => {
       console.error('Request failed:', error)
       if (fs.existsSync(filePath)) {
-        try { fs.unlinkSync(filePath) } catch {}
+        try {
+          fs.unlinkSync(filePath)
+        } catch {}
       }
       mainResponse.errors.push(error)
       reject(cleanResult(mainResponse))

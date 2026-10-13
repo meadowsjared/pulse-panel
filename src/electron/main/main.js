@@ -2,7 +2,18 @@ const { join, normalize } = require('path')
 const fs = require('fs')
 const os = require('os')
 const {
-  app, BrowserWindow, ipcMain, shell, Tray, Menu, dialog, clipboard, ClipboardItem, nativeImage, protocol, session,
+  app,
+  BrowserWindow,
+  ipcMain,
+  shell,
+  Tray,
+  Menu,
+  dialog,
+  clipboard,
+  ClipboardItem,
+  nativeImage,
+  protocol,
+  session,
 } = require('electron')
 const settings = require('../settings')
 const updater = require('./updater')
@@ -62,7 +73,7 @@ function nodeStreamToWebStream(nodeStream) {
     isClosed = true
     try {
       nodeStream.destroy()
-    } catch (_) { }
+    } catch (_) {}
   }
 
   return new ReadableStream({
@@ -84,7 +95,7 @@ function nodeStreamToWebStream(nodeStream) {
         isClosed = true
         try {
           controller.close()
-        } catch (_) { }
+        } catch (_) {}
       })
 
       nodeStream.on('error', err => {
@@ -92,7 +103,7 @@ function nodeStreamToWebStream(nodeStream) {
         isClosed = true
         try {
           controller.error(err)
-        } catch (_) { }
+        } catch (_) {}
       })
 
       nodeStream.on('close', () => {
@@ -185,7 +196,7 @@ app.whenReady().then(() => {
           if (headerStr.startsWith('<svg') || headerStr.startsWith('<?xml')) {
             contentType = 'image/svg+xml'
           }
-        } catch (_) { }
+        } catch (_) {}
 
         if (request.method === 'HEAD') {
           return new Response(null, {
@@ -626,15 +637,11 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('yt-fetch-info', (_, url) => ytdlp.fetchVideoQuickInfo(url))
   ipcMain.handle('yt-download-clip', async (_, options) => {
-    return ytdlp.downloadAudioClip(
-      settings.getConfigDirectoryAndAppName().configDirectory,
-      options,
-      progress => {
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('yt-download-progress', progress)
-        }
+    return ytdlp.downloadAudioClip(settings.getConfigDirectoryAndAppName().configDirectory, options, progress => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('yt-download-progress', progress)
       }
-    )
+    })
   })
   ipcMain.handle('yt-fetch-image', (_, url) => ytdlp.fetchImageBuffer(url))
 
@@ -822,21 +829,21 @@ function updateTrayMenu() {
   const contextMenu = Menu.buildFromTemplate([
     closedToTray
       ? {
-        label: 'Restore App',
-        click: function () {
-          mainWindow.show()
-          closedToTray = false
-          updateTrayMenu()
-        },
-      }
+          label: 'Restore App',
+          click: function () {
+            mainWindow.show()
+            closedToTray = false
+            updateTrayMenu()
+          },
+        }
       : {
-        label: 'Minimize App',
-        click: function () {
-          mainWindow.hide()
-          closedToTray = true
-          updateTrayMenu()
+          label: 'Minimize App',
+          click: function () {
+            mainWindow.hide()
+            closedToTray = true
+            updateTrayMenu()
+          },
         },
-      },
     {
       label: 'Quit',
       click: function () {

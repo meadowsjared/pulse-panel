@@ -9,75 +9,75 @@ import { AudioGainRegion } from '../utils/audioGain'
 import { calculateSoundSegments } from '../utils/audioSegments'
 
 export interface PulseBackClip {
-  id: string;
-  title: string;
-  duration: number;
-  audioUrl: string;
-  blob: Blob;
-  createdAt: number;
-  fileName?: string;
-  hasDualTracks?: boolean;
-  tags?: string[];
-  trimStart?: number;
-  trimEnd?: number;
-  currentTime?: number;
-  volume?: number;
-  color?: string;
-  includeMic?: boolean;
-  includeInput?: boolean;
-  micGain?: number;
-  inputGain?: number;
-  partialGains?: AudioGainRegion[];
-  segmentBoundaries?: number[];
-  originalBlob?: Blob;
-  originalDuration?: number;
-  originalFileName?: string;
-  originalAudioUrl?: string;
+  id: string
+  title: string
+  duration: number
+  audioUrl: string
+  blob: Blob
+  createdAt: number
+  fileName?: string
+  hasDualTracks?: boolean
+  tags?: string[]
+  trimStart?: number
+  trimEnd?: number
+  currentTime?: number
+  volume?: number
+  color?: string
+  includeMic?: boolean
+  includeInput?: boolean
+  micGain?: number
+  inputGain?: number
+  partialGains?: AudioGainRegion[]
+  segmentBoundaries?: number[]
+  originalBlob?: Blob
+  originalDuration?: number
+  originalFileName?: string
+  originalAudioUrl?: string
 }
 
 export interface PulseBackClipMetadata {
-  id: string;
-  title: string;
-  duration: number;
-  fileName: string;
-  createdAt: number;
-  hasDualTracks?: boolean;
-  tags?: string[];
-  trimStart?: number;
-  trimEnd?: number;
-  currentTime?: number;
-  volume?: number;
-  color?: string;
-  includeMic?: boolean;
-  includeInput?: boolean;
-  micGain?: number;
-  inputGain?: number;
-  partialGains?: AudioGainRegion[];
-  segmentBoundaries?: number[];
-  originalDuration?: number;
-  originalFileName?: string;
+  id: string
+  title: string
+  duration: number
+  fileName: string
+  createdAt: number
+  hasDualTracks?: boolean
+  tags?: string[]
+  trimStart?: number
+  trimEnd?: number
+  currentTime?: number
+  volume?: number
+  color?: string
+  includeMic?: boolean
+  includeInput?: boolean
+  micGain?: number
+  inputGain?: number
+  partialGains?: AudioGainRegion[]
+  segmentBoundaries?: number[]
+  originalDuration?: number
+  originalFileName?: string
 }
 
 export interface ToastOptions {
-  filePath?: string | null;
-  action?: (() => void) | null;
-  actionLabel?: string | null;
-  duration?: number;
+  filePath?: string | null
+  action?: (() => void) | null
+  actionLabel?: string | null
+  duration?: number
 }
 
 interface PulseBackState {
-  isBufferEnabled: boolean;
-  isBufferRunning: boolean;
-  isLiveRecording: boolean;
-  liveRecordSeconds: number;
-  liveRecordRetroStart: number;
-  clips: PulseBackClip[];
-  selectedClipId: string | null;
-  toastMessage: string | null;
-  toastFilePath: string | null;
-  toastAction: (() => void) | null;
-  toastActionLabel: string | null;
-  toastTimeout: ReturnType<typeof setTimeout> | null;
+  isBufferEnabled: boolean
+  isBufferRunning: boolean
+  isLiveRecording: boolean
+  liveRecordSeconds: number
+  liveRecordRetroStart: number
+  clips: PulseBackClip[]
+  selectedClipId: string | null
+  toastMessage: string | null
+  toastFilePath: string | null
+  toastAction: (() => void) | null
+  toastActionLabel: string | null
+  toastTimeout: ReturnType<typeof setTimeout> | null
 }
 
 const DB_NAME = 'pulse-back-clips'
@@ -91,15 +91,15 @@ function toMetadata(clip: PulseBackClip): PulseBackClipMetadata {
   const rawTags = clip.tags ? Array.from(toRaw(clip.tags)).map(t => String(t)) : []
   const rawPartialGains = clip.partialGains
     ? Array.from(toRaw(clip.partialGains)).map(r => {
-      const rawR = toRaw(r)
-      return {
-        id: String(rawR.id || ''),
-        startSec: Number(rawR.startSec || 0),
-        endSec: Number(rawR.endSec || 0),
-        channel: rawR.channel !== undefined ? Number(rawR.channel) : undefined,
-        multiplier: Number(rawR.multiplier !== undefined && rawR.multiplier !== null ? rawR.multiplier : 1.0),
-      }
-    })
+        const rawR = toRaw(r)
+        return {
+          id: String(rawR.id || ''),
+          startSec: Number(rawR.startSec || 0),
+          endSec: Number(rawR.endSec || 0),
+          channel: rawR.channel !== undefined ? Number(rawR.channel) : undefined,
+          multiplier: Number(rawR.multiplier !== undefined && rawR.multiplier !== null ? rawR.multiplier : 1.0),
+        }
+      })
     : []
 
   const rawSegmentBoundaries = clip.segmentBoundaries
@@ -184,7 +184,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
                 legacyClips = await db.getAll(STORE_NAME)
               }
               db.close()
-            } catch (_) { }
+            } catch (_) {}
 
             if (legacyClips && legacyClips.length > 0) {
               const migratedList: PulseBackClipMetadata[] = []
@@ -234,13 +234,13 @@ export const usePulseBackStore = defineStore('pulseBack', {
             // Close and delete legacy IndexedDB database
             try {
               window.indexedDB?.deleteDatabase(DB_NAME)
-            } catch (_) { }
+            } catch (_) {}
             await electron.saveDBSetting('pulse_back_clips_migrated', true)
           } else {
             // Already marked migrated, ensure legacy IndexedDB is cleaned up
             try {
               window.indexedDB?.deleteDatabase(DB_NAME)
-            } catch (_) { }
+            } catch (_) {}
           }
         } catch (err) {
           console.warn('[PulseBack] Legacy IDB migration check error:', err)
@@ -270,8 +270,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
               }
 
               const origFileName = raw.originalFileName || fileName
-              const origDuration = raw.originalDuration !== undefined
-                ? Number(raw.originalDuration) : (raw.duration || 0)
+              const origDuration = raw.originalDuration !== undefined ? Number(raw.originalDuration) : raw.duration || 0
               let origBlob: Blob = blob
               let origAudioUrl: string = audioUrl
 
@@ -280,8 +279,10 @@ export const usePulseBackStore = defineStore('pulseBack', {
                   const origBuffer = await electron.readClipFile(raw.originalFileName)
                   if (origBuffer) {
                     origBlob = new Blob([origBuffer], { type: 'audio/wav' })
-                    origAudioUrl = `pulse-media://clips/${encodeURIComponent(raw.originalFileName).replace(/'/g, '%27')
-                      }`
+                    origAudioUrl = `pulse-media://clips/${encodeURIComponent(raw.originalFileName).replace(
+                      /'/g,
+                      '%27'
+                    )}`
                   }
                 } catch (e) {
                   console.warn(`[PulseBack] Failed to load original clip file ${raw.originalFileName}:`, e)
@@ -307,10 +308,12 @@ export const usePulseBackStore = defineStore('pulseBack', {
                 includeInput: raw.includeInput !== undefined ? Boolean(raw.includeInput) : undefined,
                 micGain: raw.micGain !== undefined ? Number(raw.micGain) : undefined,
                 inputGain: raw.inputGain !== undefined ? Number(raw.inputGain) : undefined,
-                partialGains: raw.partialGains && Array.isArray(raw.partialGains)
-                  ? Array.from(toRaw(raw.partialGains)) : undefined,
-                segmentBoundaries: raw.segmentBoundaries && Array.isArray(raw.segmentBoundaries)
-                  ? Array.from(toRaw(raw.segmentBoundaries)).map(Number) : undefined,
+                partialGains:
+                  raw.partialGains && Array.isArray(raw.partialGains) ? Array.from(toRaw(raw.partialGains)) : undefined,
+                segmentBoundaries:
+                  raw.segmentBoundaries && Array.isArray(raw.segmentBoundaries)
+                    ? Array.from(toRaw(raw.segmentBoundaries)).map(Number)
+                    : undefined,
                 originalBlob: origBlob,
                 originalDuration: origDuration,
                 originalFileName: origFileName,
@@ -433,8 +436,12 @@ export const usePulseBackStore = defineStore('pulseBack', {
       return await this.saveNewClip(blob, duration, `Clip (${totalSec}s)`, hasDualTracks)
     },
 
-    async saveNewClip(blob: Blob, duration: number, title?: string, hasDualTracks: boolean = false):
-      Promise<PulseBackClip> {
+    async saveNewClip(
+      blob: Blob,
+      duration: number,
+      title?: string,
+      hasDualTracks: boolean = false
+    ): Promise<PulseBackClip> {
       const settingsStore = useSettingsStore()
       const defaultVolPercent =
         typeof settingsStore.defaultVolume === 'number' && !Number.isNaN(settingsStore.defaultVolume)
@@ -443,10 +450,13 @@ export const usePulseBackStore = defineStore('pulseBack', {
 
       const id = crypto.randomUUID()
       const now = Date.now()
-      const defaultTitle = title || `Pulse Back ${new Date(now).toLocaleTimeString([], {
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-      })
-        }`
+      const defaultTitle =
+        title ||
+        `Pulse Back ${new Date(now).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })}`
 
       let fileName = `${id}.wav`
       let audioUrl = URL.createObjectURL(blob)
@@ -496,7 +506,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
       this.selectedClipId = clip.id
       try {
         localStorage.setItem('pulse_back_selected_clip_id', clip.id)
-      } catch { }
+      } catch {}
 
       await persistClipsMetadata(this.clips)
 
@@ -508,7 +518,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
       this.selectedClipId = clipId
       try {
         localStorage.setItem('pulse_back_selected_clip_id', clipId)
-      } catch { }
+      } catch {}
     },
 
     async deleteClip(clipId: string): Promise<void> {
@@ -516,10 +526,14 @@ export const usePulseBackStore = defineStore('pulseBack', {
       if (idx !== -1) {
         const clip = this.clips[idx]
         if (clip.audioUrl && clip.audioUrl.startsWith('blob:')) {
-          try { URL.revokeObjectURL(clip.audioUrl) } catch { }
+          try {
+            URL.revokeObjectURL(clip.audioUrl)
+          } catch {}
         }
         if (clip.originalAudioUrl && clip.originalAudioUrl.startsWith('blob:')) {
-          try { URL.revokeObjectURL(clip.originalAudioUrl) } catch { }
+          try {
+            URL.revokeObjectURL(clip.originalAudioUrl)
+          } catch {}
         }
         if (window.electron?.deleteClipFile) {
           if (clip.fileName) {
@@ -547,7 +561,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
             } else {
               localStorage.removeItem('pulse_back_selected_clip_id')
             }
-          } catch { }
+          } catch {}
         }
 
         await persistClipsMetadata(this.clips)
@@ -562,8 +576,11 @@ export const usePulseBackStore = defineStore('pulseBack', {
       Object.assign(clip, updates)
 
       // If updates contain a new blob, re-save to disk (unless restoring to existing original file)
-      if (updates.blob && window.electron?.saveClipFile
-        && (!updates.fileName || updates.fileName !== clip.originalFileName)) {
+      if (
+        updates.blob &&
+        window.electron?.saveClipFile &&
+        (!updates.fileName || updates.fileName !== clip.originalFileName)
+      ) {
         try {
           const buffer = await updates.blob.arrayBuffer()
           const res = await window.electron.saveClipFile({
@@ -572,11 +589,15 @@ export const usePulseBackStore = defineStore('pulseBack', {
             buffer,
           })
           if (res?.fileName) {
-            if (oldFileName && oldFileName !== clip.originalFileName
-              && oldFileName !== res.fileName && window.electron?.deleteClipFile) {
+            if (
+              oldFileName &&
+              oldFileName !== clip.originalFileName &&
+              oldFileName !== res.fileName &&
+              window.electron?.deleteClipFile
+            ) {
               try {
                 await window.electron.deleteClipFile(oldFileName)
-              } catch (_) { }
+              } catch (_) {}
             }
             clip.fileName = res.fileName
             clip.audioUrl = res.relativeUrl
@@ -678,9 +699,9 @@ export const usePulseBackStore = defineStore('pulseBack', {
         inputGain: clip.inputGain !== undefined ? Number(clip.inputGain) : 1.0,
         partialGains: clip.partialGains
           ? JSON.parse(JSON.stringify(toRaw(clip.partialGains))).map((r: any) => ({
-            ...r,
-            id: 'gain-pb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
-          }))
+              ...r,
+              id: 'gain-pb-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+            }))
           : [],
         segmentBoundaries: clip.segmentBoundaries ? [...toRaw(clip.segmentBoundaries)] : [],
         originalBlob: newOrigBlob,
@@ -700,7 +721,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
       this.selectedClipId = newClip.id
       try {
         localStorage.setItem('pulse_back_selected_clip_id', newClip.id)
-      } catch { }
+      } catch {}
 
       await persistClipsMetadata(this.clips)
 
@@ -713,15 +734,17 @@ export const usePulseBackStore = defineStore('pulseBack', {
       trimmedBlob: Blob,
       trimmedDuration: number,
       soundMetadata: {
-        title: string;
-        tags: string[];
-        color: string;
-        volume?: number;
-        soundSegments?: SoundSegment[];
+        title: string
+        tags: string[]
+        color: string
+        volume?: number
+        soundSegments?: SoundSegment[]
       },
       options: {
-        deleteAfterPublish?: boolean; navigateToSoundboard?: boolean;
-        format?: 'mp3' | 'wav' | 'ogg'; extension?: string;
+        deleteAfterPublish?: boolean
+        navigateToSoundboard?: boolean
+        format?: 'mp3' | 'wav' | 'ogg'
+        extension?: string
       } = {}
     ): Promise<void> {
       const settingsStore = useSettingsStore()
@@ -736,12 +759,7 @@ export const usePulseBackStore = defineStore('pulseBack', {
       ) {
         const startSec = Math.max(0, clip.trimStart || 0)
         const endSec = clip.trimEnd && clip.trimEnd > 0 ? clip.trimEnd : clip.duration
-        soundSegments = calculateSoundSegments(
-          clip.segmentBoundaries,
-          startSec,
-          endSec,
-          trimmedDuration
-        )
+        soundSegments = calculateSoundSegments(clip.segmentBoundaries, startSec, endSec, trimmedDuration)
       }
 
       const ext = options.extension || options.format || 'wav'
@@ -814,9 +832,12 @@ export const usePulseBackStore = defineStore('pulseBack', {
       if (this.toastTimeout) {
         clearTimeout(this.toastTimeout)
       }
-      const duration = (typeof optionsOrFilePath === 'object' && optionsOrFilePath?.duration)
-        ? optionsOrFilePath.duration
-        : (this.toastFilePath || this.toastAction ? 5500 : 3500)
+      const duration =
+        typeof optionsOrFilePath === 'object' && optionsOrFilePath?.duration
+          ? optionsOrFilePath.duration
+          : this.toastFilePath || this.toastAction
+            ? 5500
+            : 3500
 
       this.toastTimeout = setTimeout(() => {
         this.dismissToast()

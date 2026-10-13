@@ -1,10 +1,6 @@
 import { audioMixer } from './audioMixer'
 
-export function encodeWAV(
-  micSamples: Float32Array,
-  sampleRate: number,
-  inputSamples?: Float32Array | null
-): Blob {
+export function encodeWAV(micSamples: Float32Array, sampleRate: number, inputSamples?: Float32Array | null): Blob {
   const isStereo = !!(inputSamples && inputSamples.length > 0)
   const numChannels = isStereo ? 2 : 1
   const length = micSamples.length
@@ -82,11 +78,7 @@ export async function encodeMP3(
   return new Blob([mp3Data, finalData], { type: 'audio/mp3' })
 }
 
-export async function encodeOGG(
-  samples: Float32Array,
-  sampleRate: number,
-  quality: number = 3
-): Promise<Blob> {
+export async function encodeOGG(samples: Float32Array, sampleRate: number, quality: number = 3): Promise<Blob> {
   const { createOggEncoder } = await import('wasm-media-encoders')
   const encoder = await createOggEncoder()
   encoder.configure({
@@ -487,35 +479,51 @@ class PulseBackBuffer {
     this.pendingRequests.clear()
 
     if (this.micSourceNode) {
-      try { this.micSourceNode.disconnect() } catch {}
+      try {
+        this.micSourceNode.disconnect()
+      } catch {}
       this.micSourceNode = null
     }
     if (this.inputSourceNode) {
-      try { this.inputSourceNode.disconnect() } catch {}
+      try {
+        this.inputSourceNode.disconnect()
+      } catch {}
       this.inputSourceNode = null
     }
     if (this.micGainNode) {
-      try { this.micGainNode.disconnect() } catch {}
+      try {
+        this.micGainNode.disconnect()
+      } catch {}
       this.micGainNode = null
     }
     if (this.inputGainNode) {
-      try { this.inputGainNode.disconnect() } catch {}
+      try {
+        this.inputGainNode.disconnect()
+      } catch {}
       this.inputGainNode = null
     }
     if (this.mergerNode) {
-      try { this.mergerNode.disconnect() } catch {}
+      try {
+        this.mergerNode.disconnect()
+      } catch {}
       this.mergerNode = null
     }
     if (this.micAnalyserNode) {
-      try { this.micAnalyserNode.disconnect() } catch {}
+      try {
+        this.micAnalyserNode.disconnect()
+      } catch {}
       this.micAnalyserNode = null
     }
     if (this.inputAnalyserNode) {
-      try { this.inputAnalyserNode.disconnect() } catch {}
+      try {
+        this.inputAnalyserNode.disconnect()
+      } catch {}
       this.inputAnalyserNode = null
     }
     if (this.testGainNode) {
-      try { this.testGainNode.disconnect() } catch {}
+      try {
+        this.testGainNode.disconnect()
+      } catch {}
       this.testGainNode = null
     }
     if (this.workletNode) {
@@ -526,7 +534,9 @@ class PulseBackBuffer {
       this.workletNode = null
     }
     if (this.zeroGain) {
-      try { this.zeroGain.disconnect() } catch {}
+      try {
+        this.zeroGain.disconnect()
+      } catch {}
       this.zeroGain = null
     }
     if (this.micStream) {
@@ -538,7 +548,9 @@ class PulseBackBuffer {
       this.inputStream = null
     }
     if (this.audioCtx) {
-      try { this.audioCtx.close().catch(() => {}) } catch {}
+      try {
+        this.audioCtx.close().catch(() => {})
+      } catch {}
       this.audioCtx = null
     }
   }
@@ -591,12 +603,18 @@ class PulseBackBuffer {
         this.testGainNode.connect(this.audioCtx.destination)
       }
       this.testGainNode.gain.value = this.currentInputVolume
-      try { testSource.connect(this.testGainNode) } catch {}
+      try {
+        testSource.connect(this.testGainNode)
+      } catch {}
     } else if (this.testGainNode) {
       if (testSource) {
-        try { testSource.disconnect(this.testGainNode) } catch {}
+        try {
+          testSource.disconnect(this.testGainNode)
+        } catch {}
       }
-      try { this.testGainNode.disconnect() } catch {}
+      try {
+        this.testGainNode.disconnect()
+      } catch {}
       this.testGainNode = null
     }
   }

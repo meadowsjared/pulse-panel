@@ -3,22 +3,18 @@
  */
 
 export interface AudioGainRegion {
-  id?: string;
-  startSec: number;
-  endSec: number;
-  channel?: number; // 0 = mic/left, 1 = input/right, or undefined for all channels
-  multiplier: number;
+  id?: string
+  startSec: number
+  endSec: number
+  channel?: number // 0 = mic/left, 1 = input/right, or undefined for all channels
+  multiplier: number
 }
 
 /**
  * Calculates the absolute peak amplitude (0.0 to 1.0+) of an audio channel,
  * optionally within a sample range [startSample, endSample].
  */
-export function calculateChannelPeak(
-  channelData: Float32Array,
-  startSample: number = 0,
-  endSample?: number
-): number {
+export function calculateChannelPeak(channelData: Float32Array, startSample: number = 0, endSample?: number): number {
   let peak = 0
   const start = Math.max(0, startSample)
   const end = endSample !== undefined ? Math.min(channelData.length, endSample) : channelData.length
@@ -78,16 +74,12 @@ export function applyGainToAudioBuffer(
   const hasRegions = Array.isArray(regions) && regions.length > 0
 
   for (let ch = 0; ch < numChannels; ch++) {
-    const globalMult = Array.isArray(channelMultipliers)
-      ? (channelMultipliers[ch] ?? 1.0)
-      : channelMultipliers
+    const globalMult = Array.isArray(channelMultipliers) ? (channelMultipliers[ch] ?? 1.0) : channelMultipliers
 
     const src = sourceBuffer.getChannelData(ch)
     const dst = newBuf.getChannelData(ch)
 
-    const chRegions = hasRegions
-      ? regions!.filter(r => r.channel === undefined || r.channel === ch)
-      : []
+    const chRegions = hasRegions ? regions!.filter(r => r.channel === undefined || r.channel === ch) : []
 
     if (chRegions.length === 0) {
       if (Math.abs(globalMult - 1.0) < 0.001) {
@@ -95,7 +87,7 @@ export function applyGainToAudioBuffer(
       } else {
         for (let i = 0; i < length; i++) {
           const val = src[i] * globalMult
-          dst[i] = val > 1.0 ? 1.0 : (val < -1.0 ? -1.0 : val)
+          dst[i] = val > 1.0 ? 1.0 : val < -1.0 ? -1.0 : val
         }
       }
     } else {
@@ -137,11 +129,10 @@ export function applyGainToAudioBuffer(
 
       for (let i = 0; i < length; i++) {
         const val = src[i] * envelope[i]
-        dst[i] = val > 1.0 ? 1.0 : (val < -1.0 ? -1.0 : val)
+        dst[i] = val > 1.0 ? 1.0 : val < -1.0 ? -1.0 : val
       }
     }
   }
 
   return newBuf
 }
-

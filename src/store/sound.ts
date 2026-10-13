@@ -103,9 +103,7 @@ export const useSoundStore = defineStore('sound', {
           ? 1
           : settingsStore.defaultVolume
       deviceData.currentAudio.forEach(audio => {
-        const sound = settingsStore.sounds.find(
-          s => audio.getAttribute('data-id')?.startsWith(`${s.id}_`) === true
-        )
+        const sound = settingsStore.sounds.find(s => audio.getAttribute('data-id')?.startsWith(`${s.id}_`) === true)
         const baseVolume = sound?.volume ?? defaultVol
         audio.volume = Math.min(1, Math.max(0, baseVolume * deviceVol))
       })
@@ -126,9 +124,7 @@ export const useSoundStore = defineStore('sound', {
             ? 1
             : settingsStore.defaultVolume
         outputDevice.currentAudio.forEach(audio => {
-          const sound = settingsStore.sounds.find(
-            s => audio.getAttribute('data-id')?.startsWith(`${s.id}_`) === true
-          )
+          const sound = settingsStore.sounds.find(s => audio.getAttribute('data-id')?.startsWith(`${s.id}_`) === true)
           const baseVolume = sound?.volume ?? defaultVol
           audio.volume = Math.min(1, Math.max(0, baseVolume * deviceVol))
         })
@@ -478,9 +474,7 @@ export const useSoundStore = defineStore('sound', {
           })
         }
       })
-      const indexToRemove = this.playingSoundIds.findIndex(
-        item => `${item.fileId}_${item.instanceId}` === targetId
-      )
+      const indexToRemove = this.playingSoundIds.findIndex(item => `${item.fileId}_${item.instanceId}` === targetId)
       if (indexToRemove !== -1) {
         this.playingSoundIds.splice(indexToRemove, 1)
       }

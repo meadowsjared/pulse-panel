@@ -22,7 +22,7 @@
 }
 
 .darkMode {
-  --alt-bg-color: #2C2C2C;
+  --alt-bg-color: #2c2c2c;
   --top-toolbar-color: #414141;
   --top-toolbar-color-light: #5e5e5e;
   --background-color: hsl(0, 0%, 20%);
@@ -34,7 +34,7 @@
   --button-accent-color: #a3a3a3;
   --button-text: #f2f2f2;
   --text-color: #c0c0c0;
-  --text-placeholder-color: #6C7280;
+  --text-placeholder-color: #6c7280;
   --active-color: #23a459;
   --primary-color: #23a459;
   --primary-color-gradient-light: oklch(from var(--primary-color) calc(l + 0.16) calc(c * 1) h);
@@ -75,15 +75,18 @@ select {
   font-family: 'Roboto', sans-serif;
 }
 
-input:where([type='checkbox']), input:where([type='radio']) {
-  color: var(--primary-color)
+input:where([type='checkbox']),
+input:where([type='radio']) {
+  color: var(--primary-color);
 }
 
 input:where([type='range']) {
   accent-color: var(--primary-color);
 }
 
-html, body, div#app {
+html,
+body,
+div#app {
   height: 100vh;
   overflow: hidden;
 }
@@ -150,14 +153,16 @@ button.danger.danger:focus-visible {
 }
 
 /** light and dark button styling */
-button.light, button.dark {
+button.light,
+button.dark {
   padding: 0.5rem;
   border-radius: 0.5rem;
   cursor: pointer;
   outline-offset: 2px;
 }
 
-button.dark:focus-visible, button.light:focus-visible {
+button.dark:focus-visible,
+button.light:focus-visible {
   outline: 2px solid var(--active-color);
 }
 
@@ -204,7 +209,8 @@ button.dark:active {
   cursor: pointer;
 }
 
-input[type="text"], .tag-input {
+input[type='text'],
+.tag-input {
   background-color: var(--input-bg-color);
   color: var(--text-color);
   border-radius: 0.5rem;
@@ -215,8 +221,10 @@ input[type="text"], .tag-input {
   background: var(--active-color);
 }
 
-input:focus, .tag-input:focus,
-input:focus-visible, .tag-input:focus-visible {
+input:focus,
+.tag-input:focus,
+input:focus-visible,
+.tag-input:focus-visible {
   --tw-ring-color: none;
   outline: 1px solid var(--active-color);
 }
@@ -243,4 +251,3 @@ label:has(> input[type='checkbox']:focus-visible) {
   background: #22c55e;
   box-shadow: 0 0 6px #22c55e;
 }
-

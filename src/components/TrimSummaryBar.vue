@@ -3,71 +3,73 @@
     <div class="trim-summary-bar">
       <!-- Left: Trim Duration Stats -->
       <div class="trim-stats">
-        <button type="button"
-                class="stat-pill clickable"
-                title="Click to reset selection to full clip"
-                @click.stop="onResetSelection"
-                @keydown.enter.prevent="onResetSelection"
-                @keydown.space.prevent="onResetSelection">
+        <button
+          type="button"
+          class="stat-pill clickable"
+          title="Click to reset selection to full clip"
+          @click.stop="onResetSelection"
+          @keydown.enter.prevent="onResetSelection"
+          @keydown.space.prevent="onResetSelection">
           <span class="stat-label">Selected:</span>
           <span class="stat-value">{{ formatSeconds(selectedDuration) }}</span>
         </button>
-        <button type="button"
-                class="stat-pill clickable"
-                title="Click to reset start to clip start (0:00.0)"
-                @click.stop="onResetStart"
-                @keydown.enter.prevent="onResetStart"
-                @keydown.space.prevent="onResetStart">
+        <button
+          type="button"
+          class="stat-pill clickable"
+          title="Click to reset start to clip start (0:00.0)"
+          @click.stop="onResetStart"
+          @keydown.enter.prevent="onResetStart"
+          @keydown.space.prevent="onResetStart">
           <span class="stat-label">Start:</span>
           <span class="stat-value">{{ formatSeconds(trimStart) }}</span>
         </button>
-        <button type="button"
-                class="stat-pill clickable"
-                title="Click to reset end to clip end"
-                @click.stop="onResetEnd"
-                @keydown.enter.prevent="onResetEnd"
-                @keydown.space.prevent="onResetEnd">
+        <button
+          type="button"
+          class="stat-pill clickable"
+          title="Click to reset end to clip end"
+          @click.stop="onResetEnd"
+          @keydown.enter.prevent="onResetEnd"
+          @keydown.space.prevent="onResetEnd">
           <span class="stat-label">End:</span>
           <span class="stat-value">{{ formatSeconds(trimEnd) }}</span>
         </button>
       </div>
 
       <!-- Center: Audio Gain & Auto-Level Controls -->
-      <div v-if="showGainControls"
-           class="audio-gain-controls">
+      <div v-if="showGainControls" class="audio-gain-controls">
         <!-- Gain Multiplier Input -->
-        <div class="gain-input-wrapper"
-             :title="`Volume multiplier for ${activeTargetLabel}`">
+        <div class="gain-input-wrapper" :title="`Volume multiplier for ${activeTargetLabel}`">
           <span class="gain-label">Gain:</span>
           <div class="gain-box">
-            <input ref="gainInputRef"
-                   type="number"
-                   class="gain-input"
-                   step="0.1"
-                   min="0"
-                   :value="displayMultiplier"
-                   @change="onGainCommit"
-                   @blur="onGainCommit"
-                   @keydown.enter.prevent="onGainCommit" />
+            <input
+              ref="gainInputRef"
+              type="number"
+              class="gain-input"
+              step="0.1"
+              min="0"
+              :value="displayMultiplier"
+              @change="onGainCommit"
+              @blur="onGainCommit"
+              @keydown.enter.prevent="onGainCommit" />
             <span class="gain-suffix">x</span>
           </div>
-          <button v-if="isGainModified"
-                  type="button"
-                  class="gain-reset-icon-btn"
-                  title="Reset to 1.0x"
-                  @click="resetGain">
+          <button
+            v-if="isGainModified"
+            type="button"
+            class="gain-reset-icon-btn"
+            title="Reset to 1.0x"
+            @click="resetGain">
             ↺
           </button>
         </div>
 
         <!-- Auto Level Button -->
-        <button type="button"
-                class="auto-level-btn"
-                :title="`Auto-level ${activeTargetLabel} to peak -0.5 dB`"
-                @click="onAutoLevelClick">
-          <svg class="w-3.5 h-3.5 text-amber-400"
-               viewBox="0 0 24 24"
-               fill="currentColor">
+        <button
+          type="button"
+          class="auto-level-btn"
+          :title="`Auto-level ${activeTargetLabel} to peak -0.5 dB`"
+          @click="onAutoLevelClick">
+          <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
           </svg>
           <span>Auto</span>
@@ -76,26 +78,25 @@
 
       <!-- Right: Quick Actions -->
       <div class="trim-quick-actions">
-        <button v-if="showTrimToSelection && canTrimToSelection"
-                type="button"
-                class="secondary-btn"
-                title="Discard audio outside In and Out points to refine selection"
-                @click="$emit('trimToSelection')">
+        <button
+          v-if="showTrimToSelection && canTrimToSelection"
+          type="button"
+          class="secondary-btn"
+          title="Discard audio outside In and Out points to refine selection"
+          @click="$emit('trimToSelection')">
           <span>Trim to</span>
           <span>Selection</span>
         </button>
-        <button type="button"
-                class="secondary-btn"
-                @click="$emit('reset')"
-                title="Reset selection to full duration">
+        <button type="button" class="secondary-btn" @click="$emit('reset')" title="Reset selection to full duration">
           <span>Reset</span>
           <span>Trim</span>
         </button>
-        <button type="button"
-                class="secondary-btn"
-                :class="{ 'is-playing': isPlaying }"
-                @click="$emit('playTrimmed')"
-                title="Audition current trim selection">
+        <button
+          type="button"
+          class="secondary-btn"
+          :class="{ 'is-playing': isPlaying }"
+          @click="$emit('playTrimmed')"
+          title="Audition current trim selection">
           <span>{{ isPlaying ? 'Stop' : 'Play' }}</span>
           <span>Trimmed</span>
         </button>
@@ -103,68 +104,60 @@
     </div>
 
     <!-- Active Gain Ranges Strip -->
-    <div v-if="sortedGainRegions.length > 0"
-         class="gain-ranges-strip"
-         @contextmenu.prevent.stop="toggleMenu">
-      <div class="gain-ranges-header-wrapper"
-           ref="menuWrapperRef">
-        <button type="button"
-                ref="menuBtnRef"
-                class="gain-ranges-menu-btn"
-                title="Manage gain ranges (Click or right-click to open options)"
-                aria-haspopup="true"
-                :aria-expanded="isMenuOpen"
-                @click.stop="toggleMenu"
-                @contextmenu.prevent.stop="toggleMenu">
-          <svg class="w-3.5 h-3.5 text-amber-400 flex-shrink-0"
-               viewBox="0 0 24 24"
-               fill="currentColor">
+    <div v-if="sortedGainRegions.length > 0" class="gain-ranges-strip" @contextmenu.prevent.stop="toggleMenu">
+      <div class="gain-ranges-header-wrapper" ref="menuWrapperRef">
+        <button
+          type="button"
+          ref="menuBtnRef"
+          class="gain-ranges-menu-btn"
+          title="Manage gain ranges (Click or right-click to open options)"
+          aria-haspopup="true"
+          :aria-expanded="isMenuOpen"
+          @click.stop="toggleMenu"
+          @contextmenu.prevent.stop="toggleMenu">
+          <svg class="w-3.5 h-3.5 text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
           </svg>
           <span class="gain-ranges-title">Gain Ranges</span>
-          <svg class="w-3 h-3 text-zinc-400 chevron-icon"
-               :class="{ 'rotate-180': isMenuOpen }"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2.5"
-               stroke-linecap="round"
-               stroke-linejoin="round">
+          <svg
+            class="w-3 h-3 text-zinc-400 chevron-icon"
+            :class="{ 'rotate-180': isMenuOpen }"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round">
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
         </button>
 
         <!-- Dropdown / Context Menu -->
         <transition name="menu-fade">
-          <div v-if="isMenuOpen"
-               ref="menuDropdownRef"
-               class="gain-ranges-dropdown-menu"
-               @click.stop>
-            <button type="button"
-                    class="dropdown-menu-item danger-item"
-                    @click="onClearAllRanges">
-              <svg class="w-3.5 h-3.5 flex-shrink-0"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
+          <div v-if="isMenuOpen" ref="menuDropdownRef" class="gain-ranges-dropdown-menu" @click.stop>
+            <button type="button" class="dropdown-menu-item danger-item" @click="onClearAllRanges">
+              <svg
+                class="w-3.5 h-3.5 flex-shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
               <span>Clear All Gain Ranges</span>
             </button>
-            <button type="button"
-                    class="dropdown-menu-item"
-                    @click="onResetAllRangesTo1">
-              <svg class="w-3.5 h-3.5 flex-shrink-0"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
+            <button type="button" class="dropdown-menu-item" @click="onResetAllRangesTo1">
+              <svg
+                class="w-3.5 h-3.5 flex-shrink-0"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
                 <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                 <path d="M3 3v5h5"></path>
               </svg>
@@ -175,33 +168,30 @@
       </div>
 
       <div class="gain-ranges-chips">
-        <button v-for="region in sortedGainRegions"
-                :key="getRegionKey(region)"
-                type="button"
-                class="gain-range-chip"
-                :class="{
-                  'is-active': isRegionActive(region),
-                  'is-mic': region.channel === 0,
-                  'is-input': region.channel === 1,
-                  'is-both': region.channel === undefined
-                }"
-                :title="`Click to rehighlight ${formatRegionLabel(region)} and adjust gain`"
-                @click="onSelectRegion(region)">
-          <span v-if="hasDualTracks"
-                class="chip-track-badge">
-            {{ region.channel === 0 ? '🎤 Mic' : (region.channel === 1 ? '🔊 Input' : 'Both') }}
+        <button
+          v-for="region in sortedGainRegions"
+          :key="getRegionKey(region)"
+          type="button"
+          class="gain-range-chip"
+          :class="{
+            'is-active': isRegionActive(region),
+            'is-mic': region.channel === 0,
+            'is-input': region.channel === 1,
+            'is-both': region.channel === undefined,
+          }"
+          :title="`Click to rehighlight ${formatRegionLabel(region)} and adjust gain`"
+          @click="onSelectRegion(region)">
+          <span v-if="hasDualTracks" class="chip-track-badge">
+            {{ region.channel === 0 ? '🎤 Mic' : region.channel === 1 ? '🔊 Input' : 'Both' }}
           </span>
-          <span class="chip-range">
-            {{ formatSeconds(region.startSec) }} - {{ formatSeconds(region.endSec) }}
-          </span>
-          <span class="chip-multiplier">
-            {{ formatMultiplier(region.multiplier) }}x
-          </span>
-          <span class="chip-delete-btn"
-                title="Delete this gain range"
-                role="button"
-                aria-label="Delete gain range"
-                @click.stop="onDeleteRegion(region)">
+          <span class="chip-range"> {{ formatSeconds(region.startSec) }} - {{ formatSeconds(region.endSec) }} </span>
+          <span class="chip-multiplier"> {{ formatMultiplier(region.multiplier) }}x </span>
+          <span
+            class="chip-delete-btn"
+            title="Delete this gain range"
+            role="button"
+            aria-label="Delete gain range"
+            @click.stop="onDeleteRegion(region)">
             &times;
           </span>
         </button>
@@ -215,20 +205,20 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { AudioGainRegion } from '../utils/audioGain'
 
 interface Props {
-  trimStart: number;
-  trimEnd: number;
-  duration?: number;
-  isPlaying?: boolean;
-  showTrimToSelection?: boolean;
-  canTrimToSelection?: boolean;
-  hasDualTracks?: boolean;
-  gain?: number;
-  micGain?: number;
-  inputGain?: number;
-  showGainControls?: boolean;
-  hasPartialGains?: boolean;
-  gainRegions?: AudioGainRegion[];
-  activeTrackTarget?: 'both' | 'mic' | 'input';
+  trimStart: number
+  trimEnd: number
+  duration?: number
+  isPlaying?: boolean
+  showTrimToSelection?: boolean
+  canTrimToSelection?: boolean
+  hasDualTracks?: boolean
+  gain?: number
+  micGain?: number
+  inputGain?: number
+  showGainControls?: boolean
+  hasPartialGains?: boolean
+  gainRegions?: AudioGainRegion[]
+  activeTrackTarget?: 'both' | 'mic' | 'input'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -247,25 +237,25 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'reset'): void;
-  (e: 'playTrimmed'): void;
-  (e: 'trimToSelection'): void;
-  (e: 'update:trimStart', val: number): void;
-  (e: 'update:trimEnd', val: number): void;
-  (e: 'update:activeTrackTarget', val: 'both' | 'mic' | 'input'): void;
-  (e: 'resetStart'): void;
-  (e: 'resetEnd'): void;
-  (e: 'resetSelection'): void;
-  (e: 'update:gain', val: number): void;
-  (e: 'update:micGain', val: number): void;
-  (e: 'update:inputGain', val: number): void;
-  (e: 'changeGain', payload: { target: 'both' | 'mic' | 'input'; multiplier: number; }): void;
-  (e: 'autoLevel', target: 'both' | 'mic' | 'input'): void;
-  (e: 'resetGain', target: 'both' | 'mic' | 'input'): void;
-  (e: 'selectRegion', region: AudioGainRegion): void;
-  (e: 'deleteRegion', region: AudioGainRegion): void;
-  (e: 'clearAllGainRegions'): void;
-  (e: 'resetAllGainRegions'): void;
+  (e: 'reset'): void
+  (e: 'playTrimmed'): void
+  (e: 'trimToSelection'): void
+  (e: 'update:trimStart', val: number): void
+  (e: 'update:trimEnd', val: number): void
+  (e: 'update:activeTrackTarget', val: 'both' | 'mic' | 'input'): void
+  (e: 'resetStart'): void
+  (e: 'resetEnd'): void
+  (e: 'resetSelection'): void
+  (e: 'update:gain', val: number): void
+  (e: 'update:micGain', val: number): void
+  (e: 'update:inputGain', val: number): void
+  (e: 'changeGain', payload: { target: 'both' | 'mic' | 'input'; multiplier: number }): void
+  (e: 'autoLevel', target: 'both' | 'mic' | 'input'): void
+  (e: 'resetGain', target: 'both' | 'mic' | 'input'): void
+  (e: 'selectRegion', region: AudioGainRegion): void
+  (e: 'deleteRegion', region: AudioGainRegion): void
+  (e: 'clearAllGainRegions'): void
+  (e: 'resetAllGainRegions'): void
 }>()
 
 const activeTrackTarget = computed({
@@ -403,9 +393,7 @@ function formatMultiplier(val: number): string {
 }
 
 function formatRegionLabel(region: AudioGainRegion): string {
-  const track = props.hasDualTracks
-    ? (region.channel === 0 ? 'Mic' : (region.channel === 1 ? 'Input' : 'Both'))
-    : ''
+  const track = props.hasDualTracks ? (region.channel === 0 ? 'Mic' : region.channel === 1 ? 'Input' : 'Both') : ''
   const trackPrefix = track ? `[${track}] ` : ''
   return `${trackPrefix}${formatSeconds(region.startSec)} - ${formatSeconds(region.endSec)}`
 }
@@ -705,7 +693,9 @@ button.stat-pill {
   font-size: 0.85rem;
   padding: 0 0.15rem;
   line-height: 1;
-  transition: color 0.15s ease, transform 0.2s ease;
+  transition:
+    color 0.15s ease,
+    transform 0.2s ease;
 }
 
 .gain-reset-icon-btn:hover {
@@ -852,7 +842,9 @@ button.stat-pill {
   border: 1px solid #3f3f46;
   border-radius: 8px;
   padding: 0.25rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.6),
+    0 8px 10px -6px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -893,7 +885,9 @@ button.stat-pill {
 
 .menu-fade-enter-active,
 .menu-fade-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .menu-fade-enter-from,

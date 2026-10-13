@@ -1,28 +1,21 @@
 <template>
-  <div class="color-picker"
-       ref="colorPickerRef">
-    <label v-if="props.label"
-           for="colorPicker"
-           @click="togglePicker">{{ props.label }}</label>
-    <div class="color-swatch"
-         :style="{ backgroundColor: defaultColor }"
-         @click="togglePicker"></div>
+  <div class="color-picker" ref="colorPickerRef">
+    <label v-if="props.label" for="colorPicker" @click="togglePicker">{{ props.label }}</label>
+    <div class="color-swatch" :style="{ backgroundColor: defaultColor }" @click="togglePicker"></div>
 
     <!-- Floating Teleported Dropdown picker -->
     <Teleport to="body">
-      <div v-if="showPicker"
-           ref="dropdownRef"
-           class="color-picker-floating-dropdown"
-           :style="dropdownStyle">
-        <ColorPicker :pure-color="defaultColor"
-                     @update:pure-color="updateColor"
-                     format="hex8"
-                     picker-type="chrome"
-                     :is-widget="true"
-                     use-type="pure"
-                     theme="black"
-                     lang="En"
-                     :disable-history="true" />
+      <div v-if="showPicker" ref="dropdownRef" class="color-picker-floating-dropdown" :style="dropdownStyle">
+        <ColorPicker
+          :pure-color="defaultColor"
+          @update:pure-color="updateColor"
+          format="hex8"
+          picker-type="chrome"
+          :is-widget="true"
+          use-type="pure"
+          theme="black"
+          lang="En"
+          :disable-history="true" />
       </div>
     </Teleport>
   </div>
@@ -32,20 +25,21 @@
 import { computed, ref, onMounted, onUnmounted, defineAsyncComponent, nextTick } from 'vue'
 import 'vue3-colorpicker/style.css'
 
-const ColorPicker = defineAsyncComponent(() =>
-  import('vue3-colorpicker').then(m => m.ColorPicker)
-)
+const ColorPicker = defineAsyncComponent(() => import('vue3-colorpicker').then(m => m.ColorPicker))
 
-const props = withDefaults(defineProps<{
-  modelValue: string | undefined;
-  label?: string;
-  align?: 'left' | 'right' | 'auto';
-  placement?: 'bottom' | 'top' | 'auto';
-}>(), {
-  label: 'Color:',
-  align: 'auto',
-  placement: 'auto',
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue: string | undefined
+    label?: string
+    align?: 'left' | 'right' | 'auto'
+    placement?: 'bottom' | 'top' | 'auto'
+  }>(),
+  {
+    label: 'Color:',
+    align: 'auto',
+    placement: 'auto',
+  }
+)
 
 const emit = defineEmits<(event: 'update:modelValue', value: string | undefined) => void>()
 

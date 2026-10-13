@@ -1,51 +1,48 @@
 <template>
   <div class="toolbar select-none">
     <div class="left-buttons">
-      <div class="search-input-wrapper"
-           ref="searchContainerRef">
-        <inline-svg class="search-icon"
-                    :src="SearchIcon" />
-        <input ref="searchInputRef"
-               type="text"
-               class="search-input"
-               v-model="settingsStore.searchText"
-               placeholder="Search sounds (Ctrl+F)..."
-               @focus="handleFocus"
-               @blur="handleBlur"
-               @keydown.esc="clearSearch(true)"
-               @keydown.enter="handleEnter" />
+      <div class="search-input-wrapper" ref="searchContainerRef">
+        <inline-svg class="search-icon" :src="SearchIcon" />
+        <input
+          ref="searchInputRef"
+          type="text"
+          class="search-input"
+          v-model="settingsStore.searchText"
+          placeholder="Search sounds (Ctrl+F)..."
+          @focus="handleFocus"
+          @blur="handleBlur"
+          @keydown.esc="clearSearch(true)"
+          @keydown.enter="handleEnter" />
         <div class="input-actions">
-          <button v-if="settingsStore.searchText.length > 0"
-                  class="clear-button"
-                  @mousedown.prevent="clearSearch(false)"
-                  @click="clearSearch(false)"
-                  title="Clear search (Esc)"
-                  tabindex="-1">
-            <inline-svg class="w-3 h-3"
-                        :src="CloseIcon" />
+          <button
+            v-if="settingsStore.searchText.length > 0"
+            class="clear-button"
+            @mousedown.prevent="clearSearch(false)"
+            @click="clearSearch(false)"
+            title="Clear search (Esc)"
+            tabindex="-1">
+            <inline-svg class="w-3 h-3" :src="CloseIcon" />
           </button>
-          <button class="help-button"
-                  :class="{ active: showTips }"
-                  @mousedown.prevent="toggleTips"
-                  title="Search syntax guide"
-                  tabindex="-1">
+          <button
+            class="help-button"
+            :class="{ active: showTips }"
+            @mousedown.prevent="toggleTips"
+            title="Search syntax guide"
+            tabindex="-1">
             ?
           </button>
         </div>
 
         <!-- Floating Search Tips Dropdown -->
         <transition name="tips-fade">
-          <div v-if="showTips"
-               class="search-tips-dropdown"
-               @mousedown.prevent>
+          <div v-if="showTips" class="search-tips-dropdown" @mousedown.prevent>
             <div class="tips-header">
               <span class="tips-title">Search Syntax</span>
               <span class="tips-subtitle">Click a filter to insert</span>
             </div>
 
             <div class="tips-list">
-              <div class="tip-row"
-                   @click="insertFilter('#')">
+              <div class="tip-row" @click="insertFilter('#')">
                 <div class="tip-badges">
                   <span class="tip-badge">#tag</span>
                   <span class="tip-badge sub">tag:</span>
@@ -56,8 +53,7 @@
                 </div>
               </div>
 
-              <div class="tip-row"
-                   @click="insertFilter('@')">
+              <div class="tip-row" @click="insertFilter('@')">
                 <div class="tip-badges">
                   <span class="tip-badge">@segment</span>
                   <span class="tip-badge sub">seg:</span>
@@ -68,8 +64,7 @@
                 </div>
               </div>
 
-              <div class="tip-row"
-                   @click="insertFilter('-')">
+              <div class="tip-row" @click="insertFilter('-')">
                 <div class="tip-badges">
                   <span class="tip-badge">-word</span>
                 </div>
@@ -79,8 +74,7 @@
                 </div>
               </div>
 
-              <div class="tip-row"
-                   @click="insertFilter('quotes')">
+              <div class="tip-row" @click="insertFilter('quotes')">
                 <div class="tip-badges">
                   <span class="tip-badge">"phrase"</span>
                 </div>
@@ -101,8 +95,7 @@
       </div>
 
       <transition name="fade">
-        <div v-if="settingsStore.searchText.trim().length > 0"
-             class="search-stats">
+        <div v-if="settingsStore.searchText.trim().length > 0" class="search-stats">
           {{ matchCountText }}
         </div>
       </transition>
@@ -112,9 +105,10 @@
       <QuickClipButton />
 
       <!-- Pulse Back Buffer Toggle -->
-      <toggle class="pulseBackToggle"
-              :modelValue="pulseBackStore.isBufferEnabled"
-              @update:modelValue="pulseBackStore.toggleBuffer">
+      <toggle
+        class="pulseBackToggle"
+        :modelValue="pulseBackStore.isBufferEnabled"
+        @update:modelValue="pulseBackStore.toggleBuffer">
         <span class="flex items-center gap-1.5">
           <span :class="['status-dot', { online: pulseBackStore.isBufferRunning }]"></span>
           Pulse Back
@@ -122,11 +116,9 @@
       </toggle>
 
       <!-- Play / Edit Mode Toggle -->
-      <toggle class="displayMode"
-              v-model="editMode"
-              @update:modelValue="handleDisplayModeChange">{{
-                editMode ? 'Play Mode' : 'Edit Mode'
-              }}</toggle>
+      <toggle class="displayMode" v-model="editMode" @update:modelValue="handleDisplayModeChange">{{
+        editMode ? 'Play Mode' : 'Edit Mode'
+      }}</toggle>
     </div>
   </div>
 </template>
@@ -145,7 +137,6 @@ const soundStore = useSoundStore()
 const pulseBackStore = usePulseBackStore()
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const searchContainerRef = ref<HTMLDivElement | null>(null)
-
 
 const isFocused = ref(false)
 const manualTipsOpen = ref(false)
@@ -193,7 +184,6 @@ function toggleTips() {
     })
   }
 }
-
 
 function insertFilter(prefix: string) {
   const current = settingsStore.searchText.trim()
@@ -335,7 +325,10 @@ onUnmounted(() => {
   padding: 0;
   font-size: 0.75rem;
   font-weight: 600;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
 }
 
 .clear-button:hover,
@@ -355,7 +348,9 @@ onUnmounted(() => {
   background: var(--input-bg-color);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0.6rem;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.45), 0 10px 10px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.45),
+    0 10px 10px rgba(0, 0, 0, 0.25);
   padding: 0.75rem 0.85rem;
   z-index: 60;
   backdrop-filter: blur(12px);
@@ -476,7 +471,9 @@ onUnmounted(() => {
 /* Transitions */
 .tips-fade-enter-active,
 .tips-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .tips-fade-enter-from,
@@ -499,7 +496,9 @@ onUnmounted(() => {
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .fade-enter-from,

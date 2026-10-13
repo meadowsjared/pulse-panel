@@ -1,118 +1,106 @@
 <template>
   <div class="waveform-editor-root">
     <!-- Waveform Visualizer & Trimmer Container -->
-    <div class="waveform-container"
-         ref="waveformContainerRef">
+    <div class="waveform-container" ref="waveformContainerRef">
       <div class="waveform-labels">
         <span class="playback-controls">
           <!-- Play / Pause Preview Button -->
-          <button type="button"
-                  class="play-btn menu"
-                  :class="{ playing: isPlaying }"
-                  :disabled="!effectiveAudioBuffer || isLoading"
-                  @click="togglePlayPreview"
-                  title="Preview trimmed region">
-            <svg v-if="!isPlaying"
-                 class="w-5 h-5 ml-0.5"
-                 viewBox="0 0 24 24"
-                 fill="currentColor">
+          <button
+            type="button"
+            class="play-btn menu"
+            :class="{ playing: isPlaying }"
+            :disabled="!effectiveAudioBuffer || isLoading"
+            @click="togglePlayPreview"
+            title="Preview trimmed region">
+            <svg v-if="!isPlaying" class="w-5 h-5 ml-0.5" viewBox="0 0 24 24" fill="currentColor">
               <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
-            <svg v-else
-                 class="w-5 h-5"
-                 viewBox="0 0 24 24"
-                 fill="currentColor">
-              <rect x="6"
-                    y="4"
-                    width="4"
-                    height="16"></rect>
-              <rect x="14"
-                    y="4"
-                    width="4"
-                    height="16"></rect>
+            <svg v-else class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
             </svg>
           </button>
 
           <!-- Stop Preview Button -->
-          <button type="button"
-                  class="stop-btn menu"
-                  :disabled="!effectiveAudioBuffer || isLoading"
-                  @click="onStopBtnClick"
-                  title="Stop">
-            <svg class="w-4 h-4"
-                 viewBox="0 0 24 24"
-                 fill="currentColor">
-              <rect x="6"
-                    y="6"
-                    width="12"
-                    height="12"></rect>
+          <button
+            type="button"
+            class="stop-btn menu"
+            :disabled="!effectiveAudioBuffer || isLoading"
+            @click="onStopBtnClick"
+            title="Stop">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12"></rect>
             </svg>
           </button>
 
           <!-- Time Readout (Clickable to Reset Selection to Full Extents) -->
-          <span class="time-readout clickable"
-                role="button"
-                tabindex="0"
-                title="Click to reset selection to full waveform extents"
-                @click="resetSelectionToExtents"
-                @keydown.enter.prevent="resetSelectionToExtents"
-                @keydown.space.prevent="resetSelectionToExtents">
+          <span
+            class="time-readout clickable"
+            role="button"
+            tabindex="0"
+            title="Click to reset selection to full waveform extents"
+            @click="resetSelectionToExtents"
+            @keydown.enter.prevent="resetSelectionToExtents"
+            @keydown.space.prevent="resetSelectionToExtents">
             {{ formatSeconds(relativeCurrentTime) }} / {{ formatSeconds(trimmedDuration) }}
           </span>
 
           <!-- Audio Clipboard & Edit Actions Group -->
-          <audio-clipboard-group :can-undo="canUndo"
-                                 :can-redo="canRedo"
-                                 :can-cut="canCut"
-                                 :can-copy="canCopy"
-                                 :can-paste="canPaste"
-                                 :paste-tooltip="pasteTooltip"
-                                 @undo="onUndo"
-                                 @redo="onRedo"
-                                 @cut="onCutAudio"
-                                 @copy="onCopyAudio"
-                                 @paste="onPasteAudio"
-                                 @delete="onDeleteAudio"
-                                 @set-in="setInToCurrentTime"
-                                 @set-out="setOutToCurrentTime" />
+          <audio-clipboard-group
+            :can-undo="canUndo"
+            :can-redo="canRedo"
+            :can-cut="canCut"
+            :can-copy="canCopy"
+            :can-paste="canPaste"
+            :paste-tooltip="pasteTooltip"
+            @undo="onUndo"
+            @redo="onRedo"
+            @cut="onCutAudio"
+            @copy="onCopyAudio"
+            @paste="onPasteAudio"
+            @delete="onDeleteAudio"
+            @set-in="setInToCurrentTime"
+            @set-out="setOutToCurrentTime" />
         </span>
 
         <!-- Audio Tracks Selector & Target Mode (Dual Tracks Mode Only) -->
-        <div v-if="isDualTrackActive"
-             class="audio-tracks-bar">
+        <div v-if="isDualTrackActive" class="audio-tracks-bar">
           <div class="track-selector-wrapper">
             <span class="track-selector-label">Selection</span>
-            <div class="track-segmented-group"
-                 ref="segmentedGroupRef"
-                 :class="['target-' + activeTrackTarget, { 'is-resizing': isResizing }]"
-                 role="group"
-                 aria-label="Track audio selection target">
+            <div
+              class="track-segmented-group"
+              ref="segmentedGroupRef"
+              :class="['target-' + activeTrackTarget, { 'is-resizing': isResizing }]"
+              role="group"
+              aria-label="Track audio selection target">
               <!-- Sliding Animated Indicator Pill -->
-              <div class="segment-indicator"
-                   :style="segmentIndicatorStyle"></div>
+              <div class="segment-indicator" :style="segmentIndicatorStyle"></div>
 
-              <button ref="btnBothRef"
-                      type="button"
-                      class="segment-btn"
-                      :class="{ active: activeTrackTarget === 'both' }"
-                      title="Select both tracks"
-                      @click="activeTrackTarget = 'both'">
+              <button
+                ref="btnBothRef"
+                type="button"
+                class="segment-btn"
+                :class="{ active: activeTrackTarget === 'both' }"
+                title="Select both tracks"
+                @click="activeTrackTarget = 'both'">
                 Both
               </button>
-              <button ref="btnMicRef"
-                      type="button"
-                      class="segment-btn mic-segment"
-                      :class="{ active: activeTrackTarget === 'mic' }"
-                      title="Select Microphone track only"
-                      @click="activeTrackTarget = 'mic'">
+              <button
+                ref="btnMicRef"
+                type="button"
+                class="segment-btn mic-segment"
+                :class="{ active: activeTrackTarget === 'mic' }"
+                title="Select Microphone track only"
+                @click="activeTrackTarget = 'mic'">
                 🎤 Mic
               </button>
-              <button ref="btnInputRef"
-                      type="button"
-                      class="segment-btn input-segment"
-                      :class="{ active: activeTrackTarget === 'input' }"
-                      title="Select Input Device track only"
-                      @click="activeTrackTarget = 'input'">
+              <button
+                ref="btnInputRef"
+                type="button"
+                class="segment-btn input-segment"
+                :class="{ active: activeTrackTarget === 'input' }"
+                title="Select Input Device track only"
+                @click="activeTrackTarget = 'input'">
                 🔊 Input
               </button>
             </div>
@@ -120,14 +108,14 @@
         </div>
 
         <!-- Optional Header Title / Slot (Single Track Mode) -->
-        <div v-else-if="$slots['header-right'] || title"
-             class="waveform-title">
+        <div v-else-if="$slots['header-right'] || title" class="waveform-title">
           <slot name="header-right">
-            <svg class="w-4 h-4 text-emerald-400"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2">
+            <svg
+              class="w-4 h-4 text-emerald-400"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2">
               <path d="M2 10v4M6 6v12M10 3v18M14 8v8M18 5v14M22 10v4" />
             </svg>
             <span>{{ title }}</span>
@@ -138,36 +126,31 @@
       <!-- Waveform Row with Left Track Controls Gutter -->
       <div class="waveform-body-row">
         <!-- Left Track Controls Gutter (aligned with each track lane, Dual Track Mode Only) -->
-        <div v-if="isDualTrackActive"
-             class="waveform-track-gutter"
-             role="toolbar"
-             aria-label="Audio track mute controls">
+        <div
+          v-if="isDualTrackActive"
+          class="waveform-track-gutter"
+          role="toolbar"
+          aria-label="Audio track mute controls">
           <!-- Top Track: Microphone (Channel 1) -->
           <div class="track-gutter-slot top-slot">
-            <button type="button"
-                    :class="['track-icon-btn', 'menu', 'mic-icon-btn', { active: includeMic, muted: !includeMic }]"
-                    @click="toggleMicTrack"
-                    :title="includeMic ? 'Mute Microphone track in this clip' : 'Unmute Microphone track in this clip'"
-                    :aria-label="includeMic ? 'Mute Microphone track' : 'Unmute Microphone track'">
-              <svg class="w-4 h-4"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
-                <path class="mic-capsule"
-                      d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path class="mic-cradle"
-                      d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12"
-                      y1="19"
-                      x2="12"
-                      y2="23"></line>
-                <line x1="8"
-                      y1="23"
-                      x2="16"
-                      y2="23"></line>
+            <button
+              type="button"
+              :class="['track-icon-btn', 'menu', 'mic-icon-btn', { active: includeMic, muted: !includeMic }]"
+              @click="toggleMicTrack"
+              :title="includeMic ? 'Mute Microphone track in this clip' : 'Unmute Microphone track in this clip'"
+              :aria-label="includeMic ? 'Mute Microphone track' : 'Unmute Microphone track'">
+              <svg
+                class="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <path class="mic-capsule" d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path class="mic-cradle" d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
               </svg>
             </button>
           </div>
@@ -177,157 +160,146 @@
 
           <!-- Bottom Track: Input Device (Channel 2) -->
           <div class="track-gutter-slot bottom-slot">
-            <button type="button"
-                    :class="[
-                      'track-icon-btn', 'menu', 'input-icon-btn',
-                      { active: includeInput, muted: !includeInput },
-                    ]"
-                    @click="toggleInputTrack"
-                    :title="includeInput
-                      ? 'Mute Input Device track in this clip'
-                      : 'Unmute Input Device track in this clip'"
-                    :aria-label="includeInput ? 'Mute Input Device track' : 'Unmute Input Device track'">
-              <svg class="w-4 h-4"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
+            <button
+              type="button"
+              :class="['track-icon-btn', 'menu', 'input-icon-btn', { active: includeInput, muted: !includeInput }]"
+              @click="toggleInputTrack"
+              :title="includeInput ? 'Mute Input Device track in this clip' : 'Unmute Input Device track in this clip'"
+              :aria-label="includeInput ? 'Mute Input Device track' : 'Unmute Input Device track'">
+              <svg
+                class="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                <path class="speaker-sound-waves"
-                      d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path
+                  class="speaker-sound-waves"
+                  d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
               </svg>
             </button>
           </div>
         </div>
 
         <!-- Waveform Loading State -->
-        <div v-if="isLoading"
-             class="waveform-loading-state"
-             :style="{ height: typeof height === 'number' ? `${height}px` : height }">
-          <svg class="w-5 h-5 animate-spin text-emerald-400"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2">
-            <circle cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                    class="opacity-25"></circle>
-            <path fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                  class="opacity-75"></path>
+        <div
+          v-if="isLoading"
+          class="waveform-loading-state"
+          :style="{ height: typeof height === 'number' ? `${height}px` : height }">
+          <svg
+            class="w-5 h-5 animate-spin text-emerald-400"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+            <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" class="opacity-75"></path>
           </svg>
           <span>{{ loadStatus || 'Loading audio for waveform...' }}</span>
-          <div class="waveform-progress-bar-bg"
-               v-if="loadProgress > 0">
-            <div class="waveform-progress-bar-fill"
-                 :style="{ width: `${loadProgress}%` }"></div>
+          <div class="waveform-progress-bar-bg" v-if="loadProgress > 0">
+            <div class="waveform-progress-bar-fill" :style="{ width: `${loadProgress}%` }"></div>
           </div>
         </div>
 
         <!-- Waveform Error State -->
-        <div v-else-if="loadError && !effectiveAudioBuffer"
-             class="waveform-error-state"
-             :style="{ height: typeof height === 'number' ? `${height}px` : height }">
+        <div
+          v-else-if="loadError && !effectiveAudioBuffer"
+          class="waveform-error-state"
+          :style="{ height: typeof height === 'number' ? `${height}px` : height }">
           <span>{{ loadError }}</span>
-          <button type="button"
-                  class="waveform-retry-btn"
-                  @click="$emit('retry')">
-            Retry
-          </button>
+          <button type="button" class="waveform-retry-btn" @click="$emit('retry')">Retry</button>
         </div>
 
         <!-- Waveform Graph Component -->
-        <waveform-graph v-else
-                        class="waveform-graph-main"
-                        :audio-buffer="effectiveAudioBuffer"
-                        :duration="effectiveDuration"
-                        :tracks="waveformTracks"
-                        :active-track="activeTrackTarget"
-                        :segment-boundaries="segmentBoundaries"
-                        :include-mic="includeMic"
-                        :include-input="includeInput"
-                        v-model:current-time="currentTime"
-                        v-model:trim-start="trimStart"
-                        v-model:trim-end="trimEnd"
-                        :height="height"
-                        :show-trim-handles="true"
-                        :show-trim-labels="true"
-                        :show-trim-instructions="showTrimInstructions"
-                        :show-time-ticks="true"
-                        :show-playhead="true"
-                        :is-playing="isPlaying"
-                        :can-paste="canPaste"
-                        @scrub-start="onScrubStart"
-                        @scrub-move="onScrubMove"
-                        @scrub-end="onScrubEnd"
-                        @trim-change="onTrimChange"
-                        @trim-end-change="onTrimEndChange"
-                        @split-at="onSplitAt"
-                        @join-at="onJoinAt"
-                        @play-from-cursor="onPlayFromCursor"
-                        @paste-at-cursor="onPasteAudio" />
+        <waveform-graph
+          v-else
+          class="waveform-graph-main"
+          :audio-buffer="effectiveAudioBuffer"
+          :duration="effectiveDuration"
+          :tracks="waveformTracks"
+          :active-track="activeTrackTarget"
+          :segment-boundaries="segmentBoundaries"
+          :include-mic="includeMic"
+          :include-input="includeInput"
+          v-model:current-time="currentTime"
+          v-model:trim-start="trimStart"
+          v-model:trim-end="trimEnd"
+          :height="height"
+          :show-trim-handles="true"
+          :show-trim-labels="true"
+          :show-trim-instructions="showTrimInstructions"
+          :show-time-ticks="true"
+          :show-playhead="true"
+          :is-playing="isPlaying"
+          :can-paste="canPaste"
+          @scrub-start="onScrubStart"
+          @scrub-move="onScrubMove"
+          @scrub-end="onScrubEnd"
+          @trim-change="onTrimChange"
+          @trim-end-change="onTrimEndChange"
+          @split-at="onSplitAt"
+          @join-at="onJoinAt"
+          @play-from-cursor="onPlayFromCursor"
+          @paste-at-cursor="onPasteAudio" />
       </div>
     </div>
 
     <!-- Native Audio Elements for 1:1 hardware clock preview playback -->
     <!-- Single Track Audio Player -->
-    <audio v-if="!isDualTrackActive"
-           ref="mainAudioElRef"
-           :src="mainPreviewUrl"
-           preload="auto"
-           style="display: none"
-           @ended="onAudioEnded"
-           @timeupdate="onAudioTimeUpdate"
-           @loadedmetadata="onAudioMetadataLoaded"></audio>
+    <audio
+      v-if="!isDualTrackActive"
+      ref="mainAudioElRef"
+      :src="mainPreviewUrl"
+      preload="auto"
+      style="display: none"
+      @ended="onAudioEnded"
+      @timeupdate="onAudioTimeUpdate"
+      @loadedmetadata="onAudioMetadataLoaded"></audio>
 
     <!-- Dual Track Audio Players -->
     <template v-else>
-      <audio ref="micAudioElRef"
-             :src="micPreviewUrl"
-             preload="auto"
-             style="display: none"
-             @ended="onAudioEnded"
-             @timeupdate="onAudioTimeUpdate"
-             @loadedmetadata="onAudioMetadataLoaded"></audio>
-      <audio ref="inputAudioElRef"
-             :src="inputPreviewUrl"
-             preload="auto"
-             style="display: none"></audio>
+      <audio
+        ref="micAudioElRef"
+        :src="micPreviewUrl"
+        preload="auto"
+        style="display: none"
+        @ended="onAudioEnded"
+        @timeupdate="onAudioTimeUpdate"
+        @loadedmetadata="onAudioMetadataLoaded"></audio>
+      <audio ref="inputAudioElRef" :src="inputPreviewUrl" preload="auto" style="display: none"></audio>
     </template>
 
     <!-- Trim Summary Bar with Audio Gain, Reset, and Quick Actions -->
-    <trim-summary-bar v-model:trim-start="trimStart"
-                      v-model:trim-end="trimEnd"
-                      :duration="effectiveDuration"
-                      :is-playing="isPlaying"
-                      :show-trim-to-selection="true"
-                      :can-trim-to-selection="canTrimToSelection"
-                      :has-dual-tracks="isDualTrackActive"
-                      v-model:active-track-target="activeTrackTarget"
-                      :gain="singleGainMultiplier"
-                      :mic-gain="micGainMultiplier"
-                      :input-gain="inputGainMultiplier"
-                      :has-partial-gains="appliedGainRegions.length > 0"
-                      :gain-regions="appliedGainRegions"
-                      @update:gain="onSingleGainChange"
-                      @change-gain="onDualGainChange"
-                      @auto-level="onAutoLevel"
-                      @reset-gain="onResetGain"
-                      @select-region="onSelectGainRegion"
-                      @delete-region="onDeleteGainRegion"
-                      @clear-all-gain-regions="onClearAllGainRegions"
-                      @reset-all-gain-regions="onResetAllGainRegions"
-                      @resetStart="resetTrimStart"
-                      @resetEnd="resetTrimEnd"
-                      @resetSelection="resetSelectionToExtents"
-                      @reset="resetTrim"
-                      @play-trimmed="playTrimmedOnly"
-                      @trim-to-selection="trimToSelection" />
+    <trim-summary-bar
+      v-model:trim-start="trimStart"
+      v-model:trim-end="trimEnd"
+      :duration="effectiveDuration"
+      :is-playing="isPlaying"
+      :show-trim-to-selection="true"
+      :can-trim-to-selection="canTrimToSelection"
+      :has-dual-tracks="isDualTrackActive"
+      v-model:active-track-target="activeTrackTarget"
+      :gain="singleGainMultiplier"
+      :mic-gain="micGainMultiplier"
+      :input-gain="inputGainMultiplier"
+      :has-partial-gains="appliedGainRegions.length > 0"
+      :gain-regions="appliedGainRegions"
+      @update:gain="onSingleGainChange"
+      @change-gain="onDualGainChange"
+      @auto-level="onAutoLevel"
+      @reset-gain="onResetGain"
+      @select-region="onSelectGainRegion"
+      @delete-region="onDeleteGainRegion"
+      @clear-all-gain-regions="onClearAllGainRegions"
+      @reset-all-gain-regions="onResetAllGainRegions"
+      @resetStart="resetTrimStart"
+      @resetEnd="resetTrimEnd"
+      @resetSelection="resetSelectionToExtents"
+      @reset="resetTrim"
+      @play-trimmed="playTrimmedOnly"
+      @trim-to-selection="trimToSelection" />
   </div>
 </template>
 
@@ -361,31 +333,31 @@ import { SoundSegment } from '../@types/sound'
 import { encodeWAV, encodeMP3, encodeOGG } from '../services/pulseBackBuffer'
 
 interface Props {
-  audioBuffer?: AudioBuffer | null;
-  blob?: Blob | null;
-  originalBlob?: Blob | null;
-  duration?: number;
-  clipId?: string;
-  trimStart?: number;
-  trimEnd?: number;
-  currentTime?: number;
-  enableDualTracks?: boolean;
-  activeTrackTarget?: 'both' | 'mic' | 'input';
-  includeMic?: boolean;
-  includeInput?: boolean;
-  gain?: number;
-  micGain?: number;
-  inputGain?: number;
-  appliedGainRegions?: AudioGainRegion[];
-  segmentBoundaries?: number[];
-  volume?: number;
-  height?: number | string;
-  showTrimInstructions?: boolean;
-  title?: string;
-  isLoading?: boolean;
-  loadProgress?: number;
-  loadStatus?: string;
-  loadError?: string;
+  audioBuffer?: AudioBuffer | null
+  blob?: Blob | null
+  originalBlob?: Blob | null
+  duration?: number
+  clipId?: string
+  trimStart?: number
+  trimEnd?: number
+  currentTime?: number
+  enableDualTracks?: boolean
+  activeTrackTarget?: 'both' | 'mic' | 'input'
+  includeMic?: boolean
+  includeInput?: boolean
+  gain?: number
+  micGain?: number
+  inputGain?: number
+  appliedGainRegions?: AudioGainRegion[]
+  segmentBoundaries?: number[]
+  volume?: number
+  height?: number | string
+  showTrimInstructions?: boolean
+  title?: string
+  isLoading?: boolean
+  loadProgress?: number
+  loadStatus?: string
+  loadError?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -417,27 +389,30 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'update:trimStart', val: number): void;
-  (e: 'update:trimEnd', val: number): void;
-  (e: 'update:currentTime', val: number): void;
-  (e: 'update:audioBuffer', buf: AudioBuffer | null): void;
-  (e: 'update:activeTrackTarget', val: 'both' | 'mic' | 'input'): void;
-  (e: 'update:includeMic', val: boolean): void;
-  (e: 'update:includeInput', val: boolean): void;
-  (e: 'update:gain', val: number): void;
-  (e: 'update:micGain', val: number): void;
-  (e: 'update:inputGain', val: number): void;
-  (e: 'update:appliedGainRegions', val: AudioGainRegion[]): void;
-  (e: 'update:segmentBoundaries', val: number[]): void;
-  (e: 'timelineChange', payload: {
-    buffer: AudioBuffer;
-    blob: Blob;
-    duration: number;
-    segments: AudioTimelineSegment[];
-    boundaries: number[];
-  }): void;
-  (e: 'change'): void;
-  (e: 'retry'): void;
+  (e: 'update:trimStart', val: number): void
+  (e: 'update:trimEnd', val: number): void
+  (e: 'update:currentTime', val: number): void
+  (e: 'update:audioBuffer', buf: AudioBuffer | null): void
+  (e: 'update:activeTrackTarget', val: 'both' | 'mic' | 'input'): void
+  (e: 'update:includeMic', val: boolean): void
+  (e: 'update:includeInput', val: boolean): void
+  (e: 'update:gain', val: number): void
+  (e: 'update:micGain', val: number): void
+  (e: 'update:inputGain', val: number): void
+  (e: 'update:appliedGainRegions', val: AudioGainRegion[]): void
+  (e: 'update:segmentBoundaries', val: number[]): void
+  (
+    e: 'timelineChange',
+    payload: {
+      buffer: AudioBuffer
+      blob: Blob
+      duration: number
+      segments: AudioTimelineSegment[]
+      boundaries: number[]
+    }
+  ): void
+  (e: 'change'): void
+  (e: 'retry'): void
 }>()
 
 const pulseBackStore = usePulseBackStore()
@@ -521,7 +496,7 @@ const btnBothRef = ref<HTMLButtonElement | null>(null)
 const btnMicRef = ref<HTMLButtonElement | null>(null)
 const btnInputRef = ref<HTMLButtonElement | null>(null)
 
-const indicatorPos = ref<{ x: number; y: number; width: number; height: number; visible: boolean; }>({
+const indicatorPos = ref<{ x: number; y: number; width: number; height: number; visible: boolean }>({
   x: 0,
   y: 0,
   width: 0,
@@ -531,11 +506,12 @@ const indicatorPos = ref<{ x: number; y: number; width: number; height: number; 
 
 function updateSegmentIndicator() {
   const container = segmentedGroupRef.value
-  const activeBtn = activeTrackTarget.value === 'both'
-    ? btnBothRef.value
-    : activeTrackTarget.value === 'mic'
-      ? btnMicRef.value
-      : btnInputRef.value
+  const activeBtn =
+    activeTrackTarget.value === 'both'
+      ? btnBothRef.value
+      : activeTrackTarget.value === 'mic'
+        ? btnMicRef.value
+        : btnInputRef.value
 
   if (!container || !activeBtn) return
 
@@ -608,12 +584,12 @@ const waveformTracks = computed<WaveformTrack[]>(() => {
 
 // Audio History Stack
 interface TimelineHistoryItem {
-  segments: AudioTimelineSegment[];
-  cleanBaseBuffer: AudioBuffer;
-  gainRegions: AudioGainRegion[];
-  trimStart: number;
-  trimEnd: number;
-  currentTime: number;
+  segments: AudioTimelineSegment[]
+  cleanBaseBuffer: AudioBuffer
+  gainRegions: AudioGainRegion[]
+  trimStart: number
+  trimEnd: number
+  currentTime: number
 }
 
 const undoStack = ref<TimelineHistoryItem[]>([])
@@ -633,8 +609,8 @@ const pasteTooltip = computed(() => {
   if (!canPaste.value) return 'Paste audio (Ctrl+V) - Clipboard empty'
   const totalDur = effectiveDuration.value
   const hasSubSelection = (trimEnd.value > 0 && trimEnd.value < totalDur - 0.05) || trimStart.value > 0.05
-  const isCursorInside = hasSubSelection &&
-    (currentTime.value >= trimStart.value - 0.05 && currentTime.value <= trimEnd.value + 0.05)
+  const isCursorInside =
+    hasSubSelection && currentTime.value >= trimStart.value - 0.05 && currentTime.value <= trimEnd.value + 0.05
   if (hasSubSelection && isCursorInside) {
     return `Paste (Replace selection ${formatSeconds(trimStart.value)} - ${formatSeconds(trimEnd.value)}) (Ctrl+V)`
   }
@@ -663,7 +639,7 @@ function pushUndoState() {
 // Audio Context Helper
 declare global {
   interface Window {
-    webkitAudioContext?: typeof AudioContext;
+    webkitAudioContext?: typeof AudioContext
   }
 }
 
@@ -676,22 +652,28 @@ function getAudioContext(): AudioContext {
     audioContext = new AudioContextClass()
   }
   if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(() => { })
+    audioContext.resume().catch(() => {})
   }
   return audioContext
 }
 
 function clearPreviewUrls() {
   if (mainPreviewUrl.value) {
-    try { URL.revokeObjectURL(mainPreviewUrl.value) } catch { }
+    try {
+      URL.revokeObjectURL(mainPreviewUrl.value)
+    } catch {}
     mainPreviewUrl.value = ''
   }
   if (micPreviewUrl.value) {
-    try { URL.revokeObjectURL(micPreviewUrl.value) } catch { }
+    try {
+      URL.revokeObjectURL(micPreviewUrl.value)
+    } catch {}
     micPreviewUrl.value = ''
   }
   if (inputPreviewUrl.value) {
-    try { URL.revokeObjectURL(inputPreviewUrl.value) } catch { }
+    try {
+      URL.revokeObjectURL(inputPreviewUrl.value)
+    } catch {}
     inputPreviewUrl.value = ''
   }
 }
@@ -707,14 +689,18 @@ function updatePreviewUrls() {
     const ch1 = numChannels >= 2 ? buf.getChannelData(1) : undefined
     const blob = encodeWAV(ch0, sampleRate, ch1)
     if (mainPreviewUrl.value) {
-      try { URL.revokeObjectURL(mainPreviewUrl.value) } catch { }
+      try {
+        URL.revokeObjectURL(mainPreviewUrl.value)
+      } catch {}
     }
     mainPreviewUrl.value = URL.createObjectURL(blob)
   } else {
     const micData = buf.getChannelData(0)
     const micBlob = encodeWAV(micData, sampleRate)
     if (micPreviewUrl.value) {
-      try { URL.revokeObjectURL(micPreviewUrl.value) } catch { }
+      try {
+        URL.revokeObjectURL(micPreviewUrl.value)
+      } catch {}
     }
     micPreviewUrl.value = URL.createObjectURL(micBlob)
 
@@ -722,12 +708,16 @@ function updatePreviewUrls() {
       const inputData = buf.getChannelData(1)
       const inputBlob = encodeWAV(inputData, sampleRate)
       if (inputPreviewUrl.value) {
-        try { URL.revokeObjectURL(inputPreviewUrl.value) } catch { }
+        try {
+          URL.revokeObjectURL(inputPreviewUrl.value)
+        } catch {}
       }
       inputPreviewUrl.value = URL.createObjectURL(inputBlob)
     } else {
       if (inputPreviewUrl.value) {
-        try { URL.revokeObjectURL(inputPreviewUrl.value) } catch { }
+        try {
+          URL.revokeObjectURL(inputPreviewUrl.value)
+        } catch {}
       }
       inputPreviewUrl.value = ''
     }
@@ -764,7 +754,7 @@ function updateTrackVolumes() {
     micAudioElRef.value.volume = includeMic.value ? masterVol * factor : 0
     if (isPlaying.value && includeMic.value && micAudioElRef.value.paused) {
       micAudioElRef.value.currentTime = currentTime.value
-      micAudioElRef.value.play().catch(() => { })
+      micAudioElRef.value.play().catch(() => {})
     }
   }
   if (inputAudioElRef.value) {
@@ -772,7 +762,7 @@ function updateTrackVolumes() {
     inputAudioElRef.value.volume = includeInput.value ? masterVol * factor : 0
     if (isPlaying.value && includeInput.value && inputAudioElRef.value.paused) {
       inputAudioElRef.value.currentTime = currentTime.value
-      inputAudioElRef.value.play().catch(() => { })
+      inputAudioElRef.value.play().catch(() => {})
     }
   }
 }
@@ -786,55 +776,49 @@ function updateActiveGainDisplay() {
   if (isDualTrackActive.value) {
     if (isPartial) {
       const micRegion = appliedGainRegions.value.find(
-        r => (r.channel === undefined || r.channel === 0) &&
+        r =>
+          (r.channel === undefined || r.channel === 0) &&
           ((Math.abs(r.startSec - startSec) < 0.25 && Math.abs(r.endSec - endSec) < 0.25) ||
             (startSec >= r.startSec - 0.08 && endSec <= r.endSec + 0.08))
       )
-      micGainMultiplier.value = micRegion && micRegion.multiplier !== undefined
-        ? micRegion.multiplier
-        : globalMicGain.value
+      micGainMultiplier.value =
+        micRegion && micRegion.multiplier !== undefined ? micRegion.multiplier : globalMicGain.value
 
       const inputRegion = appliedGainRegions.value.find(
-        r => (r.channel === undefined || r.channel === 1) &&
+        r =>
+          (r.channel === undefined || r.channel === 1) &&
           ((Math.abs(r.startSec - startSec) < 0.25 && Math.abs(r.endSec - endSec) < 0.25) ||
             (startSec >= r.startSec - 0.08 && endSec <= r.endSec + 0.08))
       )
-      inputGainMultiplier.value = inputRegion && inputRegion.multiplier !== undefined
-        ? inputRegion.multiplier
-        : globalInputGain.value
+      inputGainMultiplier.value =
+        inputRegion && inputRegion.multiplier !== undefined ? inputRegion.multiplier : globalInputGain.value
     } else {
       const fullMicRegion = appliedGainRegions.value.find(
-        r => (r.channel === undefined || r.channel === 0) &&
-          r.startSec <= startSec + 0.1 && r.endSec >= endSec - 0.1
+        r => (r.channel === undefined || r.channel === 0) && r.startSec <= startSec + 0.1 && r.endSec >= endSec - 0.1
       )
-      micGainMultiplier.value = fullMicRegion && fullMicRegion.multiplier !== undefined
-        ? fullMicRegion.multiplier
-        : globalMicGain.value
+      micGainMultiplier.value =
+        fullMicRegion && fullMicRegion.multiplier !== undefined ? fullMicRegion.multiplier : globalMicGain.value
 
       const fullInputRegion = appliedGainRegions.value.find(
-        r => (r.channel === undefined || r.channel === 1) &&
-          r.startSec <= startSec + 0.1 && r.endSec >= endSec - 0.1
+        r => (r.channel === undefined || r.channel === 1) && r.startSec <= startSec + 0.1 && r.endSec >= endSec - 0.1
       )
-      inputGainMultiplier.value = fullInputRegion && fullInputRegion.multiplier !== undefined
-        ? fullInputRegion.multiplier
-        : globalInputGain.value
+      inputGainMultiplier.value =
+        fullInputRegion && fullInputRegion.multiplier !== undefined ? fullInputRegion.multiplier : globalInputGain.value
     }
     emit('update:micGain', micGainMultiplier.value)
     emit('update:inputGain', inputGainMultiplier.value)
   } else {
     if (isPartial) {
       const reg = appliedGainRegions.value.find(
-        r => ((Math.abs(r.startSec - startSec) < 0.25 && Math.abs(r.endSec - endSec) < 0.25) ||
-          (startSec >= r.startSec - 0.08 && endSec <= r.endSec + 0.08))
+        r =>
+          (Math.abs(r.startSec - startSec) < 0.25 && Math.abs(r.endSec - endSec) < 0.25) ||
+          (startSec >= r.startSec - 0.08 && endSec <= r.endSec + 0.08)
       )
       singleGainMultiplier.value = reg && reg.multiplier !== undefined ? reg.multiplier : globalSingleGain.value
     } else {
-      const fullReg = appliedGainRegions.value.find(
-        r => r.startSec <= startSec + 0.1 && r.endSec >= endSec - 0.1
-      )
-      singleGainMultiplier.value = fullReg && fullReg.multiplier !== undefined
-        ? fullReg.multiplier
-        : globalSingleGain.value
+      const fullReg = appliedGainRegions.value.find(r => r.startSec <= startSec + 0.1 && r.endSec >= endSec - 0.1)
+      singleGainMultiplier.value =
+        fullReg && fullReg.multiplier !== undefined ? fullReg.multiplier : globalSingleGain.value
     }
     emit('update:gain', singleGainMultiplier.value)
   }
@@ -888,7 +872,7 @@ function onSingleGainChange(val: number) {
   updateActiveGainDisplay()
 }
 
-function onDualGainChange(payload: { target: 'both' | 'mic' | 'input'; multiplier: number; }) {
+function onDualGainChange(payload: { target: 'both' | 'mic' | 'input'; multiplier: number }) {
   if (!isDualTrackActive.value) {
     onSingleGainChange(payload.multiplier)
     return
@@ -1226,9 +1210,10 @@ function trimToSelection() {
   emit('update:trimEnd', newDuration)
   emit('update:currentTime', 0)
 
-  const newBlob = isDualTrackActive.value && numChannels >= 2
-    ? encodeWAV(newBuf.getChannelData(0), sampleRate, newBuf.getChannelData(1))
-    : encodeWAV(newBuf.getChannelData(0), sampleRate, numChannels >= 2 ? newBuf.getChannelData(1) : undefined)
+  const newBlob =
+    isDualTrackActive.value && numChannels >= 2
+      ? encodeWAV(newBuf.getChannelData(0), sampleRate, newBuf.getChannelData(1))
+      : encodeWAV(newBuf.getChannelData(0), sampleRate, numChannels >= 2 ? newBuf.getChannelData(1) : undefined)
 
   lastEmittedBlob = newBlob
   lastEmittedBuffer = newBuf
@@ -1260,9 +1245,10 @@ async function commitTimelineChange(
   const dur = composite.duration
   trimStart.value = newTrimStart !== undefined ? Math.max(0, Math.min(newTrimStart, dur)) : 0
   trimEnd.value = newTrimEnd !== undefined ? Math.max(trimStart.value, Math.min(newTrimEnd, dur)) : dur
-  currentTime.value = newCurrentTime !== undefined
-    ? Math.max(0, Math.min(newCurrentTime, dur))
-    : Math.max(0, Math.min(currentTime.value, dur))
+  currentTime.value =
+    newCurrentTime !== undefined
+      ? Math.max(0, Math.min(newCurrentTime, dur))
+      : Math.max(0, Math.min(currentTime.value, dur))
 
   emit('update:trimStart', trimStart.value)
   emit('update:trimEnd', trimEnd.value)
@@ -1271,13 +1257,14 @@ async function commitTimelineChange(
   applyGain()
 
   const sampleRate = composite.sampleRate
-  const newBlob = isDualTrackActive.value && composite.numberOfChannels >= 2
-    ? encodeWAV(composite.getChannelData(0), sampleRate, composite.getChannelData(1))
-    : encodeWAV(
-      composite.getChannelData(0),
-      sampleRate,
-      composite.numberOfChannels >= 2 ? composite.getChannelData(1) : undefined
-    )
+  const newBlob =
+    isDualTrackActive.value && composite.numberOfChannels >= 2
+      ? encodeWAV(composite.getChannelData(0), sampleRate, composite.getChannelData(1))
+      : encodeWAV(
+          composite.getChannelData(0),
+          sampleRate,
+          composite.numberOfChannels >= 2 ? composite.getChannelData(1) : undefined
+        )
 
   lastEmittedBlob = newBlob
   lastEmittedBuffer = composite
@@ -1313,11 +1300,11 @@ function onCopyAudio() {
   const numSegs = sharedAudioClipboard.value.segments?.length || 1
   const segsLabel = numSegs > 1 ? ` (${numSegs} segments)` : ''
   const trackLabel = isDualTrackActive.value
-    ? (activeTrackTarget.value === 'both'
+    ? activeTrackTarget.value === 'both'
       ? 'Both tracks'
       : activeTrackTarget.value === 'mic'
         ? 'Mic track'
-        : 'Input track')
+        : 'Input track'
     : 'Audio'
   pulseBackStore.showToast(`Copied ${trackLabel} ${(endSec - startSec).toFixed(2)}s${segsLabel}`)
 }
@@ -1362,7 +1349,7 @@ function onCutAudio() {
     })
 
   commitTimelineChange(newSegments, 0, undefined, startSec)
-  pulseBackStore.showToast(`Cut ${(cutDuration).toFixed(2)}s to clipboard`)
+  pulseBackStore.showToast(`Cut ${cutDuration.toFixed(2)}s to clipboard`)
 }
 
 function onDeleteAudio() {
@@ -1380,13 +1367,7 @@ function onDeleteAudio() {
 
   pushUndoState()
 
-  const newSegments = deleteTimelineSegments(
-    ctx,
-    timelineSegments.value,
-    startSec,
-    endSec,
-    activeTrackTarget.value
-  )
+  const newSegments = deleteTimelineSegments(ctx, timelineSegments.value, startSec, endSec, activeTrackTarget.value)
 
   const deleteDuration = endSec - startSec
   appliedGainRegions.value = appliedGainRegions.value
@@ -1403,7 +1384,7 @@ function onDeleteAudio() {
     })
 
   commitTimelineChange(newSegments, 0, undefined, startSec)
-  pulseBackStore.showToast(`Deleted ${(deleteDuration).toFixed(2)}s from timeline`)
+  pulseBackStore.showToast(`Deleted ${deleteDuration.toFixed(2)}s from timeline`)
 }
 
 function onPasteAudio() {
@@ -1416,8 +1397,8 @@ function onPasteAudio() {
   pushUndoState()
 
   const hasSubSelection = (trimEnd.value > 0 && trimEnd.value < totalDur - 0.05) || trimStart.value > 0.05
-  const isCursorInsideSelection = hasSubSelection &&
-    (currentTime.value >= trimStart.value - 0.05 && currentTime.value <= trimEnd.value + 0.05)
+  const isCursorInsideSelection =
+    hasSubSelection && currentTime.value >= trimStart.value - 0.05 && currentTime.value <= trimEnd.value + 0.05
 
   const shouldReplace = hasSubSelection && isCursorInsideSelection
   const insertAtSec = shouldReplace ? trimStart.value : currentTime.value
@@ -1465,7 +1446,7 @@ function onPasteAudio() {
   const numSegs = pasteSegs?.length || 1
   const segsLabel = numSegs > 1 ? ` (${numSegs} segments)` : ''
   const actionLabel = shouldReplace ? 'Replaced selection with' : 'Pasted'
-  pulseBackStore.showToast(`${actionLabel} ${(pasteBuf.duration).toFixed(2)}s audio${segsLabel}`)
+  pulseBackStore.showToast(`${actionLabel} ${pasteBuf.duration.toFixed(2)}s audio${segsLabel}`)
 }
 
 function onSplitAt(sec: number) {
@@ -1556,11 +1537,12 @@ function jumpCursorToBoundary(direction: 'next' | 'prev') {
   emit('update:currentTime', target)
   syncAudioCurrentTime(target)
 
-  const label = target === 0
-    ? '0:00 (Start)'
-    : Math.abs(target - maxDur) < EPSILON
-      ? `${formatSeconds(target)} (End)`
-      : `${formatSeconds(target)} (Boundary)`
+  const label =
+    target === 0
+      ? '0:00 (Start)'
+      : Math.abs(target - maxDur) < EPSILON
+        ? `${formatSeconds(target)} (End)`
+        : `${formatSeconds(target)} (Boundary)`
   pulseBackStore.showToast(`⏱ Cursor moved to ${label} (Ctrl+${direction === 'next' ? 'Right' : 'Left'})`)
 }
 
@@ -1675,9 +1657,7 @@ function setOutToCurrentTime() {
 function snapNearestHandleToBoundary() {
   const boundaries = segmentBoundaries.value
   const maxDur = effectiveDuration.value
-  const targets = (boundaries && boundaries.length > 0)
-    ? [0, ...boundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur]
+  const targets = boundaries && boundaries.length > 0 ? [0, ...boundaries, maxDur].sort((a, b) => a - b) : [0, maxDur]
 
   if (targets.length <= 1) return
 
@@ -1735,9 +1715,7 @@ function snapNearestHandleToBoundary() {
 function snapInToNearestBoundary() {
   const boundaries = segmentBoundaries.value
   const maxDur = effectiveDuration.value
-  const targets = (boundaries && boundaries.length > 0)
-    ? [0, ...boundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur]
+  const targets = boundaries && boundaries.length > 0 ? [0, ...boundaries, maxDur].sort((a, b) => a - b) : [0, maxDur]
 
   const inVal = trimStart.value
   const outVal = trimEnd.value
@@ -1765,9 +1743,7 @@ function snapInToNearestBoundary() {
 function snapOutToNearestBoundary() {
   const boundaries = segmentBoundaries.value
   const maxDur = effectiveDuration.value
-  const targets = (boundaries && boundaries.length > 0)
-    ? [0, ...boundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur]
+  const targets = boundaries && boundaries.length > 0 ? [0, ...boundaries, maxDur].sort((a, b) => a - b) : [0, maxDur]
 
   const inVal = trimStart.value
   const outVal = trimEnd.value
@@ -1795,9 +1771,7 @@ function snapOutToNearestBoundary() {
 function snapSelectionToCurrentClip() {
   const boundaries = segmentBoundaries.value
   const maxDur = effectiveDuration.value
-  const targets = (boundaries && boundaries.length > 0)
-    ? [0, ...boundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur]
+  const targets = boundaries && boundaries.length > 0 ? [0, ...boundaries, maxDur].sort((a, b) => a - b) : [0, maxDur]
 
   const playhead = currentTime.value
   let start = 0
@@ -1850,9 +1824,7 @@ function togglePlayPreview() {
     emit('change')
   } else {
     const startFrom =
-      currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
-        ? trimStart.value
-        : currentTime.value
+      currentTime.value >= trimEnd.value || currentTime.value < trimStart.value ? trimStart.value : currentTime.value
     startPlayback(startFrom, trimEnd.value)
   }
 }
@@ -1945,9 +1917,9 @@ function updatePlaybackAnimation() {
 
   const masterEl = !isDualTrackActive.value
     ? mainAudioElRef.value
-    : (hasDualChannels.value && !includeMic.value && includeInput.value && inputAudioElRef.value
+    : hasDualChannels.value && !includeMic.value && includeInput.value && inputAudioElRef.value
       ? inputAudioElRef.value
-      : micAudioElRef.value)
+      : micAudioElRef.value
 
   if (!masterEl) return
 
@@ -2004,13 +1976,13 @@ function stopScrubSnippet() {
     try {
       scrubSourceNode.stop()
       scrubSourceNode.disconnect()
-    } catch { }
+    } catch {}
     scrubSourceNode = null
   }
   if (scrubGainNode) {
     try {
       scrubGainNode.disconnect()
-    } catch { }
+    } catch {}
     scrubGainNode = null
   }
 }
@@ -2044,9 +2016,8 @@ function playScrubSnippet(sec: number) {
 
   if (isDualTrackActive.value) {
     const micData = includeMic.value ? buf.getChannelData(0) : null
-    const inputData = hasDualChannels.value && includeInput.value && buf.numberOfChannels >= 2
-      ? buf.getChannelData(1)
-      : null
+    const inputData =
+      hasDualChannels.value && includeInput.value && buf.numberOfChannels >= 2 ? buf.getChannelData(1) : null
 
     for (let i = 0; i < sampleCount; i++) {
       const idx = startSample + i
@@ -2114,14 +2085,12 @@ function onScrubEnd(sec: number) {
   emit('change')
   if (resume) {
     const startFrom =
-      currentTime.value >= trimEnd.value || currentTime.value < trimStart.value
-        ? trimStart.value
-        : currentTime.value
+      currentTime.value >= trimEnd.value || currentTime.value < trimStart.value ? trimStart.value : currentTime.value
     startPlayback(startFrom, trimEnd.value)
   }
 }
 
-function onTrimChange(payload: { start: number; end: number; handle?: 'start' | 'end'; }) {
+function onTrimChange(payload: { start: number; end: number; handle?: 'start' | 'end' }) {
   if (isPlaying.value) {
     stopPreview()
   }
@@ -2459,7 +2428,7 @@ watch(isDualTrackActive, active => {
 // Helper for Exporting Trimmed Audio
 async function getTrimmedAudioBlob(
   format: 'mp3' | 'wav' | 'ogg' = 'mp3'
-): Promise<{ blob: Blob; duration: number; extension: string; segments?: SoundSegment[]; } | null> {
+): Promise<{ blob: Blob; duration: number; extension: string; segments?: SoundSegment[] } | null> {
   const buf = effectiveAudioBuffer.value
   if (!buf) return null
 
@@ -2521,12 +2490,7 @@ async function getTrimmedAudioBlob(
     extension = 'wav'
   }
 
-  const segments = calculateSoundSegments(
-    segmentBoundaries.value,
-    startSec,
-    endSec,
-    duration
-  )
+  const segments = calculateSoundSegments(segmentBoundaries.value, startSec, endSec, duration)
 
   return { blob, duration, extension, segments }
 }
@@ -2777,7 +2741,8 @@ defineExpose({
   padding: 2px;
   gap: 2px;
   width: 100%;
-  transition: border-color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    border-color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -2793,7 +2758,8 @@ defineExpose({
   pointer-events: none;
   z-index: 1;
   box-sizing: border-box;
-  transition: transform var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    transform var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
     width var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
     height var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
     background-color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
@@ -2820,7 +2786,9 @@ defineExpose({
 .track-segmented-group.target-mic .segment-indicator {
   background: rgba(56, 189, 248, 0.22);
   border: 1px solid rgba(56, 189, 248, 0.55);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25), 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 10px rgba(56, 189, 248, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .track-segmented-group.target-input {
@@ -2831,7 +2799,9 @@ defineExpose({
 .track-segmented-group.target-input .segment-indicator {
   background: rgba(52, 211, 153, 0.22);
   border: 1px solid rgba(52, 211, 153, 0.55);
-  box-shadow: 0 0 10px rgba(52, 211, 153, 0.25), 0 1px 2px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 0 10px rgba(52, 211, 153, 0.25),
+    0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .segment-btn {
@@ -2852,7 +2822,8 @@ defineExpose({
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
-  transition: color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    color var(--slide-duration, 0.28s) cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.12s ease;
 }
 
@@ -2941,8 +2912,10 @@ defineExpose({
   outline-offset: 2px;
 }
 
-.track-icon-btn>svg {
-  transition: stroke 300ms ease-in-out, color 300ms ease-in-out;
+.track-icon-btn > svg {
+  transition:
+    stroke 300ms ease-in-out,
+    color 300ms ease-in-out;
 }
 
 .track-icon-btn::after {

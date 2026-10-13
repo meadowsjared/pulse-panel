@@ -1,200 +1,172 @@
 <template>
-  <div class="audio-clipboard-group"
-       role="toolbar"
-       aria-label="Audio editing tools">
+  <div class="audio-clipboard-group" role="toolbar" aria-label="Audio editing tools">
     <div class="clip-action-cluster">
-      <button type="button"
-              v-if="canUndo"
-              class="clip-action-btn"
-              :disabled="!canUndo"
-              @click="$emit('undo')"
-              title="Undo edit (Ctrl+Z)"
-              aria-label="Undo">
-        <svg class="w-3.5 h-3.5"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2"
-             stroke-linecap="round"
-             stroke-linejoin="round">
+      <button
+        type="button"
+        v-if="canUndo"
+        class="clip-action-btn"
+        :disabled="!canUndo"
+        @click="$emit('undo')"
+        title="Undo edit (Ctrl+Z)"
+        aria-label="Undo">
+        <svg
+          class="w-3.5 h-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
           <polyline points="1 4 1 10 7 10"></polyline>
           <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
         </svg>
       </button>
-      <button type="button"
-              v-if="canRedo"
-              class="clip-action-btn"
-              :disabled="!canRedo"
-              @click="$emit('redo')"
-              title="Redo edit (Ctrl+Y)"
-              aria-label="Redo">
-        <svg class="w-3.5 h-3.5"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2"
-             stroke-linecap="round"
-             stroke-linejoin="round">
+      <button
+        type="button"
+        v-if="canRedo"
+        class="clip-action-btn"
+        :disabled="!canRedo"
+        @click="$emit('redo')"
+        title="Redo edit (Ctrl+Y)"
+        aria-label="Redo">
+        <svg
+          class="w-3.5 h-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
           <polyline points="23 4 23 10 17 10"></polyline>
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
         </svg>
       </button>
     </div>
-    <span class="clip-action-sep"
-          v-if="canUndo || canRedo"></span>
+    <span class="clip-action-sep" v-if="canUndo || canRedo"></span>
     <div class="clip-action-cluster">
-      <button type="button"
-              v-if="canCut"
-              class="clip-action-btn"
-              :disabled="!canCut"
-              @click="$emit('cut')"
-              title="Cut selection (Ctrl+X)"
-              aria-label="Cut selection">
-        <svg class="w-3.5 h-3.5"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2"
-             stroke-linecap="round"
-             stroke-linejoin="round">
-          <circle cx="6"
-                  cy="6"
-                  r="3"></circle>
-          <circle cx="6"
-                  cy="18"
-                  r="3"></circle>
-          <line x1="20"
-                y1="4"
-                x2="8.12"
-                y2="15.88"></line>
-          <line x1="14.47"
-                y1="14.48"
-                x2="20"
-                y2="20"></line>
-          <line x1="8.12"
-                y1="8.12"
-                x2="12"
-                y2="12"></line>
+      <button
+        type="button"
+        v-if="canCut"
+        class="clip-action-btn"
+        :disabled="!canCut"
+        @click="$emit('cut')"
+        title="Cut selection (Ctrl+X)"
+        aria-label="Cut selection">
+        <svg
+          class="w-3.5 h-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <circle cx="6" cy="6" r="3"></circle>
+          <circle cx="6" cy="18" r="3"></circle>
+          <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+          <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+          <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
         </svg>
       </button>
-      <button type="button"
-              v-if="canCopy"
-              class="clip-action-btn"
-              :disabled="!canCopy"
-              @click="$emit('copy')"
-              title="Copy selection (Ctrl+C)"
-              aria-label="Copy selection">
-        <svg class="w-3.5 h-3.5"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2"
-             stroke-linecap="round"
-             stroke-linejoin="round">
-          <rect x="9"
-                y="9"
-                width="13"
-                height="13"
-                rx="2"
-                ry="2"></rect>
+      <button
+        type="button"
+        v-if="canCopy"
+        class="clip-action-btn"
+        :disabled="!canCopy"
+        @click="$emit('copy')"
+        title="Copy selection (Ctrl+C)"
+        aria-label="Copy selection">
+        <svg
+          class="w-3.5 h-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
       </button>
-      <button type="button"
-              v-if="canPaste"
-              class="clip-action-btn"
-              :disabled="!canPaste"
-              @click="$emit('paste')"
-              :title="pasteTooltip"
-              aria-label="Paste audio">
-        <svg class="w-3.5 h-3.5"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2"
-             stroke-linecap="round"
-             stroke-linejoin="round">
+      <button
+        type="button"
+        v-if="canPaste"
+        class="clip-action-btn"
+        :disabled="!canPaste"
+        @click="$emit('paste')"
+        :title="pasteTooltip"
+        aria-label="Paste audio">
+        <svg
+          class="w-3.5 h-3.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
           <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-          <rect x="8"
-                y="2"
-                width="8"
-                height="4"
-                rx="1"
-                ry="1"></rect>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
         </svg>
       </button>
-      <button type="button"
-              v-if="canCut"
-              class="clip-action-btn delete-action-btn"
-              :disabled="!canCut"
-              @click="$emit('delete')"
-              title="Delete selection (Del or Backspace)"
-              aria-label="Delete selection">
-        <svg class="w-3.5 h-3.5 text-red-400"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2"
-             stroke-linecap="round"
-             stroke-linejoin="round">
+      <button
+        type="button"
+        v-if="canCut"
+        class="clip-action-btn delete-action-btn"
+        :disabled="!canCut"
+        @click="$emit('delete')"
+        title="Delete selection (Del or Backspace)"
+        aria-label="Delete selection">
+        <svg
+          class="w-3.5 h-3.5 text-red-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
           <polyline points="3 6 5 6 21 6"></polyline>
           <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          <line x1="10"
-                y1="11"
-                x2="10"
-                y2="17"></line>
-          <line x1="14"
-                y1="11"
-                x2="14"
-                y2="17"></line>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
         </svg>
       </button>
     </div>
     <span class="clip-action-sep"></span>
     <div class="clip-action-cluster">
-      <button type="button"
-              class="clip-action-btn in-out-btn"
-              @click="$emit('setIn')"
-              title="Set In point to playhead (Press 'I')"
-              aria-label="Set In point">
-        <svg class="w-3.5 h-3.5 text-emerald-400"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2.2"
-             stroke-linecap="round"
-             stroke-linejoin="round">
-          <line x1="5"
-                y1="4"
-                x2="5"
-                y2="20"></line>
-          <line x1="9"
-                y1="12"
-                x2="19"
-                y2="12"></line>
+      <button
+        type="button"
+        class="clip-action-btn in-out-btn"
+        @click="$emit('setIn')"
+        title="Set In point to playhead (Press 'I')"
+        aria-label="Set In point">
+        <svg
+          class="w-3.5 h-3.5 text-emerald-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <line x1="5" y1="4" x2="5" y2="20"></line>
+          <line x1="9" y1="12" x2="19" y2="12"></line>
           <polyline points="14 7 19 12 14 17"></polyline>
         </svg>
       </button>
-      <button type="button"
-              class="clip-action-btn in-out-btn"
-              @click="$emit('setOut')"
-              title="Set Out point to playhead (Press 'O')"
-              aria-label="Set Out point">
-        <svg class="w-3.5 h-3.5 text-rose-400"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2.2"
-             stroke-linecap="round"
-             stroke-linejoin="round">
-          <line x1="19"
-                y1="4"
-                x2="19"
-                y2="20"></line>
-          <line x1="15"
-                y1="12"
-                x2="5"
-                y2="12"></line>
+      <button
+        type="button"
+        class="clip-action-btn in-out-btn"
+        @click="$emit('setOut')"
+        title="Set Out point to playhead (Press 'O')"
+        aria-label="Set Out point">
+        <svg
+          class="w-3.5 h-3.5 text-rose-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <line x1="19" y1="4" x2="19" y2="20"></line>
+          <line x1="15" y1="12" x2="5" y2="12"></line>
           <polyline points="10 7 5 12 10 17"></polyline>
         </svg>
       </button>
@@ -204,12 +176,12 @@
 
 <script setup lang="ts">
 interface Props {
-  canUndo?: boolean;
-  canRedo?: boolean;
-  canCut?: boolean;
-  canCopy?: boolean;
-  canPaste?: boolean;
-  pasteTooltip?: string;
+  canUndo?: boolean
+  canRedo?: boolean
+  canCut?: boolean
+  canCopy?: boolean
+  canPaste?: boolean
+  pasteTooltip?: string
 }
 
 withDefaults(defineProps<Props>(), {
@@ -222,14 +194,14 @@ withDefaults(defineProps<Props>(), {
 })
 
 defineEmits<{
-  (e: 'undo'): void;
-  (e: 'redo'): void;
-  (e: 'cut'): void;
-  (e: 'copy'): void;
-  (e: 'paste'): void;
-  (e: 'delete'): void;
-  (e: 'setIn'): void;
-  (e: 'setOut'): void;
+  (e: 'undo'): void
+  (e: 'redo'): void
+  (e: 'cut'): void
+  (e: 'copy'): void
+  (e: 'paste'): void
+  (e: 'delete'): void
+  (e: 'setIn'): void
+  (e: 'setOut'): void
 }>()
 </script>
 

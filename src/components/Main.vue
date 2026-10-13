@@ -1,71 +1,81 @@
 <template>
-  <ConfirmDialog v-if="loadingErrorMessage || updateStore.errorMessage"
-                 :show-dialog="!!loadingErrorMessage || !!updateStore.errorMessage"
-                 :title="'Error'"
-                 :message="loadingErrorMessage || updateStore.errorMessage || ''"
-                 :confirm-text="'Ok'"
-                 :cancel-text="''"
-                 @update:show-dialog="clearErrorMessages" />
-  <title-bar class="select-none">{{ settingsStore.appName
-  }}<img class="pulse-panel-icon shrink-0"
-         @click="openLink"
-         :src="PulsePanelIcon"
-         :title="appVersion"
-         :alt="`${settingsStore.appName} icon`" /></title-bar>
+  <ConfirmDialog
+    v-if="loadingErrorMessage || updateStore.errorMessage"
+    :show-dialog="!!loadingErrorMessage || !!updateStore.errorMessage"
+    :title="'Error'"
+    :message="loadingErrorMessage || updateStore.errorMessage || ''"
+    :confirm-text="'Ok'"
+    :cancel-text="''"
+    @update:show-dialog="clearErrorMessages" />
+  <title-bar class="select-none"
+    >{{ settingsStore.appName
+    }}<img
+      class="pulse-panel-icon shrink-0"
+      @click="openLink"
+      :src="PulsePanelIcon"
+      :title="appVersion"
+      :alt="`${settingsStore.appName} icon`"
+  /></title-bar>
   <div :class="['e-nuxt-container', { darkMode: settingsStore.darkMode }]">
     <side-bar>
       <div class="top-buttons">
-        <router-link @keydown.space.enter="activateRouterLink(0, true)"
-                     @keyup.space.enter="activateRouterLink(0, false)"
-                     @keypress.space.prevent="navigateTo('/soundboard')"
-                     to="/soundboard"
-                     title="Soundboard"
-                     :class="['menu', { keyActive: routerLinkActive[0] }]">
+        <router-link
+          @keydown.space.enter="activateRouterLink(0, true)"
+          @keyup.space.enter="activateRouterLink(0, false)"
+          @keypress.space.prevent="navigateTo('/soundboard')"
+          to="/soundboard"
+          title="Soundboard"
+          :class="['menu', { keyActive: routerLinkActive[0] }]">
           <inline-svg :src="Speaker" />Soundbar
         </router-link>
-        <router-link @keydown.space.enter="activateRouterLink(1, true)"
-                     @keyup.space.enter="activateRouterLink(1, false)"
-                     @keypress.space.prevent="navigateTo('/pulse-back')"
-                     to="/pulse-back"
-                     title="Pulse Back"
-                     :class="['menu', { keyActive: routerLinkActive[1] }]">
+        <router-link
+          @keydown.space.enter="activateRouterLink(1, true)"
+          @keyup.space.enter="activateRouterLink(1, false)"
+          @keypress.space.prevent="navigateTo('/pulse-back')"
+          to="/pulse-back"
+          title="Pulse Back"
+          :class="['menu', { keyActive: routerLinkActive[1] }]">
           <inline-svg :src="PulseBackIcon" />Pulse Back
         </router-link>
-        <router-link @keydown.space.enter="activateRouterLink(2, true)"
-                     @keyup.space.enter="activateRouterLink(2, false)"
-                     @keypress.space.prevent="navigateTo('/youtube')"
-                     to="/youtube"
-                     title="YouTube"
-                     :class="['menu', { keyActive: routerLinkActive[2] }]">
+        <router-link
+          @keydown.space.enter="activateRouterLink(2, true)"
+          @keyup.space.enter="activateRouterLink(2, false)"
+          @keypress.space.prevent="navigateTo('/youtube')"
+          to="/youtube"
+          title="YouTube"
+          :class="['menu', { keyActive: routerLinkActive[2] }]">
           <inline-svg :src="YouTubeIcon" />YouTube
         </router-link>
-        <router-link @keydown.space.enter="activateRouterLink(3, true)"
-                     @keyup.space.enter="activateRouterLink(3, false)"
-                     @keypress.space.prevent="navigateTo('/settings')"
-                     to="/settings"
-                     title="Settings"
-                     :class="['menu', { keyActive: routerLinkActive[3] }]">
+        <router-link
+          @keydown.space.enter="activateRouterLink(3, true)"
+          @keyup.space.enter="activateRouterLink(3, false)"
+          @keypress.space.prevent="navigateTo('/settings')"
+          to="/settings"
+          title="Settings"
+          :class="['menu', { keyActive: routerLinkActive[3] }]">
           <inline-svg :src="SettingsGear" />Settings
         </router-link>
       </div>
       <div class="bottom-buttons">
-        <button :class="[
-          'menu',
-          'stop-button',
-          { active: soundStore.playingSoundIds.length > 0, keyActive: stopAllSoundsActive },
-        ]"
-                @keydown.space.enter.prevent="stopAllSoundsActive = true"
-                @keyup.space.enter="stopAllSoundsActive = false"
-                @click="soundStore.stopAllSounds"
-                title="Click to stop the current sound">
+        <button
+          :class="[
+            'menu',
+            'stop-button',
+            { active: soundStore.playingSoundIds.length > 0, keyActive: stopAllSoundsActive },
+          ]"
+          @keydown.space.enter.prevent="stopAllSoundsActive = true"
+          @keyup.space.enter="stopAllSoundsActive = false"
+          @click="soundStore.stopAllSounds"
+          title="Click to stop the current sound">
           <inline-svg :src="StopIcon" />
           Stop
         </button>
-        <button :class="['menu', 'mute-button', { muted: settingsStore.muted, keyActive: muteButtonActive }]"
-                @keydown.space.enter.prevent="muteButtonActive = true"
-                @keyup.space.enter="; (muteButtonActive = false) || settingsStore.toggleMute()"
-                @click="settingsStore.toggleMute"
-                :title="settingsStore.muted ? 'Click to unmute soundboard' : 'Click to mute soundboard'">
+        <button
+          :class="['menu', 'mute-button', { muted: settingsStore.muted, keyActive: muteButtonActive }]"
+          @keydown.space.enter.prevent="muteButtonActive = true"
+          @keyup.space.enter=";(muteButtonActive = false) || settingsStore.toggleMute()"
+          @click="settingsStore.toggleMute"
+          :title="settingsStore.muted ? 'Click to unmute soundboard' : 'Click to mute soundboard'">
           <inline-svg :src="Headphones" />
           {{ settingsStore.muted ? 'Muted' : 'Unmuted' }}
         </button>
@@ -76,35 +86,34 @@
         <component :is="Component" :key="route.path" />
       </keep-alive>
     </router-view>
-    <YouTubeView
-      v-if="hasVisitedYouTube"
-      v-show="route.path === '/youtube'"
-      :active="route.path === '/youtube'"
-    />
+    <YouTubeView v-if="hasVisitedYouTube" v-show="route.path === '/youtube'" :active="route.path === '/youtube'" />
     <transition name="toast-fade">
-      <div v-if="pulseBackStore.toastMessage"
-           class="pulse-back-toast"
-           :class="{ 'is-clickable': isToastActionable }"
-           @click="handleToastClick"
-           @mouseenter="handleToastMouseEnter"
-           @mouseleave="handleToastMouseLeave"
-           :title="isToastActionable ? 'Reveal in Windows Explorer' : undefined">
+      <div
+        v-if="pulseBackStore.toastMessage"
+        class="pulse-back-toast"
+        :class="{ 'is-clickable': isToastActionable }"
+        @click="handleToastClick"
+        @mouseenter="handleToastMouseEnter"
+        @mouseleave="handleToastMouseLeave"
+        :title="isToastActionable ? 'Reveal in Windows Explorer' : undefined">
         <span class="toast-text">{{ pulseBackStore.toastMessage }}</span>
-        <button v-if="isToastActionable"
-                type="button"
-                class="toast-action-btn"
-                @click.stop="handleToastAction"
-                title="Reveal in Windows Explorer">
+        <button
+          v-if="isToastActionable"
+          type="button"
+          class="toast-action-btn"
+          @click.stop="handleToastAction"
+          title="Reveal in Windows Explorer">
           <svg class="toast-action-icon" viewBox="0 0 20 20" fill="currentColor">
             <path d="M2 6a2 2 0 012-2h4l2 2h6a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
           </svg>
           <span>{{ pulseBackStore.toastActionLabel || 'Show in folder' }}</span>
         </button>
-        <button v-if="isToastActionable"
-                type="button"
-                class="toast-close-btn"
-                @click.stop="pulseBackStore.dismissToast()"
-                title="Dismiss">
+        <button
+          v-if="isToastActionable"
+          type="button"
+          class="toast-close-btn"
+          @click.stop="pulseBackStore.dismissToast()"
+          title="Dismiss">
           &times;
         </button>
       </div>
@@ -224,8 +233,7 @@ async function initializeSettings() {
   ])
   if (settingsResult.status !== 'fulfilled' || soundsResult.status !== 'fulfilled') {
     if (settingsResult.status === 'rejected' && soundsResult.status === 'rejected') {
-      loadingErrorMessage.value =
-        `Failed to fetch settings and sounds: ${settingsResult.reason}, ${soundsResult.reason}`
+      loadingErrorMessage.value = `Failed to fetch settings and sounds: ${settingsResult.reason}, ${soundsResult.reason}`
       console.error(settingsResult.reason)
       console.trace(soundsResult.reason)
     } else if (settingsResult.status === 'rejected') {
@@ -273,7 +281,7 @@ initializeSettings()
   color: var(--link-color);
 }
 
-.menu:active>svg {
+.menu:active > svg {
   fill: var(--link-color);
 }
 
@@ -281,19 +289,19 @@ initializeSettings()
   color: var(--link-color);
 }
 
-.menu.keyActive>svg {
+.menu.keyActive > svg {
   fill: var(--link-color);
 }
 
-.menu>svg {
+.menu > svg {
   fill: var(--text-color);
 }
 
-.change-mode.edit>svg {
+.change-mode.edit > svg {
   stroke: var(--text-color);
 }
 
-.menu.edit>svg {
+.menu.edit > svg {
   fill: transparent;
 }
 
@@ -319,7 +327,7 @@ initializeSettings()
   color: var(--active-color);
 }
 
-.router-link-active>svg {
+.router-link-active > svg {
   fill: var(--active-color);
 }
 
@@ -327,7 +335,7 @@ initializeSettings()
   color: var(--active-color);
 }
 
-.stop-button.active>svg {
+.stop-button.active > svg {
   fill: var(--active-color);
   color: var(--active-color);
 }
@@ -337,12 +345,12 @@ initializeSettings()
   overflow: hidden;
 }
 
-.mute-button>svg {
+.mute-button > svg {
   fill: var(--text-color);
   transition: fill 300ms ease-in-out;
 }
 
-.mute-button.muted>svg {
+.mute-button.muted > svg {
   fill: red;
   /* sets the color of the headphones */
 }
@@ -438,7 +446,11 @@ initializeSettings()
 .pulse-back-toast.is-clickable {
   pointer-events: auto;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 }
 
 .pulse-back-toast.is-clickable:hover {
@@ -498,7 +510,9 @@ initializeSettings()
   cursor: pointer;
   padding: 0;
   margin-left: -0.2rem;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .toast-close-btn:hover {

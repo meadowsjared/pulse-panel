@@ -5,37 +5,37 @@
       <div class="flex mb-2">
         <div class="mr-2">Pinia:</div>
         <div class="font-bold">
-          {{ versions?.pinia ?? "N/A" }}
+          {{ versions?.pinia ?? 'N/A' }}
         </div>
       </div>
       <div class="flex mb-2">
         <div class="mr-2">Vue.js:</div>
         <div class="font-bold">
-          {{ versions?.vue ?? "N/A" }}
+          {{ versions?.vue ?? 'N/A' }}
         </div>
       </div>
       <div class="flex mb-2">
         <div class="mr-2">Electron:</div>
         <div class="font-bold">
-          {{ versions?.electron ?? "N/A" }}
+          {{ versions?.electron ?? 'N/A' }}
         </div>
       </div>
       <div class="flex mb-2">
         <div class="mr-2">Node:</div>
         <div class="font-bold">
-          {{ versions?.node ?? "N/A" }}
+          {{ versions?.node ?? 'N/A' }}
         </div>
       </div>
       <div class="flex mb-2">
         <div class="mr-2">Chrome:</div>
         <div class="font-bold">
-          {{ versions?.chrome ?? "N/A" }}
+          {{ versions?.chrome ?? 'N/A' }}
         </div>
       </div>
       <div class="flex mb-2">
         <div class="mr-2">Platform:</div>
         <div class="font-bold">
-          {{ versions?.platform ?? "N/A" }}
+          {{ versions?.platform ?? 'N/A' }}
         </div>
       </div>
     </div>

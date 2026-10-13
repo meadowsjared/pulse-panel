@@ -4,11 +4,7 @@
     <div class="view-header">
       <div class="header-left">
         <h1 class="view-title">
-          <svg class="w-6 h-6 text-blue-400"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2">
+          <svg class="w-6 h-6 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
             <path d="M3 3v5h5" />
             <path d="M12 7v5l3 3" />
@@ -22,18 +18,16 @@
         <!-- Quick Clip Button & Popover -->
         <QuickClipButton />
 
-
         <!-- Pulse Back Buffer Toggle -->
-        <toggle class="pulseBackToggle"
-                :modelValue="pulseBackStore.isBufferEnabled"
-                @update:modelValue="pulseBackStore.toggleBuffer">
+        <toggle
+          class="pulseBackToggle"
+          :modelValue="pulseBackStore.isBufferEnabled"
+          @update:modelValue="pulseBackStore.toggleBuffer">
           <span class="flex items-center gap-1.5">
             <span :class="['status-dot', { online: pulseBackStore.isBufferRunning }]"></span>
             Pulse Back
           </span>
         </toggle>
-
-
       </div>
     </div>
 
@@ -45,31 +39,29 @@
           <span class="rail-title">Captured Clips ({{ pulseBackStore.clips.length }})</span>
         </div>
 
-        <div v-if="pulseBackStore.clips.length === 0"
-             class="empty-clips">
-          <svg class="w-10 h-10 text-zinc-600 mb-2"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="1.5">
+        <div v-if="pulseBackStore.clips.length === 0" class="empty-clips">
+          <svg
+            class="w-10 h-10 text-zinc-600 mb-2"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5">
             <path d="M12 8v4l3 3" />
-            <circle cx="12"
-                    cy="12"
-                    r="9" />
+            <circle cx="12" cy="12" r="9" />
           </svg>
           <p class="font-medium text-zinc-300">No clips captured yet</p>
           <p class="text-xs text-zinc-500 mt-1">
-            Press <kbd class="px-1 py-0.5 bg-zinc-800 rounded border border-zinc-700">F12</kbd>
-            or click <strong>Clip</strong> in the top bar when audio happens.
+            Press <kbd class="px-1 py-0.5 bg-zinc-800 rounded border border-zinc-700">F12</kbd> or click
+            <strong>Clip</strong> in the top bar when audio happens.
           </p>
         </div>
 
-        <div v-else
-             class="clips-list">
-          <div v-for="clip in pulseBackStore.clips"
-               :key="clip.id"
-               :class="['clip-card', { active: pulseBackStore.selectedClipId === clip.id }]"
-               @click="selectClip(clip)">
+        <div v-else class="clips-list">
+          <div
+            v-for="clip in pulseBackStore.clips"
+            :key="clip.id"
+            :class="['clip-card', { active: pulseBackStore.selectedClipId === clip.id }]"
+            @click="selectClip(clip)">
             <div class="clip-card-main">
               <div class="clip-card-title">{{ clip.title }}</div>
               <div class="clip-card-meta">
@@ -78,39 +70,19 @@
               </div>
             </div>
             <div class="clip-card-actions">
-              <button class="clip-card-btn duplicate-clip-btn"
-                      @click.stop="duplicateClip(clip.id)"
-                      title="Duplicate clip">
-                <svg class="w-4 h-4"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <rect x="9"
-                        y="9"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        ry="2"></rect>
+              <button
+                class="clip-card-btn duplicate-clip-btn"
+                @click.stop="duplicateClip(clip.id)"
+                title="Duplicate clip">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
               </button>
-              <button class="clip-card-btn delete-clip-btn"
-                      @click.stop="deleteClip(clip.id)"
-                      title="Delete clip">
-                <svg class="w-4 h-4"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
-                  <line x1="18"
-                        y1="6"
-                        x2="6"
-                        y2="18"></line>
-                  <line x1="6"
-                        y1="6"
-                        x2="18"
-                        y2="18"></line>
+              <button class="clip-card-btn delete-clip-btn" @click.stop="deleteClip(clip.id)" title="Delete clip">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
               </button>
             </div>
@@ -119,36 +91,28 @@
       </div>
 
       <!-- Right Area: Waveform Studio & Soundboard Export -->
-      <div v-if="selectedClip"
-           class="studio-main">
+      <div v-if="selectedClip" class="studio-main">
         <!-- Clip Details & Title -->
         <div class="clip-info-bar">
           <div class="title-input-group">
             <label for="clip-title-input">Clip Title:</label>
-            <input id="clip-title-input"
-                   type="text"
-                   v-model="clipTitle"
-                   @input="onTitleInput"
-                   @change="onTitleChange"
-                   @blur="onTitleChange"
-                   @keydown.enter="onTitleKeydownEnter"
-                   placeholder="Give your sound a name..."
-                   class="clip-title-input" />
+            <input
+              id="clip-title-input"
+              type="text"
+              v-model="clipTitle"
+              @input="onTitleInput"
+              @change="onTitleChange"
+              @blur="onTitleChange"
+              @keydown.enter="onTitleKeydownEnter"
+              placeholder="Give your sound a name..."
+              class="clip-title-input" />
           </div>
-          <button class="duplicate-toolbar-btn"
-                  @click="duplicateClip(selectedClip.id)"
-                  title="Duplicate this clip to create another sound from it">
-            <svg class="w-4 h-4 mr-1.5"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor"
-                 stroke-width="2">
-              <rect x="9"
-                    y="9"
-                    width="13"
-                    height="13"
-                    rx="2"
-                    ry="2"></rect>
+          <button
+            class="duplicate-toolbar-btn"
+            @click="duplicateClip(selectedClip.id)"
+            title="Duplicate this clip to create another sound from it">
+            <svg class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
             Duplicate Clip
@@ -156,25 +120,26 @@
         </div>
 
         <!-- Waveform Studio Editor -->
-        <waveform-editor ref="waveformEditorRef"
-                         :blob="selectedClip?.blob"
-                         :original-blob="selectedClip?.originalBlob || selectedClip?.blob"
-                         :clip-id="selectedClip?.id"
-                         :duration="selectedClip?.duration || 1"
-                         v-model:trim-start="trimStart"
-                         v-model:trim-end="trimEnd"
-                         v-model:current-time="currentTime"
-                         :enable-dual-tracks="true"
-                         v-model:include-mic="includeMic"
-                         v-model:include-input="includeInput"
-                         v-model:active-track-target="activeTrackTarget"
-                         v-model:mic-gain="micGainMultiplier"
-                         v-model:input-gain="inputGainMultiplier"
-                         v-model:applied-gain-regions="appliedGainRegions"
-                         v-model:segment-boundaries="segmentBoundaries"
-                         :volume="clipVolume"
-                         @timeline-change="onTimelineChange"
-                         @change="saveCurrentClipState" />
+        <waveform-editor
+          ref="waveformEditorRef"
+          :blob="selectedClip?.blob"
+          :original-blob="selectedClip?.originalBlob || selectedClip?.blob"
+          :clip-id="selectedClip?.id"
+          :duration="selectedClip?.duration || 1"
+          v-model:trim-start="trimStart"
+          v-model:trim-end="trimEnd"
+          v-model:current-time="currentTime"
+          :enable-dual-tracks="true"
+          v-model:include-mic="includeMic"
+          v-model:include-input="includeInput"
+          v-model:active-track-target="activeTrackTarget"
+          v-model:mic-gain="micGainMultiplier"
+          v-model:input-gain="inputGainMultiplier"
+          v-model:applied-gain-regions="appliedGainRegions"
+          v-model:segment-boundaries="segmentBoundaries"
+          :volume="clipVolume"
+          @timeline-change="onTimelineChange"
+          @change="saveCurrentClipState" />
 
         <!-- Soundboard Publish Card -->
         <div class="publish-card">
@@ -183,54 +148,55 @@
             <div class="publish-field">
               <label>Button Color:</label>
               <div class="flex items-center gap-2">
-                <color-picker v-model="clipColor"
-                              :label="''"
-                              align="left"
-                              @update:model-value="onColorChange" />
+                <color-picker v-model="clipColor" :label="''" align="left" @update:model-value="onColorChange" />
                 <span class="text-xs text-zinc-400 uppercase font-mono">{{ clipColor }}</span>
               </div>
             </div>
 
             <div class="publish-field">
-              <label for="clip-tags"
-                     @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
-              <tag-input ref="tagInputRef"
-                         id="clip-tags"
-                         v-model="clipTags"
-                         placeholder="Tags are used for searching"
-                         @update:model-value="onTagsChange" />
+              <label for="clip-tags" @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
+              <tag-input
+                ref="tagInputRef"
+                id="clip-tags"
+                v-model="clipTags"
+                placeholder="Tags are used for searching"
+                @update:model-value="onTagsChange" />
             </div>
 
             <div class="publish-field">
               <label>Volume: {{ clipVolume }}%</label>
-              <input type="range"
-                     min="0"
-                     max="100"
-                     v-model="clipVolume"
-                     @input="onVolumeChange"
-                     @change="onVolumeChange"
-                     class="volume-slider cursor-pointer" />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                v-model="clipVolume"
+                @input="onVolumeChange"
+                @change="onVolumeChange"
+                class="volume-slider cursor-pointer" />
             </div>
 
             <div class="publish-field">
               <label>Save Format:</label>
               <div class="format-toggle-group">
-                <button type="button"
-                        class="format-toggle-btn"
-                        :class="{ active: exportFormat === 'mp3' }"
-                        @click="setExportFormat('mp3')">
+                <button
+                  type="button"
+                  class="format-toggle-btn"
+                  :class="{ active: exportFormat === 'mp3' }"
+                  @click="setExportFormat('mp3')">
                   MP3
                 </button>
-                <button type="button"
-                        class="format-toggle-btn"
-                        :class="{ active: exportFormat === 'wav' }"
-                        @click="setExportFormat('wav')">
+                <button
+                  type="button"
+                  class="format-toggle-btn"
+                  :class="{ active: exportFormat === 'wav' }"
+                  @click="setExportFormat('wav')">
                   WAV
                 </button>
-                <button type="button"
-                        class="format-toggle-btn"
-                        :class="{ active: exportFormat === 'ogg' }"
-                        @click="setExportFormat('ogg')">
+                <button
+                  type="button"
+                  class="format-toggle-btn"
+                  :class="{ active: exportFormat === 'ogg' }"
+                  @click="setExportFormat('ogg')">
                   OGG
                 </button>
               </div>
@@ -239,42 +205,32 @@
 
           <div class="publish-actions">
             <div class="publish-options">
-              <label class="publish-option-label"
-                     title="When enabled, removes this clip from Pulse Back after adding it to the soundboard">
-                <input type="checkbox"
-                       v-model="deleteAfterPublish"
-                       @change="onDeleteAfterPublishChange"
-                       class="publish-checkbox" />
+              <label
+                class="publish-option-label"
+                title="When enabled, removes this clip from Pulse Back after adding it to the soundboard">
+                <input
+                  type="checkbox"
+                  v-model="deleteAfterPublish"
+                  @change="onDeleteAfterPublishChange"
+                  class="publish-checkbox" />
                 <span>Delete clip from Pulse Back after adding</span>
               </label>
             </div>
             <div class="publish-buttons">
-              <button class="save-file-btn"
-                      :disabled="isSavingFile || isPublishing"
-                      @click="saveToFile"
-                      :title="`Save audio file as .${exportFormat} to your computer`">
-                <svg class="w-5 h-5 mr-1.5"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <button
+                class="save-file-btn"
+                :disabled="isSavingFile || isPublishing"
+                @click="saveToFile"
+                :title="`Save audio file as .${exportFormat} to your computer`">
+                <svg class="w-5 h-5 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
-                  <line x1="12"
-                        y1="15"
-                        x2="12"
-                        y2="3" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
                 {{ isSavingFile ? 'Saving...' : `Save as .${exportFormat.toUpperCase()}` }}
               </button>
-              <button class="publish-btn"
-                      :disabled="isPublishing || isSavingFile"
-                      @click="publishToSoundboard">
-                <svg class="w-5 h-5 mr-1"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2">
+              <button class="publish-btn" :disabled="isPublishing || isSavingFile" @click="publishToSoundboard">
+                <svg class="w-5 h-5 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 {{ isPublishing ? 'Publishing...' : 'Add to Soundboard' }}
@@ -285,8 +241,7 @@
       </div>
 
       <!-- No Clip Selected -->
-      <div v-else
-           class="studio-empty">
+      <div v-else class="studio-empty">
         <p class="text-zinc-400">Select a clip on the left to edit and publish</p>
       </div>
     </div>
@@ -329,19 +284,17 @@ const deleteAfterPublish = ref(savedDeleteAfterPublish === 'true')
 function onDeleteAfterPublishChange() {
   try {
     localStorage.setItem('pulse_back_delete_after_publish', String(deleteAfterPublish.value))
-  } catch { }
+  } catch {}
 }
 
 const savedFormat = localStorage.getItem('pulse_back_export_format')
-const exportFormat = ref<'mp3' | 'wav' | 'ogg'>(
-  savedFormat === 'wav' || savedFormat === 'ogg' ? savedFormat : 'mp3'
-)
+const exportFormat = ref<'mp3' | 'wav' | 'ogg'>(savedFormat === 'wav' || savedFormat === 'ogg' ? savedFormat : 'mp3')
 
 function setExportFormat(format: 'mp3' | 'wav' | 'ogg') {
   exportFormat.value = format
   try {
     localStorage.setItem('pulse_back_export_format', format)
-  } catch { }
+  } catch {}
 }
 
 // Trimming & Playback State (bound to WaveformEditor)
@@ -417,7 +370,7 @@ watch(
   { immediate: true }
 )
 
-function saveCurrentClipState(options?: { includeBlob?: boolean; }) {
+function saveCurrentClipState(options?: { includeBlob?: boolean }) {
   if (!selectedClip.value) return
   const updates: Partial<PulseBackClip> = {
     title: clipTitle.value,
@@ -444,11 +397,11 @@ function saveCurrentClipState(options?: { includeBlob?: boolean; }) {
 }
 
 function onTimelineChange(payload: {
-  buffer: AudioBuffer;
-  blob: Blob;
-  duration: number;
-  segments: AudioTimelineSegment[];
-  boundaries: number[];
+  buffer: AudioBuffer
+  blob: Blob
+  duration: number
+  segments: AudioTimelineSegment[]
+  boundaries: number[]
 }) {
   if (!selectedClip.value) return
   selectedClip.value.duration = payload.duration
@@ -456,7 +409,7 @@ function onTimelineChange(payload: {
   if (selectedClip.value.audioUrl && selectedClip.value.audioUrl.startsWith('blob:')) {
     try {
       URL.revokeObjectURL(selectedClip.value.audioUrl)
-    } catch { }
+    } catch {}
   }
   selectedClip.value.audioUrl = URL.createObjectURL(payload.blob)
   selectedClip.value.trimStart = trimStart.value
@@ -531,18 +484,24 @@ async function publishToSoundboard() {
     const trimmed = await waveformEditorRef.value.getTrimmedAudioBlob(format)
     if (!trimmed) return
 
-    await pulseBackStore.publishToSoundboard(selectedClip.value.id, trimmed.blob, trimmed.duration, {
-      title: clipTitle.value.trim() || selectedClip.value.title,
-      tags: clipTags.value ? [...clipTags.value] : [],
-      color: clipColor.value,
-      volume: clipVolume.value,
-      soundSegments: trimmed.segments,
-    }, {
-      deleteAfterPublish: deleteAfterPublish.value,
-      navigateToSoundboard: false,
-      format,
-      extension: trimmed.extension,
-    })
+    await pulseBackStore.publishToSoundboard(
+      selectedClip.value.id,
+      trimmed.blob,
+      trimmed.duration,
+      {
+        title: clipTitle.value.trim() || selectedClip.value.title,
+        tags: clipTags.value ? [...clipTags.value] : [],
+        color: clipColor.value,
+        volume: clipVolume.value,
+        soundSegments: trimmed.segments,
+      },
+      {
+        deleteAfterPublish: deleteAfterPublish.value,
+        navigateToSoundboard: false,
+        format,
+        extension: trimmed.extension,
+      }
+    )
   } catch (err) {
     console.error('Failed to publish clip to soundboard:', err)
   } finally {
@@ -566,7 +525,7 @@ async function saveToFile() {
 
     if (window.electron?.saveFileDialog) {
       const arrayBuffer = await trimmed.blob.arrayBuffer()
-      const formatFilterMap: Record<'mp3' | 'wav' | 'ogg', { name: string; extensions: string[]; }> = {
+      const formatFilterMap: Record<'mp3' | 'wav' | 'ogg', { name: string; extensions: string[] }> = {
         mp3: { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
         ogg: { name: 'OGG Audio (*.ogg)', extensions: ['ogg'] },
         wav: { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
@@ -746,7 +705,7 @@ onUnmounted(() => {
   margin-top: 0.2rem;
 }
 
-.clip-card-meta>.time {
+.clip-card-meta > .time {
   min-width: max-content;
 }
 
@@ -834,7 +793,6 @@ onUnmounted(() => {
   color: white;
   font-size: 0.9rem;
 }
-
 
 /* Publish Card */
 .publish-card {

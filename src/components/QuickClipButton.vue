@@ -1,30 +1,32 @@
 <template>
-  <div class="quick-clip-wrapper"
-       ref="clipMenuRef">
+  <div class="quick-clip-wrapper" ref="clipMenuRef">
     <!-- Live Punch-In Recording State (Active) -->
-    <button v-if="pulseBackStore.isLiveRecording"
-            class="live-rec-btn"
-            type="button"
-            @click="pulseBackStore.stopLiveCapture()"
-            title="Click to stop live recording">
+    <button
+      v-if="pulseBackStore.isLiveRecording"
+      class="live-rec-btn"
+      type="button"
+      @click="pulseBackStore.stopLiveCapture()"
+      title="Click to stop live recording">
       <span class="live-dot"></span>
       <span>Stop ({{ pulseBackStore.liveRecordSeconds }}s)</span>
     </button>
 
     <!-- Normal Quick Clip Button -->
-    <button v-else
-            type="button"
-            :class="['quick-clip-btn', { active: showClipMenu, disabled: !pulseBackStore.isBufferRunning }]"
-            :disabled="!pulseBackStore.isBufferRunning"
-            @click="toggleClipMenu"
-            :title="pulseBackStore.isBufferRunning ? 'Pulse Back (Quick Clip)' : 'Turn on Pulse Back buffer to clip'">
-      <svg class="w-4 h-4"
-           viewBox="0 0 24 24"
-           fill="none"
-           stroke="currentColor"
-           stroke-width="2"
-           stroke-linecap="round"
-           stroke-linejoin="round">
+    <button
+      v-else
+      type="button"
+      :class="['quick-clip-btn', { active: showClipMenu, disabled: !pulseBackStore.isBufferRunning }]"
+      :disabled="!pulseBackStore.isBufferRunning"
+      @click="toggleClipMenu"
+      :title="pulseBackStore.isBufferRunning ? 'Pulse Back (Quick Clip)' : 'Turn on Pulse Back buffer to clip'">
+      <svg
+        class="w-4 h-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round">
         <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
         <path d="M3 3v5h5" />
         <path d="M12 7v5l3 3" />
@@ -36,31 +38,37 @@
 
     <!-- Dropdown Menu -->
     <transition name="tips-fade">
-      <div v-if="showClipMenu && pulseBackStore.isBufferRunning"
-           :class="['clip-menu-dropdown', alignClass]"
-           @mousedown.stop>
-
+      <div
+        v-if="showClipMenu && pulseBackStore.isBufferRunning"
+        :class="['clip-menu-dropdown', alignClass]"
+        @mousedown.stop>
         <div class="clip-presets">
-          <button v-for="s in visiblePresets"
-                  :key="s"
-                  type="button"
-                  :class="['preset-btn', { 'is-default': selectedPresetSeconds === s && s > 0 }]"
-                  :title="continueRecordingLive
-                    ? (s === 0 ? 'Start live recording now' : `Start live punch-in from -${s}s`)
-                    : `Capture last ${s}s`"
-                  @click="selectAndExecute(s)">
+          <button
+            v-for="s in visiblePresets"
+            :key="s"
+            type="button"
+            :class="['preset-btn', { 'is-default': selectedPresetSeconds === s && s > 0 }]"
+            :title="
+              continueRecordingLive
+                ? s === 0
+                  ? 'Start live recording now'
+                  : `Start live punch-in from -${s}s`
+                : `Capture last ${s}s`
+            "
+            @click="selectAndExecute(s)">
             {{ s === 0 ? '0s' : `-${s}s` }}
           </button>
         </div>
 
         <label class="continue-checkbox">
-          <input type="checkbox"
-                 v-model="continueRecordingLive" />
+          <input type="checkbox" v-model="continueRecordingLive" />
           <span>Continue recording live</span>
         </label>
 
         <div class="clip-menu-footer">
-          <span>Hotkey: <kbd class="tip-kbd">{{ hotkeyLabel }}</kbd></span>
+          <span
+            >Hotkey: <kbd class="tip-kbd">{{ hotkeyLabel }}</kbd></span
+          >
         </div>
       </div>
     </transition>
@@ -74,9 +82,9 @@ import { useSettingsStore } from '../store/settings'
 
 const props = withDefaults(
   defineProps<{
-    label?: string;
-    align?: 'left' | 'right';
-    presets?: number[];
+    label?: string
+    align?: 'left' | 'right'
+    presets?: number[]
   }>(),
   {
     label: 'Clip',
@@ -86,7 +94,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'clipCaptured', clip: PulseBackClip | null): void;
+  (e: 'clipCaptured', clip: PulseBackClip | null): void
 }>()
 
 const pulseBackStore = usePulseBackStore()
@@ -215,7 +223,6 @@ onUnmounted(() => {
 }
 
 @keyframes blink {
-
   0%,
   100% {
     opacity: 1;
@@ -227,7 +234,6 @@ onUnmounted(() => {
 }
 
 @keyframes pulse-border {
-
   0%,
   100% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
@@ -247,7 +253,9 @@ onUnmounted(() => {
   border: 1px solid #3f3f46;
   border-radius: 10px;
   padding: 0.85rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.6),
+    0 8px 10px -6px rgba(0, 0, 0, 0.4);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -339,7 +347,9 @@ onUnmounted(() => {
 
 .tips-fade-enter-active,
 .tips-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .tips-fade-enter-from,

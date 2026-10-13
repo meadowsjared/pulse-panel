@@ -1,37 +1,33 @@
 <template>
-  <div class="select-parent"
-       v-bind="$attrs">
-    <button ref="selectedOption"
-            class="selected-option"
-            :class="{ focused: focused }"
-            @click="toggleDropdown"
-            @focus="handleFocus"
-            @blur="handleBlur"
-            v-bind="$attrs">
+  <div class="select-parent" v-bind="$attrs">
+    <button
+      ref="selectedOption"
+      class="selected-option"
+      :class="{ focused: focused }"
+      @click="toggleDropdown"
+      @focus="handleFocus"
+      @blur="handleBlur"
+      v-bind="$attrs">
       {{ localValue?.label ?? props.defaultText }}
-      <inline-svg :src="SelectArrow"
-                  class="select-arrow"
-                  :class="{ flipped: isOpen }" />
+      <inline-svg :src="SelectArrow" class="select-arrow" :class="{ flipped: isOpen }" />
     </button>
     <div class="sizing-div">
-      <div v-for="option in options"
-           :key="option.value">{{ option.label }}</div>
+      <div v-for="option in options" :key="option.value">{{ option.label }}</div>
     </div>
     <div class="dropdown-parent">
-      <ul v-if="isOpen"
-          class="dropdown w-full">
-        <button ref="optionRefs"
-                v-for="option in options"
-                :key="option.value"
-                class="option-value"
-                :class="{ selected: option.value === props.modelValue }"
-                @click="selectOption(option)"
-                @contextmenu.prevent.stop="handleOptionContextMenu($event, option)"
-                @keydown.prevent="handleKeypress"
-                @focus="handleFocus"
-                @blur="handleBlur">
-          <slot name="option"
-                :option="option">
+      <ul v-if="isOpen" class="dropdown w-full">
+        <button
+          ref="optionRefs"
+          v-for="option in options"
+          :key="option.value"
+          class="option-value"
+          :class="{ selected: option.value === props.modelValue }"
+          @click="selectOption(option)"
+          @contextmenu.prevent.stop="handleOptionContextMenu($event, option)"
+          @keydown.prevent="handleKeypress"
+          @focus="handleFocus"
+          @blur="handleBlur">
+          <slot name="option" :option="option">
             {{ option.label }}
           </slot>
         </button>
@@ -46,21 +42,21 @@ import InlineSvg from 'vue-inline-svg'
 import SelectArrow from '../../assets/images/select-arrow.svg'
 
 interface LabelValue {
-  label: string;
-  value: string;
+  label: string
+  value: string
 }
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: string | null): void;
-  (change: 'change', value: Event): void;
-  (event: 'optionContextmenu', payload: { event: MouseEvent; option: LabelValue; }): void;
+  (event: 'update:modelValue', value: string | null): void
+  (change: 'change', value: Event): void
+  (event: 'optionContextmenu', payload: { event: MouseEvent; option: LabelValue }): void
 }>()
 
 const props = withDefaults(
   defineProps<{
-    modelValue: string | null;
-    options: LabelValue[];
-    defaultText?: string;
+    modelValue: string | null
+    options: LabelValue[]
+    defaultText?: string
   }>(),
   {
     defaultText: 'Select an option',

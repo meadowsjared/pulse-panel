@@ -1,174 +1,165 @@
 <template>
   <div class="edit-dialog">
     <div class="title-bar flex justify-between">
-      <button @click="handlePreviewButtonClick"
-              title="preview sound"
-              :class="{ 'playing-sound': playingThisSound }"
-              class="light preview-button menu">
-        <inline-svg class="w-8 h-8"
-                    :src="Listen" />
+      <button
+        @click="handlePreviewButtonClick"
+        title="preview sound"
+        :class="{ 'playing-sound': playingThisSound }"
+        class="light preview-button menu">
+        <inline-svg class="w-8 h-8" :src="Listen" />
       </button>
-      <h1 @click="scrollToSound"
-          class="cursor-pointer select-none"
-          title="Scroll sound into view">Edit Sound</h1>
-      <button @click="close"
-              class="close-button menu">
-        <inline-svg class="w-8 h-8 rotate-45"
-                    :src="Plus" />
+      <h1 @click="scrollToSound" class="cursor-pointer select-none" title="Scroll sound into view">Edit Sound</h1>
+      <button @click="close" class="close-button menu">
+        <inline-svg class="w-8 h-8 rotate-45" :src="Plus" />
       </button>
     </div>
     <div class="sound-properties">
       <div class="input-group">
         <label for="title">Sound title:</label>
-        <input type="text"
-               v-model="props.modelValue.title"
-               id="title"
-               placeholder="Enter text for the button" />
+        <input type="text" v-model="props.modelValue.title" id="title" placeholder="Enter text for the button" />
         <div class="hide-title-checkbox-group">
           <div title="hide title on button">
-            <input type="checkbox"
-                   v-model="props.modelValue.hideTitle"
-                   id="hideTitle" /><label for="hideTitle">Hide title</label>
+            <input type="checkbox" v-model="props.modelValue.hideTitle" id="hideTitle" /><label for="hideTitle"
+              >Hide title</label
+            >
           </div>
           <div title="set title color button">
             <color-picker v-model="props.modelValue.color" />
           </div>
         </div>
-        <label for="tags"
-               @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
-        <tag-input ref="tagInputRef"
-                   id="tags"
-                   v-model="props.modelValue.tags"
-                   placeholder="Tags are used for searching" />
+        <label for="tags" @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags:</label>
+        <tag-input
+          ref="tagInputRef"
+          id="tags"
+          v-model="props.modelValue.tags"
+          placeholder="Tags are used for searching" />
       </div>
-      <input type="file"
-             ref="audioFileInput"
-             @change="handleAudioFileUpload"
-             class="file-input hidden"
-             accept="audio/*" />
-      <button @click="audioFileInput?.click()"
-              class="light">Browse Audio...</button>
+      <input
+        type="file"
+        ref="audioFileInput"
+        @change="handleAudioFileUpload"
+        class="file-input hidden"
+        accept="audio/*" />
+      <button @click="audioFileInput?.click()" class="light">Browse Audio...</button>
       <div class="input-group">
         <div class="volume-control-container">
-          <input-text-number id="volume-display"
-                             class="volume-display"
-                             :min="0"
-                             :max="100"
-                             :bigStep="5"
-                             v-model="volumeDisplay" />
-          <label class="volume-label"
-                 for="volume-display">Volume:</label>
-          <button @click="handlePlayButtonClick"
-                  :class="['play-sound-button', 'menu', { focusVisible }, { 'sound-is-playing': playingThisSound }]"
-                  @blur="focusVisible = false"
-                  @keyup="handleKeyup">
-            <inline-svg :src="PlayIcon"
-                        class="w-6 h-6" />
+          <input-text-number
+            id="volume-display"
+            class="volume-display"
+            :min="0"
+            :max="100"
+            :bigStep="5"
+            v-model="volumeDisplay" />
+          <label class="volume-label" for="volume-display">Volume:</label>
+          <button
+            @click="handlePlayButtonClick"
+            :class="['play-sound-button', 'menu', { focusVisible }, { 'sound-is-playing': playingThisSound }]"
+            @blur="focusVisible = false"
+            @keyup="handleKeyup">
+            <inline-svg :src="PlayIcon" class="w-6 h-6" />
           </button>
-          <input-range-number class="volume-slider"
-                              :bigStep="5"
-                              v-model="volumeDisplay" />
+          <input-range-number class="volume-slider" :bigStep="5" v-model="volumeDisplay" />
         </div>
       </div>
       <div class="waveform-container w-full">
-        <waveform-graph :audio-buffer="audioBuffer"
-                        :duration="duration"
-                        :height="50"
-                        :show-trim-handles="false"
-                        v-model:current-time="currentTime"
-                        @scrub-start="onScrubStart"
-                        @scrub-move="onScrubMove"
-                        @scrub-end="onScrubEnd" />
+        <waveform-graph
+          :audio-buffer="audioBuffer"
+          :duration="duration"
+          :height="50"
+          :show-trim-handles="false"
+          v-model:current-time="currentTime"
+          @scrub-start="onScrubStart"
+          @scrub-move="onScrubMove"
+          @scrub-end="onScrubEnd" />
       </div>
-      <div class="flex flex-row gap-1"
-           title="Total duration of the sound">
+      <div class="flex flex-row gap-1" title="Total duration of the sound">
         <span>Total Duration: </span><span>{{ formatSecondsToMMSS(duration) }}</span>
       </div>
       <div class="input-group flex flex-col mb-1 w-full gap-2">
         <span class="font-semibold text-xs text-zinc-400 uppercase tracking-wider">Segments:</span>
-        <div v-for="(segment, index) in modelValue.soundSegments"
-             :key="`input-range-segment-${segment.id}`"
-             :class="[
-               'segment-card flex flex-col gap-1 w-full cursor-grab p-1.5 rounded-lg ' +
-               'border border-zinc-800/80 bg-zinc-900/50',
-               { dragging: segment.isDragPreview },
-             ]"
-             draggable="true"
-             @dragstart="dragStart(segment, index)"
-             @dragenter.prevent="dragOver(segment)"
-             @dragend="dragEnd">
+        <div
+          v-for="(segment, index) in modelValue.soundSegments"
+          :key="`input-range-segment-${segment.id}`"
+          :class="[
+            'segment-card flex flex-col gap-1 w-full cursor-grab p-1.5 rounded-lg ' +
+              'border border-zinc-800/80 bg-zinc-900/50',
+            { dragging: segment.isDragPreview },
+          ]"
+          draggable="true"
+          @dragstart="dragStart(segment, index)"
+          @dragenter.prevent="dragOver(segment)"
+          @dragend="dragEnd">
           <!-- Top row: Index number, full-width label, remove button -->
           <div class="flex items-center gap-1.5 w-full">
             <span class="text-xs font-mono font-bold text-zinc-500 w-4 text-center select-none">{{ index + 1 }}</span>
-            <input v-model="segment.label"
-                   placeholder="Segment label (optional)"
-                   class="segment-label-input flex-1 min-w-0 text-xs py-0.5" />
-            <button @click="removeSegment(segment)"
-                    class="close-button menu flex items-center justify-center w-6 h-6
-                           text-zinc-400 hover:text-white flex-shrink-0"
-                    title="Remove segment">
-              <inline-svg class="w-4 h-4 rotate-45"
-                          :src="Plus" />
+            <input
+              v-model="segment.label"
+              placeholder="Segment label (optional)"
+              class="segment-label-input flex-1 min-w-0 text-xs py-0.5" />
+            <button
+              @click="removeSegment(segment)"
+              class="close-button menu flex items-center justify-center w-6 h-6 text-zinc-400 hover:text-white flex-shrink-0"
+              title="Remove segment">
+              <inline-svg class="w-4 h-4 rotate-45" :src="Plus" />
             </button>
           </div>
 
           <!-- Bottom row: Play button, Preview button, Waveform Graph -->
           <div class="flex items-center gap-1.5 w-full">
-            <button @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
-                    :class="[
-                      'play-sound-button menu flex items-center justify-center flex-shrink-0',
-                      { focusVisible },
-                      {
-                        'sound-is-playing':
-                          soundStore.currentSound?.activeSegment?.id === segment.id &&
-                          playingThisSound &&
-                          soundStore.currentSound?.activeSegment?.isSoundPreview !== true,
-                      },
-                    ]"
-                    @blur="focusVisible = false"
-                    @keyup="handleKeyup">
-              <inline-svg :src="PlayIcon"
-                          class="w-5 h-5" />
+            <button
+              @click="soundStore.playSound(modelValue, null, null, false, true, segment)"
+              :class="[
+                'play-sound-button menu flex items-center justify-center flex-shrink-0',
+                { focusVisible },
+                {
+                  'sound-is-playing':
+                    soundStore.currentSound?.activeSegment?.id === segment.id &&
+                    playingThisSound &&
+                    soundStore.currentSound?.activeSegment?.isSoundPreview !== true,
+                },
+              ]"
+              @blur="focusVisible = false"
+              @keyup="handleKeyup">
+              <inline-svg :src="PlayIcon" class="w-5 h-5" />
             </button>
-            <button @click="soundStore.playSound(modelValue, null, null, true, undefined, segment)"
-                    title="preview sound"
-                    :class="{
-                      'playing-sound': playingThisSound,
-                      'sound-is-playing':
-                        soundStore.currentSound?.activeSegment?.id === segment.id &&
-                        playingThisSound &&
-                        soundStore.currentSound?.activeSegment?.isSoundPreview === true,
-                    }"
-                    class="light preview-button menu flex items-center justify-center flex-shrink-0">
-              <inline-svg class="w-5 h-5"
-                          :src="Listen" />
+            <button
+              @click="soundStore.playSound(modelValue, null, null, true, undefined, segment)"
+              title="preview sound"
+              :class="{
+                'playing-sound': playingThisSound,
+                'sound-is-playing':
+                  soundStore.currentSound?.activeSegment?.id === segment.id &&
+                  playingThisSound &&
+                  soundStore.currentSound?.activeSegment?.isSoundPreview === true,
+              }"
+              class="light preview-button menu flex items-center justify-center flex-shrink-0">
+              <inline-svg class="w-5 h-5" :src="Listen" />
             </button>
             <div class="flex-1 min-w-0">
-              <waveform-graph :audio-buffer="audioBuffer"
-                              :duration="duration"
-                              :height="36"
-                              :show-trim-handles="true"
-                              :show-trim-labels="false"
-                              :show-time-ticks="false"
-                              :playhead-only-when-active="true"
-                              :is-playing="isSegmentPlaying(segment)"
-                              v-model:current-time="currentTime"
-                              :trim-start="segment.start"
-                              :trim-end="segment.end"
-                              @update:trim-start="val => handleSegmentTrimStart(val, segment)"
-                              @update:trim-end="val => handleSegmentTrimEnd(val, segment)"
-                              @scrub-start="sec => onSegmentScrubStart(sec, segment)"
-                              @scrub-move="onScrubMove"
-                              @scrub-end="sec => onSegmentScrubEnd(sec, segment)" />
+              <waveform-graph
+                :audio-buffer="audioBuffer"
+                :duration="duration"
+                :height="36"
+                :show-trim-handles="true"
+                :show-trim-labels="false"
+                :show-time-ticks="false"
+                :playhead-only-when-active="true"
+                :is-playing="isSegmentPlaying(segment)"
+                v-model:current-time="currentTime"
+                :trim-start="segment.start"
+                :trim-end="segment.end"
+                @update:trim-start="val => handleSegmentTrimStart(val, segment)"
+                @update:trim-end="val => handleSegmentTrimEnd(val, segment)"
+                @scrub-start="sec => onSegmentScrubStart(sec, segment)"
+                @scrub-move="onScrubMove"
+                @scrub-end="sec => onSegmentScrubEnd(sec, segment)" />
             </div>
           </div>
         </div>
-        <button @click="addSegment"
-                class="close-button w-full flex items-center justify-center py-1 mt-0.5
-                       border border-dashed border-zinc-700 hover:border-zinc-500 rounded-lg
-                       text-zinc-400 hover:text-zinc-200 text-xs gap-1">
-          <inline-svg class="w-4 h-4"
-                      :src="Plus" />
+        <button
+          @click="addSegment"
+          class="close-button w-full flex items-center justify-center py-1 mt-0.5 border border-dashed border-zinc-700 hover:border-zinc-500 rounded-lg text-zinc-400 hover:text-zinc-200 text-xs gap-1">
+          <inline-svg class="w-4 h-4" :src="Plus" />
           <span>Add Segment</span>
         </button>
       </div>
@@ -191,21 +182,18 @@
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
             </svg>
           </button>
-          <button @click="exportImage"
-                  class="image-action-button menu w-8 h-8 bg-white flex items-center
-                         justify-center p-1.5 rounded cursor-pointer"
-                  title="Save / export image">
-            <inline-svg :src="DownloadIcon"
-                        class="w-full h-full text-black" />
+          <button
+            @click="exportImage"
+            class="image-action-button menu flex items-center justify-center w-7 h-7 p-1 rounded text-zinc-200 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
+            title="Save / export image">
+            <inline-svg :src="DownloadIcon" class="w-4 h-4" />
           </button>
-          <button v-if="modelValue.imageKey"
-                  @click="removeImage"
-                  class="remove-image-button menu image-action-button w-8 h-8 bg-white
-                         flex items-center justify-center p-1 rounded cursor-pointer"
-                  title="Remove custom image override">
-            <inline-svg :src="Plus"
-                        alt="remove image"
-                        class="w-full h-full rotate-45 text-black" />
+          <button
+            v-if="modelValue.imageKey"
+            @click="removeImage"
+            class="remove-image-button menu flex items-center justify-center w-7 h-7 p-1 rounded text-zinc-200 hover:text-red-400 hover:bg-red-500/25 transition-colors cursor-pointer"
+            title="Remove custom image override">
+            <inline-svg :src="Plus" alt="remove image" class="w-4 h-4 rotate-45 fill-current" />
           </button>
         </div>
         <div
@@ -214,40 +202,37 @@
           <span class="text-zinc-400">Default from</span>
           <span class="text-emerald-400 font-semibold">#{{ inheritedTag }}</span>
         </div>
-        <img :src="effectiveImageUrl"
-             :title="imageTooltip"
-             alt="preview button"
-             class="image" />
+        <img :src="effectiveImageUrl" :title="imageTooltip" alt="preview button" class="image" />
       </div>
-      <input type="file"
-             ref="imageFileInput"
-             @change="handleImageFileUpload"
-             class="file-input hidden"
-             accept="image/*" />
-      <div class="flex gap-2 w-full"
-           @mouseenter="updateCanPaste">
-        <button @click="imageFileInput?.click()"
-                @contextmenu.prevent.stop="openImageContextMenu($event)"
-                class="light menu flex-1">Browse Image...</button>
-        <button v-if="canPasteImage"
-                @click="handlePasteImage"
-                type="button"
-                class="light menu flex items-center justify-center gap-1 px-3"
-                title="Paste copied image">
-          <svg class="w-3.5 h-3.5"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2"
-               stroke-linecap="round"
-               stroke-linejoin="round">
+      <input
+        type="file"
+        ref="imageFileInput"
+        @change="handleImageFileUpload"
+        class="file-input hidden"
+        accept="image/*" />
+      <div class="flex gap-2 w-full" @mouseenter="updateCanPaste">
+        <button
+          @click="imageFileInput?.click()"
+          @contextmenu.prevent.stop="openImageContextMenu($event)"
+          class="light menu flex-1">
+          Browse Image...
+        </button>
+        <button
+          v-if="canPasteImage"
+          @click="handlePasteImage"
+          type="button"
+          class="light menu flex items-center justify-center gap-1 px-3"
+          title="Paste copied image">
+          <svg
+            class="w-3.5 h-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
             <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-            <rect x="8"
-                  y="2"
-                  width="8"
-                  height="4"
-                  rx="1"
-                  ry="1"></rect>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
           </svg>
           <span>Paste</span>
         </button>
@@ -256,133 +241,116 @@
       <!-- Image Right-Click Quick Menu -->
       <teleport to="body">
         <transition name="image-menu-fade">
-          <div v-if="showImageMenu"
-               ref="imageMenuRef"
-               class="image-context-menu"
-               :style="{ top: `${imageMenuPosition.y}px`, left: `${imageMenuPosition.x}px` }">
-            <button v-if="hasCurrentImage"
-                    @click="handleCopyImage"
-                    type="button"
-                    class="image-menu-item menu">
-              <svg class="w-3.5 h-3.5 text-zinc-300"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
-                <rect x="9"
-                      y="9"
-                      width="13"
-                      height="13"
-                      rx="2"
-                      ry="2"></rect>
+          <div
+            v-if="showImageMenu"
+            ref="imageMenuRef"
+            class="image-context-menu"
+            :style="{ top: `${imageMenuPosition.y}px`, left: `${imageMenuPosition.x}px` }">
+            <button v-if="hasCurrentImage" @click="handleCopyImage" type="button" class="image-menu-item menu">
+              <svg
+                class="w-3.5 h-3.5 text-zinc-300"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
               <span>Copy Image</span>
             </button>
-            <button v-if="canPasteImage"
-                    @click="handlePasteImage"
-                    type="button"
-                    class="image-menu-item">
-              <svg class="w-3.5 h-3.5 text-emerald-400"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
+            <button v-if="canPasteImage" @click="handlePasteImage" type="button" class="image-menu-item">
+              <svg
+                class="w-3.5 h-3.5 text-emerald-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                <rect x="8"
-                      y="2"
-                      width="8"
-                      height="4"
-                      rx="1"
-                      ry="1"></rect>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
               </svg>
               <span>Paste Image</span>
             </button>
             <template v-if="hasCurrentImage && (props.modelValue?.tags?.length ?? 0) > 0">
               <div class="image-menu-divider"></div>
-              <button v-for="tag in props.modelValue.tags"
-                      :key="tag"
-                      @click="handleSetTagImage(tag)"
-                      type="button"
-                      class="image-menu-item menu text-emerald-400 hover:text-emerald-300"
-                      :title="`Set this image as the default for all sounds tagged #${tag}`">
-                <svg class="w-3.5 h-3.5 flex-shrink-0"
-                     viewBox="0 0 24 24"
-                     fill="none"
-                     stroke="currentColor"
-                     stroke-width="2"
-                     stroke-linecap="round"
-                     stroke-linejoin="round">
+              <button
+                v-for="tag in props.modelValue.tags"
+                :key="tag"
+                @click="handleSetTagImage(tag)"
+                type="button"
+                class="image-menu-item menu text-emerald-400 hover:text-emerald-300"
+                :title="`Set this image as the default for all sounds tagged #${tag}`">
+                <svg
+                  class="w-3.5 h-3.5 flex-shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round">
                   <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path>
-                  <line x1="7"
-                        y1="7"
-                        x2="7.01"
-                        y2="7"></line>
+                  <line x1="7" y1="7" x2="7.01" y2="7"></line>
                 </svg>
                 <span class="truncate">Set as image for #{{ tag }}</span>
               </button>
             </template>
-            <div v-if="hasCurrentImage"
-                 class="image-menu-divider"></div>
-            <button v-if="hasCurrentImage"
-                    @click="handleExportImageFromMenu"
-                    type="button"
-                    class="image-menu-item menu">
-              <inline-svg :src="DownloadIcon"
-                          class="w-3.5 h-3.5 text-zinc-300" />
+            <div v-if="hasCurrentImage" class="image-menu-divider"></div>
+            <button
+              v-if="hasCurrentImage"
+              @click="handleExportImageFromMenu"
+              type="button"
+              class="image-menu-item menu">
+              <inline-svg :src="DownloadIcon" class="w-3.5 h-3.5 text-zinc-300" />
               <span>Export Image</span>
             </button>
-            <button v-if="modelValue.imageKey"
-                    @click="handleRemoveImageFromMenu"
-                    type="button"
-                    class="image-menu-item menu text-red-400 hover:text-red-300">
-              <inline-svg :src="Plus"
-                          class="w-3.5 h-3.5 rotate-45 text-red-400" />
+            <button
+              v-if="modelValue.imageKey"
+              @click="handleRemoveImageFromMenu"
+              type="button"
+              class="image-menu-item menu text-red-400 hover:text-red-300">
+              <inline-svg :src="Plus" class="w-3.5 h-3.5 rotate-45 text-red-400" />
               <span>Remove Image Override</span>
             </button>
           </div>
         </transition>
       </teleport>
       <div class="flex flex-col text-black">
-        <hotkey-picker v-model="props.modelValue.hotkey"
-                       @update:modelValue="updateHotkey"
-                       :dark="false"
-                       title="set a keybind for sound">Keybind:</hotkey-picker>
+        <hotkey-picker
+          v-model="props.modelValue.hotkey"
+          @update:modelValue="updateHotkey"
+          :dark="false"
+          title="set a keybind for sound"
+          >Keybind:</hotkey-picker
+        >
       </div>
-      <div ref="exportMenuRef"
-           class="relative w-full">
+      <div ref="exportMenuRef" class="relative w-full">
         <!-- Export options popup if sound has trimmed segments -->
         <transition name="export-menu-fade">
-          <div v-if="showExportMenu"
-               class="export-menu">
+          <div v-if="showExportMenu" class="export-menu">
             <div class="export-menu-header">
               <span class="export-menu-title">Export Audio</span>
-              <button @click.stop="showExportMenu = false"
-                      type="button"
-                      class="export-menu-close menu"
-                      title="Close">✕</button>
+              <button @click.stop="showExportMenu = false" type="button" class="export-menu-close menu" title="Close">
+                ✕
+              </button>
             </div>
-            <button @click="exportOriginalAudio"
-                    type="button"
-                    class="export-menu-item menu">
+            <button @click="exportOriginalAudio" type="button" class="export-menu-item menu">
               <div class="export-item-info">
-                <inline-svg :src="DownloadIcon"
-                            class="export-item-icon" />
+                <inline-svg :src="DownloadIcon" class="export-item-icon" />
                 <span class="export-item-label">Original Audio (Full)</span>
               </div>
               <span class="export-item-time">{{ formatSecondsToMMSS(duration) }}</span>
             </button>
             <template v-if="soundSegments.length > 0">
               <div class="export-section-title">Sound Segments</div>
-              <button v-for="(seg, idx) in soundSegments"
-                      :key="seg.id"
-                      @click="exportTrimmedSegment(seg, idx)"
-                      type="button"
-                      class="export-menu-item menu">
+              <button
+                v-for="(seg, idx) in soundSegments"
+                :key="seg.id"
+                @click="exportTrimmedSegment(seg, idx)"
+                type="button"
+                class="export-menu-item menu">
                 <div class="export-item-info">
                   <span class="segment-num-badge">{{ idx + 1 }}</span>
                   <span class="export-item-label truncate">{{ seg.label || `Segment ${idx + 1}` }}</span>
@@ -391,13 +359,13 @@
                   {{ formatSecondsToMMSS(seg.start) }} - {{ formatSecondsToMMSS(seg.end) }}
                 </span>
               </button>
-              <button v-if="soundSegments.length > 1"
-                      @click="exportAllSegments"
-                      type="button"
-                      class="export-menu-item menu export-all-btn">
+              <button
+                v-if="soundSegments.length > 1"
+                @click="exportAllSegments"
+                type="button"
+                class="export-menu-item menu export-all-btn">
                 <div class="export-item-info">
-                  <inline-svg :src="DownloadIcon"
-                              class="export-item-icon" />
+                  <inline-svg :src="DownloadIcon" class="export-item-icon" />
                   <span class="export-item-label font-semibold">Export All ({{ soundSegments.length }} segments)</span>
                 </div>
               </button>
@@ -405,20 +373,18 @@
           </div>
         </transition>
 
-        <button :disabled="!hasAudio || isExporting"
-                @click="handleExportClick"
-                type="button"
-                class="light menu flex items-center justify-center gap-1.5 w-full"
-                :title="hasAudio ? 'Save or export audio file' : 'No audio file loaded'">
-          <inline-svg class="w-4 h-4"
-                      :src="DownloadIcon" />
+        <button
+          :disabled="!hasAudio || isExporting"
+          @click="handleExportClick"
+          type="button"
+          class="light menu flex items-center justify-center gap-1.5 w-full"
+          :title="hasAudio ? 'Save or export audio file' : 'No audio file loaded'">
+          <inline-svg class="w-4 h-4" :src="DownloadIcon" />
           <span>{{ isExporting ? 'Exporting...' : 'Export Audio...' }}</span>
-          <span v-if="soundSegments.length > 0"
-                class="text-xs opacity-75 ml-0.5">▾</span>
+          <span v-if="soundSegments.length > 0" class="text-xs opacity-75 ml-0.5">▾</span>
         </button>
       </div>
-      <button @click="emit('deleteSound', modelValue)"
-              class="light menu center danger">DELETE</button>
+      <button @click="emit('deleteSound', modelValue)" class="light menu center danger">DELETE</button>
     </div>
   </div>
 </template>
@@ -441,13 +407,13 @@ import { useThrottleFn } from '@vueuse/shared'
 import { SoundSegment } from '../@types/sound.d'
 
 const props = defineProps<{
-  modelValue: Sound;
+  modelValue: Sound
 }>()
 
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: Sound): void;
-  (event: 'deleteSound', sound: Sound): void;
-  (event: 'close'): void;
+  (event: 'update:modelValue', value: Sound): void
+  (event: 'deleteSound', sound: Sound): void
+  (event: 'close'): void
 }>()
 const playingThisSound = computed(() => soundStore.playingSoundIds.some(item => item.fileId === props.modelValue.id))
 
@@ -500,7 +466,7 @@ async function exportOriginalAudio() {
     const defaultFilename = `${baseName}.${extension}`
 
     const arrayBuffer = await blob.arrayBuffer()
-    const formatFilterMap: Record<string, { name: string; extensions: string[]; }> = {
+    const formatFilterMap: Record<string, { name: string; extensions: string[] }> = {
       mp3: { name: 'MP3 Audio (*.mp3)', extensions: ['mp3'] },
       wav: { name: 'WAV Audio (*.wav)', extensions: ['wav'] },
       ogg: { name: 'OGG Audio (*.ogg)', extensions: ['ogg'] },
@@ -649,8 +615,12 @@ async function exportAllSegments() {
 }
 
 function handleExportMenuClickOutside(event: MouseEvent) {
-  if (showExportMenu.value && exportMenuRef.value
-    && event.target instanceof Node && !exportMenuRef.value.contains(event.target)) {
+  if (
+    showExportMenu.value &&
+    exportMenuRef.value &&
+    event.target instanceof Node &&
+    !exportMenuRef.value.contains(event.target)
+  ) {
     showExportMenu.value = false
   }
 }
@@ -747,8 +717,12 @@ async function openImageContextMenu(event: MouseEvent) {
 }
 
 function handleImageMenuClickOutside(event: MouseEvent) {
-  if (showImageMenu.value && imageMenuRef.value
-    && event.target instanceof Node && !imageMenuRef.value.contains(event.target)) {
+  if (
+    showImageMenu.value &&
+    imageMenuRef.value &&
+    event.target instanceof Node &&
+    !imageMenuRef.value.contains(event.target)
+  ) {
     showImageMenu.value = false
   }
 }
@@ -848,7 +822,7 @@ async function exportImage() {
     const defaultFilename = `${baseName}.${extension}`
 
     const arrayBuffer = await blob.arrayBuffer()
-    const formatFilterMap: Record<string, { name: string; extensions: string[]; }> = {
+    const formatFilterMap: Record<string, { name: string; extensions: string[] }> = {
       png: { name: 'PNG Image (*.png)', extensions: ['png'] },
       jpg: { name: 'JPEG Image (*.jpg;*.jpeg)', extensions: ['jpg', 'jpeg'] },
       webp: { name: 'WebP Image (*.webp)', extensions: ['webp'] },
@@ -910,13 +884,13 @@ function stopScrubSnippet() {
     try {
       scrubSourceNode.stop()
       scrubSourceNode.disconnect()
-    } catch { }
+    } catch {}
     scrubSourceNode = null
   }
   if (scrubGainNode) {
     try {
       scrubGainNode.disconnect()
-    } catch { }
+    } catch {}
     scrubGainNode = null
   }
 }
@@ -933,7 +907,7 @@ function playScrubSnippet(sec: number) {
     audioContext = new AudioContextClass()
   }
   if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(() => { })
+    audioContext.resume().catch(() => {})
   }
 
   stopScrubSnippet()
@@ -1153,9 +1127,7 @@ function updatePlayhead() {
 
   let foundAudio: HTMLAudioElement | null = null
   for (const device of soundStore.outputDeviceData) {
-    const audio = device.currentAudio?.find(a =>
-      a.getAttribute('data-id')?.startsWith(`${props.modelValue.id}_`)
-    )
+    const audio = device.currentAudio?.find(a => a.getAttribute('data-id')?.startsWith(`${props.modelValue.id}_`))
     if (audio) {
       foundAudio = audio
       break
@@ -1244,7 +1216,7 @@ onUnmounted(() => {
     playheadRaf = null
   }
   if (audioContext) {
-    audioContext.close().catch(() => { })
+    audioContext.close().catch(() => {})
     audioContext = null
   }
 })
@@ -1504,14 +1476,14 @@ function dragEnd() {
   margin: 0.5rem 0;
 }
 
-.hide-title-checkbox-group>div {
+.hide-title-checkbox-group > div {
   display: flex;
   align-items: center;
   justify-self: center;
   gap: 0.5rem;
 }
 
-.hide-title-checkbox-group>div>input[type='checkbox']:checked {
+.hide-title-checkbox-group > div > input[type='checkbox']:checked {
   background-color: var(--button-color);
 }
 
@@ -1561,29 +1533,29 @@ input[type='checkbox']:focus-visible {
   outline-offset: 2px;
 }
 
-.close-button>svg,
-.play-sound-button>svg {
+.close-button > svg,
+.play-sound-button > svg {
   fill: var(--text-color);
   stroke: none;
 }
 
-.play-sound-button>svg {
+.play-sound-button > svg {
   fill: var(--button-color);
   stroke: none;
 }
 
-.play-sound-button.focusVisible>svg {
+.play-sound-button.focusVisible > svg {
   stroke: var(--active-color);
   stroke-width: 0.12rem;
   overflow: visible;
   fill: var(--accent-text-color);
 }
 
-.play-sound-button:hover>svg {
+.play-sound-button:hover > svg {
   fill: var(--link-color);
 }
 
-.play-sound-button:active>svg {
+.play-sound-button:active > svg {
   fill: var(--accent-text-color);
 }
 
@@ -1624,22 +1596,12 @@ input[type='checkbox']:focus-visible {
 
 .remove-image-button,
 .image-action-button {
-  opacity: 0.6;
   border-radius: 4px;
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.1s ease;
-}
-
-.remove-image-button:hover,
-.remove-image-button:focus-visible,
-.image-action-button:hover,
-.image-action-button:focus-visible {
-  opacity: 1;
-}
-
-.remove-image-button:active,
-.image-action-button:active {
-  transform: scale(0.95);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .input-group {
@@ -1648,12 +1610,12 @@ input[type='checkbox']:focus-visible {
   align-items: flex-start;
 }
 
-.input-group>span {
+.input-group > span {
   margin-bottom: 0.25rem;
   text-align: left;
 }
 
-.input-group>input {
+.input-group > input {
   width: 100%;
 }
 
@@ -1664,13 +1626,13 @@ input[type='checkbox']:focus-visible {
   border-radius: 0.25rem;
 }
 
-.preview-button>svg {
+.preview-button > svg {
   stroke: var(--text-color);
   width: 100%;
   height: 100%;
 }
 
-.preview-button:active>svg {
+.preview-button:active > svg {
   stroke: var(--background-color);
 }
 
@@ -1689,7 +1651,9 @@ input {
 }
 
 .segment-card {
-  transition: border-color 0.15s, background-color 0.15s;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
 .segment-card:hover {
@@ -1727,7 +1691,9 @@ input {
   border: 1px solid #3f3f46;
   border-radius: 8px;
   padding: 0.65rem;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.95),
+    0 4px 12px rgba(0, 0, 0, 0.7);
   z-index: 100;
   display: flex;
   flex-direction: column;
@@ -1799,7 +1765,10 @@ input {
   color: #f4f4f5;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
   text-align: left;
 }
 
@@ -1858,7 +1827,9 @@ input {
 
 .export-menu-fade-enter-active,
 .export-menu-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .export-menu-fade-enter-from,
@@ -1873,7 +1844,9 @@ input {
   border: 1px solid #3f3f46;
   border-radius: 8px;
   padding: 0.35rem;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.95),
+    0 4px 12px rgba(0, 0, 0, 0.7);
   z-index: 99999;
   display: flex;
   flex-direction: column;
@@ -1895,7 +1868,9 @@ input {
   font-size: 0.8rem;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .image-menu-item:hover {
@@ -1916,7 +1891,9 @@ input {
 
 .image-menu-fade-enter-active,
 .image-menu-fade-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .image-menu-fade-enter-from,

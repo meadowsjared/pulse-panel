@@ -1,71 +1,49 @@
 <template>
   <transition name="find-bar-slide">
-    <div class="find-bar-container"
-         @mousedown.stop
-         @contextmenu.stop
-         @keydown.stop>
+    <div class="find-bar-container" @mousedown.stop @contextmenu.stop @keydown.stop>
       <div class="find-bar-input-wrapper">
-        <input ref="findInputRef"
-               type="text"
-               class="find-bar-input"
-               v-model="findQuery"
-               placeholder="Find in page..."
-               @input="handleFindInput"
-               @keydown="handleFindInputKeydown" />
+        <input
+          ref="findInputRef"
+          type="text"
+          class="find-bar-input"
+          v-model="findQuery"
+          placeholder="Find in page..."
+          @input="handleFindInput"
+          @keydown="handleFindInputKeydown" />
       </div>
 
-      <div class="find-bar-count"
-           :class="{ 'no-matches': !!findQuery && totalMatches === 0 }">
+      <div class="find-bar-count" :class="{ 'no-matches': !!findQuery && totalMatches === 0 }">
         {{ matchCountDisplay }}
       </div>
 
       <div class="find-bar-divider"></div>
 
-      <button type="button"
-              class="find-bar-btn"
-              :disabled="totalMatches === 0"
-              @click="handleFindPrev"
-              title="Previous match (Shift+Enter)">
-        <svg class="w-3.5 h-3.5"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2.5">
+      <button
+        type="button"
+        class="find-bar-btn"
+        :disabled="totalMatches === 0"
+        @click="handleFindPrev"
+        title="Previous match (Shift+Enter)">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="18 15 12 9 6 15"></polyline>
         </svg>
       </button>
 
-      <button type="button"
-              class="find-bar-btn"
-              :disabled="totalMatches === 0"
-              @click="handleFindNext"
-              title="Next match (Enter)">
-        <svg class="w-3.5 h-3.5"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2.5">
+      <button
+        type="button"
+        class="find-bar-btn"
+        :disabled="totalMatches === 0"
+        @click="handleFindNext"
+        title="Next match (Enter)">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </button>
 
-      <button type="button"
-              class="find-bar-btn close-btn"
-              @click="handleClose"
-              title="Close (Esc)">
-        <svg class="w-3.5 h-3.5"
-             viewBox="0 0 24 24"
-             fill="none"
-             stroke="currentColor"
-             stroke-width="2.5">
-          <line x1="18"
-                y1="6"
-                x2="6"
-                y2="18"></line>
-          <line x1="6"
-                y1="6"
-                x2="18"
-                y2="18"></line>
+      <button type="button" class="find-bar-btn close-btn" @click="handleClose" title="Close (Esc)">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
     </div>
@@ -76,12 +54,12 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 
 const props = defineProps<{
-  webview: any;
-  initialQuery?: string;
+  webview: any
+  initialQuery?: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'close'): void;
+  (e: 'close'): void
 }>()
 
 const findInputRef = ref<HTMLInputElement | null>(null)
@@ -114,7 +92,7 @@ function executeFindAsYouType() {
     deadSearchPrefix.value = ''
     try {
       wv.stopFindInPage?.('clearSelection')
-    } catch (_) { }
+    } catch (_) {}
     return
   }
 
@@ -231,15 +209,18 @@ const handleFoundInPage = (e: any) => {
   }
 }
 
-watch(() => props.initialQuery, newVal => {
-  if (typeof newVal === 'string' && newVal.trim() && newVal !== findQuery.value) {
-    findQuery.value = newVal.trim()
-    nextTick(() => {
-      findInputRef.value?.select()
-      executeFindAsYouType()
-    })
+watch(
+  () => props.initialQuery,
+  newVal => {
+    if (typeof newVal === 'string' && newVal.trim() && newVal !== findQuery.value) {
+      findQuery.value = newVal.trim()
+      nextTick(() => {
+        findInputRef.value?.select()
+        executeFindAsYouType()
+      })
+    }
   }
-})
+)
 
 const handleNavigate = () => {
   deadSearchPrefix.value = ''
@@ -279,7 +260,7 @@ onUnmounted(() => {
       wv.removeEventListener('did-navigate', handleNavigate)
       wv.removeEventListener('did-navigate-in-page', handleNavigate)
       wv.stopFindInPage?.('clearSelection')
-    } catch (_) { }
+    } catch (_) {}
   }
 })
 
@@ -313,7 +294,9 @@ defineExpose({
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 6px;
   padding: 0.2rem 0.35rem 0.2rem 0.55rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85), 0 2px 6px rgba(0, 0, 0, 0.6);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.85),
+    0 2px 6px rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   user-select: none;
 }
@@ -397,7 +380,9 @@ defineExpose({
 
 .find-bar-slide-enter-active,
 .find-bar-slide-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .find-bar-slide-enter-from,

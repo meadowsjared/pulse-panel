@@ -1,57 +1,57 @@
 <template>
-  <div ref="containerElement"
-       v-if="modelValue?.title !== undefined"
-       class="sound-button-container"
-       @drop="handleFileDrop(false, $event)"
-       @dragover.prevent>
-    <button :id="`sound-${modelValue.id}`"
-            @click="playSound"
-            @mousedown="handleMouseDown"
-            @mouseenter="handleMouseEnter"
-            @mouseleave="handleMouseLeave"
-            @auxclick="handleAuxClick"
-            @blur="focusVisible = false"
-            @keyup="handleKeyup"
-            :class="[
-              'sound-button', 'menu',
-              {
-                reset: props.modelValue.reset,
-                'playing-sound': playingThisSound,
-                'has-image': props.modelValue.imageKey || !!effectiveImageUrl,
-                'edit-mode': props.displayMode === 'edit',
-                'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
-                focusVisible,
-              },
-            ]"
-            :style="mergedStyle">
-      <span v-if="!props.modelValue.hideTitle"
-            class="button-title"
-            :style="props.modelValue.color && `color: ${props.modelValue.color}`">
+  <div
+    ref="containerElement"
+    v-if="modelValue?.title !== undefined"
+    class="sound-button-container"
+    @drop="handleFileDrop(false, $event)"
+    @dragover.prevent>
+    <button
+      :id="`sound-${modelValue.id}`"
+      @click="playSound"
+      @mousedown="handleMouseDown"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @auxclick="handleAuxClick"
+      @blur="focusVisible = false"
+      @keyup="handleKeyup"
+      :class="[
+        'sound-button',
+        'menu',
+        {
+          reset: props.modelValue.reset,
+          'playing-sound': playingThisSound,
+          'has-image': props.modelValue.imageKey || !!effectiveImageUrl,
+          'edit-mode': props.displayMode === 'edit',
+          'editing-sound': settingsStore.currentEditingSound?.id === modelValue.id,
+          focusVisible,
+        },
+      ]"
+      :style="mergedStyle">
+      <span
+        v-if="!props.modelValue.hideTitle"
+        class="button-title"
+        :style="props.modelValue.color && `color: ${props.modelValue.color}`">
         {{ modelValue.title || 'New Sound' }}
       </span>
     </button>
-    <div :class="['button-group', 'menu', { 'button-group-visible': displayMode === 'edit' }]"
-         @click.capture="editSound">
-      <button title="Edit"
-              class="edit-buttons menu center"
-              :tabindex="displayMode !== 'edit' ? -1 : 0">Edit Sound</button>
+    <div
+      :class="['button-group', 'menu', { 'button-group-visible': displayMode === 'edit' }]"
+      @click.capture="editSound">
+      <button title="Edit" class="edit-buttons menu center" :tabindex="displayMode !== 'edit' ? -1 : 0">
+        Edit Sound
+      </button>
     </div>
   </div>
-  <div v-else
-       class="sound-button-container"
-       @drop="handleFileDrop(true, $event)"
-       @dragover.prevent>
-    <button @click="addSound"
-            @blur="focusVisible = false"
-            @keyup="handleKeyup"
-            :class="['sound-button add-button', { focusVisible }]">
+  <div v-else class="sound-button-container" @drop="handleFileDrop(true, $event)" @dragover.prevent>
+    <button
+      @click="addSound"
+      @blur="focusVisible = false"
+      @keyup="handleKeyup"
+      :class="['sound-button add-button', { focusVisible }]">
       <inline-svg :src="Plus" />
     </button>
-    <div :class="['button-group', { 'button-group-visible': displayMode === 'edit' }]"
-         @click="addSound">
-      <button title="Add Sound"
-              class="edit-buttons add-button menu center"
-              :tabindex="displayMode !== 'edit' ? -1 : 0">
+    <div :class="['button-group', { 'button-group-visible': displayMode === 'edit' }]" @click="addSound">
+      <button title="Add Sound" class="edit-buttons add-button menu center" :tabindex="displayMode !== 'edit' ? -1 : 0">
         Add Sound
       </button>
     </div>
@@ -69,10 +69,10 @@ import { DisplayMode, useSettingsStore } from '../store/settings'
 // Define the props
 const props = withDefaults(
   defineProps<{
-    modelValue: Sound;
-    displayMode: DisplayMode;
-    isDragPreview?: boolean;
-    isVisible?: boolean;
+    modelValue: Sound
+    displayMode: DisplayMode
+    isDragPreview?: boolean
+    isVisible?: boolean
   }>(),
   {
     isVisible: false,
@@ -81,9 +81,9 @@ const props = withDefaults(
 
 // define the emits
 const emit = defineEmits<{
-  (event: 'update:modelValue', value: Sound): void;
-  (event: 'editSound'): void;
-  (event: 'fileDropped', dragEvent: DragEvent, sound: Sound, isNewSound: boolean): void;
+  (event: 'update:modelValue', value: Sound): void
+  (event: 'editSound'): void
+  (event: 'fileDropped', dragEvent: DragEvent, sound: Sound, isNewSound: boolean): void
 }>()
 
 const numSoundsPlaying = ref(0)
@@ -113,10 +113,10 @@ const mergedStyle = computed(() => {
     ...(img ? { backgroundImage: `url("${img.replace(/"/g, '\\"')}")` } : {}),
     ...(props.modelValue.activeSegment
       ? {
-        '--sound-duration': `${
-          (props.modelValue.activeSegment?.end ?? 100) - (props.modelValue.activeSegment?.start ?? 0)
-        }s`,
-      }
+          '--sound-duration': `${
+            (props.modelValue.activeSegment?.end ?? 100) - (props.modelValue.activeSegment?.start ?? 0)
+          }s`,
+        }
       : {}),
   }
 })
@@ -219,7 +219,9 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
   position: relative;
   height: 1rem;
   --transition-duration: 0.3s;
-  transition: top var(--transition-duration), height var(--transition-duration);
+  transition:
+    top var(--transition-duration),
+    height var(--transition-duration);
   top: -30px;
   z-index: 0;
 }
@@ -230,7 +232,7 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
 }
 
 /* center the plus button on the add sound button */
-.add-button>svg {
+.add-button > svg {
   width: 50%;
   height: 50%;
   margin: auto;
@@ -315,8 +317,11 @@ function handleFileDrop(isNewSound: boolean, event: DragEvent) {
 .sound-button.has-image {
   color: white;
   --opacity: 0.3;
-  text-shadow: 0px 0px 8px rgba(0, 0, 0, var(--opacity)), 4px 4px 8px rgba(0, 0, 0, var(--opacity)),
-    4px -4px 8px rgba(0, 0, 0, var(--opacity)), -4px 4px 8px rgba(0, 0, 0, var(--opacity)),
+  text-shadow:
+    0px 0px 8px rgba(0, 0, 0, var(--opacity)),
+    4px 4px 8px rgba(0, 0, 0, var(--opacity)),
+    4px -4px 8px rgba(0, 0, 0, var(--opacity)),
+    -4px 4px 8px rgba(0, 0, 0, var(--opacity)),
     -4px -4px 8px rgba(0, 0, 0, var(--opacity));
 }
 

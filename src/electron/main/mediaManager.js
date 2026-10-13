@@ -56,7 +56,9 @@ function migrateLooseMediaToSoundboard(mediaDir, soundboardDir) {
         if (!fs.existsSync(dest)) {
           fs.renameSync(src, dest)
         } else {
-          try { fs.unlinkSync(src) } catch (_) {}
+          try {
+            fs.unlinkSync(src)
+          } catch (_) {}
         }
       }
     }
@@ -383,4 +385,3 @@ module.exports = {
   deleteClipFile,
   clipFileExists,
 }
-

@@ -125,7 +125,7 @@ async function fetchVideoQuickInfo(videoUrl) {
         author = data.author_name || ''
         thumbnailUrl = data.thumbnail_url || ''
       }
-    } catch (_) { }
+    } catch (_) {}
 
     if (videoId) {
       // For standard 16:9 videos, check if maxresdefault exists (1280x720, crystal clear without letterboxing)
@@ -136,7 +136,7 @@ async function fetchVideoQuickInfo(videoUrl) {
           if (headRes.ok) {
             thumbnailUrl = maxresUrl
           }
-        } catch (_) { }
+        } catch (_) {}
       }
 
       if (!thumbnailUrl || thumbnailUrl.includes('hqdefault')) {
@@ -170,9 +170,7 @@ let activeDownloadProc = null
 
 async function downloadAudioClip(configDirectory, options, onProgress) {
   const hasSection =
-    typeof options.startTime === 'number' &&
-    typeof options.endTime === 'number' &&
-    options.endTime > options.startTime
+    typeof options.startTime === 'number' && typeof options.endTime === 'number' && options.endTime > options.startTime
 
   // Fast path for direct audio files if full download without section trimming
   if (isDirectMediaUrl(options.url) && !hasSection) {
@@ -209,21 +207,14 @@ async function downloadAudioClip(configDirectory, options, onProgress) {
   if (activeDownloadProc) {
     try {
       activeDownloadProc.kill()
-    } catch (_) { }
+    } catch (_) {}
     activeDownloadProc = null
   }
 
   const tempId = `pulse_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
   const outputTemplate = join(os.tmpdir(), `${tempId}.%(ext)s`)
 
-  const args = [
-    '--no-playlist',
-    '--no-warnings',
-    '-f',
-    'ba[ext=m4a]/ba[ext=mp3]/ba',
-    '-o',
-    outputTemplate,
-  ]
+  const args = ['--no-playlist', '--no-warnings', '-f', 'ba[ext=m4a]/ba[ext=mp3]/ba', '-o', outputTemplate]
 
   if (hasSection) {
     args.push('--download-sections', `*${options.startTime}-${options.endTime}`)
@@ -290,7 +281,7 @@ async function downloadAudioClip(configDirectory, options, onProgress) {
         // Clean up temp file
         try {
           fs.unlinkSync(fullPath)
-        } catch (_) { }
+        } catch (_) {}
 
         resolve({
           success: true,

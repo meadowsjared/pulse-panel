@@ -19,15 +19,7 @@ interface vbCableResult {
 }
 
 export type SettingValue =
-  | string
-  | boolean
-  | number
-  | string[]
-  | number[]
-  | LabelActive[]
-  | OutputDeviceSetting[]
-  | Record<string, any>
-  | any[]
+  string | boolean | number | string[] | number[] | LabelActive[] | OutputDeviceSetting[] | Record<string, any> | any[]
 
 export interface UpdateDownloadProgress {
   receivedBytes: number
@@ -125,11 +117,7 @@ export interface Settings {
     isShort?: boolean
     error?: string
   }>
-  ytDownloadClip: (options: {
-    url: string
-    startTime?: number
-    endTime?: number
-  }) => Promise<{
+  ytDownloadClip: (options: { url: string; startTime?: number; endTime?: number }) => Promise<{
     success: boolean
     buffer: any
     extension: string

@@ -18,138 +18,138 @@ import { pulseBackBuffer } from '../services/pulseBackBuffer'
 
 declare global {
   interface Window {
-    electron?: Settings & Versions;
+    electron?: Settings & Versions
   }
 }
 
 export interface BrowserFavorite {
-  id: string;
-  title: string;
-  url: string;
+  id: string
+  title: string
+  url: string
 }
 
 interface State {
-  defaultVolume: number;
-  outputDevices: OutputDeviceSetting[];
-  darkMode: boolean;
-  closeToTray: boolean;
-  startWithWindows: boolean;
-  allowOverlappingSound: boolean;
-  sounds: Sound[];
-  muted: boolean;
-  ptt_hotkey: string[];
-  stop_hotkey: string[];
-  quickTagsAr?: LabelActive[];
-  invertQuickTags: boolean;
-  selectedMicrophoneId: string | null;
-  microphoneVolume: number;
-  microphoneMuted: boolean;
-  cableOutputVolume: number;
-  pulse_back_enabled: boolean;
-  pulse_back_hotkey: string[];
-  pulse_back_default_duration: number;
-  pulse_back_buffer_length: number;
-  pulse_back_input_device: string | null;
-  pulse_back_volume: number;
-  pulse_back_muted: boolean;
-  pulse_back_sync_offset_ms: number;
-  browser_homepage: string;
-  browser_favorites: BrowserFavorite[];
+  defaultVolume: number
+  outputDevices: OutputDeviceSetting[]
+  darkMode: boolean
+  closeToTray: boolean
+  startWithWindows: boolean
+  allowOverlappingSound: boolean
+  sounds: Sound[]
+  muted: boolean
+  ptt_hotkey: string[]
+  stop_hotkey: string[]
+  quickTagsAr?: LabelActive[]
+  invertQuickTags: boolean
+  selectedMicrophoneId: string | null
+  microphoneVolume: number
+  microphoneMuted: boolean
+  cableOutputVolume: number
+  pulse_back_enabled: boolean
+  pulse_back_hotkey: string[]
+  pulse_back_default_duration: number
+  pulse_back_buffer_length: number
+  pulse_back_input_device: string | null
+  pulse_back_volume: number
+  pulse_back_muted: boolean
+  pulse_back_sync_offset_ms: number
+  browser_homepage: string
+  browser_favorites: BrowserFavorite[]
   // not saved in the database:
   /**
    * friendly name of the app
    *
    * **VOLATILE**
    */
-  appName: string;
+  appName: string
   /**
    * List of all available output devices
    *
    * **VOLATILE**
    */
-  allOutputDevices: MediaDeviceInfo[];
+  allOutputDevices: MediaDeviceInfo[]
   /**
    * List of all available input devices (microphones)
    *
    * **VOLATILE**
    */
-  allInputDevices: MediaDeviceInfo[];
+  allInputDevices: MediaDeviceInfo[]
   /**
    * Device ID of the detected virtual cable output
    *
    * **VOLATILE**
    */
-  virtualCableDeviceId: string | null;
+  virtualCableDeviceId: string | null
   /**
    * Whether the virtual audio cable driver is installed on the system
    *
    * **VOLATILE**
    */
-  virtualCableInstalled: boolean;
+  virtualCableInstalled: boolean
   /**
    * Whether the window is currently maximized
    *
    * **VOLATILE**
    */
-  windowIsMaximized: boolean;
+  windowIsMaximized: boolean
   /**
    * The current text in the search box
    *
    * **VOLATILE**
    */
-  searchText: string;
+  searchText: string
   /**
    * Whether the app is currently recording a hotkey
    *
    * **VOLATILE**
    */
-  recordingHotkey: boolean;
+  recordingHotkey: boolean
   /**
    * The current display mode, either 'edit' or 'play'
    *
    * **VOLATILE**
    */
-  displayMode: DisplayMode;
+  displayMode: DisplayMode
   /**
    * The sound that is currently being hovered over
    *
    * **VOLATILE**
    */
-  hoveredSound: Sound | null;
+  hoveredSound: Sound | null
   /**
    * The sound that is currently being edited
    *
    * **VOLATILE**
    */
-  currentEditingSound: Sound | null;
+  currentEditingSound: Sound | null
   /**
    * Whether the sound editor is currently opened
    * **VOLATILE**
    */
-  soundEditorOpen: boolean;
+  soundEditorOpen: boolean
   /**
    * The saved window size [width, height]
    * **VOLATILE**
    */
-  windowSize: number[];
+  windowSize: number[]
   /**
    * Currently copied sound image for reuse across buttons
    * **VOLATILE**
    */
-  copiedSoundImage: { imageKey: string; imageUrl?: string; } | null;
+  copiedSoundImage: { imageKey: string; imageUrl?: string } | null
   /**
    * Map of tag names to their assigned image keys
    */
-  tagImages: Record<string, string>;
+  tagImages: Record<string, string>
   /**
    * Volatile cache of blob URLs for tag images
    * **VOLATILE**
    */
-  tagImageUrls: Record<string, string>;
+  tagImageUrls: Record<string, string>
 }
 
 interface SoundWithHotkey extends Sound {
-  hotkey: string[];
+  hotkey: string[]
 }
 
 const Boolean_Settings_Keys = [
@@ -163,19 +163,19 @@ const Boolean_Settings_Keys = [
   'pulse_back_enabled',
   'pulse_back_muted',
 ] as const
-type BooleanSettings = (typeof Boolean_Settings_Keys)[number];
+type BooleanSettings = (typeof Boolean_Settings_Keys)[number]
 
 const String_Settings_Keys = ['selectedMicrophoneId', 'pulse_back_input_device', 'browser_homepage'] as const
-type StringSettings = (typeof String_Settings_Keys)[number];
+type StringSettings = (typeof String_Settings_Keys)[number]
 
 const Array_String_Settings_Keys = ['ptt_hotkey', 'stop_hotkey', 'pulse_back_hotkey'] as const
 const Array_Number_Settings_Keys = ['windowSize'] as const
 const Array_OutputDevice_Settings_Keys = ['outputDevices'] as const
-type ArrayOutputDeviceSettings = (typeof Array_OutputDevice_Settings_Keys)[number];
-type ArrayNumberSettings = (typeof Array_Number_Settings_Keys)[number];
-type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number];
+type ArrayOutputDeviceSettings = (typeof Array_OutputDevice_Settings_Keys)[number]
+type ArrayNumberSettings = (typeof Array_Number_Settings_Keys)[number]
+type ArrayStringSettings = (typeof Array_String_Settings_Keys)[number]
 const Array_Sound_Settings_Keys = ['sounds'] as const
-type ArraySoundSettings = (typeof Array_Sound_Settings_Keys)[number];
+type ArraySoundSettings = (typeof Array_Sound_Settings_Keys)[number]
 const Number_Settings_Keys = [
   'defaultVolume',
   'microphoneVolume',
@@ -185,9 +185,9 @@ const Number_Settings_Keys = [
   'pulse_back_volume',
   'pulse_back_sync_offset_ms',
 ] as const
-type NumberSettings = (typeof Number_Settings_Keys)[number];
+type NumberSettings = (typeof Number_Settings_Keys)[number]
 const Label_Active_Settings_Keys = ['quickTagsAr'] as const
-type LabelActiveSettings = (typeof Label_Active_Settings_Keys)[number];
+type LabelActiveSettings = (typeof Label_Active_Settings_Keys)[number]
 type SettingsOnlyKeys =
   | BooleanSettings
   | StringSettings
@@ -195,7 +195,7 @@ type SettingsOnlyKeys =
   | ArrayNumberSettings
   | ArrayStringSettings
   | ArrayOutputDeviceSettings
-  | LabelActiveSettings;
+  | LabelActiveSettings
 
 const All_Settings_Keys = [
   ...Boolean_Settings_Keys,
@@ -207,7 +207,7 @@ const All_Settings_Keys = [
   ...Number_Settings_Keys,
   ...Label_Active_Settings_Keys,
 ] as const
-type AllSettings = (typeof All_Settings_Keys)[number];
+type AllSettings = (typeof All_Settings_Keys)[number]
 
 function isRecordStringString(val: unknown): val is Record<string, string> {
   return typeof val === 'object' && val !== null && !Array.isArray(val)
@@ -217,9 +217,9 @@ function isBrowserFavoriteArray(val: unknown): val is BrowserFavorite[] {
   return Array.isArray(val)
 }
 
-type QuickTagButtonSettings = 'quickTagsAr';
-type SliceParams = { start: number; end: number; };
-export type DisplayMode = 'edit' | 'play';
+type QuickTagButtonSettings = 'quickTagsAr'
+type SliceParams = { start: number; end: number }
+export type DisplayMode = 'edit' | 'play'
 const isProduction = process.env.NODE_ENV === 'production'
 const dbName = isProduction ? 'pulse-panel' : 'pulse-panel-dev'
 const dbStoreName = isProduction ? 'sounds' : 'sounds-dev'
@@ -241,7 +241,7 @@ function getDB(): Promise<IDBPDatabase> {
 
 const blobUrlCache = new Map<string, string>()
 
-export interface SettingsStore extends ReturnType<typeof useSettingsStore> { }
+export interface SettingsStore extends ReturnType<typeof useSettingsStore> {}
 
 function isVirtualCableOutput(label: string): boolean {
   const l = label.toLowerCase()
@@ -262,7 +262,7 @@ function isVirtualCableInput(label: string): boolean {
 async function convertBlobOrUrlToPng(
   blob: Blob | null,
   url: string | undefined
-): Promise<{ dataUrl: string; buffer: ArrayBuffer; } | null> {
+): Promise<{ dataUrl: string; buffer: ArrayBuffer } | null> {
   let createdUrl = false
   let src: string | undefined
 
@@ -373,7 +373,7 @@ function arePixelDataIdentical(data1: Uint8ClampedArray, data2: Uint8ClampedArra
 
 async function getImagePixels(
   source: string | Blob
-): Promise<{ width: number; height: number; pixels: Uint8ClampedArray; } | null> {
+): Promise<{ width: number; height: number; pixels: Uint8ClampedArray } | null> {
   // Attempt decoding via createImageBitmap first (direct GPU/compositor decode, no CORS issues with blob URLs)
   try {
     let bitmap: ImageBitmap | null = null
@@ -506,7 +506,7 @@ export const useSettingsStore = defineStore('settings', {
   }),
   getters: {
     browserHomepage(): string {
-      return (this.browser_homepage && this.browser_homepage.trim())
+      return this.browser_homepage && this.browser_homepage.trim()
         ? this.browser_homepage.trim()
         : 'https://www.youtube.com'
     },
@@ -519,8 +519,8 @@ export const useSettingsStore = defineStore('settings', {
     totalSounds(): number {
       return this.sounds.filter(sound => sound && sound.title !== undefined && !sound.isDragPreview).length
     },
-    allKnownTags(): { name: string; count: number; }[] {
-      const tagMap = new Map<string, { name: string; count: number; }>()
+    allKnownTags(): { name: string; count: number }[] {
+      const tagMap = new Map<string, { name: string; count: number }>()
       this.sounds.forEach(sound => {
         if (sound?.tags && Array.isArray(sound.tags)) {
           sound.tags.forEach(tag => {
@@ -582,14 +582,14 @@ export const useSettingsStore = defineStore('settings', {
             anTag =>
               sound.tags === undefined ||
               (anTag.active && sound.tags.includes(anTag.label) === false) ||
-              (anTag.negated && sound.tags.includes(anTag.label)),
+              (anTag.negated && sound.tags.includes(anTag.label))
           )
         const normalMatch =
           activeOrNegatedTags.length === 0 ||
           activeOrNegatedTags.every(
             anTag =>
               (anTag.active && sound.tags?.includes(anTag.label) === true) ||
-              (anTag.negated && !sound.tags?.includes(anTag.label)),
+              (anTag.negated && !sound.tags?.includes(anTag.label))
           )
         return this.invertQuickTags ? invertedMatch : normalMatch
       })
@@ -611,16 +611,14 @@ export const useSettingsStore = defineStore('settings', {
           return (this.pulse_back_input_device = deviceId)
         }
         if (key === 'browser_homepage') return (this.browser_homepage = value ?? 'https://www.youtube.com')
-      }
-      else if (this._isArrayNumberSettings(key) && this._isArrayNumber(value)) return (this[key] = value)
+      } else if (this._isArrayNumberSettings(key) && this._isArrayNumber(value)) return (this[key] = value)
       else if (this._isArrayOutputDeviceSettings(key) && this._isArrayOutputDevice(value)) {
         return (this[key] = value.map(item =>
           typeof item === 'string'
             ? { deviceId: item, volume: 1 }
             : { deviceId: item.deviceId, volume: typeof item.volume === 'number' ? item.volume : 1 }
         ))
-      }
-      else if (this._isArrayStringSettings(key) && this._isArrayString(value)) return (this[key] = value)
+      } else if (this._isArrayStringSettings(key) && this._isArrayString(value)) return (this[key] = value)
       else if (this._isArrayLabelActiveSettings(key) && this._isLabelActiveArray(value)) return (this[key] = value)
       return false
     },
@@ -661,7 +659,7 @@ export const useSettingsStore = defineStore('settings', {
           this.browser_favorites = savedFavorites
         }
       }
-      this._loadTagImageUrls().catch(() => { })
+      this._loadTagImageUrls().catch(() => {})
       if (typeof this.microphoneVolume !== 'number' || Number.isNaN(this.microphoneVolume)) {
         this.microphoneVolume = 1
       }
@@ -683,7 +681,7 @@ export const useSettingsStore = defineStore('settings', {
                 oldSettingsExist = true
               }
             }
-          }),
+          })
         )
         // if any old settings were found, migrate them to the new store
         if (oldSettingsExist) {
@@ -704,7 +702,7 @@ export const useSettingsStore = defineStore('settings', {
                 await this.saveSetting(key, toRaw(this[key]))
               else if (this._isArrayLabelActiveSettings(key) && this._isLabelActiveArray(this[key]))
                 await this.saveSetting(key, toRaw(this[key]))
-            }),
+            })
           )
         }
       }
@@ -760,7 +758,7 @@ export const useSettingsStore = defineStore('settings', {
         if (pulseBackStore.isBufferRunning) {
           pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
         }
-      } catch { }
+      } catch {}
     },
     /**
      * Save an array setting to the store
@@ -801,15 +799,15 @@ export const useSettingsStore = defineStore('settings', {
               if (pulseBackStore.isBufferRunning) {
                 pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
               }
-            } catch { }
+            } catch {}
           } else if (key === 'pulse_back_input_device') {
-            this.pulse_back_input_device = (typeof value === 'string' && value.length > 0) ? value : null
+            this.pulse_back_input_device = typeof value === 'string' && value.length > 0 ? value : null
             try {
               const pulseBackStore = usePulseBackStore()
               if (pulseBackStore.isBufferRunning) {
                 pulseBackStore.startBuffer(this.selectedMicrophoneId, this.pulse_back_input_device)
               }
-            } catch { }
+            } catch {}
           } else if (key === 'browser_homepage') {
             this.browser_homepage = value ?? 'https://www.youtube.com'
             if (!this.browser_homepage || !this.browser_homepage.trim()) {
@@ -854,8 +852,10 @@ export const useSettingsStore = defineStore('settings', {
         return false
       }
       if (this._isArrayStringSettings(key)) {
-        if ((key === 'stop_hotkey' || key === 'ptt_hotkey' || key === 'pulse_back_hotkey')
-          && this._isArrayString(value)) {
+        if (
+          (key === 'stop_hotkey' || key === 'ptt_hotkey' || key === 'pulse_back_hotkey') &&
+          this._isArrayString(value)
+        ) {
           if (value.length === 0) {
             const prevHotkey = toRaw(this[key])
             electron?.unregisterHotkeys([prevHotkey])
@@ -898,7 +898,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.saveDBSetting('browser_favorites', toCloneable(this.browser_favorites))
     },
-    async addBrowserFavorite(fav: { title?: string; url: string; }): Promise<void> {
+    async addBrowserFavorite(fav: { title?: string; url: string }): Promise<void> {
       const url = fav.url.trim()
       if (!url) return
       const title = (fav.title && fav.title.trim()) || url
@@ -1016,10 +1016,7 @@ export const useSettingsStore = defineStore('settings', {
      */
     async saveOutputDevices(): Promise<void> {
       const electron = window.electron
-      await electron?.saveDBSetting(
-        'outputDevices',
-        toCloneable(this.outputDevices)
-      )
+      await electron?.saveDBSetting('outputDevices', toCloneable(this.outputDevices))
     },
     /**
      * Toggle the mute state
@@ -1123,7 +1120,7 @@ export const useSettingsStore = defineStore('settings', {
      * Save the Pulse Back input device ID
      */
     async savePulseBackInputDevice(deviceId: string | null): Promise<boolean> {
-      const normalized = (deviceId && deviceId.length > 0) ? deviceId : null
+      const normalized = deviceId && deviceId.length > 0 ? deviceId : null
       this.pulse_back_input_device = normalized
       return this.saveSetting('pulse_back_input_device', normalized ?? '')
     },
@@ -1198,7 +1195,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.deleteSound(_prepareSoundForStorage(pSound))
     },
-    async updateVisibility(visibilityMap: { isVisible: boolean; soundId: string; }[]): Promise<void> {
+    async updateVisibility(visibilityMap: { isVisible: boolean; soundId: string }[]): Promise<void> {
       const electron = window.electron
       await electron?.saveVisibility(toCloneable(visibilityMap))
     },
@@ -1210,7 +1207,7 @@ export const useSettingsStore = defineStore('settings', {
      */
     async _fetchSoundSetting(
       key: ArraySoundSettings,
-      defaultValue: Sound[] = [{ id: crypto.randomUUID() }],
+      defaultValue: Sound[] = [{ id: crypto.randomUUID() }]
     ): Promise<Sound[]> {
       function isSoundArray(arr: SettingValue | undefined | Sound[]): arr is Sound[] {
         return Array.isArray(arr) && (arr.length === 0 || (typeof arr[0] === 'object' && 'id' in arr[0]))
@@ -1264,9 +1261,12 @@ export const useSettingsStore = defineStore('settings', {
         // ensure all segments have an ID
         const processSounds = returnedArray.map<Sound>(sound => ({
           ...sound,
-          tags: typeof sound.tags === 'string'
-            ? JSON.parse(sound.tags)
-            : (Array.isArray(sound.tags) ? sound.tags : undefined),
+          tags:
+            typeof sound.tags === 'string'
+              ? JSON.parse(sound.tags)
+              : Array.isArray(sound.tags)
+                ? sound.tags
+                : undefined,
           soundSegments: sound.soundSegments ? JSON.parse(sound.soundSegments) : undefined,
           hotkey: sound.hotkey ? JSON.parse(sound.hotkey) : undefined,
         }))
@@ -1285,9 +1285,11 @@ export const useSettingsStore = defineStore('settings', {
       })
       this.registerWindowResize()
       await this.migrateLegacyIndexedDBToDisk()
-      this._getImageUrls(this.sounds).then(() => {
-        this.deduplicateExistingImages().catch(() => { })
-      }).catch(() => { })
+      this._getImageUrls(this.sounds)
+        .then(() => {
+          this.deduplicateExistingImages().catch(() => {})
+        })
+        .catch(() => {})
       return this.sounds
     },
     /**
@@ -1304,7 +1306,7 @@ export const useSettingsStore = defineStore('settings', {
           try {
             window.indexedDB?.deleteDatabase('pulse-panel')
             window.indexedDB?.deleteDatabase('pulse-panel-dev')
-          } catch (_) { }
+          } catch (_) {}
           return
         }
 
@@ -1316,7 +1318,7 @@ export const useSettingsStore = defineStore('settings', {
             if (opened && opened.objectStoreNames.length > 0) {
               dbs.push(opened)
             }
-          } catch (_) { }
+          } catch (_) {}
         }
         if (dbs.length === 0) return
 
@@ -1327,7 +1329,7 @@ export const useSettingsStore = defineStore('settings', {
                 try {
                   const b = await d.get(sName, key)
                   if (b) return b
-                } catch (_) { }
+                } catch (_) {}
               }
             }
           }
@@ -1355,8 +1357,7 @@ export const useSettingsStore = defineStore('settings', {
                   else if (blob.type.includes('webm')) ext = '.webm'
                 }
                 const blobName = blob instanceof File ? blob.name : ''
-                const title = sound.title
-                  ? sound.title.trim() : (blobName ? blobName.replace(/\.[^.]+$/, '') : 'sound')
+                const title = sound.title ? sound.title.trim() : blobName ? blobName.replace(/\.[^.]+$/, '') : 'sound'
                 const res = await electron.saveMediaFile({
                   preferredName: title,
                   extension: ext,
@@ -1380,8 +1381,7 @@ export const useSettingsStore = defineStore('settings', {
                 const buffer = await blob.arrayBuffer()
                 const ext = blob.type && blob.type.includes('jpeg') ? '.jpg' : '.png'
                 const blobName = blob instanceof File ? blob.name : ''
-                const title = sound.title
-                  ? sound.title.trim() : (blobName ? blobName.replace(/\.[^.]+$/, '') : 'image')
+                const title = sound.title ? sound.title.trim() : blobName ? blobName.replace(/\.[^.]+$/, '') : 'image'
                 const res = await electron.saveMediaFile({
                   preferredName: title,
                   extension: ext,
@@ -1424,7 +1424,7 @@ export const useSettingsStore = defineStore('settings', {
                     tagsModified = true
                   }
                 }
-              } catch (_) { }
+              } catch (_) {}
             }
           }
           if (tagsModified) {
@@ -1440,12 +1440,14 @@ export const useSettingsStore = defineStore('settings', {
 
         // Close and clean up legacy IndexedDB databases
         dbs.forEach(d => {
-          try { d.close() } catch (_) { }
+          try {
+            d.close()
+          } catch (_) {}
         })
         try {
           window.indexedDB?.deleteDatabase('pulse-panel')
           window.indexedDB?.deleteDatabase('pulse-panel-dev')
-        } catch (_) { }
+        } catch (_) {}
       } catch (err) {
         console.warn('[Pulse Panel] Legacy IndexedDB migration check error:', err)
       }
@@ -1503,7 +1505,7 @@ export const useSettingsStore = defineStore('settings', {
               sound.imageUrl = imageUrl
             }
           }
-        }),
+        })
       )
     },
     /**
@@ -1521,7 +1523,7 @@ export const useSettingsStore = defineStore('settings', {
             sessionStorage.removeItem('activeEditingSoundId')
           }
         }
-      } catch (_) { }
+      } catch (_) {}
     },
     /**
      * This function listens for windowResize events and sets the windowIsMaximized state
@@ -1583,8 +1585,11 @@ export const useSettingsStore = defineStore('settings', {
         hotkeys.push(toRaw(this.stop_hotkey))
       }
       // register the pulse_back_hotkey
-      if (this.pulse_back_hotkey && this.pulse_back_hotkey.length > 0
-        && !hotkeys.some(keys => arraysAreEqual(this.pulse_back_hotkey, keys))) {
+      if (
+        this.pulse_back_hotkey &&
+        this.pulse_back_hotkey.length > 0 &&
+        !hotkeys.some(keys => arraysAreEqual(this.pulse_back_hotkey, keys))
+      ) {
         hotkeys.push(toRaw(this.pulse_back_hotkey))
       }
 
@@ -1657,14 +1662,14 @@ export const useSettingsStore = defineStore('settings', {
           if (buffer) {
             return new Blob([buffer])
           }
-        } catch (_) { }
+        } catch (_) {}
       }
       const url = await this.getFile(key)
       if (url) {
         try {
           const res = await fetch(url)
           return await res.blob()
-        } catch (_) { }
+        } catch (_) {}
       }
       try {
         const db = await getDB()
@@ -1738,7 +1743,7 @@ export const useSettingsStore = defineStore('settings', {
      * - If copied within Pulse Panel, restores the exact imageKey and imageUrl without re-encoding
      * - If copied from an external app (Paint.net, browser, screenshot), saves and deduplicates it in DB
      */
-    async readClipboardImage(): Promise<{ imageKey: string; imageUrl?: string; isReused: boolean; } | null> {
+    async readClipboardImage(): Promise<{ imageKey: string; imageUrl?: string; isReused: boolean } | null> {
       try {
         const electron = window.electron
         if (electron?.readImageFromClipboard) {
@@ -1754,9 +1759,7 @@ export const useSettingsStore = defineStore('settings', {
               return { imageKey: res.imageKey, imageUrl: url, isReused: true }
             }
             if (res.buffer || res.dataUrl) {
-              const blob = res.buffer
-                ? new Blob([new Uint8Array(res.buffer)], { type: 'image/png' })
-                : null
+              const blob = res.buffer ? new Blob([new Uint8Array(res.buffer)], { type: 'image/png' }) : null
               const blobUrl = blob ? URL.createObjectURL(blob) : null
               const targetSource = blob || res.dataUrl!
 
@@ -1855,7 +1858,7 @@ export const useSettingsStore = defineStore('settings', {
         }
         try {
           s = decodeURIComponent(s)
-        } catch (_) { }
+        } catch (_) {}
         return s
       }
       const cleanKey = normalize(key)
@@ -1869,9 +1872,7 @@ export const useSettingsStore = defineStore('settings', {
         )
       })
       if (usedBySound) return true
-      return Object.values(this.tagImages ?? {}).some(
-        imageKey => imageKey === key || normalize(imageKey) === cleanKey
-      )
+      return Object.values(this.tagImages ?? {}).some(imageKey => imageKey === key || normalize(imageKey) === cleanKey)
     },
     /**
      * Get the loaded blob URL for a tag's assigned image
@@ -1967,13 +1968,13 @@ export const useSettingsStore = defineStore('settings', {
      * @param file the file to save
      * @param preferredName optional preferred name (e.g. sound title)
      */
-    async saveFile(file: File, preferredName?: string): Promise<{ fileUrl: string; fileKey: string; isNew: boolean; }> {
+    async saveFile(file: File, preferredName?: string): Promise<{ fileUrl: string; fileKey: string; isNew: boolean }> {
       const electron = window.electron
       if (electron?.saveMediaFile) {
         try {
           const buffer = await file.arrayBuffer()
           const dotIdx = file.name ? file.name.lastIndexOf('.') : -1
-          const ext = dotIdx !== -1 ? file.name.substring(dotIdx) : (file.type.startsWith('image/') ? '.png' : '.mp3')
+          const ext = dotIdx !== -1 ? file.name.substring(dotIdx) : file.type.startsWith('image/') ? '.png' : '.mp3'
           const fallbackName = file.type.startsWith('image/') ? 'image' : 'sound'
           const defaultBase = dotIdx !== -1 ? file.name.substring(0, dotIdx) : fallbackName
           const base = preferredName || defaultBase
@@ -2064,7 +2065,7 @@ export const useSettingsStore = defineStore('settings', {
       if (electron?.deleteMediaFile) {
         try {
           await electron.deleteMediaFile(path)
-        } catch (_) { }
+        } catch (_) {}
       }
       try {
         const db = await getDB()
@@ -2078,7 +2079,7 @@ export const useSettingsStore = defineStore('settings', {
       newFile: File,
       excludeSoundId?: string,
       preferredName?: string
-    ): Promise<{ fileUrl: string; fileKey: string; }> {
+    ): Promise<{ fileUrl: string; fileKey: string }> {
       if (oldPath) {
         await this.deleteFile(oldPath, excludeSoundId)
       }
@@ -2174,12 +2175,12 @@ export const useSettingsStore = defineStore('settings', {
       this.quickTagsAr ??= []
       // add all the elements from tags that aren't already in quickTagsAr
       this.quickTagsAr = this.quickTagsAr.concat(
-        tagsAr.filter(tag => !this.quickTagsAr?.some(t => t.label === tag.label)),
+        tagsAr.filter(tag => !this.quickTagsAr?.some(t => t.label === tag.label))
       )
       const electron = window.electron
       await electron?.saveDBSetting(
         'quickTagsAr',
-        this.quickTagsAr.map(t => toRaw(t)),
+        this.quickTagsAr.map(t => toRaw(t))
       )
     },
     /** remove a quickTag */
@@ -2189,7 +2190,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.saveDBSetting(
         'quickTagsAr',
-        this.quickTagsAr.map(t => toRaw(t)),
+        this.quickTagsAr.map(t => toRaw(t))
       )
     },
     /** set the quickTags */
@@ -2198,7 +2199,7 @@ export const useSettingsStore = defineStore('settings', {
       const electron = window.electron
       await electron?.saveDBSetting(
         'quickTagsAr',
-        this.quickTagsAr.map(t => toRaw(t)),
+        this.quickTagsAr.map(t => toRaw(t))
       )
     },
     /** toggle the quickTag */
@@ -2213,7 +2214,7 @@ export const useSettingsStore = defineStore('settings', {
         const electron = window.electron
         await electron?.saveDBSetting(
           'quickTagsAr',
-          this.quickTagsAr.map(t => toRaw(t)),
+          this.quickTagsAr.map(t => toRaw(t))
         )
       }
     },
@@ -2236,7 +2237,7 @@ export const useSettingsStore = defineStore('settings', {
         const electron = window.electron
         await electron?.saveDBSetting(
           'quickTagsAr',
-          this.quickTagsAr.map(t => toRaw(t)),
+          this.quickTagsAr.map(t => toRaw(t))
         )
       }
     },

@@ -3,11 +3,9 @@
     <div class="bar">
       <h1 class="mx-auto">Settings</h1>
     </div>
-    <div class="virtual-cable-status-card"
-         :class="{ active: !!settingsStore.virtualCableDeviceId }">
+    <div class="virtual-cable-status-card" :class="{ active: !!settingsStore.virtualCableDeviceId }">
       <div class="virtual-cable-header">
-        <div class="virtual-status-indicator"
-             :class="{ online: !!settingsStore.virtualCableDeviceId }"></div>
+        <div class="virtual-status-indicator" :class="{ online: !!settingsStore.virtualCableDeviceId }"></div>
         <span class="virtual-status-title">
           {{
             settingsStore.virtualCableDeviceId
@@ -16,33 +14,25 @@
           }}
         </span>
       </div>
-      <p class="virtual-status-desc"
-         v-if="settingsStore.virtualCableDeviceId">
-        Your voice and soundboard audio are combined automatically and routed into this device.
-        In Discord, Zoom, or games, select <strong>CABLE Output (VB-Audio Virtual Cable)</strong> as your input device.
+      <p class="virtual-status-desc" v-if="settingsStore.virtualCableDeviceId">
+        Your voice and soundboard audio are combined automatically and routed into this device. In Discord, Zoom, or
+        games, select <strong>CABLE Output (VB-Audio Virtual Cable)</strong> as your input device.
       </p>
-      <div v-else
-           class="virtual-status-install">
+      <div v-else class="virtual-status-install">
         <p class="virtual-status-desc">
           To broadcast both your microphone and soundboard clips into voice chats (Discord, Zoom, games) without echo,
           Pulse-Panel uses a virtual audio driver.
         </p>
-        <button class="install-cable-btn"
-                :disabled="isInstallingCable"
-                @click="installVirtualCable">
-          <inline-svg :src="Download"
-                      class="w-4 h-4" />
+        <button class="install-cable-btn" :disabled="isInstallingCable" @click="installVirtualCable">
+          <inline-svg :src="Download" class="w-4 h-4" />
           {{ isInstallingCable ? 'Installing Driver...' : 'Install Virtual Audio Driver (One-Click)' }}
         </button>
-        <div v-if="cableInstallMessage"
-             class="cable-install-msg">{{ cableInstallMessage }}</div>
-        <p v-if="cableInstallFailed"
-           class="virtual-status-manual">
+        <div v-if="cableInstallMessage" class="cable-install-msg">{{ cableInstallMessage }}</div>
+        <p v-if="cableInstallFailed" class="virtual-status-manual">
           Having trouble? You can also
-          <a href="https://vb-audio.com/Cable/"
-             target="_blank"
-             rel="noopener noreferrer"
-             class="vendor-link">download directly from vb-audio.com</a>.
+          <a href="https://vb-audio.com/Cable/" target="_blank" rel="noopener noreferrer" class="vendor-link"
+            >download directly from vb-audio.com</a
+          >.
         </p>
       </div>
     </div>
@@ -54,49 +44,48 @@
     <div class="mx-auto mb-2">
       <div class="mic-controls-container">
         <div class="mic-select-line">
-          <select-custom :modelValue="settingsStore.selectedMicrophoneId"
-                         @change="onMicSelected($event)"
-                         defaultText="Select your microphone"
-                         :options="settingsStore.allInputDevices.map(
-                           option => ({ label: option.label, value: option.deviceId })
-                         )" />
-          <button :class="{
-            'mic-mute-btn': true,
-            muted: settingsStore.microphoneMuted,
-          }"
-                  :title="settingsStore.microphoneMuted ? 'Unmute Microphone' : 'Mute Microphone'"
-                  @click="toggleMicMute">
-            <inline-svg :src="settingsStore.microphoneMuted ? MicrophoneSlashIcon : MicrophoneIcon"
-                        class="w-5 h-5" />
+          <select-custom
+            :modelValue="settingsStore.selectedMicrophoneId"
+            @change="onMicSelected($event)"
+            defaultText="Select your microphone"
+            :options="settingsStore.allInputDevices.map(option => ({ label: option.label, value: option.deviceId }))" />
+          <button
+            :class="{
+              'mic-mute-btn': true,
+              muted: settingsStore.microphoneMuted,
+            }"
+            :title="settingsStore.microphoneMuted ? 'Unmute Microphone' : 'Mute Microphone'"
+            @click="toggleMicMute">
+            <inline-svg :src="settingsStore.microphoneMuted ? MicrophoneSlashIcon : MicrophoneIcon" class="w-5 h-5" />
           </button>
-          <div class="device-volume-container"
-               :title="`Microphone Volume: ${micVolumeDisplay}%`">
-            <input-text-number class="device-volume-input"
-                               :min="0"
-                               :max="100"
-                               :bigStep="5"
-                               v-model="micVolumeDisplay"
-                               :title="`Microphone Volume: ${micVolumeDisplay}%`"
-                               aria-label="Microphone Volume" />
-            <input-range-number class="device-volume-slider"
-                                :bigStep="5"
-                                v-model="micVolumeDisplay"
-                                :title="`Microphone Volume: ${micVolumeDisplay}%`"
-                                aria-label="Microphone Volume Slider" />
+          <div class="device-volume-container" :title="`Microphone Volume: ${micVolumeDisplay}%`">
+            <input-text-number
+              class="device-volume-input"
+              :min="0"
+              :max="100"
+              :bigStep="5"
+              v-model="micVolumeDisplay"
+              :title="`Microphone Volume: ${micVolumeDisplay}%`"
+              aria-label="Microphone Volume" />
+            <input-range-number
+              class="device-volume-slider"
+              :bigStep="5"
+              v-model="micVolumeDisplay"
+              :title="`Microphone Volume: ${micVolumeDisplay}%`"
+              aria-label="Microphone Volume Slider" />
           </div>
         </div>
-        <div class="mic-level-container"
-             title="Live Microphone Input Level">
-          <button :class="{
-            'mic-test-btn': true,
-            active: isTestingMic,
-          }"
-                  :title="isTestingMic ? 'Stop Mic Test' : 'Test Microphone (Echo to headphones)'"
-                  @click="toggleMicTest">
+        <div class="mic-level-container" title="Live Microphone Input Level">
+          <button
+            :class="{
+              'mic-test-btn': true,
+              active: isTestingMic,
+            }"
+            :title="isTestingMic ? 'Stop Mic Test' : 'Test Microphone (Echo to headphones)'"
+            @click="toggleMicTest">
             <span>{{ isTestingMic ? 'Stop Testing' : 'Mic Test' }}</span>
           </button>
-          <audio-level-meter :level="micLevel"
-                             :muted="settingsStore.microphoneMuted" />
+          <audio-level-meter :level="micLevel" :muted="settingsStore.microphoneMuted" />
         </div>
       </div>
     </div>
@@ -108,148 +97,150 @@
     <div class="mx-auto">
       <div class="audio-output-devices">
         <div class="select-line cable-output-line">
-          <button class="delete-button opacity-0 cursor-default"
-                  tabindex="-1"
-                  aria-hidden="true">
-            <inline-svg class="w-full h-full rotate-45"
-                        :src="PlusIcon" />
+          <button class="delete-button opacity-0 cursor-default" tabindex="-1" aria-hidden="true">
+            <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
           </button>
           <div class="hardcoded-select-option">
             <span>CABLE Output</span>
           </div>
-          <button :class="{
-            'play-sound-button': true,
-            light: true,
-            playingAudio: isPlayingCableTest,
-          }"
-                  title="Test Audio Output"
-                  @click="testCableOutput">
-            <inline-svg :src="SpeakerIcon"
-                        class="w-6 h-6" />
+          <button
+            :class="{
+              'play-sound-button': true,
+              light: true,
+              playingAudio: isPlayingCableTest,
+            }"
+            title="Test Audio Output"
+            @click="testCableOutput">
+            <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
           </button>
-          <div class="device-volume-container"
-               :title="`Device Volume: ${cableVolumeDisplay}%`">
-            <input-text-number class="device-volume-input"
-                               :min="0"
-                               :max="100"
-                               :bigStep="5"
-                               v-model="cableVolumeDisplay"
-                               :title="`Device Volume: ${cableVolumeDisplay}%`"
-                               aria-label="Device Volume" />
-            <input-range-number class="device-volume-slider"
-                                :bigStep="5"
-                                v-model="cableVolumeDisplay"
-                                :title="`Device Volume: ${cableVolumeDisplay}%`"
-                                aria-label="Device Volume Slider" />
+          <div class="device-volume-container" :title="`Device Volume: ${cableVolumeDisplay}%`">
+            <input-text-number
+              class="device-volume-input"
+              :min="0"
+              :max="100"
+              :bigStep="5"
+              v-model="cableVolumeDisplay"
+              :title="`Device Volume: ${cableVolumeDisplay}%`"
+              aria-label="Device Volume" />
+            <input-range-number
+              class="device-volume-slider"
+              :bigStep="5"
+              v-model="cableVolumeDisplay"
+              :title="`Device Volume: ${cableVolumeDisplay}%`"
+              aria-label="Device Volume Slider" />
           </div>
         </div>
-        <div v-for="(outputDevice, i) in outputDevices"
-             :key="i"
-             class="select-line">
-          <button :class="{
-            'delete-button': true,
-            light: i !== outputDevices.length - 1,
-            'opacity-0 cursor-default': i === outputDevices.length - 1,
-            'cursor-pointer': i !== outputDevices.length - 1,
-          }"
-                  :tabindex="i === outputDevices.length - 1 ? -1 : 0"
-                  @click="deleteOutputDevice(i)"
-                  title="Remove Output Device">
-            <inline-svg class="w-full h-full rotate-45"
-                        :src="PlusIcon" />
+        <div v-for="(outputDevice, i) in outputDevices" :key="i" class="select-line">
+          <button
+            :class="{
+              'delete-button': true,
+              light: i !== outputDevices.length - 1,
+              'opacity-0 cursor-default': i === outputDevices.length - 1,
+              'cursor-pointer': i !== outputDevices.length - 1,
+            }"
+            :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+            @click="deleteOutputDevice(i)"
+            title="Remove Output Device">
+            <inline-svg class="w-full h-full rotate-45" :src="PlusIcon" />
           </button>
-          <select-custom :modelValue="outputDevice ? outputDevice.deviceId : null"
-                         @change="optionSelected($event, i)"
-                         defaultText="Select an output device"
-                         :options="settingsStore.allOutputDevices.map(
-                           option => ({ label: option.label, value: option.deviceId })
-                         )" />
-          <button :class="{
-            'play-sound-button': true,
-            light: i !== outputDevices.length - 1,
-            playingAudio: soundStore.outputDeviceData[i]?.playingAudio,
-            'opacity-0 cursor-default': i === outputDevices.length - 1,
-          }"
-                  :tabindex="i === outputDevices.length - 1 ? -1 : 0"
-                  title="Test Audio Output"
-                  @click="outputDevice && soundStore.playSound(
-                    null,
-                    [outputDevice.deviceId],
-                    outputDevices.map(d => d?.deviceId ?? null),
-                    true,
-                    false,
-                    undefined,
-                    [i]
-                  )">
-            <inline-svg :src="SpeakerIcon"
-                        class="w-6 h-6" />
+          <select-custom
+            :modelValue="outputDevice ? outputDevice.deviceId : null"
+            @change="optionSelected($event, i)"
+            defaultText="Select an output device"
+            :options="
+              settingsStore.allOutputDevices.map(option => ({ label: option.label, value: option.deviceId }))
+            " />
+          <button
+            :class="{
+              'play-sound-button': true,
+              light: i !== outputDevices.length - 1,
+              playingAudio: soundStore.outputDeviceData[i]?.playingAudio,
+              'opacity-0 cursor-default': i === outputDevices.length - 1,
+            }"
+            :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+            title="Test Audio Output"
+            @click="
+              outputDevice &&
+              soundStore.playSound(
+                null,
+                [outputDevice.deviceId],
+                outputDevices.map(d => d?.deviceId ?? null),
+                true,
+                false,
+                undefined,
+                [i]
+              )
+            ">
+            <inline-svg :src="SpeakerIcon" class="w-6 h-6" />
           </button>
-          <div :class="{
-            'device-volume-container': true,
-            'opacity-0 pointer-events-none': i === outputDevices.length - 1,
-          }"
-               :title="`Device Volume: ${getDeviceVolumePercent(i)}%`">
-            <input-text-number class="device-volume-input"
-                               :min="0"
-                               :max="100"
-                               :bigStep="5"
-                               :tabindex="i === outputDevices.length - 1 ? -1 : 0"
-                               :modelValue="getDeviceVolumePercent(i)"
-                               @update:modelValue="updateDeviceVolume(i, $event)"
-                               :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
-                               aria-label="Device Volume" />
-            <input-range-number class="device-volume-slider"
-                                :bigStep="5"
-                                :tabindex="i === outputDevices.length - 1 ? -1 : 0"
-                                :modelValue="getDeviceVolumePercent(i)"
-                                @update:modelValue="updateDeviceVolume(i, $event)"
-                                :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
-                                aria-label="Device Volume Slider" />
+          <div
+            :class="{
+              'device-volume-container': true,
+              'opacity-0 pointer-events-none': i === outputDevices.length - 1,
+            }"
+            :title="`Device Volume: ${getDeviceVolumePercent(i)}%`">
+            <input-text-number
+              class="device-volume-input"
+              :min="0"
+              :max="100"
+              :bigStep="5"
+              :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+              :modelValue="getDeviceVolumePercent(i)"
+              @update:modelValue="updateDeviceVolume(i, $event)"
+              :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
+              aria-label="Device Volume" />
+            <input-range-number
+              class="device-volume-slider"
+              :bigStep="5"
+              :tabindex="i === outputDevices.length - 1 ? -1 : 0"
+              :modelValue="getDeviceVolumePercent(i)"
+              @update:modelValue="updateDeviceVolume(i, $event)"
+              :title="`Device Volume: ${getDeviceVolumePercent(i)}%`"
+              aria-label="Device Volume Slider" />
           </div>
         </div>
       </div>
     </div>
     <div class="default-volume">
       <label for="default-volume-input">Default Volume:</label>
-      <input-text-number id="default-volume-input"
-                         :min="0"
-                         :max="100"
-                         :bigStep="5"
-                         v-model="volumeDisplay" />
-      <input-range-number :bigStep="5"
-                          v-model="volumeDisplay" />
+      <input-text-number id="default-volume-input" :min="0" :max="100" :bigStep="5" v-model="volumeDisplay" />
+      <input-range-number :bigStep="5" v-model="volumeDisplay" />
     </div>
-    <label>Allow overlapping sounds<input type="checkbox"
-             v-model="allowOverlappingSound"
-             @input="updateAllowOverlappingSound" /></label>
-    <label>Dark Mode<input type="checkbox"
-             v-model="darkMode"
-             @input="updateDarkMode" /></label>
-    <label>Close to tray<input type="checkbox"
-             v-model="closeToTray"
-             @input="updateCloseToTray" /></label>
-    <label>Start with Windows<input type="checkbox"
-             v-model="startWithWindows"
-             @input="updateStartWithWindows" /></label>
-    <hotkey-picker class="hotkey-picker"
-                   v-model="selectedHotkey"
-                   :dark="false"
-                   @update:modelValue="onPTTHotkeyChange"
-                   title="this will be the button that pulse-panel with hold down any time sound is playing">
+    <label
+      >Allow overlapping sounds<input
+        type="checkbox"
+        v-model="allowOverlappingSound"
+        @input="updateAllowOverlappingSound"
+    /></label>
+    <label>Dark Mode<input type="checkbox" v-model="darkMode" @input="updateDarkMode" /></label>
+    <label>Close to tray<input type="checkbox" v-model="closeToTray" @input="updateCloseToTray" /></label>
+    <label
+      >Start with Windows<input type="checkbox" v-model="startWithWindows" @input="updateStartWithWindows"
+    /></label>
+    <hotkey-picker
+      class="hotkey-picker"
+      v-model="selectedHotkey"
+      :dark="false"
+      @update:modelValue="onPTTHotkeyChange"
+      title="this will be the button that pulse-panel with hold down any time sound is playing">
       Push-to-Talk Key:
     </hotkey-picker>
-    <hotkey-picker class="hotkey-picker"
-                   v-model="stopHotkey"
-                   :dark="false"
-                   @update:modelValue="onStopHotkeyChange"
-                   title="this will be the button you can press to stop all sounds immediately">
+    <hotkey-picker
+      class="hotkey-picker"
+      v-model="stopHotkey"
+      :dark="false"
+      @update:modelValue="onStopHotkeyChange"
+      title="this will be the button you can press to stop all sounds immediately">
       Stop Sounds Key:
     </hotkey-picker>
-    <hotkey-picker class="hotkey-picker"
-                   v-model="pulseBackHotkey"
-                   :dark="false"
-                   @update:modelValue="onPulseBackHotkeyChange"
-                   title="Global hotkey to capture the recent audio replay buffer">Pulse Back Key:</hotkey-picker>
+    <hotkey-picker
+      class="hotkey-picker"
+      v-model="pulseBackHotkey"
+      :dark="false"
+      @update:modelValue="onPulseBackHotkeyChange"
+      title="Global hotkey to capture the recent audio replay buffer"
+      >Pulse Back Key:</hotkey-picker
+    >
 
     <h2 class="mt-4">Pulse Back Input:</h2>
     <p class="section-subtitle">
@@ -258,52 +249,51 @@
     <div class="mx-auto mb-2">
       <div class="mic-controls-container">
         <div class="mic-select-line">
-          <select-custom :modelValue="settingsStore.pulse_back_input_device || ''"
-                         @change="onPulseBackDeviceSelected($event)"
-                         defaultText="Use Selected Microphone"
-                         :options="[
-                          { label: 'Use Selected Microphone', value: '' },
-                          ...settingsStore.allInputDevices.map(
-                            option => ({ label: option.label, value: option.deviceId })
-                          ),
-                        ]" />
-          <button :class="{
-            'mic-mute-btn': true,
-            muted: settingsStore.pulse_back_muted,
-          }"
-                  :title="settingsStore.pulse_back_muted ? 'Unmute Pulse Back Input' : 'Mute Pulse Back Input'"
-                  @click="togglePulseBackMute">
-            <inline-svg :src="settingsStore.pulse_back_muted ? MicrophoneSlashIcon : MicrophoneIcon"
-                        class="w-5 h-5" />
+          <select-custom
+            :modelValue="settingsStore.pulse_back_input_device || ''"
+            @change="onPulseBackDeviceSelected($event)"
+            defaultText="Use Selected Microphone"
+            :options="[
+              { label: 'Use Selected Microphone', value: '' },
+              ...settingsStore.allInputDevices.map(option => ({ label: option.label, value: option.deviceId })),
+            ]" />
+          <button
+            :class="{
+              'mic-mute-btn': true,
+              muted: settingsStore.pulse_back_muted,
+            }"
+            :title="settingsStore.pulse_back_muted ? 'Unmute Pulse Back Input' : 'Mute Pulse Back Input'"
+            @click="togglePulseBackMute">
+            <inline-svg :src="settingsStore.pulse_back_muted ? MicrophoneSlashIcon : MicrophoneIcon" class="w-5 h-5" />
           </button>
-          <div class="device-volume-container"
-               :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`">
-            <input-text-number class="device-volume-input"
-                               :min="0"
-                               :max="100"
-                               :bigStep="5"
-                               v-model="pulseBackVolumeDisplay"
-                               :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
-                               aria-label="Pulse Back Volume" />
-            <input-range-number class="device-volume-slider"
-                                :bigStep="5"
-                                v-model="pulseBackVolumeDisplay"
-                                :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
-                                aria-label="Pulse Back Volume Slider" />
+          <div class="device-volume-container" :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`">
+            <input-text-number
+              class="device-volume-input"
+              :min="0"
+              :max="100"
+              :bigStep="5"
+              v-model="pulseBackVolumeDisplay"
+              :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
+              aria-label="Pulse Back Volume" />
+            <input-range-number
+              class="device-volume-slider"
+              :bigStep="5"
+              v-model="pulseBackVolumeDisplay"
+              :title="`Pulse Back Volume: ${pulseBackVolumeDisplay}%`"
+              aria-label="Pulse Back Volume Slider" />
           </div>
         </div>
-        <div class="mic-level-container"
-             title="Live Pulse Back Input Level">
-          <button :class="{
-            'mic-test-btn': true,
-            active: isTestingPulseBack,
-          }"
-                  :title="isTestingPulseBack ? 'Stop Testing' : 'Test Input (Echo to headphones)'"
-                  @click="togglePulseBackTest">
+        <div class="mic-level-container" title="Live Pulse Back Input Level">
+          <button
+            :class="{
+              'mic-test-btn': true,
+              active: isTestingPulseBack,
+            }"
+            :title="isTestingPulseBack ? 'Stop Testing' : 'Test Input (Echo to headphones)'"
+            @click="togglePulseBackTest">
             <span>{{ isTestingPulseBack ? 'Stop Testing' : 'Input Test' }}</span>
           </button>
-          <audio-level-meter :level="pulseBackLevel"
-                             :muted="settingsStore.pulse_back_muted" />
+          <audio-level-meter :level="pulseBackLevel" :muted="settingsStore.pulse_back_muted" />
         </div>
       </div>
     </div>
@@ -313,22 +303,22 @@
         <div v-if="settingsStore.quickTags.length === 0">No quick tags added</div>
         <div>{{ totalSoundsText }} &bull; {{ allTagsText }}</div>
         <div class="flex justify-center flex-wrap gap-1 cursor-grab">
-          <div v-for="(tag, index) in settingsStore.quickTags"
-               :class="['tag select-none flex items-center', { dragging: tag.isDragPreview }]"
-               draggable="true"
-               @dragstart="dragStart(tag, index)"
-               @dragenter.prevent="dragOver(tag)"
-               @dragend="dragEnd"
-               @contextmenu.prevent.stop="openTagMenu($event, tag.label)">
-            <img v-if="settingsStore.getTagImageUrl(tag.label)"
-                 :src="settingsStore.getTagImageUrl(tag.label)"
-                 alt=""
-                 class="w-4 h-4 rounded-full object-cover mr-1.5 -ml-1 pointer-events-none" />
+          <div
+            v-for="(tag, index) in settingsStore.quickTags"
+            :class="['tag select-none flex items-center', { dragging: tag.isDragPreview }]"
+            draggable="true"
+            @dragstart="dragStart(tag, index)"
+            @dragenter.prevent="dragOver(tag)"
+            @dragend="dragEnd"
+            @contextmenu.prevent.stop="openTagMenu($event, tag.label)">
+            <img
+              v-if="settingsStore.getTagImageUrl(tag.label)"
+              :src="settingsStore.getTagImageUrl(tag.label)"
+              alt=""
+              class="w-4 h-4 rounded-full object-cover mr-1.5 -ml-1 pointer-events-none" />
             <span>{{ tag.label }}</span>
-            <button class="remove-button"
-                    @click="removeTag(index)">
-              <inline-svg :src="PlusIcon"
-                          class="rotate-45" />
+            <button class="remove-button" @click="removeTag(index)">
+              <inline-svg :src="PlusIcon" class="rotate-45" />
             </button>
           </div>
         </div>
@@ -337,82 +327,77 @@
       <!-- Tag Context Menu in Settings -->
       <teleport to="body">
         <transition name="tag-menu-fade">
-          <div v-if="showTagMenu && selectedTag"
-               ref="tagMenuRef"
-               class="tag-context-menu"
-               :style="{ top: `${tagMenuPosition.y}px`, left: `${tagMenuPosition.x}px` }">
+          <div
+            v-if="showTagMenu && selectedTag"
+            ref="tagMenuRef"
+            class="tag-context-menu"
+            :style="{ top: `${tagMenuPosition.y}px`, left: `${tagMenuPosition.x}px` }">
             <div class="tag-menu-header">
               <span class="truncate">#{{ selectedTag }}</span>
             </div>
-            <button v-if="canPasteImage"
-                    @click="handlePasteImageToTag"
-                    type="button"
-                    class="tag-menu-item text-emerald-400 hover:text-emerald-300">
-              <svg class="w-3.5 h-3.5"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
+            <button
+              v-if="canPasteImage"
+              @click="handlePasteImageToTag"
+              type="button"
+              class="tag-menu-item text-emerald-400 hover:text-emerald-300">
+              <svg
+                class="w-3.5 h-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
                 <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                <rect x="8"
-                      y="2"
-                      width="8"
-                      height="4"
-                      rx="1"
-                      ry="1"></rect>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
               </svg>
               <span>Paste Image to Tag</span>
             </button>
-            <button v-if="selectedTagHasImage"
-                    @click="handleCopyTagImage"
-                    type="button"
-                    class="tag-menu-item">
-              <svg class="w-3.5 h-3.5"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2"
-                   stroke-linecap="round"
-                   stroke-linejoin="round">
-                <rect x="9"
-                      y="9"
-                      width="13"
-                      height="13"
-                      rx="2"
-                      ry="2"></rect>
+            <button v-if="selectedTagHasImage" @click="handleCopyTagImage" type="button" class="tag-menu-item">
+              <svg
+                class="w-3.5 h-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
               <span>Copy Tag Image</span>
             </button>
-            <button v-if="selectedTagHasImage"
-                    @click="handleRemoveTagImage"
-                    type="button"
-                    class="tag-menu-item text-red-400 hover:text-red-300">
-              <inline-svg :src="PlusIcon"
-                          class="w-3.5 h-3.5 rotate-45 text-red-400" />
+            <button
+              v-if="selectedTagHasImage"
+              @click="handleRemoveTagImage"
+              type="button"
+              class="tag-menu-item text-red-400 hover:text-red-300">
+              <inline-svg :src="PlusIcon" class="w-3.5 h-3.5 rotate-45 text-red-400" />
               <span>Clear Tag Image</span>
             </button>
           </div>
         </transition>
       </teleport>
       <div class="flex justify-center mt-2">
-        <select-custom v-model="newTag"
-                       class="new-tag-select"
-                       @change="tagSelected($event)"
-                       @option-contextmenu="openTagMenuFromOption"
-                       defaultText="Select a tag from the list of used tags"
-                       :options="allTags.map((tag, index) => ({
-                         label: `${tag.name} (${tag.count})`,
-                         value: tag.name ?? `tag-${index}`,
-                       }))">
+        <select-custom
+          v-model="newTag"
+          class="new-tag-select"
+          @change="tagSelected($event)"
+          @option-contextmenu="openTagMenuFromOption"
+          defaultText="Select a tag from the list of used tags"
+          :options="
+            allTags.map((tag, index) => ({
+              label: `${tag.name} (${tag.count})`,
+              value: tag.name ?? `tag-${index}`,
+            }))
+          ">
           <template #option="{ option }">
             <div class="flex items-center w-full py-0.5">
-              <img v-if="settingsStore.getTagImageUrl(option.value)"
-                   :src="settingsStore.getTagImageUrl(option.value)"
-                   alt=""
-                   class="w-4 h-4 rounded-full object-cover mr-2 pointer-events-none flex-shrink-0" />
+              <img
+                v-if="settingsStore.getTagImageUrl(option.value)"
+                :src="settingsStore.getTagImageUrl(option.value)"
+                alt=""
+                class="w-4 h-4 rounded-full object-cover mr-2 pointer-events-none flex-shrink-0" />
               <span>{{ option.label }}</span>
             </div>
           </template>
@@ -426,18 +411,20 @@
         <div class="homepage-input-row">
           <label for="browser-homepage-input" class="homepage-label">Homepage:</label>
           <div class="homepage-input-group">
-            <input id="browser-homepage-input"
-                   type="text"
-                   class="homepage-input"
-                   v-model="homepageInput"
-                   @blur="saveHomepage"
-                   @keydown.enter="saveHomepage"
-                   placeholder="https://www.youtube.com" />
-            <button v-if="homepageInput && homepageInput !== 'https://www.youtube.com'"
-                    type="button"
-                    class="homepage-reset-btn"
-                    @click="resetHomepage"
-                    title="Reset to default (YouTube)">
+            <input
+              id="browser-homepage-input"
+              type="text"
+              class="homepage-input"
+              v-model="homepageInput"
+              @blur="saveHomepage"
+              @keydown.enter="saveHomepage"
+              placeholder="https://www.youtube.com" />
+            <button
+              v-if="homepageInput && homepageInput !== 'https://www.youtube.com'"
+              type="button"
+              class="homepage-reset-btn"
+              @click="resetHomepage"
+              title="Reset to default (YouTube)">
               Reset
             </button>
           </div>
@@ -452,37 +439,31 @@
           <span class="version-badge">v{{ currentAppVersion }}</span>
         </div>
 
-        <div v-if="lastCheckedFormatted"
-             class="last-checked-text">
-          Last checked: {{ lastCheckedFormatted }}
-        </div>
+        <div v-if="lastCheckedFormatted" class="last-checked-text">Last checked: {{ lastCheckedFormatted }}</div>
 
-        <div v-if="updateStore.statusText"
-             :class="[
-               'update-status-msg',
-               { error: updateStore.errorMessage, available: updateStore.updateAvailable },
-             ]">
+        <div
+          v-if="updateStore.statusText"
+          :class="['update-status-msg', { error: updateStore.errorMessage, available: updateStore.updateAvailable }]">
           {{ updateStore.statusText }}
         </div>
 
-        <div v-if="updateStore.isDownloading"
-             class="download-progress-container">
-          <div class="download-progress-bar"
-               :style="{ width: `${updateStore.downloadProgress}%` }"></div>
+        <div v-if="updateStore.isDownloading" class="download-progress-container">
+          <div class="download-progress-bar" :style="{ width: `${updateStore.downloadProgress}%` }"></div>
         </div>
 
         <div class="update-buttons-row">
-          <button class="check-update-btn"
-                  :disabled="updateStore.isChecking || updateStore.isDownloading"
-                  @click="updateStore.checkForUpdates(true)">
+          <button
+            class="check-update-btn"
+            :disabled="updateStore.isChecking || updateStore.isDownloading"
+            @click="updateStore.checkForUpdates(true)">
             {{ updateStore.isChecking ? 'Checking...' : 'Check for Updates' }}
           </button>
-          <button v-if="updateStore.updateAvailable"
-                  class="install-update-btn"
-                  :disabled="updateStore.isDownloading"
-                  @click="updateStore.startUpdate">
-            <inline-svg :src="Download"
-                        class="w-5 h-5" />
+          <button
+            v-if="updateStore.updateAvailable"
+            class="install-update-btn"
+            :disabled="updateStore.isDownloading"
+            @click="updateStore.startUpdate">
+            <inline-svg :src="Download" class="w-5 h-5" />
             {{
               updateStore.isDownloading
                 ? updateStore.statusText || 'Downloading...'
@@ -639,7 +620,7 @@ async function togglePulseBackTest() {
 
 function stopTestingPulseBack() {
   if (isTestingPulseBack.value) {
-    pulseBackBuffer.setInputTest(false).catch(() => { })
+    pulseBackBuffer.setInputTest(false).catch(() => {})
     isTestingPulseBack.value = false
   }
 }
@@ -666,7 +647,7 @@ function updateMicLevelLoop() {
 }
 
 onMounted(() => {
-  audioMixer.resume().catch(() => { })
+  audioMixer.resume().catch(() => {})
   rafId = requestAnimationFrame(updateMicLevelLoop)
 
   document.addEventListener('click', handleMenuClickOutside)
@@ -678,7 +659,7 @@ onMounted(() => {
     const inputDevice = settingsStore.pulse_back_input_device
     const effectiveMicVol = settingsStore.microphoneVolume ?? 1
     const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
-    pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => { })
+    pulseBackBuffer.start(micDevice, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
   }
 })
 
@@ -690,7 +671,7 @@ function stopTestingMic() {
 }
 
 onActivated(() => {
-  audioMixer.resume().catch(() => { })
+  audioMixer.resume().catch(() => {})
   if (rafId === null) {
     rafId = requestAnimationFrame(updateMicLevelLoop)
   }
@@ -753,7 +734,7 @@ async function onMicSelected(payload: Event | string) {
       const inputDevice = settingsStore.pulse_back_input_device
       const effectiveMicVol = settingsStore.microphoneVolume ?? 1
       const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
-      await pulseBackBuffer.start(deviceId, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => { })
+      await pulseBackBuffer.start(deviceId, inputDevice, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
     }
   }
 }
@@ -797,7 +778,6 @@ async function installVirtualCable() {
     isInstallingCable.value = false
   }
 }
-
 
 const currentAppVersion = computed(() => window.electron?.versions?.app || 'Unknown')
 
@@ -924,10 +904,10 @@ async function onPulseBackDeviceSelected(payload: unknown) {
       deviceId = typeof val === 'string' && val.length > 0 ? val : null
     }
   } else if (
-    typeof payload === 'object'
-    && payload !== null
-    && 'value' in payload
-    && typeof payload.value === 'string'
+    typeof payload === 'object' &&
+    payload !== null &&
+    'value' in payload &&
+    typeof payload.value === 'string'
   ) {
     deviceId = payload.value.length > 0 ? payload.value : null
   }
@@ -935,10 +915,10 @@ async function onPulseBackDeviceSelected(payload: unknown) {
   const micDevice = settingsStore.selectedMicrophoneId
   const effectiveMicVol = settingsStore.microphoneVolume ?? 1
   const effectiveInputVol = settingsStore.pulse_back_muted ? 0 : (settingsStore.pulse_back_volume ?? 1)
-  await pulseBackBuffer.start(micDevice, deviceId, 180, effectiveMicVol, effectiveInputVol).catch(() => { })
+  await pulseBackBuffer.start(micDevice, deviceId, 180, effectiveMicVol, effectiveInputVol).catch(() => {})
   if (isTestingPulseBack.value) {
     const primaryOutput = settingsStore.outputDevices[0]?.deviceId ?? null
-    await pulseBackBuffer.setInputTest(true, primaryOutput).catch(() => { })
+    await pulseBackBuffer.setInputTest(true, primaryOutput).catch(() => {})
   }
 }
 
@@ -1004,13 +984,17 @@ async function openTagMenu(event: MouseEvent, tag: string) {
   showTagMenu.value = true
 }
 
-function openTagMenuFromOption(payload: { event: MouseEvent; option: { label: string; value: string; }; }) {
+function openTagMenuFromOption(payload: { event: MouseEvent; option: { label: string; value: string } }) {
   openTagMenu(payload.event, payload.option.value)
 }
 
 function handleMenuClickOutside(event: MouseEvent) {
-  if (showTagMenu.value && tagMenuRef.value
-    && event.target instanceof Node && !tagMenuRef.value.contains(event.target)) {
+  if (
+    showTagMenu.value &&
+    tagMenuRef.value &&
+    event.target instanceof Node &&
+    !tagMenuRef.value.contains(event.target)
+  ) {
     showTagMenu.value = false
   }
 }
@@ -1409,7 +1393,9 @@ input[type='checkbox']:focus-visible {
   border-radius: 0.5rem;
   background-color: var(--input-bg-color, rgba(0, 0, 0, 0.05));
   border: 1px solid rgba(128, 128, 128, 0.2);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .virtual-cable-status-card.active {
@@ -1471,7 +1457,9 @@ input[type='checkbox']:focus-visible {
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
-  transition: opacity 0.2s, filter 0.2s;
+  transition:
+    opacity 0.2s,
+    filter 0.2s;
 }
 
 .install-cable-btn:hover:not(:disabled) {
@@ -1522,7 +1510,7 @@ input[type='checkbox']:focus-visible {
   min-width: fit-content;
 }
 
-.mic-select-line> :first-child {
+.mic-select-line > :first-child {
   flex: 1;
   min-width: 0;
 }
@@ -1572,7 +1560,10 @@ input[type='checkbox']:focus-visible {
   cursor: pointer;
   white-space: nowrap;
   user-select: none;
-  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    color 0.2s;
   flex-shrink: 0;
   justify-content: center;
   min-width: 6.25rem;
@@ -1683,7 +1674,9 @@ input[type='checkbox']:focus-visible {
   color: var(--text-color);
   font-size: 0.9rem;
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .homepage-input:focus-visible {
@@ -1700,7 +1693,9 @@ input[type='checkbox']:focus-visible {
   font-size: 0.85rem;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .homepage-reset-btn:hover {
@@ -1791,7 +1786,10 @@ input[type='checkbox']:focus-visible {
   font-weight: bold;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background-color 0.2s, opacity 0.2s, filter 0.2s;
+  transition:
+    background-color 0.2s,
+    opacity 0.2s,
+    filter 0.2s;
   border: none;
 }
 
@@ -1829,7 +1827,9 @@ input[type='checkbox']:focus-visible {
   border: 1px solid #3f3f46;
   border-radius: 8px;
   padding: 0.35rem;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 4px 12px rgba(0, 0, 0, 0.7);
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.95),
+    0 4px 12px rgba(0, 0, 0, 0.7);
   z-index: 99999;
   display: flex;
   flex-direction: column;
@@ -1860,7 +1860,9 @@ input[type='checkbox']:focus-visible {
   font-size: 0.8rem;
   cursor: pointer;
   text-align: left;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 
 .tag-menu-item:hover {
@@ -1875,7 +1877,9 @@ input[type='checkbox']:focus-visible {
 
 .tag-menu-fade-enter-active,
 .tag-menu-fade-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .tag-menu-fade-enter-from,

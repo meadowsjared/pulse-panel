@@ -97,11 +97,15 @@ class AudioMixer {
       this.micStream = null
     }
     if (this.micSource) {
-      try { this.micSource.disconnect() } catch {}
+      try {
+        this.micSource.disconnect()
+      } catch {}
       this.micSource = null
     }
     if (this.cableMicSource) {
-      try { this.cableMicSource.disconnect() } catch {}
+      try {
+        this.cableMicSource.disconnect()
+      } catch {}
       this.cableMicSource = null
     }
 
@@ -326,7 +330,9 @@ class AudioMixer {
 
     try {
       if (this.cableMicSource) {
-        try { this.cableMicSource.disconnect() } catch {}
+        try {
+          this.cableMicSource.disconnect()
+        } catch {}
         this.cableMicSource = null
       }
       this.cableMicSource = this.cableCtx.createMediaStreamSource(this.micStream)
@@ -340,15 +346,21 @@ class AudioMixer {
   private cleanupCableContext(): void {
     this.stopAllSounds()
     if (this.cableMicSource) {
-      try { this.cableMicSource.disconnect() } catch {}
+      try {
+        this.cableMicSource.disconnect()
+      } catch {}
       this.cableMicSource = null
     }
     if (this.cableMicGain) {
-      try { this.cableMicGain.disconnect() } catch {}
+      try {
+        this.cableMicGain.disconnect()
+      } catch {}
       this.cableMicGain = null
     }
     if (this.cableSoundGain) {
-      try { this.cableSoundGain.disconnect() } catch {}
+      try {
+        this.cableSoundGain.disconnect()
+      } catch {}
       this.cableSoundGain = null
     }
     if (this.cableCtx) {
@@ -461,12 +473,7 @@ class AudioMixer {
     return this.smoothedLevel
   }
 
-  public playSoundToMixer(
-    audioUrl: string,
-    volume: number,
-    segment?: SoundSegment,
-    id?: string
-  ): Promise<void> {
+  public playSoundToMixer(audioUrl: string, volume: number, segment?: SoundSegment, id?: string): Promise<void> {
     if (!this.cableCtx || !this.cableSoundGain) return Promise.resolve()
     const ctx = this.cableCtx
 

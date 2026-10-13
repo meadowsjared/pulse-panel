@@ -2,76 +2,63 @@
   <div class="clip-panel-root">
     <div class="clip-panel-body">
       <!-- Section 1: Audio Waveform & Studio Trimmer -->
-      <WaveformEditor ref="waveformEditorRef"
-                      :audio-buffer="props.audioBuffer"
-                      :duration="props.audioDuration || props.videoTotalDuration || 0"
-                      v-model:trim-start="startTime"
-                      v-model:trim-end="endTime"
-                      v-model:current-time="currentTime"
-                      v-model:gain="gainMultiplier"
-                      v-model:applied-gain-regions="appliedGainRegions"
-                      title="Audio Waveform Trimmer"
-                      :is-loading="props.isLoadingAudio"
-                      :load-progress="props.audioLoadProgress"
-                      :load-status="props.audioLoadStatus"
-                      :load-error="props.audioLoadError"
-                      :enable-dual-tracks="false"
-                      @retry="$emit('retryAudio')" />
+      <WaveformEditor
+        ref="waveformEditorRef"
+        :audio-buffer="props.audioBuffer"
+        :duration="props.audioDuration || props.videoTotalDuration || 0"
+        v-model:trim-start="startTime"
+        v-model:trim-end="endTime"
+        v-model:current-time="currentTime"
+        v-model:gain="gainMultiplier"
+        v-model:applied-gain-regions="appliedGainRegions"
+        title="Audio Waveform Trimmer"
+        :is-loading="props.isLoadingAudio"
+        :load-progress="props.audioLoadProgress"
+        :load-status="props.audioLoadStatus"
+        :load-error="props.audioLoadError"
+        :enable-dual-tracks="false"
+        @retry="$emit('retryAudio')" />
 
       <!-- Section 2: Media Preview (Left) + Details (Right) -->
       <div class="modal-top-grid">
         <!-- Left Column: Thumbnail & Frame Capture -->
         <div class="modal-col-left">
-          <div class="thumbnail-wrapper"
-               :class="{ 'is-short': isShortVideo }">
-            <img v-if="thumbnailUrl"
-                 :src="thumbnailUrl"
-                 alt="Video thumbnail"
-                 class="video-thumbnail" />
-            <div v-else
-                 class="thumbnail-placeholder">
-              <svg class="w-8 h-8 text-zinc-500"
-                   viewBox="0 0 24 24"
-                   fill="currentColor">
+          <div class="thumbnail-wrapper" :class="{ 'is-short': isShortVideo }">
+            <img v-if="thumbnailUrl" :src="thumbnailUrl" alt="Video thumbnail" class="video-thumbnail" />
+            <div v-else class="thumbnail-placeholder">
+              <svg class="w-8 h-8 text-zinc-500" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" />
               </svg>
             </div>
-            <div class="thumbnail-badge"
-                 v-if="videoDurationFormatted">
+            <div class="thumbnail-badge" v-if="videoDurationFormatted">
               {{ videoDurationFormatted }}
             </div>
-            <button v-if="!props.isAudioOnly"
-                    type="button"
-                    class="recapture-frame-btn"
-                    :disabled="isCapturingFrame"
-                    @click="$emit('captureFrame')"
-                    title="Capture frame from video at current position">
-              <svg v-if="!isCapturingFrame"
-                   class="w-3.5 h-3.5"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
+            <button
+              v-if="!props.isAudioOnly"
+              type="button"
+              class="recapture-frame-btn"
+              :disabled="isCapturingFrame"
+              @click="$emit('captureFrame')"
+              title="Capture frame from video at current position">
+              <svg
+                v-if="!isCapturingFrame"
+                class="w-3.5 h-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                <circle cx="12"
-                        cy="13"
-                        r="4"></circle>
+                <circle cx="12" cy="13" r="4"></circle>
               </svg>
-              <svg v-else
-                   class="w-3.5 h-3.5 animate-spin"
-                   viewBox="0 0 24 24"
-                   fill="none"
-                   stroke="currentColor"
-                   stroke-width="2">
-                <circle cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                        class="opacity-25"></circle>
-                <path fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8H4z"
-                      class="opacity-75"></path>
+              <svg
+                v-else
+                class="w-3.5 h-3.5 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+                <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" class="opacity-75"></path>
               </svg>
               <span>{{ isCapturingFrame ? 'Capturing...' : 'Capture Frame' }}</span>
             </button>
@@ -79,8 +66,7 @@
 
           <!-- Thumbnail Option Checkbox -->
           <label class="thumbnail-checkbox">
-            <input type="checkbox"
-                   v-model="useThumbnailAsIcon" />
+            <input type="checkbox" v-model="useThumbnailAsIcon" />
             <span>Use image as icon</span>
           </label>
         </div>
@@ -89,24 +75,25 @@
         <div class="modal-col-right">
           <!-- Sound Title -->
           <div class="field-group">
-            <label class="field-label"
-                   for="clip-sound-title">Sound Title</label>
-            <input id="clip-sound-title"
-                   type="text"
-                   class="field-input"
-                   v-model="clipTitle"
-                   placeholder="Enter title for soundboard button" />
+            <label class="field-label" for="clip-sound-title">Sound Title</label>
+            <input
+              id="clip-sound-title"
+              type="text"
+              class="field-input"
+              v-model="clipTitle"
+              placeholder="Enter title for soundboard button" />
           </div>
 
           <!-- Tags -->
           <div class="field-group">
-            <label class="field-label"
-                   for="clip-sound-tags"
-                   @click="tagInputRef && tagInputRef.textInputRef?.focus()">Tags</label>
-            <TagInput ref="tagInputRef"
-                      id="clip-sound-tags"
-                      v-model="clipTags"
-                      placeholder="Tags are used for searching" />
+            <label class="field-label" for="clip-sound-tags" @click="tagInputRef && tagInputRef.textInputRef?.focus()"
+              >Tags</label
+            >
+            <TagInput
+              ref="tagInputRef"
+              id="clip-sound-tags"
+              v-model="clipTags"
+              placeholder="Tags are used for searching" />
           </div>
         </div>
       </div>
@@ -117,20 +104,20 @@
         <div class="appearance-preview-col">
           <span class="preview-label">Button Preview</span>
           <div class="sound-button-preview-wrapper">
-            <div class="sound-button"
-                 :class="{ 'has-image': useThumbnailAsIcon && !!thumbnailUrl }"
-                 :style="{
-                  backgroundColor: (useThumbnailAsIcon && thumbnailUrl)
-                    ? 'transparent'
-                    : 'var(--button-color, #23a459)',
-                  backgroundImage: (useThumbnailAsIcon && thumbnailUrl) ? `url('${thumbnailUrl}')` : 'none',
+            <div
+              class="sound-button"
+              :class="{ 'has-image': useThumbnailAsIcon && !!thumbnailUrl }"
+              :style="{
+                backgroundColor: useThumbnailAsIcon && thumbnailUrl ? 'transparent' : 'var(--button-color, #23a459)',
+                backgroundImage: useThumbnailAsIcon && thumbnailUrl ? `url('${thumbnailUrl}')` : 'none',
+              }">
+              <span
+                v-if="!hideTitle"
+                class="button-title"
+                :style="{
+                  color: selectedColor,
+                  opacity: titleOpacity / 100,
                 }">
-              <span v-if="!hideTitle"
-                    class="button-title"
-                    :style="{
-                      color: selectedColor,
-                      opacity: titleOpacity / 100,
-                    }">
                 {{ clipTitle || 'New Sound' }}
               </span>
             </div>
@@ -143,39 +130,37 @@
           <div class="color-section">
             <span class="field-label">Button Color</span>
             <div class="color-palette">
-              <button v-for="color in presetColors"
-                      :key="color"
-                      type="button"
-                      class="color-swatch"
-                      :style="{ backgroundColor: color }"
-                      :class="{ selected: selectedColor === color }"
-                      :title="`Select color ${color}`"
-                      :aria-label="`Color ${color}`"
-                      @click="selectedColor = color"></button>
+              <button
+                v-for="color in presetColors"
+                :key="color"
+                type="button"
+                class="color-swatch"
+                :style="{ backgroundColor: color }"
+                :class="{ selected: selectedColor === color }"
+                :title="`Select color ${color}`"
+                :aria-label="`Color ${color}`"
+                @click="selectedColor = color"></button>
             </div>
           </div>
 
           <!-- Row: Hide title & Title opacity -->
           <div class="appearance-options-row">
-            <label class="hide-title-checkbox"
-                   title="Hide title on soundboard button">
-              <input type="checkbox"
-                     v-model="hideTitle" />
+            <label class="hide-title-checkbox" title="Hide title on soundboard button">
+              <input type="checkbox" v-model="hideTitle" />
               <span class="nowrap">Hide title</span>
             </label>
 
             <!-- Title Opacity (shown when title not hidden) -->
-            <div class="title-opacity-control"
-                 v-if="!hideTitle">
-              <label class="opacity-label"
-                     for="clip-title-opacity">Opacity</label>
-              <input id="clip-title-opacity"
-                     type="range"
-                     min="0"
-                     max="100"
-                     step="1"
-                     v-model.number="titleOpacity"
-                     class="opacity-slider" />
+            <div class="title-opacity-control" v-if="!hideTitle">
+              <label class="opacity-label" for="clip-title-opacity">Opacity</label>
+              <input
+                id="clip-title-opacity"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+                v-model.number="titleOpacity"
+                class="opacity-slider" />
               <span class="opacity-badge">{{ titleOpacity }}%</span>
             </div>
           </div>
@@ -185,80 +170,55 @@
 
     <!-- Section 4: Action Footer -->
     <div class="clip-panel-footer">
-      <div class="progress-info"
-           v-if="isProcessing">
+      <div class="progress-info" v-if="isProcessing">
         <span class="progress-text">{{ progressStatusText }}</span>
         <div class="progress-bar-bg">
-          <div class="progress-bar-fill"
-               :style="{ width: `${progressPercent}%` }"></div>
+          <div class="progress-bar-fill" :style="{ width: `${progressPercent}%` }"></div>
         </div>
       </div>
 
       <div class="footer-buttons">
-
         <!-- When audio is preloading/loading: interactive progress bar button -->
-        <div v-if="isLoadingAudio"
-             class="btn-preload-progress"
-             title="Preloading audio from YouTube in background...">
-          <div class="btn-preload-fill"
-               :style="{ width: `${audioLoadProgress}%` }"></div>
+        <div v-if="isLoadingAudio" class="btn-preload-progress" title="Preloading audio from YouTube in background...">
+          <div class="btn-preload-fill" :style="{ width: `${audioLoadProgress}%` }"></div>
           <div class="btn-preload-content">
-            <svg class="w-4 h-4 animate-spin text-emerald-400"
-                 viewBox="0 0 24 24"
-                 fill="none"
-                 stroke="currentColor">
-              <circle cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                      class="opacity-25"></circle>
-              <path fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8H4z"
-                    class="opacity-75"></path>
+            <svg class="w-4 h-4 animate-spin text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+              <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" class="opacity-75"></path>
             </svg>
             <span class="btn-preload-text">{{ audioLoadStatus || `Loading Audio: ${audioLoadProgress}%` }}</span>
           </div>
         </div>
 
         <!-- Ready: Add to Soundboard button -->
-        <button v-else
-                type="button"
-                class="btn-add-sound"
-                :disabled="isProcessing || !clipTitle.trim()"
-                @click="saveSound">
-          <svg v-if="!isProcessing"
-               class="w-4 h-4"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2.5">
+        <button
+          v-else
+          type="button"
+          class="btn-add-sound"
+          :disabled="isProcessing || !clipTitle.trim()"
+          @click="saveSound">
+          <svg
+            v-if="!isProcessing"
+            class="w-4 h-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5">
             <path d="M12 5v14M5 12l7 7 7-7" />
           </svg>
-          <svg v-else
-               class="w-4 h-4 animate-spin"
-               viewBox="0 0 24 24"
-               fill="none"
-               stroke="currentColor"
-               stroke-width="2">
-            <circle cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                    class="opacity-25"></circle>
-            <path fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8H4z"
-                  class="opacity-75"></path>
+          <svg
+            v-else
+            class="w-4 h-4 animate-spin"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle>
+            <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" class="opacity-75"></path>
           </svg>
-          <span>{{ isProcessing ? (progressStatusText || 'Adding to Soundboard...') : 'Add to Soundboard' }}</span>
+          <span>{{ isProcessing ? progressStatusText || 'Adding to Soundboard...' : 'Add to Soundboard' }}</span>
         </button>
-        <button type="button"
-                class="btn-cancel"
-                :disabled="isProcessing"
-                @click="handleCancel">
-          Cancel
-        </button>
+        <button type="button" class="btn-cancel" :disabled="isProcessing" @click="handleCancel">Cancel</button>
       </div>
     </div>
   </div>
@@ -275,22 +235,22 @@ import WaveformEditor from './WaveformEditor.vue'
 import { AudioGainRegion } from '../utils/audioGain'
 
 interface Props {
-  audioBuffer?: AudioBuffer | null;
-  audioDuration?: number;
-  videoTotalDuration?: number | null;
-  isLoadingAudio?: boolean;
-  audioLoadProgress?: number;
-  audioLoadStatus?: string;
-  audioLoadError?: string;
-  thumbnailUrl?: string;
-  isShortVideo?: boolean;
-  videoDurationFormatted?: string;
-  isCapturingFrame?: boolean;
-  activeVideoTitle?: string;
-  currentUrl?: string;
-  videoId?: string | null;
-  isAudioOnly?: boolean;
-  isOpen?: boolean;
+  audioBuffer?: AudioBuffer | null
+  audioDuration?: number
+  videoTotalDuration?: number | null
+  isLoadingAudio?: boolean
+  audioLoadProgress?: number
+  audioLoadStatus?: string
+  audioLoadError?: string
+  thumbnailUrl?: string
+  isShortVideo?: boolean
+  videoDurationFormatted?: string
+  isCapturingFrame?: boolean
+  activeVideoTitle?: string
+  currentUrl?: string
+  videoId?: string | null
+  isAudioOnly?: boolean
+  isOpen?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -313,10 +273,10 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'captureFrame'): void;
-  (e: 'close'): void;
-  (e: 'retryAudio'): void;
-  (e: 'soundAdded', sound: Sound): void;
+  (e: 'captureFrame'): void
+  (e: 'close'): void
+  (e: 'retryAudio'): void
+  (e: 'soundAdded', sound: Sound): void
 }>()
 
 const settingsStore = useSettingsStore()
@@ -368,7 +328,7 @@ function getAudioContext(): AudioContext {
     audioContext = new AudioContextClass()
   }
   if (audioContext.state === 'suspended') {
-    audioContext.resume().catch(() => { })
+    audioContext.resume().catch(() => {})
   }
   return audioContext
 }
@@ -406,7 +366,10 @@ function applyOpacityToColor(color: string, opacityPercent: number): string {
   if (color.startsWith('#')) {
     let hex = color.slice(1)
     if (hex.length === 3) {
-      hex = hex.split('').map(c => c + c).join('')
+      hex = hex
+        .split('')
+        .map(c => c + c)
+        .join('')
     }
     if (hex.length === 6) {
       const r = parseInt(hex.slice(0, 2), 16)
@@ -421,7 +384,10 @@ function applyOpacityToColor(color: string, opacityPercent: number): string {
       return `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(2)})`
     }
   } else if (color.startsWith('rgb(') || color.startsWith('rgba(')) {
-    const parts = color.replace(/rgba?\((.*?)\)/, '$1').split(',').map(s => s.trim())
+    const parts = color
+      .replace(/rgba?\((.*?)\)/, '$1')
+      .split(',')
+      .map(s => s.trim())
     if (parts.length >= 3) {
       return `rgba(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha.toFixed(2)})`
     }
@@ -634,7 +600,9 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: aspect-ratio 0.2s ease, max-height 0.2s ease;
+  transition:
+    aspect-ratio 0.2s ease,
+    max-height 0.2s ease;
 }
 
 .thumbnail-wrapper.is-short {
@@ -764,7 +732,9 @@ onUnmounted(() => {
   font-size: 0.85rem;
   color: #fff;
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .field-input:focus {
@@ -778,7 +748,9 @@ onUnmounted(() => {
   border-radius: 0.45rem;
   min-height: 38px;
   padding: 0.25rem 0.45rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .field-group :deep(.tag-input:focus-within) {
@@ -875,8 +847,11 @@ onUnmounted(() => {
 .sound-button-preview-wrapper .sound-button.has-image .button-title {
   color: white;
   --opacity: 0.3;
-  text-shadow: 0px 0px 8px rgba(0, 0, 0, var(--opacity)), 4px 4px 8px rgba(0, 0, 0, var(--opacity)),
-    4px -4px 8px rgba(0, 0, 0, var(--opacity)), -4px 4px 8px rgba(0, 0, 0, var(--opacity)),
+  text-shadow:
+    0px 0px 8px rgba(0, 0, 0, var(--opacity)),
+    4px 4px 8px rgba(0, 0, 0, var(--opacity)),
+    4px -4px 8px rgba(0, 0, 0, var(--opacity)),
+    -4px 4px 8px rgba(0, 0, 0, var(--opacity)),
     -4px -4px 8px rgba(0, 0, 0, var(--opacity));
 }
 
@@ -901,7 +876,9 @@ onUnmounted(() => {
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
   padding: 0;
   outline: none;
 }
@@ -934,7 +911,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 }
 
-.hide-title-checkbox input[type="checkbox"] {
+.hide-title-checkbox input[type='checkbox'] {
   accent-color: #23a459;
   width: 13px;
   height: 13px;

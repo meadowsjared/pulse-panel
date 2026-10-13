@@ -1,65 +1,63 @@
 <template>
-  <div ref="containerRef"
-       :class="['waveform-graph-container', { 'is-dragging-handle': isDraggingHandle }]">
-    <div :class="['waveform-wrapper', { 'is-dragging-handle': isDraggingHandle }]"
-         ref="waveformWrapperRef"
-         :style="wrapperStyle"
-         @mousedown="onWaveformMouseDown"
-         @dblclick="onWaveformDblClick"
-         @dragstart.prevent.stop>
-      <canvas ref="canvasRef"
-              class="waveform-canvas"></canvas>
+  <div ref="containerRef" :class="['waveform-graph-container', { 'is-dragging-handle': isDraggingHandle }]">
+    <div
+      :class="['waveform-wrapper', { 'is-dragging-handle': isDraggingHandle }]"
+      ref="waveformWrapperRef"
+      :style="wrapperStyle"
+      @mousedown="onWaveformMouseDown"
+      @dblclick="onWaveformDblClick"
+      @dragstart.prevent.stop>
+      <canvas ref="canvasRef" class="waveform-canvas"></canvas>
 
       <!-- Dimmed Region Overlays -->
       <template v-if="showTrimHandles">
         <!-- Dimmed region before Start Handle (spans full height) -->
-        <div class="trim-overlay start-overlay"
-             :style="{ width: `${startPercent}%` }"></div>
+        <div class="trim-overlay start-overlay" :style="{ width: `${startPercent}%` }"></div>
 
         <!-- Dimmed region after End Handle (spans full height) -->
-        <div class="trim-overlay end-overlay"
-             :style="{
-              left: `${endPercent}%`,
-              width: `${100 - endPercent}%`
-            }"></div>
+        <div
+          class="trim-overlay end-overlay"
+          :style="{
+            left: `${endPercent}%`,
+            width: `${100 - endPercent}%`,
+          }"></div>
 
         <!-- Active Selection Range Window (between In and Out points) -->
-        <div class="selection-range-window"
-             :style="{
-              left: `${startPercent}%`,
-              width: `${Math.max(0, endPercent - startPercent)}%`
-            }">
+        <div
+          class="selection-range-window"
+          :style="{
+            left: `${startPercent}%`,
+            width: `${Math.max(0, endPercent - startPercent)}%`,
+          }">
           <!-- Top dimmed curtain (anchored to top: 0, shrinks/grows as spotlight moves) -->
-          <div v-if="isDualTrackLayout"
-               class="selection-dim-curtain dim-top"
-               :style="topDimStyle"></div>
+          <div v-if="isDualTrackLayout" class="selection-dim-curtain dim-top" :style="topDimStyle"></div>
 
           <!-- Active Selection Spotlight (glides vertically between tracks) -->
-          <div class="selection-spotlight"
-               :class="['track-' + (activeTrack || 'both')]"
-               :style="selectionLaneStyle"></div>
+          <div
+            class="selection-spotlight"
+            :class="['track-' + (activeTrack || 'both')]"
+            :style="selectionLaneStyle"></div>
 
           <!-- Bottom dimmed curtain (anchored to bottom: 0, shrinks/grows as spotlight moves) -->
-          <div v-if="isDualTrackLayout"
-               class="selection-dim-curtain dim-bottom"
-               :style="bottomDimStyle"></div>
+          <div v-if="isDualTrackLayout" class="selection-dim-curtain dim-bottom" :style="bottomDimStyle"></div>
         </div>
       </template>
 
       <!-- Segment Boundary Divider Lines (Interactive White Clip Handles) -->
       <template v-if="segmentBoundaries && segmentBoundaries.length">
-        <div v-for="(boundarySec, idx) in segmentBoundaries"
-             :key="'boundary-' + idx"
-             class="segment-boundary-line"
-             :class="{
-              'is-snapped': snappedBoundarySec !== null && Math.abs(snappedBoundarySec - boundarySec) < 0.002,
-              'is-dragging-handle': isDraggingHandle
-            }"
-             :style="{ left: `${(boundarySec / effectiveDuration) * 100}%` }"
-             @mousedown.stop
-             @click.stop="onBoundaryClick(boundarySec, $event)"
-             @contextmenu.prevent.stop="onBoundaryContextMenu(boundarySec, $event)"
-             :title="`Clip boundary at ${formatSeconds(boundarySec)} — Click for options`">
+        <div
+          v-for="(boundarySec, idx) in segmentBoundaries"
+          :key="'boundary-' + idx"
+          class="segment-boundary-line"
+          :class="{
+            'is-snapped': snappedBoundarySec !== null && Math.abs(snappedBoundarySec - boundarySec) < 0.002,
+            'is-dragging-handle': isDraggingHandle,
+          }"
+          :style="{ left: `${(boundarySec / effectiveDuration) * 100}%` }"
+          @mousedown.stop
+          @click.stop="onBoundaryClick(boundarySec, $event)"
+          @contextmenu.prevent.stop="onBoundaryContextMenu(boundarySec, $event)"
+          :title="`Clip boundary at ${formatSeconds(boundarySec)} — Click for options`">
           <div class="segment-boundary-hit-area"></div>
         </div>
       </template>
@@ -67,118 +65,118 @@
       <!-- Start & End Trim Handles -->
       <template v-if="showTrimHandles">
         <!-- Start Trim Handle -->
-        <div :class="['trim-handle', 'start-handle', {
-          'active-handle': activeDragHandle === 'start',
-          'is-snapped': (activeSnapLineSec !== null
-            && activeDragHandle === 'start')
-            || (isSnappedToStationaryHandle && activeDragHandle === 'end')
-        }]"
-             :style="{ left: `${startPercent}%` }"
-             @mousedown.stop="onStartHandleMouseDown"
-             @dblclick.stop="openTrimPopovers('start')"
-             @contextmenu.prevent.stop="openTrimPopovers('start')"
-             :title="`Start: ${formatSeconds(trimStart)} (Drag to trim, hold Shift to snap, click to edit)`">
-          <div v-if="showTrimLabels"
-               class="handle-flag start-flag"
-               @mousedown.stop="onStartHandleMouseDown"
-               @click.stop="openTrimPopovers('start')">In: {{ formatSeconds(trimStart) }}</div>
+        <div
+          :class="[
+            'trim-handle',
+            'start-handle',
+            {
+              'active-handle': activeDragHandle === 'start',
+              'is-snapped':
+                (activeSnapLineSec !== null && activeDragHandle === 'start') ||
+                (isSnappedToStationaryHandle && activeDragHandle === 'end'),
+            },
+          ]"
+          :style="{ left: `${startPercent}%` }"
+          @mousedown.stop="onStartHandleMouseDown"
+          @dblclick.stop="openTrimPopovers('start')"
+          @contextmenu.prevent.stop="openTrimPopovers('start')"
+          :title="`Start: ${formatSeconds(trimStart)} (Drag to trim, hold Shift to snap, click to edit)`">
+          <div
+            v-if="showTrimLabels"
+            class="handle-flag start-flag"
+            @mousedown.stop="onStartHandleMouseDown"
+            @click.stop="openTrimPopovers('start')">
+            In: {{ formatSeconds(trimStart) }}
+          </div>
           <div class="handle-line"></div>
         </div>
 
         <!-- End Trim Handle -->
-        <div :class="['trim-handle', 'end-handle', {
-          'active-handle': activeDragHandle === 'end',
-          'is-snapped': (activeSnapLineSec !== null
-            && activeDragHandle === 'end')
-            || (isSnappedToStationaryHandle
-              && activeDragHandle === 'start')
-        }]"
-             :style="{ left: `${endPercent}%` }"
-             @mousedown.stop="onEndHandleMouseDown"
-             @dblclick.stop="openTrimPopovers('end')"
-             @contextmenu.prevent.stop="openTrimPopovers('end')"
-             :title="`End: ${formatSeconds(trimEnd)} (Drag to trim, hold Shift to snap, click to edit)`">
-          <div v-if="showTrimLabels"
-               class="handle-flag end-flag"
-               @mousedown.stop="onEndHandleMouseDown"
-               @click.stop="openTrimPopovers('end')">Out: {{ formatSeconds(trimEnd) }}</div>
+        <div
+          :class="[
+            'trim-handle',
+            'end-handle',
+            {
+              'active-handle': activeDragHandle === 'end',
+              'is-snapped':
+                (activeSnapLineSec !== null && activeDragHandle === 'end') ||
+                (isSnappedToStationaryHandle && activeDragHandle === 'start'),
+            },
+          ]"
+          :style="{ left: `${endPercent}%` }"
+          @mousedown.stop="onEndHandleMouseDown"
+          @dblclick.stop="openTrimPopovers('end')"
+          @contextmenu.prevent.stop="openTrimPopovers('end')"
+          :title="`End: ${formatSeconds(trimEnd)} (Drag to trim, hold Shift to snap, click to edit)`">
+          <div
+            v-if="showTrimLabels"
+            class="handle-flag end-flag"
+            @mousedown.stop="onEndHandleMouseDown"
+            @click.stop="openTrimPopovers('end')">
+            Out: {{ formatSeconds(trimEnd) }}
+          </div>
           <div class="handle-line"></div>
         </div>
       </template>
 
       <!-- Active Snap Guideline (Clean Amber Line with Lock Emoji Below) -->
-      <div v-if="activeSnapLineSec !== null"
-           class="active-snap-guideline"
-           :style="{ left: `${Math.max(0, Math.min(100, (activeSnapLineSec / effectiveDuration) * 100))}%` }">
-        <div class="snap-lock-foot"
-             title="Snapped to boundary">🔒</div>
+      <div
+        v-if="activeSnapLineSec !== null"
+        class="active-snap-guideline"
+        :style="{ left: `${Math.max(0, Math.min(100, (activeSnapLineSec / effectiveDuration) * 100))}%` }">
+        <div class="snap-lock-foot" title="Snapped to boundary">🔒</div>
       </div>
 
       <!-- Playhead Scrub Line -->
-      <div v-if="showPlayhead"
-           class="playhead-line"
-           :class="{ 'is-snapped': isSnappedToPlayhead }"
-           :style="{ left: `${playheadPercent}%` }">
-        <div class="playhead-hit-area"
-             @mousedown.stop="onPlayheadMouseDown"
-             @contextmenu.prevent.stop="onPlayheadContextMenu"
-             title="Left-click to edit time, Right-click for options, Drag to scrub"></div>
-        <div class="playhead-cap"
-             @mousedown.stop="onPlayheadMouseDown"
-             @contextmenu.prevent.stop="onPlayheadContextMenu"
-             title="Left-click to edit time, Right-click for options, Drag to scrub"></div>
+      <div
+        v-if="showPlayhead"
+        class="playhead-line"
+        :class="{ 'is-snapped': isSnappedToPlayhead }"
+        :style="{ left: `${playheadPercent}%` }">
+        <div
+          class="playhead-hit-area"
+          @mousedown.stop="onPlayheadMouseDown"
+          @contextmenu.prevent.stop="onPlayheadContextMenu"
+          title="Left-click to edit time, Right-click for options, Drag to scrub"></div>
+        <div
+          class="playhead-cap"
+          @mousedown.stop="onPlayheadMouseDown"
+          @contextmenu.prevent.stop="onPlayheadContextMenu"
+          title="Left-click to edit time, Right-click for options, Drag to scrub"></div>
       </div>
     </div>
 
     <!-- Segment Boundary Quick Actions Popover -->
-    <div v-if="activeBoundaryMenu"
-         class="boundary-menu-popover"
-         :style="boundaryMenuStyle"
-         @mousedown.stop
-         @click.stop>
+    <div v-if="activeBoundaryMenu" class="boundary-menu-popover" :style="boundaryMenuStyle" @mousedown.stop @click.stop>
       <div class="boundary-menu-header">
         <span class="boundary-menu-title">Clip Boundary: {{ formatSeconds(activeBoundaryMenu.sec) }}</span>
-        <button type="button"
-                class="boundary-menu-close"
-                @click="closeBoundaryMenu">✕</button>
+        <button type="button" class="boundary-menu-close" @click="closeBoundaryMenu">✕</button>
       </div>
       <div class="boundary-menu-items">
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="joinAtBoundary(activeBoundaryMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="joinAtBoundary(activeBoundaryMenu.sec)">
           <span class="btn-icon">🔗</span>
           Join Audio Clips Here
         </button>
         <div class="boundary-menu-divider"></div>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="selectLeftOfBoundary(activeBoundaryMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="selectLeftOfBoundary(activeBoundaryMenu.sec)">
           <span class="btn-icon">◀</span>
           Select Left Clip (In ➔ Divider)
         </button>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="selectRightOfBoundary(activeBoundaryMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="selectRightOfBoundary(activeBoundaryMenu.sec)">
           <span class="btn-icon">▶</span>
           Select Right Clip (Divider ➔ Out)
         </button>
         <div class="boundary-menu-divider"></div>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="setInAtBoundary(activeBoundaryMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="setInAtBoundary(activeBoundaryMenu.sec)">
           <span class="badge in">IN</span>
           Set Green Handle (In) Here
         </button>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="setOutAtBoundary(activeBoundaryMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="setOutAtBoundary(activeBoundaryMenu.sec)">
           <span class="badge out">OUT</span>
           Set Red Handle (Out) Here
         </button>
         <div class="boundary-menu-divider"></div>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="seekToBoundary(activeBoundaryMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="seekToBoundary(activeBoundaryMenu.sec)">
           <span class="btn-icon">⏱</span>
           Move Playhead Here
         </button>
@@ -186,111 +184,104 @@
     </div>
 
     <!-- Unified Trim Capsule Popover -->
-    <div v-if="showTrimHandles && areTrimPopoversOpen"
-         class="trim-capsule-card is-open"
-         :class="{ 'is-dragging': isDraggingHandle }"
-         :style="capsuleCardStyle"
-         @mousedown.stop
-         @click.stop>
+    <div
+      v-if="showTrimHandles && areTrimPopoversOpen"
+      class="trim-capsule-card is-open"
+      :class="{ 'is-dragging': isDraggingHandle }"
+      :style="capsuleCardStyle"
+      @mousedown.stop
+      @click.stop>
       <div class="capsule-content">
         <!-- Start Input Field -->
-        <div class="capsule-field start-field"
-             :class="{ 'is-focused': focusedPopoverHandle === 'start' }"
-             @click="focusStartInput">
+        <div
+          class="capsule-field start-field"
+          :class="{ 'is-focused': focusedPopoverHandle === 'start' }"
+          @click="focusStartInput">
           <span class="capsule-badge start-badge">IN</span>
-          <input ref="startInputRef"
-                 v-model="startInputValue"
-                 class="capsule-time-input start"
-                 placeholder="0:00.00"
-                 @focus="onInputFocus('start')"
-                 @input="onStartInput"
-                 @blur="onPopoverBlur($event)"
-                 @keydown="onPopoverKeydown('start', $event)" />
+          <input
+            ref="startInputRef"
+            v-model="startInputValue"
+            class="capsule-time-input start"
+            placeholder="0:00.00"
+            @focus="onInputFocus('start')"
+            @input="onStartInput"
+            @blur="onPopoverBlur($event)"
+            @keydown="onPopoverKeydown('start', $event)" />
         </div>
 
         <span class="capsule-divider">→</span>
 
         <!-- End Input Field -->
-        <div class="capsule-field end-field"
-             :class="{ 'is-focused': focusedPopoverHandle === 'end' }"
-             @click="focusEndInput">
+        <div
+          class="capsule-field end-field"
+          :class="{ 'is-focused': focusedPopoverHandle === 'end' }"
+          @click="focusEndInput">
           <span class="capsule-badge end-badge">OUT</span>
-          <input ref="endInputRef"
-                 v-model="endInputValue"
-                 class="capsule-time-input end"
-                 placeholder="0:00.00"
-                 @focus="onInputFocus('end')"
-                 @input="onEndInput"
-                 @blur="onPopoverBlur($event)"
-                 @keydown="onPopoverKeydown('end', $event)" />
+          <input
+            ref="endInputRef"
+            v-model="endInputValue"
+            class="capsule-time-input end"
+            placeholder="0:00.00"
+            @focus="onInputFocus('end')"
+            @input="onEndInput"
+            @blur="onPopoverBlur($event)"
+            @keydown="onPopoverKeydown('end', $event)" />
         </div>
       </div>
-      <div class="capsule-arrow"
-           :style="capsuleArrowStyle"></div>
+      <div class="capsule-arrow" :style="capsuleArrowStyle"></div>
     </div>
 
     <!-- Playhead Quick Actions Context Menu Popover (Right-click) -->
-    <div v-if="activePlayheadMenu"
-         class="boundary-menu-popover playhead-menu-popover"
-         :style="playheadMenuStyle"
-         @mousedown.stop
-         @click.stop>
+    <div
+      v-if="activePlayheadMenu"
+      class="boundary-menu-popover playhead-menu-popover"
+      :style="playheadMenuStyle"
+      @mousedown.stop
+      @click.stop>
       <div class="boundary-menu-header">
         <span class="boundary-menu-title">Cursor: {{ formatSeconds(activePlayheadMenu.sec) }}</span>
-        <button type="button"
-                class="boundary-menu-close"
-                @click="closePlayheadMenu">✕</button>
+        <button type="button" class="boundary-menu-close" @click="closePlayheadMenu">✕</button>
       </div>
       <div class="boundary-menu-items">
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="setInAtPlayhead(activePlayheadMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="setInAtPlayhead(activePlayheadMenu.sec)">
           <span class="badge in">IN</span>
           Set In to Cursor
         </button>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="setOutAtPlayhead(activePlayheadMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="setOutAtPlayhead(activePlayheadMenu.sec)">
           <span class="badge out">OUT</span>
           Set Out to Cursor
         </button>
         <div class="boundary-menu-divider"></div>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="splitAtPlayhead(activePlayheadMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="splitAtPlayhead(activePlayheadMenu.sec)">
           <span class="btn-icon">✂</span>
           Split Clip at Cursor
         </button>
-        <button v-if="playheadNearBoundary !== null"
-                type="button"
-                class="boundary-menu-btn"
-                @click="joinAtBoundary(playheadNearBoundary)">
+        <button
+          v-if="playheadNearBoundary !== null"
+          type="button"
+          class="boundary-menu-btn"
+          @click="joinAtBoundary(playheadNearBoundary)">
           <span class="btn-icon">🔗</span>
           Join Audio Clips at Boundary
         </button>
         <div class="boundary-menu-divider"></div>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="openTimeInputFromMenu(activePlayheadMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="openTimeInputFromMenu(activePlayheadMenu.sec)">
           <span class="btn-icon">⌨</span>
           Type Cursor Time...
         </button>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="togglePlayFromPlayhead(activePlayheadMenu.sec)">
+        <button type="button" class="boundary-menu-btn" @click="togglePlayFromPlayhead(activePlayheadMenu.sec)">
           <span class="btn-icon">{{ isPlaying ? '⏸' : '▶' }}</span>
           {{ isPlaying ? 'Pause Playback' : 'Play from Cursor' }}
         </button>
-        <button v-if="canPaste"
-                type="button"
-                class="boundary-menu-btn"
-                @click="pasteAtPlayhead(activePlayheadMenu.sec)">
+        <button
+          v-if="canPaste"
+          type="button"
+          class="boundary-menu-btn"
+          @click="pasteAtPlayhead(activePlayheadMenu.sec)">
           <span class="btn-icon">📋</span>
           Paste Audio at Cursor
         </button>
-        <button type="button"
-                class="boundary-menu-btn"
-                @click="jumpCursorToIn">
+        <button type="button" class="boundary-menu-btn" @click="jumpCursorToIn">
           <span class="btn-icon">⏮</span>
           Jump Cursor to In Point
         </button>
@@ -298,39 +289,40 @@
     </div>
 
     <!-- Playhead Time Capsule Card (Left-click to edit cursor location) -->
-    <div v-if="isPlayheadPopoverOpen"
-         class="trim-capsule-card playhead-capsule-card is-open"
-         :style="playheadCapsuleStyle"
-         @mousedown.stop
-         @click.stop>
+    <div
+      v-if="isPlayheadPopoverOpen"
+      class="trim-capsule-card playhead-capsule-card is-open"
+      :style="playheadCapsuleStyle"
+      @mousedown.stop
+      @click.stop>
       <div class="capsule-content">
-        <div class="capsule-field playhead-field is-focused"
-             @click="focusPlayheadInput">
+        <div class="capsule-field playhead-field is-focused" @click="focusPlayheadInput">
           <span class="capsule-badge playhead-badge">CURSOR</span>
-          <input ref="playheadInputRef"
-                 v-model="playheadInputValue"
-                 class="capsule-time-input playhead"
-                 placeholder="0:00.00"
-                 @focus="onPlayheadInputFocus"
-                 @input="onPlayheadInput"
-                 @blur="onPlayheadBlur($event)"
-                 @keydown="onPlayheadKeydown($event)" />
+          <input
+            ref="playheadInputRef"
+            v-model="playheadInputValue"
+            class="capsule-time-input playhead"
+            placeholder="0:00.00"
+            @focus="onPlayheadInputFocus"
+            @input="onPlayheadInput"
+            @blur="onPlayheadBlur($event)"
+            @keydown="onPlayheadKeydown($event)" />
         </div>
       </div>
       <div class="capsule-arrow playhead-arrow"></div>
     </div>
 
     <!-- Time Ticks along bottom -->
-    <div v-if="showTimeTicks"
-         class="time-ticks">
+    <div v-if="showTimeTicks" class="time-ticks">
       <span>0:00</span>
       <span>{{ formatSeconds(effectiveDuration * 0.25) }}</span>
       <span>{{ formatSeconds(effectiveDuration * 0.5) }}</span>
       <span>{{ formatSeconds(effectiveDuration * 0.75) }}</span>
       <span>{{ formatSeconds(effectiveDuration) }}</span>
     </div>
-    <span v-if="showTrimHandles && showTrimInstructions"
-          class="text-xs text-zinc-400">Drag green handle for Start, red handle for End</span>
+    <span v-if="showTrimHandles && showTrimInstructions" class="text-xs text-zinc-400"
+      >Drag green handle for Start, red handle for End</span
+    >
   </div>
 </template>
 
@@ -341,40 +333,39 @@ const globalActiveGraphInstanceId = ref<number | null>(null)
 
 export interface WaveformTrack {
   /** Label displayed in the watermark badge pill (e.g. '🎤 MIC (VOICE)'). If empty or undefined, badge is omitted. */
-  label?: string;
+  label?: string
   /** AudioBuffer channel index or indices to sample. If undefined, samples all available channels. */
-  channelIndex?: number | number[];
+  channelIndex?: number | number[]
   /** Whether the track is enabled/active. When false, the track is rendered dimmed/muted. Defaults to true. */
-  enabled?: boolean;
+  enabled?: boolean
   /** Custom gradient colors [startColor, endColor] for the bars. */
-  colors?: [string, string];
+  colors?: [string, string]
 }
 </script>
 
 <script setup lang="ts">
-
 interface Props {
-  audioBuffer: AudioBuffer | null;
-  duration?: number;
-  currentTime?: number;
-  trimStart?: number;
-  trimEnd?: number;
-  showTrimHandles?: boolean;
-  showTrimLabels?: boolean;
-  showTrimInstructions?: boolean;
-  showTimeTicks?: boolean;
-  showPlayhead?: boolean;
-  isPlaying?: boolean;
-  playheadOnlyOnDrag?: boolean;
-  playheadOnlyWhenActive?: boolean;
-  enableScrubbing?: boolean;
-  tracks?: WaveformTrack[];
-  height?: number | string;
-  includeMic?: boolean;
-  includeInput?: boolean;
-  activeTrack?: 'both' | 'mic' | 'input';
-  segmentBoundaries?: number[];
-  canPaste?: boolean;
+  audioBuffer: AudioBuffer | null
+  duration?: number
+  currentTime?: number
+  trimStart?: number
+  trimEnd?: number
+  showTrimHandles?: boolean
+  showTrimLabels?: boolean
+  showTrimInstructions?: boolean
+  showTimeTicks?: boolean
+  showPlayhead?: boolean
+  isPlaying?: boolean
+  playheadOnlyOnDrag?: boolean
+  playheadOnlyWhenActive?: boolean
+  enableScrubbing?: boolean
+  tracks?: WaveformTrack[]
+  height?: number | string
+  includeMic?: boolean
+  includeInput?: boolean
+  activeTrack?: 'both' | 'mic' | 'input'
+  segmentBoundaries?: number[]
+  canPaste?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -399,18 +390,18 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  (e: 'update:currentTime', time: number): void;
-  (e: 'update:trimStart', time: number): void;
-  (e: 'update:trimEnd', time: number): void;
-  (e: 'scrubStart', time: number): void;
-  (e: 'scrubMove', time: number): void;
-  (e: 'scrubEnd', time: number): void;
-  (e: 'trimChange', payload: { start: number; end: number; handle?: 'start' | 'end'; }): void;
-  (e: 'trimEndChange', payload: { start: number; end: number; handle?: 'start' | 'end'; }): void;
-  (e: 'splitAt', sec: number): void;
-  (e: 'joinAt', sec: number): void;
-  (e: 'playFromCursor', sec: number): void;
-  (e: 'pasteAtCursor', sec: number): void;
+  (e: 'update:currentTime', time: number): void
+  (e: 'update:trimStart', time: number): void
+  (e: 'update:trimEnd', time: number): void
+  (e: 'scrubStart', time: number): void
+  (e: 'scrubMove', time: number): void
+  (e: 'scrubEnd', time: number): void
+  (e: 'trimChange', payload: { start: number; end: number; handle?: 'start' | 'end' }): void
+  (e: 'trimEndChange', payload: { start: number; end: number; handle?: 'start' | 'end' }): void
+  (e: 'splitAt', sec: number): void
+  (e: 'joinAt', sec: number): void
+  (e: 'playFromCursor', sec: number): void
+  (e: 'pasteAtCursor', sec: number): void
 }>()
 
 const instanceId = ++graphInstanceCounter
@@ -677,9 +668,7 @@ function onPopoverBlur(e: FocusEvent) {
   const related = e.relatedTarget instanceof HTMLElement ? e.relatedTarget : null
   if (
     related &&
-    (related === startInputRef.value ||
-      related === endInputRef.value ||
-      related.closest?.('.trim-capsule-card'))
+    (related === startInputRef.value || related === endInputRef.value || related.closest?.('.trim-capsule-card'))
   ) {
     return
   }
@@ -707,7 +696,7 @@ function onPopoverKeydown(handle: 'start' | 'end', e: KeyboardEvent) {
 
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
     e.preventDefault()
-    const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05)
+    const step = e.shiftKey ? 0.5 : e.altKey ? 0.01 : 0.05
     const delta = e.key === 'ArrowUp' ? step : -step
     const maxDur = effectiveDuration.value
 
@@ -751,9 +740,8 @@ const capsuleCardStyle = computed(() => {
 })
 
 const capsuleArrowStyle = computed(() => {
-  const activePct = (focusedPopoverHandle.value === 'end' || activeDragHandle.value === 'end')
-    ? endPercent.value
-    : startPercent.value
+  const activePct =
+    focusedPopoverHandle.value === 'end' || activeDragHandle.value === 'end' ? endPercent.value : startPercent.value
   const midPct = (startPercent.value + endPercent.value) / 2
   const offset = (activePct - midPct) * 1.3
   return {
@@ -763,7 +751,7 @@ const capsuleArrowStyle = computed(() => {
 })
 
 // Interactive Clip Boundary Menu State
-const activeBoundaryMenu = ref<{ sec: number; x: number; y: number; } | null>(null)
+const activeBoundaryMenu = ref<{ sec: number; x: number; y: number } | null>(null)
 const snappedBoundarySec = ref<number | null>(null)
 const activeSnapLineSec = ref<number | null>(null)
 const snapBadgeText = ref<string>('')
@@ -805,9 +793,10 @@ function closeBoundaryMenu() {
 
 function selectLeftOfBoundary(boundarySec: number) {
   const maxDur = effectiveDuration.value
-  const boundaries = (props.segmentBoundaries && props.segmentBoundaries.length > 0)
-    ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur]
+  const boundaries =
+    props.segmentBoundaries && props.segmentBoundaries.length > 0
+      ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
+      : [0, maxDur]
 
   let prev = 0
   for (const b of boundaries) {
@@ -830,9 +819,10 @@ function selectLeftOfBoundary(boundarySec: number) {
 
 function selectRightOfBoundary(boundarySec: number) {
   const maxDur = effectiveDuration.value
-  const boundaries = (props.segmentBoundaries && props.segmentBoundaries.length > 0)
-    ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur]
+  const boundaries =
+    props.segmentBoundaries && props.segmentBoundaries.length > 0
+      ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
+      : [0, maxDur]
 
   let next = maxDur
   for (let i = boundaries.length - 1; i >= 0; i--) {
@@ -906,7 +896,7 @@ function seekToBoundary(boundarySec: number) {
 const isPlayheadPopoverOpen = ref(false)
 const playheadInputValue = ref('')
 const playheadInputRef = ref<HTMLInputElement | null>(null)
-const activePlayheadMenu = ref<{ sec: number; x: number; y: number; } | null>(null)
+const activePlayheadMenu = ref<{ sec: number; x: number; y: number } | null>(null)
 
 const playheadNearBoundary = computed(() => {
   if (!activePlayheadMenu.value || !props.segmentBoundaries || props.segmentBoundaries.length === 0) return null
@@ -964,11 +954,7 @@ function onPlayheadInputFocus() {
 
 function onPlayheadBlur(e: FocusEvent) {
   const related = e.relatedTarget instanceof HTMLElement ? e.relatedTarget : null
-  if (
-    related &&
-    (related === playheadInputRef.value ||
-      related.closest?.('.playhead-capsule-card'))
-  ) {
+  if (related && (related === playheadInputRef.value || related.closest?.('.playhead-capsule-card'))) {
     return
   }
 
@@ -1007,7 +993,7 @@ function onPlayheadKeydown(e: KeyboardEvent) {
 
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
     e.preventDefault()
-    const step = e.shiftKey ? 0.5 : (e.altKey ? 0.01 : 0.05)
+    const step = e.shiftKey ? 0.5 : e.altKey ? 0.01 : 0.05
     const delta = e.key === 'ArrowUp' ? step : -step
     const maxDur = effectiveDuration.value
     const current = parseTimeInput(playheadInputValue.value) ?? props.currentTime
@@ -1171,7 +1157,7 @@ function renderWaveformBars(
   height: number,
   activeTracks: WaveformTrack[],
   dpr: number,
-  themeColors: { blue: [string, string]; green: [string, string]; }
+  themeColors: { blue: [string, string]; green: [string, string] }
 ) {
   const numTracks = activeTracks.length
   const trackLaneHeight = height / numTracks
@@ -1276,16 +1262,14 @@ function renderWaveformBars(
 
       // Position badge so it never collides with start-flag (top: 4px) when handles are visible
       const badgeY =
-        props.showTrimHandles && t === 0
-          ? trackTop + trackLaneHeight - fontSize - 7 * dpr
-          : trackTop + 4 * dpr
+        props.showTrimHandles && t === 0 ? trackTop + trackLaneHeight - fontSize - 7 * dpr : trackTop + 4 * dpr
 
       ctx.fillStyle = 'rgba(15, 15, 17, 0.72)'
       ctx.beginPath()
       ctx.roundRect(6 * dpr, badgeY, textWidth + 10 * dpr, fontSize + 8 * dpr, 3 * dpr)
       ctx.fill()
 
-      ctx.fillStyle = isEnabled ? (colors[0] || 'rgba(56, 189, 248, 0.95)') : 'rgba(161, 161, 170, 0.6)'
+      ctx.fillStyle = isEnabled ? colors[0] || 'rgba(56, 189, 248, 0.95)' : 'rgba(161, 161, 170, 0.6)'
       ctx.fillText(labelText, 11 * dpr, badgeY + fontSize)
     }
   }
@@ -1381,9 +1365,9 @@ function drawWaveform() {
   const trackKey = activeTracks
     .map(
       t =>
-        `${Array.isArray(t.channelIndex)
-          ? t.channelIndex.join(',')
-          : t.channelIndex}:${t.enabled !== false}:${t.label || ''}:${(t.colors || []).join(',')}`
+        `${
+          Array.isArray(t.channelIndex) ? t.channelIndex.join(',') : t.channelIndex
+        }:${t.enabled !== false}:${t.label || ''}:${(t.colors || []).join(',')}`
     )
     .join(';')
   const cacheKey = `${width}x${height}_${trackKey}_${themeKey}`
@@ -1490,8 +1474,13 @@ function cancelPlayheadClickTimer() {
   }
 }
 
-function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): {
-  snappedSec: number; snapTarget: number | null; boundarySec: number | null;
+function calculatePlayheadSnap(
+  rawSec: number,
+  shiftHeld: boolean
+): {
+  snappedSec: number
+  snapTarget: number | null
+  boundarySec: number | null
 } {
   if (!shiftHeld || !waveformWrapperRef.value) {
     return { snappedSec: rawSec, snapTarget: null, boundarySec: null }
@@ -1507,9 +1496,9 @@ function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): {
   const snapSecThreshold = (snapPixelThreshold / rect.width) * maxDur
 
   interface SnapTarget {
-    sec: number;
-    isBoundary: boolean;
-    boundarySec?: number;
+    sec: number
+    isBoundary: boolean
+    boundarySec?: number
   }
 
   const targets: SnapTarget[] = []
@@ -1546,8 +1535,8 @@ function calculatePlayheadSnap(rawSec: number, shiftHeld: boolean): {
     return {
       snappedSec: closestTarget.sec,
       snapTarget: closestTarget.sec,
-      boundarySec: closestTarget.isBoundary && closestTarget.boundarySec !== undefined
-        ? closestTarget.boundarySec : null,
+      boundarySec:
+        closestTarget.isBoundary && closestTarget.boundarySec !== undefined ? closestTarget.boundarySec : null,
     }
   }
 
@@ -1689,9 +1678,10 @@ function onWaveformDblClick(e: MouseEvent) {
   const maxDur = effectiveDuration.value
   if (maxDur <= 0) return
 
-  const boundaries = props.segmentBoundaries && props.segmentBoundaries.length > 0
-    ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
-    : [0, maxDur]
+  const boundaries =
+    props.segmentBoundaries && props.segmentBoundaries.length > 0
+      ? [0, ...props.segmentBoundaries, maxDur].sort((a, b) => a - b)
+      : [0, maxDur]
 
   let segStart = 0
   let segEnd = maxDur
@@ -1914,11 +1904,11 @@ function onHandleMouseMove(e: MouseEvent) {
     const snapSecThreshold = (snapPixelThreshold / rect.width) * maxDur
 
     interface SnapHandle {
-      sec: number;
-      isBoundary: boolean;
-      boundarySec?: number;
-      isStationary?: boolean;
-      isPlayhead?: boolean;
+      sec: number
+      isBoundary: boolean
+      boundarySec?: number
+      isStationary?: boolean
+      isPlayhead?: boolean
     }
 
     const handles: SnapHandle[] = []
@@ -2136,7 +2126,9 @@ defineExpose({
   border: 1px solid #3f3f46;
   border-radius: 6px;
   padding: 3px 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.85),
+    0 0 1px rgba(255, 255, 255, 0.15);
   white-space: nowrap;
 }
 
@@ -2149,17 +2141,23 @@ defineExpose({
   border-radius: 4px;
   padding: 1px 5px;
   cursor: text;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
 }
 
 .capsule-field.start-field.is-focused {
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 1px var(--primary-color), 0 0 8px rgba(34, 197, 94, 0.25);
+  box-shadow:
+    0 0 0 1px var(--primary-color),
+    0 0 8px rgba(34, 197, 94, 0.25);
 }
 
 .capsule-field.end-field.is-focused {
   border-color: var(--primary-red);
-  box-shadow: 0 0 0 1px var(--primary-red), 0 0 8px rgba(239, 68, 68, 0.25);
+  box-shadow:
+    0 0 0 1px var(--primary-red),
+    0 0 8px rgba(239, 68, 68, 0.25);
 }
 
 .capsule-badge {
@@ -2184,7 +2182,9 @@ defineExpose({
 
 .capsule-field.playhead-field.is-focused {
   border-color: #38bdf8;
-  box-shadow: 0 0 0 1px #38bdf8, 0 0 8px rgba(56, 189, 248, 0.35);
+  box-shadow:
+    0 0 0 1px #38bdf8,
+    0 0 8px rgba(56, 189, 248, 0.35);
 }
 
 .capsule-arrow.playhead-arrow {
@@ -2296,7 +2296,8 @@ defineExpose({
   box-sizing: border-box;
   border-top: 1.5px solid rgba(255, 255, 255, 0.15);
   border-bottom: 1.5px solid rgba(255, 255, 255, 0.15);
-  transition: top var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
+  transition:
+    top var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
     height var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
     border-color var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
     background-color var(--slide-duration) cubic-bezier(0.4, 0, 0.2, 1),
@@ -2374,7 +2375,10 @@ defineExpose({
   pointer-events: auto;
   cursor: pointer;
   z-index: 37;
-  transition: transform 0.1s ease, filter 0.1s ease, box-shadow 0.1s ease;
+  transition:
+    transform 0.1s ease,
+    filter 0.1s ease,
+    box-shadow 0.1s ease;
 }
 
 .handle-flag:hover {
@@ -2400,7 +2404,9 @@ defineExpose({
   width: 2px;
   transform: translateX(-50%);
   background: #ffffff;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 0 0 12px rgba(56, 189, 248, 0.6);
+  box-shadow:
+    0 0 6px rgba(255, 255, 255, 0.9),
+    0 0 12px rgba(56, 189, 248, 0.6);
   pointer-events: none;
   z-index: 25;
 }
@@ -2450,7 +2456,9 @@ defineExpose({
   cursor: pointer;
   z-index: 12;
   transform: translateX(-50%);
-  transition: background 0.15s, box-shadow 0.15s;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s;
 }
 
 .segment-boundary-line.is-dragging-handle {
@@ -2459,7 +2467,9 @@ defineExpose({
 
 .segment-boundary-line:hover {
   background: #38bdf8;
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8), 0 0 2px #ffffff;
+  box-shadow:
+    0 0 8px rgba(56, 189, 248, 0.8),
+    0 0 2px #ffffff;
 }
 
 .segment-boundary-line.is-snapped {
@@ -2540,7 +2550,9 @@ defineExpose({
   background: #18181b;
   border: 1px solid #3f3f46;
   border-radius: 8px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
   min-width: 240px;
   padding: 6px;
   animation: popoverFadeIn 0.12s ease-out;
