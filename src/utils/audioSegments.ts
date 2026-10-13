@@ -666,3 +666,77 @@ export function calculateSoundSegments(
 
   return segments
 }
+
+/**
+ * Applies a linear fade (in or out) to audio timeline segments between startSec and endSec.
+ * - 'in': ramps volume from 0.0 at startSec up to 1.0 at endSec.
+ * - 'out': ramps volume from 1.0 at startSec down to 0.0 at endSec.
+ * Respects targetTrack ('both' | 'mic' | 'input') for dual-track audio buffers.
+ */
+export function fadeTimelineSegments(
+  ctx: AudioContext,
+  segments: AudioTimelineSegment[],
+  startSec: number,
+  endSec: number,
+  type: 'in' | 'out',
+  targetTrack: 'both' | 'mic' | 'input' = 'both'
+): AudioTimelineSegment[] {
+  const fadeDuration = endSec - startSec
+  if (fadeDuration <= 0.005) return segments
+
+  const result: AudioTimelineSegment[] = []
+  let currentStart = 0
+
+  for (const seg of segments) {
+    const currentEnd = currentStart + seg.duration
+
+    // If segment has no overlap with [startSec, endSec], keep it as is
+    if (currentEnd <= startSec || currentStart >= endSec) {
+      result.push(seg)
+      currentStart = currentEnd
+      continue
+    }
+
+    const numChannels = seg.buffer.numberOfChannels
+    const length = seg.buffer.length
+    const sampleRate = seg.buffer.sampleRate
+
+    // Create a new AudioBuffer with the faded data
+    const newBuf = ctx.createBuffer(numChannels, length, sampleRate)
+
+    for (let ch = 0; ch < numChannels; ch++) {
+      const src = seg.buffer.getChannelData(ch)
+      const dst = newBuf.getChannelData(ch)
+      dst.set(src)
+
+      // Determine if this channel should be faded based on targetTrack
+      const shouldFade =
+        targetTrack === 'both' || (targetTrack === 'mic' && ch === 0) || (targetTrack === 'input' && ch === 1)
+
+      if (!shouldFade) continue
+
+      const overlapStartSec = Math.max(currentStart, startSec)
+      const overlapEndSec = Math.min(currentEnd, endSec)
+      const startSample = Math.max(0, Math.floor((overlapStartSec - currentStart) * sampleRate))
+      const endSample = Math.min(length, Math.ceil((overlapEndSec - currentStart) * sampleRate))
+
+      for (let i = startSample; i < endSample; i++) {
+        const tGlobal = currentStart + i / sampleRate
+        const progress = Math.max(0, Math.min(1, (tGlobal - startSec) / fadeDuration))
+        const mult = type === 'out' ? 1 - progress : progress
+        dst[i] = src[i] * mult
+      }
+    }
+
+    result.push({
+      ...seg,
+      id: 'seg-' + Date.now() + '-f' + Math.random().toString(36).slice(2, 6),
+      buffer: newBuf,
+      duration: newBuf.duration,
+    })
+
+    currentStart = currentEnd
+  }
+
+  return result
+}

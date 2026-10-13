@@ -52,6 +52,7 @@
             :can-cut="canCut"
             :can-copy="canCopy"
             :can-paste="canPaste"
+            :can-fade="canFade"
             :paste-tooltip="pasteTooltip"
             @undo="onUndo"
             @redo="onRedo"
@@ -59,6 +60,8 @@
             @copy="onCopyAudio"
             @paste="onPasteAudio"
             @delete="onDeleteAudio"
+            @fade-in="onFadeInAudio"
+            @fade-out="onFadeOutAudio"
             @set-in="setInToCurrentTime"
             @set-out="setOutToCurrentTime" />
         </span>
@@ -279,6 +282,7 @@
       :is-playing="isPlaying"
       :show-trim-to-selection="true"
       :can-trim-to-selection="canTrimToSelection"
+      :can-fade="canFade"
       :has-dual-tracks="isDualTrackActive"
       v-model:active-track-target="activeTrackTarget"
       :gain="singleGainMultiplier"
@@ -299,7 +303,9 @@
       @resetSelection="resetSelectionToExtents"
       @reset="resetTrim"
       @play-trimmed="playTrimmedOnly"
-      @trim-to-selection="trimToSelection" />
+      @trim-to-selection="trimToSelection"
+      @fade-in="onFadeInAudio"
+      @fade-out="onFadeOutAudio" />
   </div>
 </template>
 
@@ -328,6 +334,7 @@ import {
   cutTimelineSegments,
   deleteTimelineSegments,
   calculateSoundSegments,
+  fadeTimelineSegments,
 } from '../utils/audioSegments'
 import { SoundSegment } from '../@types/sound'
 import { encodeWAV, encodeMP3, encodeOGG } from '../services/pulseBackBuffer'
@@ -603,6 +610,12 @@ const canCut = computed(() => {
   const isTrimmed = trimStart.value > 0.05 || (trimEnd.value > 0 && trimEnd.value < totalDur - 0.05)
   const selDuration = (trimEnd.value > 0 ? trimEnd.value : totalDur) - trimStart.value
   return isTrimmed && selDuration > 0.05
+})
+const canFade = computed(() => {
+  if (!effectiveAudioBuffer.value) return false
+  const totalDur = effectiveDuration.value
+  const end = trimEnd.value > 0 ? trimEnd.value : totalDur
+  return end - trimStart.value > 0.05
 })
 const canPaste = computed(() => sharedAudioClipboard.value !== null)
 const pasteTooltip = computed(() => {
@@ -1385,6 +1398,36 @@ function onDeleteAudio() {
 
   commitTimelineChange(newSegments, 0, undefined, startSec)
   pulseBackStore.showToast(`Deleted ${deleteDuration.toFixed(2)}s from timeline`)
+}
+
+function onFadeInAudio() {
+  applyFadeToSelection('in')
+}
+
+function onFadeOutAudio() {
+  applyFadeToSelection('out')
+}
+
+function applyFadeToSelection(type: 'in' | 'out') {
+  if (!canFade.value) {
+    pulseBackStore.showToast(`Please select an audio region to fade ${type}`)
+    return
+  }
+  const base = cleanBaseAudioBuffer.value
+  if (!base) return
+  const ctx = getAudioContext()
+  const totalDur = effectiveDuration.value
+  const startSec = Math.max(0, trimStart.value)
+  const endSec = Math.min(totalDur, trimEnd.value > 0 ? trimEnd.value : totalDur)
+  if (endSec <= startSec + 0.005) return
+
+  pushUndoState()
+
+  const newSegments = fadeTimelineSegments(ctx, timelineSegments.value, startSec, endSec, type, activeTrackTarget.value)
+
+  commitTimelineChange(newSegments, startSec, endSec, currentTime.value)
+  const label = type === 'in' ? 'Fade In' : 'Fade Out'
+  pulseBackStore.showToast(`✨ ${label} applied (${(endSec - startSec).toFixed(2)}s)`)
 }
 
 function onPasteAudio() {
@@ -2546,6 +2589,8 @@ defineExpose({
   jumpCursorToBoundary,
   jumpCursorToExtremity,
   jumpCursorToTrimHandle,
+  fadeIn: onFadeInAudio,
+  fadeOut: onFadeOutAudio,
 })
 </script>
 

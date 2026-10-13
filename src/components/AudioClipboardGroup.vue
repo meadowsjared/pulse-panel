@@ -171,6 +171,47 @@
         </svg>
       </button>
     </div>
+    <div class="clip-action-cluster" v-if="canFade">
+      <span class="clip-action-sep"></span>
+      <button
+        type="button"
+        class="clip-action-btn fade-action-btn fade-in-btn"
+        @click="$emit('fadeIn')"
+        title="Fade In selection (volume 0 to normal)"
+        aria-label="Fade In selection">
+        <svg
+          class="w-3.5 h-3.5 text-sky-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M3 20L21 4" stroke-width="2.2" />
+          <path d="M3 20h18" stroke-width="1.5" stroke-opacity="0.4" />
+          <path d="M21 20V4" stroke-width="1.5" stroke-dasharray="2 2" stroke-opacity="0.5" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="clip-action-btn fade-action-btn fade-out-btn"
+        @click="$emit('fadeOut')"
+        title="Fade Out selection (normal volume to 0 at end)"
+        aria-label="Fade Out selection">
+        <svg
+          class="w-3.5 h-3.5 text-amber-400"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M3 4L21 20" stroke-width="2.2" />
+          <path d="M3 20h18" stroke-width="1.5" stroke-opacity="0.4" />
+          <path d="M3 20V4" stroke-width="1.5" stroke-dasharray="2 2" stroke-opacity="0.5" />
+        </svg>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -181,6 +222,7 @@ interface Props {
   canCut?: boolean
   canCopy?: boolean
   canPaste?: boolean
+  canFade?: boolean
   pasteTooltip?: string
 }
 
@@ -190,6 +232,7 @@ withDefaults(defineProps<Props>(), {
   canCut: false,
   canCopy: false,
   canPaste: false,
+  canFade: false,
   pasteTooltip: 'Paste audio (Ctrl+V)',
 })
 
@@ -200,6 +243,8 @@ defineEmits<{
   (e: 'copy'): void
   (e: 'paste'): void
   (e: 'delete'): void
+  (e: 'fadeIn'): void
+  (e: 'fadeOut'): void
   (e: 'setIn'): void
   (e: 'setOut'): void
 }>()
@@ -262,6 +307,16 @@ defineEmits<{
 
 .in-out-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
+}
+
+.fade-in-btn:hover:not(:disabled) {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.fade-out-btn:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .clip-action-sep {
