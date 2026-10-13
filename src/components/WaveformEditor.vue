@@ -2749,6 +2749,7 @@ defineExpose({
   color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  margin-left: auto;
 }
 
 /* Audio Tracks Segmented Selector Bar */
@@ -2758,6 +2759,7 @@ defineExpose({
   gap: 0.65rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+  margin-left: auto;
 }
 
 .track-selector-wrapper {
