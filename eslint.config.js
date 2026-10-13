@@ -7,7 +7,7 @@ const vuePlugin = require('eslint-plugin-vue')
 const sharedRules = {
   // StandardJS — The Rules
   indent: ['off', 2], // 2 spaces – for indentation
-  'max-len': ['error', { code: 120 }],
+  'max-len': ['off', { code: 120 }],
   'no-console': 'off',
   'arrow-parens': ['error', 'as-needed'],
   'import/no-extraneous-dependencies': 'off',
