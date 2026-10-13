@@ -118,6 +118,7 @@
     "globals": "^17.13.0",
     "node-abi": "^4.35.0",
     "postcss": "^8.5.28",
+    "prettier": "^3.9.10",
     "rollup-plugin-visualizer": "^7.1.1",
     "typescript": "^6.0.3",
     "unplugin-auto-import": "^21.1.0",
